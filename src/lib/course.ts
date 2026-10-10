@@ -6,7 +6,7 @@
  */
 import data from '../data/course.json';
 
-interface LessonJson {
+export interface LessonJson {
 	slug: string;
 	title: string;
 	/** Optional compact label for navigation (sidebar, prev/next); the page keeps the full `title`. */
@@ -16,7 +16,7 @@ interface LessonJson {
 	branch?: boolean;
 }
 
-interface ModuleJson {
+export interface ModuleJson {
 	slug: string;
 	title: string;
 	summary: string;

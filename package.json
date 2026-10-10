@@ -9,7 +9,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "test": "bun test tests/js",
-    "size": "bun scripts/size-report.ts"
+    "size": "bun scripts/size-report.ts",
+    "check": "astro check"
   },
   "dependencies": {
     "@astrojs/react": "7.0.1",
@@ -28,10 +29,13 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@astrojs/check": "0.9.10",
     "@happy-dom/global-registrator": "20.14.5",
+    "@types/bun": "1.4.2",
     "@types/katex": "0.16.8",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@types/three": "0.186.0"
+    "@types/three": "0.186.0",
+    "typescript": "6.0.3"
   }
 }
