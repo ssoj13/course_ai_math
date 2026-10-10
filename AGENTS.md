@@ -174,3 +174,9 @@ Upstream / known console noise:
 - [ ] Scene chunk `engine.impl.*.js` is 937 kB raw / 246 kB gz (three core is not tree-shaken under r3f's
   `import * as THREE`). `chunkSizeWarningLimit: 940` in astro.config.mjs; the real gate is the per-page gzip budget
   of scripts/size-report.ts (Task 11).
+
+### Palette (Task 5)
+
+- Scene colors come from `usePalette()` (`src/viz/palette.ts`), never hex literals in components. Values are `--viz-*` vars in `lab.css` (dark `:root`, light `:root[data-theme='light']`); every value must be a literal `#rrggbb` because WebGL needs concrete colors. `--viz-hot-bg` is CSS-only (formula highlight).
+- Theme flips are observed by ONE module-level MutationObserver on `data-theme` (Starlight `dist/components/ThemeProvider.astro:13`, `ThemeSelect.astro:52`). `Stage` calls `invalidate()` on a new palette. Verified in headless Chrome: stage center pixels equal the CSS var values in both themes with no reload (`.superpowers/sdd/2026-10-10-engine-and-spikes/task-5-evidence/`).
+- Test order trap: after any `./dom` test loads, happy-dom's `localStorage` is read-only; `store.test.ts` uses `Object.defineProperty` for that reason.

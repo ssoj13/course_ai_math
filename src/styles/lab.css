@@ -264,6 +264,45 @@
 	color: var(--sl-color-text-invert);
 }
 
+/*
+ * Scene palette (src/viz/palette.ts reads these; WebGL needs concrete hex, so keep every value a literal #rrggbb).
+ * Dark = :root, light = :root[data-theme='light'] (Starlight's own convention; it always sets data-theme).
+ * a/b is the color-blind-safe blue/orange pair (Okabe-Ito), never red/green. Axes are red/green/blue-ish but scenes
+ * always label them: color is never the only cue.
+ */
+:root {
+	--viz-vec-a: #56b4e9;
+	--viz-vec-b: #e69f00;
+	--viz-vec-c: #cc79a7;
+	--viz-axis-x: #ff6b6b;
+	--viz-axis-y: #5bd16f;
+	--viz-axis-z: #6b9bff;
+	--viz-grid: #4a4e59;
+	--viz-grid-minor: #2c2f37;
+	--viz-shadow: #000000;
+	--viz-hot: #f5c518;
+	--viz-hot-bg: #5a4a10; /* formula highlight background (CSS only, not a scene role) */
+	--viz-ink: #e8e9ee;
+	--viz-muted: #9a9ea9;
+	--viz-fill: #23262e;
+}
+:root[data-theme='light'] {
+	--viz-vec-a: #0072b2;
+	--viz-vec-b: #d55e00;
+	--viz-vec-c: #8e3f7a;
+	--viz-axis-x: #c62828;
+	--viz-axis-y: #2e7d32;
+	--viz-axis-z: #1565c0;
+	--viz-grid: #b4b8c2;
+	--viz-grid-minor: #e1e3e8;
+	--viz-shadow: #1a1a1a;
+	--viz-hot: #c77700;
+	--viz-hot-bg: #fff1c2;
+	--viz-ink: #1b1c20;
+	--viz-muted: #5b5f6a;
+	--viz-fill: #eef0f4;
+}
+
 /* Scene stages (src/viz/scene/Stage.tsx). The shared canvas is fixed behind the article; each stage's View div
    only marks where its scene is scissored in. The server-rendered .lab-scene-box (SceneIsland.astro) owns the size
    and the stage fills it absolutely, so hydration cannot shift layout. */

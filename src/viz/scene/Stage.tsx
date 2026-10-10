@@ -6,12 +6,25 @@ import { OrbitControls, OrthographicCamera, PerspectiveCamera, View } from '@rea
 import { useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { OrthographicCamera as OrthoCam } from 'three';
+import { usePalette } from '../palette';
 import { lessonStore } from '../store';
 import { ensureSceneHost } from './SceneHost';
 
 function InvalidateOnStore({ lesson }: { lesson: string }) {
 	const invalidate = useThree((s) => s.invalidate);
 	useEffect(() => lessonStore(lesson).subscribe(() => invalidate()), [lesson, invalidate]);
+	return null;
+}
+
+/**
+ * A theme switch yields a new palette object. Scene materials are updated by React, but the canvas runs on demand
+ * (`frameloop="demand"`), so something must also ask for a frame: this runs inside the View portal, and `invalidate`
+ * there schedules a render of the shared root.
+ */
+function InvalidateOnTheme() {
+	const palette = usePalette();
+	const invalidate = useThree((s) => s.invalidate);
+	useEffect(() => invalidate(), [palette, invalidate]);
 	return null;
 }
 
@@ -58,6 +71,7 @@ export function Stage(p: { lesson: string; mode: '2d' | '3d'; extent: number; ch
 		<div className="lab-stage" ref={ref}>
 			<View className="lab-stage-view">
 				<InvalidateOnStore lesson={p.lesson} />
+				<InvalidateOnTheme />
 				<FitView extent={p.extent} w={w} h={h} />
 				{p.mode === '2d' ? (
 					<OrthographicCamera makeDefault position={[0, 0, 10]} zoom={1} />

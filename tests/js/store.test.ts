@@ -13,9 +13,12 @@ class MemStorage {
 
 beforeEach(() => {
 	const g = globalThis as Record<string, unknown>;
-	g.localStorage = new MemStorage();
-	g.sessionStorage = new MemStorage();
-	g.window = globalThis;
+	// defineProperty, not assignment: once a DOM test file has loaded (bun shares one process), happy-dom's
+	// storage globals are read-only accessors and a plain assignment throws.
+	const put = (k: string, value: unknown) => Object.defineProperty(g, k, { value, configurable: true, writable: true });
+	put('localStorage', new MemStorage());
+	put('sessionStorage', new MemStorage());
+	put('window', globalThis);
 	g.CustomEvent ??= class extends Event { detail: unknown; constructor(t: string, i?: { detail?: unknown }) { super(t); this.detail = i?.detail; } };
 });
 
