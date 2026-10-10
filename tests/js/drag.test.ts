@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { hitHandle, keyDelta, moved, rayPlane, snap, worldPerPx } from '../../src/viz/scene/drag';
+import { hitHandle, hitRadius, keyDelta, moved, ndcToPx, pushAway, rayPlane, snap, worldPerPx } from '../../src/viz/scene/drag';
 test('a miss returns null so the page can scroll', () => {
 	expect(hitHandle([100, 100], [{ id: 'a', at: [200, 200] }])).toBeNull();
 });
@@ -70,4 +70,37 @@ test('ray/plane intersection; parallel or behind-the-origin rays miss', () => {
 	expect(slant.map((x) => +x.toFixed(9))).toEqual([3, 3, 3]);
 	expect(rayPlane([0, 0, 1], [1, 0, 0], [0, 0, 0], [0, 0, 1])).toBeNull();
 	expect(rayPlane([0, 0, 1], [0, 0, 1], [0, 0, 0], [0, 0, 1])).toBeNull();
+});
+test('hit radius: 14 px for a mouse, 22 px for a finger or pen (fingers cover the handle)', () => {
+	expect(hitRadius('mouse')).toBe(14);
+	expect(hitRadius('touch')).toBe(22);
+	expect(hitRadius('pen')).toBe(22);
+	expect(hitHandle([100, 100], [{ id: 'a', at: [120, 100] }], hitRadius('touch'))).toBe('a');
+	expect(hitHandle([100, 100], [{ id: 'a', at: [120, 100] }], hitRadius('mouse'))).toBeNull();
+});
+test('ndcToPx: NDC to stage pixels (y down); outside the clip volume is null', () => {
+	expect(ndcToPx(0, 0, 0, 200, 100)).toEqual([100, 50]);
+	expect(ndcToPx(1, 1, 0.5, 200, 100)).toEqual([200, 0]);
+	expect(ndcToPx(-1, -1, -1, 200, 100)).toEqual([0, 100]);
+	expect(ndcToPx(0, 0, 1.01, 200, 100)).toBeNull(); // behind the camera or past the far plane
+	expect(ndcToPx(1.2, 0, 0, 200, 100)).toBeNull();
+	expect(ndcToPx(0, -1.2, 0, 200, 100)).toBeNull();
+});
+test('pushAway moves a point `gap` px further from another; coincident points stay put', () => {
+	expect(pushAway([10, 0], [0, 0], 5)).toEqual([15, 0]);
+	const p = pushAway([3, 4], [0, 0], 5);
+	expect(p[0]).toBeCloseTo(6);
+	expect(p[1]).toBeCloseTo(8);
+	expect(pushAway([1, 1], [1, 1], 5)).toEqual([1, 1]);
+});
+test('pushAway with a label box: the gap is measured from the box edge facing `from`, not its center', () => {
+	// Straight right: half the width (20) is added.
+	expect(pushAway([10, 0], [0, 0], 5, [40, 10])).toEqual([35, 0]);
+	// Straight up (y down on screen): half the height (5) is added.
+	expect(pushAway([0, -10], [0, 0], 5, [40, 10])).toEqual([0, -20]);
+	// Diagonal: support of the box along (1, 1)/sqrt2 is (40 + 10) / 2 / sqrt2.
+	const p = pushAway([3, 3], [0, 0], 0, [40, 10]);
+	const s = 25 / Math.SQRT2;
+	expect(p[0]).toBeCloseTo(3 + s / Math.SQRT2);
+	expect(p[1]).toBeCloseTo(3 + s / Math.SQRT2);
 });

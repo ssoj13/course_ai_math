@@ -109,7 +109,11 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 			{legs && <SLine points={legs} segments color={pal.muted} lineWidth={1.5} dashPx={DASH} renderOrder={1} />}
 			<group
 				visible={g.len > 1e-9}
-				onPointerOver={() => hotOn(p.lesson, p.id)}
+				onPointerOver={(e) => {
+					// Win the hover over fills underneath (an AreaTile shares its edge with its arrow): r3f stops delivery to farther hits.
+					e.stopPropagation();
+					hotOn(p.lesson, p.id);
+				}}
 				onPointerOut={() => hotOff(p.lesson, p.id)}
 			>
 				<SLine ref={shaft} points={g.shaft} color={color} lineWidth={hot ? W_HOT : W} renderOrder={2} />

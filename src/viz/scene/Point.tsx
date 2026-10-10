@@ -40,7 +40,10 @@ export function Point(p: PointProps): React.JSX.Element {
 	const dot = useRef<Group>(null);
 	usePxScale(dot, hot ? 7 : 5);
 	return (
-		<group ref={dot} position={to3(at)} onPointerOver={() => hotOn(p.lesson, p.id)} onPointerOut={() => hotOff(p.lesson, p.id)}>
+		<group ref={dot} position={to3(at)} onPointerOver={(e) => {
+				e.stopPropagation(); // wins over fills underneath, see Arrow
+				hotOn(p.lesson, p.id);
+			}} onPointerOut={() => hotOff(p.lesson, p.id)}>
 			<mesh geometry={reg.mode === '3d' ? BALL : DISC} renderOrder={3}>
 				<meshBasicMaterial color={hot ? pal.hot : pal[p.role ?? 'ink']} />
 			</mesh>

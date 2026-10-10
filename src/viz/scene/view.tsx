@@ -5,28 +5,42 @@
  */
 import { Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, type ComponentProps } from 'react';
-import { Camera, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
+import { BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
 import { sub, to3, type V } from '../geom';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
-import { moved, rayPlane, worldPerPx } from './drag';
-import { useStage, writeMove, type Draggable } from './handles';
+import { hitRadius, moved, ndcToPx, rayPlane, worldPerPx } from './drag';
+import { placeLabels, useStage, writeMove, type Draggable } from './handles';
 
+// Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
+// with dozens of pixel-sized objects must not allocate vectors and arrays for each of them.
 const tmp = new Vector3();
+const pt = new Vector3();
+const dir = new Vector3();
 
-/** World units per CSS pixel at world point `p` as seen by `camera` in a viewport `hPx` tall. */
-export function wppAt(camera: Camera, p: V, hPx: number): number {
+/** Sets `v` from a 2D (z = 0) or 3D data point without allocating. */
+function setV(v: Vector3, p: V): Vector3 {
+	if (p.length === 2) return v.set(p[0], p[1], 0);
+	if (p.length === 3) return v.set(p[0], p[1], p[2]);
+	throw new Error(`expected a 2D or 3D point, got ${p.length} components`);
+}
+
+function wppVec(camera: Camera, p: Vector3, hPx: number): number {
 	if (camera instanceof OrthographicCamera) return worldPerPx({ ortho: true, zoom: camera.zoom }, hPx);
 	if (camera instanceof PerspectiveCamera) {
-		const dir = camera.getWorldDirection(new Vector3());
-		const depth = tmp.set(...to3(p)).sub(camera.position).dot(dir);
+		const depth = tmp.copy(p).sub(camera.position).dot(camera.getWorldDirection(dir));
 		return worldPerPx({ ortho: false, fovDeg: camera.fov, depth: Math.max(depth, camera.near) }, hPx);
 	}
 	throw new Error('unsupported camera type');
 }
 
+/** World units per CSS pixel at world point `p` as seen by `camera` in a viewport `hPx` tall. */
+export function wppAt(camera: Camera, p: V, hPx: number): number {
+	return wppVec(camera, setV(pt, p), hPx);
+}
+
 /**
- * Keeps `obj` (unit-sized geometry) `px` CSS pixels big wherever it is: pixel-stable heads, dots and glyphs.
+ * Keeps `obj` (unit-sized geometry) `px` CSS pixels big wherever it is: pixel-stable heads, dots, glyphs and markers.
  * Runs per frame because orbiting (3D) and resizing change the scale without a React render.
  */
 export function usePxScale(obj: React.RefObject<Object3D | null>, px: number): void {
@@ -34,8 +48,52 @@ export function usePxScale(obj: React.RefObject<Object3D | null>, px: number): v
 	useFrame(({ camera }) => {
 		const o = obj.current;
 		if (!o || !reg.el) return;
-		o.scale.setScalar(px * wppAt(camera, o.getWorldPosition(tmp).toArray(), reg.el.clientHeight));
+		o.scale.setScalar(px * wppVec(camera, o.getWorldPosition(pt), reg.el.clientHeight));
 	});
+}
+
+/**
+ * World length of `px` CSS pixels at `at`, as React state for geometry that must be rebuilt (hatch spacing), unlike
+ * a scale that a frame can set. Quantized to eighths of an octave (~9%) so orbiting or zooming re-renders only
+ * occasionally; null until the first frame has measured it.
+ */
+export function useWorldPx(px: number, at: V): number | null {
+	const reg = useStage();
+	const invalidate = useThree((s) => s.invalidate);
+	const [w, setW] = useState<number | null>(null);
+	useFrame(({ camera }) => {
+		if (!reg.el?.clientHeight) return;
+		const raw = px * wppAt(camera, at, reg.el.clientHeight);
+		const q = 2 ** (Math.round(Math.log2(raw) * 8) / 8);
+		if (q !== w) setW(q);
+	});
+	// The rebuilt geometry is committed after the frame that measured it; the canvas is on demand, so ask for one more.
+	useEffect(() => invalidate(), [w, invalidate]);
+	return w;
+}
+
+/**
+ * A BufferGeometry owned by one component, with room for `verts` vertices and the given triangle index, freed on
+ * unmount. Shapes whose vertex count is fixed (quads, arc sectors) update it in place with `writeGeo`, so a drag
+ * re-uploads a few floats instead of creating GPU buffers.
+ */
+export function useDynGeo(verts: number, index: readonly number[]): BufferGeometry {
+	const geo = useMemo(
+		() => new BufferGeometry().setAttribute('position', new Float32BufferAttribute(new Float32Array(verts * 3), 3)).setIndex([...index]),
+		// The index is static per shape kind; `verts` identifies it.
+		[verts],
+	);
+	useEffect(() => () => geo.dispose(), [geo]);
+	return geo;
+}
+
+/** Writes 2D/3D points into `geo` (count must match) and refreshes the bounding sphere used by hover raycasts. */
+export function writeGeo(geo: BufferGeometry, pts: readonly V[]): void {
+	const a = geo.getAttribute('position') as Float32BufferAttribute;
+	if (a.count !== pts.length) throw new Error(`geometry has ${a.count} vertices, got ${pts.length} points`);
+	pts.forEach((p, i) => a.setXYZ(i, p[0], p[1], p[2] ?? 0));
+	a.needsUpdate = true;
+	geo.computeBoundingSphere();
 }
 
 // drei's Line ref type (Line2 | LineSegments2); taken from drei so we do not import its transitive three-stdlib.
@@ -88,25 +146,22 @@ interface Drag {
 export function DragLayer(): null {
 	const reg = useStage();
 	const camera = useThree((s) => s.camera);
-	const controls = useThree((s) => s.controls) as unknown as { enabled: boolean; domElement?: HTMLElement } | null;
+	const controls = useThree((s) => s.controls) as unknown as { enabled: boolean } | null;
 
 	useLayoutEffect(() => {
 		reg.project = (p) => {
 			const el = reg.el;
 			if (!el) return null;
-			const v = tmp.set(...to3(p)).project(camera);
-			return [((v.x + 1) / 2) * el.clientWidth, ((1 - v.y) / 2) * el.clientHeight];
+			const v = setV(pt, p).project(camera);
+			return ndcToPx(v.x, v.y, v.z, el.clientWidth, el.clientHeight);
 		};
 		return () => {
 			reg.project = null;
 		};
 	}, [reg, camera]);
 
-	// OrbitControls sets touch-action:none on the View div when it connects, which would trap the page on phones.
-	// Clearing it lets `.lab-stage`'s pan-y apply: a vertical swipe scrolls, a horizontal one still orbits.
-	useEffect(() => {
-		if (controls?.domElement) controls.domElement.style.touchAction = '';
-	}, [controls]);
+	// OrbitControls sets an inline touch-action:none on the View div when it connects (and again on reconnect), which
+	// would trap the page on phones; `.lab-stage-view { touch-action: pan-y !important }` in lab.css overrides it.
 
 	useEffect(() => {
 		const el = reg.el;
@@ -133,7 +188,7 @@ export function DragLayer(): null {
 			'pointerdown',
 			(e) => {
 				if (active || (e.pointerType === 'mouse' && e.button !== 0)) return;
-				const d = reg.pick(...local(e.clientX, e.clientY));
+				const d = reg.pick(...local(e.clientX, e.clientY), hitRadius(e.pointerType));
 				if (!d) return;
 				const start = lessonStore(d.lesson).getState().vals;
 				const p0 = to3(d.at(start));
@@ -206,7 +261,7 @@ export function DragLayer(): null {
 
 		const lockTouch = (e: TouchEvent) => {
 			const t = e.touches[0];
-			if (active || (t && reg.pick(...local(t.clientX, t.clientY)))) e.preventDefault();
+			if (active || (t && reg.pick(...local(t.clientX, t.clientY), hitRadius('touch')))) e.preventDefault();
 		};
 		on('touchstart', lockTouch, { passive: false });
 		on('touchmove', (e) => active && e.preventDefault(), { passive: false });
@@ -217,5 +272,19 @@ export function DragLayer(): null {
 		};
 	}, [reg, camera, controls]);
 
+	return null;
+}
+
+/**
+ * Places the stage's overlay labels once per rendered frame. Priority 2 runs after drei's View (priority 1) has set
+ * this frame's viewport-derived camera state (orthographic frustum, perspective aspect) and rendered, which also
+ * refreshes the camera matrices; at the default priority a label would lag one frame behind an orbit or a resize,
+ * and with an on-demand canvas that stale frame can be the last one. A new or changed label asks for a frame.
+ */
+export function LabelLayer(): null {
+	const reg = useStage();
+	const invalidate = useThree((s) => s.invalidate);
+	useEffect(() => reg.labels.subscribe(() => invalidate()), [reg, invalidate]);
+	useFrame(() => placeLabels(reg), 2);
 	return null;
 }

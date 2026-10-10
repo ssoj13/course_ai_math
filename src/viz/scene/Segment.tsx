@@ -25,7 +25,10 @@ export function Segment(p: SegmentProps): React.JSX.Element {
 	const pts = useMemo(() => [to3(a), to3(b)], [a, b]);
 	// Handlers live on a group: drei's Line spreads its props onto the material too, which has no raycast.
 	return (
-		<group onPointerOver={() => hotOn(p.lesson, p.id)} onPointerOut={() => hotOff(p.lesson, p.id)}>
+		<group onPointerOver={(e) => {
+				e.stopPropagation(); // wins over fills underneath, see Arrow
+				hotOn(p.lesson, p.id);
+			}} onPointerOut={() => hotOff(p.lesson, p.id)}>
 			<SLine points={pts} color={hot ? pal.hot : pal[p.role]} lineWidth={hot ? 4 : 2} dashPx={p.dashed ? DASH : undefined} renderOrder={1} />
 		</group>
 	);

@@ -4,13 +4,16 @@
  * View, it owns the camera) binds `project` and turns pointers into drags, and DragKeys (the Stage's DOM overlay)
  * renders one keyboard button per handle. React context does not cross the View tunnel, so Stage creates the
  * registry once and provides it inside the View itself, and hands the same object to the overlay.
- * Deliberately free of three/drei so the keyboard path is testable in happy-dom.
+ * Text labels take the same route: scene objects register them, the overlay (`Labels`) renders them as DOM, and
+ * LabelLayer (inside the View) calls `placeLabels` once per rendered frame with the camera of that frame.
+ * Deliberately free of three/drei so the keyboard and label paths are testable in happy-dom.
  */
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { useStore } from 'zustand';
 import type { V } from '../geom';
+import { roleVar, type Role } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
-import { hitHandle, keyDelta, moved } from './drag';
+import { hitHandle, keyDelta, moved, pushAway } from './drag';
 
 type Vals = LessonState['vals'];
 
@@ -28,18 +31,83 @@ export interface Draggable {
 	at(vals: Vals): readonly number[];
 }
 
+/**
+ * A text label drawn in the stage overlay. Plain text only: it is rendered by another React root (the overlay), and
+ * KaTeX per frame would be heavy (formulas belong in Formula).
+ */
+export interface LabelSpec {
+	/** Unique within the stage (components use `useId`). */
+	id: string;
+	lesson: string;
+	text: string;
+	/** Text color role (default `ink`). */
+	role?: Role;
+	/** Scene object/term id: the label switches to the hot color while that id is hot. */
+	hot?: string;
+	/** Anchor in data coordinates for the given store values; null hides the label (degenerate geometry). */
+	at(vals: Vals): readonly number[] | null;
+	/** Optional second point: the label moves away from its projection until its near edge is `gap` px from the anchor (e.g. off an arc, away from its center). */
+	away?(vals: Vals): readonly number[] | null;
+	gap?: number;
+	/** Fixed screen offset in CSS px, y down (e.g. up and to the right of an arrow tip). */
+	offset?: readonly [number, number];
+}
+
+/** Keyed list with a stable snapshot for useSyncExternalStore; `owner` tokens make a second registrant of an id loud. */
+interface Keyed<T extends { id: string }> {
+	list(): readonly T[];
+	subscribe(cb: () => void): () => void;
+	/** Inserts or replaces `v` for `owner`; another owner holding the same id throws. */
+	put(v: T, owner: object): void;
+	/** Removes `id` if `owner` still holds it (a late cleanup must not remove a successor's entry). */
+	drop(id: string, owner: object): void;
+}
+
+function keyed<T extends { id: string }>(what: string): Keyed<T> {
+	const items = new Map<string, { v: T; owner: object }>();
+	const subs = new Set<() => void>();
+	// useSyncExternalStore needs the same array until something changes.
+	let snapshot: readonly T[] = [];
+	const changed = () => {
+		snapshot = [...items.values()].map((e) => e.v);
+		for (const cb of subs) cb();
+	};
+	return {
+		list: () => snapshot,
+		subscribe(cb) {
+			subs.add(cb);
+			return () => void subs.delete(cb);
+		},
+		put(v, owner) {
+			const cur = items.get(v.id);
+			if (cur && cur.owner !== owner) throw new Error(`duplicate ${what} id "${v.id}" in one stage`);
+			items.set(v.id, { v, owner });
+			changed();
+		},
+		drop(id, owner) {
+			if (items.get(id)?.owner !== owner) return;
+			items.delete(id);
+			changed();
+		},
+	};
+}
+
 export interface StageReg {
 	readonly mode: '2d' | '3d';
 	list(): readonly Draggable[];
 	subscribe(cb: () => void): () => void;
 	/** Registers a handle; returns its removal. */
 	add(d: Draggable): () => void;
-	/** Data point -> stage-relative CSS px. Bound by DragLayer once the View camera exists; null before. */
+	/** Text labels shown in the overlay (see `useLabel`, `Labels`, `placeLabels`). */
+	readonly labels: Keyed<LabelSpec>;
+	/** Overlay element of each label id, set by `Labels`; written by `placeLabels` without React renders. */
+	readonly labelEls: Map<string, HTMLElement>;
+	/** Data point -> stage-relative CSS px, null when off-stage or behind the camera. Bound by DragLayer once the View camera exists; null before. */
 	project: ((p: readonly number[]) => [number, number] | null) | null;
 	/** The `.lab-stage` element (pointer target, size reference for pixel-stable sizes). */
 	el: HTMLElement | null;
-	/** Handle under a stage-relative pixel position (14 px radius), or null so the page keeps scrolling. */
-	pick(x: number, y: number): Draggable | null;
+	/** Handle within `radius` px (default 14, see `hitRadius`) of a stage-relative position, or null so the page keeps scrolling. */
+	pick(x: number, y: number, radius?: number): Draggable | null;
 	/** Applies a key press to `d`; false when the key does not move it (caller keeps the browser default). */
 	nudge(d: Draggable, key: string, shift: boolean): boolean;
 }
@@ -54,43 +122,30 @@ export function writeMove(lesson: string, next: Record<string, number[]>): void 
 }
 
 export function createStage(mode: '2d' | '3d'): StageReg {
-	const handles = new Map<string, Draggable>();
-	const subs = new Set<() => void>();
-	// useSyncExternalStore needs the same array until something changes.
-	let snapshot: readonly Draggable[] = [];
-	const changed = () => {
-		snapshot = [...handles.values()];
-		for (const cb of subs) cb();
-	};
+	const handles = keyed<Draggable>('drag handle');
 	const reg: StageReg = {
 		mode,
-		list: () => snapshot,
-		subscribe(cb) {
-			subs.add(cb);
-			return () => void subs.delete(cb);
-		},
+		list: handles.list,
+		subscribe: handles.subscribe,
 		add(d) {
-			if (handles.has(d.id)) throw new Error(`duplicate drag handle id "${d.id}" in one stage`);
-			handles.set(d.id, d);
-			changed();
-			return () => {
-				if (handles.get(d.id) === d) {
-					handles.delete(d.id);
-					changed();
-				}
-			};
+			const owner = {};
+			handles.put(d, owner);
+			return () => handles.drop(d.id, owner);
 		},
+		labels: keyed<LabelSpec>('label'),
+		labelEls: new Map(),
 		project: null,
 		el: null,
-		pick(x, y) {
+		pick(x, y, radius) {
 			const project = reg.project;
 			if (!project) return null;
-			const px = snapshot.flatMap((d) => {
+			const list = handles.list();
+			const px = list.flatMap((d) => {
 				const at = project(d.at(lessonStore(d.lesson).getState().vals));
 				return at ? [{ id: d.id, at }] : [];
 			});
-			const id = hitHandle([x, y], px);
-			return id === null ? null : (handles.get(id) ?? null);
+			const id = hitHandle([x, y], px, radius);
+			return list.find((d) => d.id === id) ?? null;
 		},
 		nudge(d, key, shift) {
 			const vals = lessonStore(d.lesson).getState().vals;
@@ -178,4 +233,97 @@ function KeyHandle({ reg, d }: { reg: StageReg; d: Draggable }): React.JSX.Eleme
 			{px && <span className="lab-handle-ring" aria-hidden="true" style={{ left: `${px[0]}px`, top: `${px[1]}px` }} />}
 		</>
 	);
+}
+
+/**
+ * Registers a text label with the enclosing stage while mounted (null = none). `at`/`away` are read through a ref,
+ * so inline functions are fine; the overlay re-renders only when text, color, hot id or offsets change.
+ */
+export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
+	const reg = useStage();
+	const id = useId();
+	const [owner] = useState(() => ({}));
+	const fns = useRef(spec);
+	fns.current = spec;
+	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.hot, spec.gap, spec.offset, Boolean(spec.away)]);
+	useEffect(() => {
+		if (sig === null) return;
+		const s = fns.current!;
+		reg.labels.put(
+			{
+				...s,
+				id,
+				at: (v) => fns.current?.at(v) ?? null,
+				away: s.away && ((v) => fns.current?.away?.(v) ?? null),
+			},
+			owner,
+		);
+		// `spec` is represented by `sig`; its functions are read via the ref.
+	}, [reg, id, owner, sig]);
+	// Removal only on unmount or when the label is switched off, so text updates keep the same overlay element.
+	useEffect(() => {
+		if (sig === null) return;
+		return () => reg.labels.drop(id, owner);
+	}, [reg, id, owner, sig === null]);
+}
+
+/** Overlay half of the labels: one positioned span per registered label, decorative (the formula carries the values). */
+export function Labels({ reg }: { reg: StageReg }): React.JSX.Element {
+	const list = useSyncExternalStore(reg.labels.subscribe, reg.labels.list, reg.labels.list);
+	return (
+		<div className="lab-labels" aria-hidden="true">
+			{list.map((s) => (
+				<LabelEl key={s.id} reg={reg} s={s} />
+			))}
+		</div>
+	);
+}
+
+function LabelEl({ reg, s }: { reg: StageReg; s: LabelSpec }): React.JSX.Element {
+	const hot = useStore(lessonStore(s.lesson), (st) => s.hot !== undefined && st.hot.has(s.hot));
+	const ref = useCallback(
+		(el: HTMLSpanElement) => {
+			reg.labelEls.set(s.id, el);
+			return () => void reg.labelEls.delete(s.id);
+		},
+		[reg, s.id],
+	);
+	return (
+		<span ref={ref} className={hot ? 'lab-label is-hot' : 'lab-label'} style={{ '--lab-label-c': roleVar(s.role ?? 'ink') } as React.CSSProperties}>
+			{s.text}
+		</span>
+	);
+}
+
+/**
+ * Moves every label of the stage to its projected anchor. Called by LabelLayer once per rendered frame (after the
+ * View has set this frame's camera), so labels follow drags, orbiting and resizes exactly in step with the scene.
+ * Writes styles directly: a React render per frame per label would be wasted work.
+ */
+export function placeLabels(reg: StageReg): void {
+	const project = reg.project;
+	for (const s of reg.labels.list()) {
+		const el = reg.labelEls.get(s.id);
+		if (!el) continue;
+		const p = project && labelPx(s, lessonStore(s.lesson).getState().vals, project, el);
+		if (!p) {
+			el.style.visibility = 'hidden';
+			continue;
+		}
+		const t = `translate(${+p[0].toFixed(1)}px, ${+p[1].toFixed(1)}px)`;
+		if (el.style.transform !== t) el.style.transform = t;
+		el.style.visibility = 'visible';
+	}
+}
+
+function labelPx(s: LabelSpec, vals: Vals, project: NonNullable<StageReg['project']>, el: HTMLElement): [number, number] | null {
+	const at = s.at(vals);
+	let p = at && project(at);
+	if (!p) return null;
+	const away = s.away?.(vals);
+	const q = away && project(away);
+	// The label's own size (layout box; transforms do not change it) keeps its near edge `gap` px from the anchor.
+	if (q) p = pushAway(p, q, s.gap ?? 0, [el.offsetWidth, el.offsetHeight]);
+	const o = s.offset;
+	return o ? [p[0] + o[0], p[1] + o[1]] : p;
 }

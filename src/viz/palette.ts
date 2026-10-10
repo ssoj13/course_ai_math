@@ -30,6 +30,9 @@ const VARS: Palette = {
 	fill: '--viz-fill',
 };
 
+/** CSS color of a role for DOM parts of a scene (labels): the var itself, so a theme flip needs no re-render. */
+export const roleVar = (role: Role): string => `var(${VARS[role]})`;
+
 const rootStyle = (name: string): string => getComputedStyle(document.documentElement).getPropertyValue(name);
 
 /** Reads every role through `get` (default: computed style of <html>). A missing variable throws instead of drawing black. */

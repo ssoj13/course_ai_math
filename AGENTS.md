@@ -171,9 +171,10 @@ Upstream / known console noise:
   creates `new THREE.Clock()`. three 0.182.0 does not warn (checked on unpkg), but we keep 0.186.1: downgrading four
   releases to silence a deprecation notice is worse than the notice. Revisit when r3f moves to `THREE.Timer`.
 - `favicon.svg` 404: there is no `public/` dir yet (predates Task 4).
-- [ ] Scene chunk `engine.impl.*.js` is 969 kB raw / 257 kB gz since Task 6b (three core is not tree-shaken under r3f's
-  `import * as THREE`; drei Line = three-stdlib Line2/LineMaterial added ~32 kB). `chunkSizeWarningLimit: 975` in
-  astro.config.mjs; the real gate is the per-page gzip budget of scripts/size-report.ts (Task 11).
+- [ ] Scene chunk `engine.impl.*.js` is 978 kB raw / 258 kB gz since Task 6c (three core is not tree-shaken under r3f's
+  `import * as THREE`; drei Line = three-stdlib Line2/LineMaterial added ~32 kB in 6b; 6c primitives + demo ~9 kB).
+  `chunkSizeWarningLimit: 985` in astro.config.mjs; the real gate is the per-page gzip budget of
+  scripts/size-report.ts (Task 11; Ruling O: viz core <= 300 kB gz).
 
 ### Scene primitives and dragging (Task 6b)
 
@@ -183,21 +184,52 @@ Upstream / known console noise:
 - Positions are a literal `V` or a store key string; a missing/scalar key throws (no silent fallback). 3D data is y-up.
 - React context does not cross drei's View tunnel: Stage creates ONE registry and provides it INSIDE `<View>`, and passes
   the same object to the overlay (`DragKeys`). Primitives outside a Stage throw.
-- Drag start, hover cursor and the touch scroll lock all use ONE hit test: `reg.pick` = `hitHandle` (14 px) over handles
-  projected with the View camera. There is no hit mesh. Listeners are on `.lab-stage` in the capture phase, so a handle
-  press disables OrbitControls (`controls.enabled = false`) before its own pointerdown runs on the View div.
+- Drag start, hover cursor and the touch scroll lock all use ONE hit test: `reg.pick` = `hitHandle` over handles
+  projected with the View camera (`hitRadius`: 14 px mouse, 22 px touch/pen). There is no hit mesh. Listeners are on
+  `.lab-stage` in the capture phase, so a handle press disables OrbitControls (`controls.enabled = false`) before its
+  own pointerdown runs on the View div.
 - Touch: `touch-action` is latched at touchstart, so toggling it after a hit cannot stop the scroll of that gesture. A
-  non-passive `touchstart` that calls `preventDefault()` on a handle hit does. OrbitControls sets `touch-action:none` on
-  the 3D View div; DragLayer clears it, so on phones a vertical swipe over a 3D stage scrolls and a horizontal one orbits.
+  non-passive `touchstart` that calls `preventDefault()` on a handle hit does. OrbitControls sets an inline
+  `touch-action:none` on the 3D View div (again on every reconnect); `.lab-stage-view { touch-action: pan-y !important }`
+  beats it, so on phones a vertical swipe over a 3D stage scrolls and a horizontal one orbits.
+- `reg.project` returns null outside the clip volume (`ndcToPx`): behind the camera or off-stage, nothing is picked or labelled.
 - `moved(vals, keys, raw)`: keys[0] snaps to 0.1, the rest get the same delta ('whole' = translate without reshaping).
   Drags and keyboard (`keyDelta`: arrows 0.1, Shift 1, PageUp/PageDown = z in 3D) share it; `writeMove` skips no-op writes.
 - Pixel sizes never come from r3f `size` (stale in a View): `SLine` refreshes LineMaterial `resolution` (and `dashPx`)
-  from the stage element per frame; heads/dots/glyphs scale per frame via `wppAt`.
+  from the stage element per frame; heads/dots/glyphs/markers scale per frame via `wppAt`/`usePxScale`. Per-frame
+  helpers in view.tsx use module-level Vector3 temporaries (no allocation per object per frame).
 - `hotOn`/`hotOff` in store.ts are the only hot writers for single objects (write only on change; Formula uses hotOn).
-- Axis letters are stroked line glyphs (no font, no network). Visible text labels on arrows/points are Label (Task 6c);
-  `label` on Arrow/Point currently names the keyboard button only.
+  Arrow/Point/Segment `stopPropagation()` on pointerover so they win the hover over area fills underneath.
+- Axis letters are stroked line glyphs (no font, no network). `label` on Arrow/Point names the keyboard button only;
+  visible text is a separate `<Label>`.
 - Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6b-evidence/` (`cdp-drag.ts`, `final/`).
 - [ ] Default 3D camera (Stage) does not frame the whole `extent`: grid corners and the top of the y axis are cut off.
+
+### Angle, area and label primitives (Task 6c)
+
+- Files: `scene/{AngleArc,RightAngle,AreaTile,Parallelogram,Label}.tsx`; pure helpers in `geom.ts` (`angleArc`,
+  `rightOf`, `rectOn`, `isRight`, `hatch`, `cross`) and `drag.ts` (`hitRadius`, `ndcToPx`, `pushAway`).
+- **Label** is DOM, not drei `Html`: scene objects register a `LabelSpec` (`useLabel`, three-free, in handles.tsx) with
+  the stage registry; the overlay (`Labels`) renders spans (`aria-hidden`, `pointer-events:none`, role color via
+  `roleVar` = CSS var, so theme flips need no render); `LabelLayer` calls `placeLabels` in `useFrame(..., 2)` - AFTER
+  drei View's priority-1 render, which sets this frame's frustum/aspect and camera matrices (at priority 0 labels lag
+  one frame, and on a demand canvas that frame can be the last). Positions are written as `transform`, no React render.
+  `away`/`gap` keeps a label's near edge `gap` px off an anchor (arc bisector labels), measured with the label's box.
+- **AngleArc** `from`/`to` are DIRECTIONS from `at`, not points. Shorter arc, 0..180 degrees; 180 = semicircle (2D CCW
+  from `from`; 3D in the plane of `from` and `normal`). 3D arcs REQUIRE `normal` (thrown at first render). Zero
+  direction -> nothing drawn, label hidden, no throw (`angleArc` returns null).
+- **AreaTile** outward = RIGHT of a->b (`rightOf`: 2D `[dy, -dx]`, 3D `(b-a) x normal`) = outside of a CCW polygon; same
+  convention as docs/design/lessons-law-of-cosines-dot-product.md (`cw(edge)`). `flip` for clockwise data (e.g.
+  `flip={signedArea2(a, b) < 0}`). `signed` + `area` (number or fn of vals): bar of height area/|b-a| on the base,
+  positive outward, negative inward + hatched, zero/degenerate draws nothing.
+- **Parallelogram** 2D: negative orientation (signedArea2 < 0) hatched; 3D plain quad. Collinear -> nothing. `Quad`
+  (in Parallelogram.tsx) is the shared fill (16%, polygonOffset so coplanar lines keep their color) + 1.5 px edge +
+  6 px hatch; hatch spacing in px comes from `useWorldPx` (quantized React state, rebuilt only on ~9% scale change).
+- **RightAngle**: px-sized square, auto-shown within `tol` = 0.5 degrees of 90 (or `show`); hidden for zero vectors.
+- Derived geometry (projection foot etc.) is computed in the lesson .tsx with `useVal` inside a child of Stage and passed
+  as literals (see `Projection` in demo/engine.impl.tsx); guard zero vectors there (`project` throws on zero).
+- Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6c-evidence/` (`cdp-6c.ts`, `final/`).
+- [ ] Poly / moving rectangles / AngleArc `ticks` for the 0.5 lesson (design doc) are 6d/6e scope, not built here.
 
 ### Palette (Task 5)
 

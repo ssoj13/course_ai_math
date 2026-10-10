@@ -96,3 +96,43 @@ export function rayPlane(o: V, d: V, p: V, n: V): number[] | null {
 	const t = dot(sub(p, o), n) / dn;
 	return t < 0 ? null : add(o, scale(d, t));
 }
+
+/**
+ * Hit radius in CSS px for a pointer type. A fingertip covers ~10 mm and hides the handle it aims at, so touch and
+ * pen get a larger radius than a mouse; the mouse keeps 14 px so neighbouring handles stay separately pickable.
+ */
+export function hitRadius(pointerType: string): number {
+	return pointerType === 'mouse' ? 14 : 22;
+}
+
+/**
+ * Normalized device coordinates (three's `Vector3.project`) to stage-relative CSS px, y down. Null outside the clip
+ * volume: |z| > 1 is behind a perspective camera or past the far plane (projecting it would mirror the point), and
+ * |x|, |y| > 1 is off the stage, where a label would overflow the article and a handle cannot be seen to be picked.
+ */
+export function ndcToPx(x: number, y: number, z: number, w: number, h: number): [number, number] | null {
+	if (Math.abs(x) > 1 || Math.abs(y) > 1 || Math.abs(z) > 1) return null;
+	return [((x + 1) / 2) * w, ((1 - y) / 2) * h];
+}
+
+/**
+ * New center for something at `p` moved further from `from` along the line through both, so that it stays `gap` px
+ * clear. With `box` ([w, h] of a centered label) the gap is measured from the box edge facing `from`: the push adds
+ * the box's half-extent along the direction (|ux|*w + |uy|*h) / 2, so wide text clears an arc as well as short text.
+ * Coincident points have no direction and stay put.
+ */
+export function pushAway(
+	p: readonly [number, number],
+	from: readonly [number, number],
+	gap: number,
+	box: readonly [number, number] = [0, 0],
+): [number, number] {
+	const dx = p[0] - from[0];
+	const dy = p[1] - from[1];
+	const l = Math.hypot(dx, dy);
+	if (l === 0) return [p[0], p[1]];
+	const ux = dx / l;
+	const uy = dy / l;
+	const d = gap + (Math.abs(ux) * box[0] + Math.abs(uy) * box[1]) / 2;
+	return [p[0] + ux * d, p[1] + uy * d];
+}

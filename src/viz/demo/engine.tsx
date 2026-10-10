@@ -3,6 +3,7 @@
  * is cheap and SSR-safe: the lesson store init, DOM-only controls (server-rendered via client:load, so they take
  * their space before hydration) and lazy wrappers for the three/drei scenes.
  */
+import { dot, type V } from '../geom';
 import { lazyIsland } from '../island';
 import { Formula } from '../Formula';
 import { lessonStore, useVal } from '../store';
@@ -19,6 +20,8 @@ export const DemoBoxB = lazyIsland(() => import('./engine.impl').then((m) => m.D
 export const DemoBoxC = lazyIsland(() => import('./engine.impl').then((m) => m.DemoBoxC));
 export const DemoVec2D = lazyIsland(() => import('./engine.impl').then((m) => m.DemoVec2D));
 export const DemoVec3D = lazyIsland(() => import('./engine.impl').then((m) => m.DemoVec3D));
+export const DemoArea2D = lazyIsland(() => import('./engine.impl').then((m) => m.DemoArea2D));
+export const DemoPar2D = lazyIsland(() => import('./engine.impl').then((m) => m.DemoPar2D));
 
 export function DemoSlider(): React.JSX.Element {
 	const x = useVal('demo', 'x', 0);
@@ -33,6 +36,14 @@ export function DemoSlider(): React.JSX.Element {
 /** DOM-only linked formula (no three/drei), so it lives in the light entry and is server-rendered. */
 export function DemoFormula(): React.JSX.Element {
 	return <Formula lesson="demo" tex={String.raw`\t{ang}{\theta} = \s{theta}`} scrub={THETA} fmt={FMT} block label="Angle theta in degrees; drag or use arrow keys" />;
+}
+
+// Hoisted like THETA: a derived value computed from the live a and b (Task 3 `Derived`).
+const DOT = { dot: (v: Record<string, unknown>) => dot(v.a as V, v.b as V) };
+
+/** a.b as a live read-only value: dragging a or b in any stage updates it. */
+export function DemoDotFormula(): React.JSX.Element {
+	return <Formula lesson="demo" tex={String.raw`\t{dot}{a\cdot b} = \s{dot}`} derived={DOT} block label="Dot product of a and b" />;
 }
 
 const fmtV = (v: readonly number[]) => `(${v.map((x) => x.toFixed(1)).join(', ')})`;

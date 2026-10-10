@@ -324,9 +324,12 @@
 	inset: 0;
 	touch-action: pan-y;
 }
+/* OrbitControls writes an inline touch-action:none on this div when it connects (and on every reconnect); that would
+   trap the page on phones. !important beats the inline style, so a vertical swipe scrolls and a horizontal one orbits. */
 .lab-stage-view {
 	position: absolute;
 	inset: 0;
+	touch-action: pan-y !important;
 }
 /* z-index 1: the shared canvas (z-index 0) comes later in the DOM and would otherwise paint over labels. */
 .lab-stage-overlay {
@@ -342,6 +345,35 @@
    handle's projected position, because the button itself has no visible box. */
 .lab-stage-overlay > .lab-drag-keys {
 	pointer-events: none;
+}
+/* Scene text labels (scene/Label.tsx, placed per frame by placeLabels): decorative, never a pointer target. Clipped to
+   the stage so a label pushed past an edge cannot widen the page at 360 px. */
+.lab-stage-overlay > .lab-labels {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+.lab-label {
+	position: absolute;
+	left: 0;
+	top: 0;
+	/* Centered on the anchor; the per-frame `transform` carries the position and composes with `translate`. */
+	translate: -50% -50%;
+	visibility: hidden;
+	font-family: var(--sl-font-mono);
+	font-size: 13px;
+	line-height: 1;
+	letter-spacing: 0.02em;
+	/* Live numbers must not jitter sideways while a value changes under a drag. */
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	color: var(--lab-label-c, var(--viz-ink));
+	/* A halo in the page background keeps the text readable over grid lines and fills. */
+	text-shadow: 0 0 3px var(--sl-color-bg), 0 0 3px var(--sl-color-bg);
+}
+.lab-label.is-hot {
+	color: var(--viz-hot);
 }
 .lab-handle-key {
 	position: absolute;

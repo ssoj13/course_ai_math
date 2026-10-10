@@ -8,9 +8,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { OrthographicCamera as OrthoCam } from 'three';
 import { usePalette } from '../palette';
 import { lessonStore } from '../store';
-import { createStage, DragKeys, StageCtx } from './handles';
+import { createStage, DragKeys, Labels, StageCtx } from './handles';
 import { ensureSceneHost } from './SceneHost';
-import { DragLayer } from './view';
+import { DragLayer, LabelLayer } from './view';
 
 function InvalidateOnStore({ lesson }: { lesson: string }) {
 	const invalidate = useThree((s) => s.invalidate);
@@ -95,11 +95,13 @@ export function Stage(p: { lesson: string; mode: '2d' | '3d'; extent: number; ch
 					)}
 					{/* After the camera and controls, so its effects see the controls already connected. */}
 					<DragLayer />
+					<LabelLayer />
 					{p.children}
 				</StageCtx.Provider>
 			</View>
 			{/* Sibling of the View div (see interface note): DOM here never blocks scene raycasts outside its own boxes. */}
 			<div className="lab-stage-overlay">
+				<Labels reg={reg} />
 				<DragKeys reg={reg} />
 				{p.overlay}
 			</div>
