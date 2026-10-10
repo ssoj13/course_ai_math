@@ -263,3 +263,40 @@
 .sidebar-content a.module-overview-link[aria-current='page'] {
 	color: var(--sl-color-text-invert);
 }
+
+/* Scene stages (src/viz/scene/Stage.tsx). The shared canvas is fixed behind the article; each stage's View div
+   only marks where its scene is scissored in, so the stage itself must reserve the box. */
+.lab-scene {
+	margin: 1.5rem 0;
+}
+.lab-scene figcaption {
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-3);
+	margin-top: 0.4rem;
+}
+.lab-stage {
+	position: relative;
+	aspect-ratio: 16 / 10;
+	border: 1px solid var(--sl-color-hairline-light);
+	touch-action: pan-y;
+}
+.lab-stage-view {
+	position: absolute;
+	inset: 0;
+}
+/* z-index 1: the shared canvas (z-index 0) comes later in the DOM and would otherwise paint over labels. */
+.lab-stage-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+.lab-stage-overlay > * {
+	pointer-events: auto;
+}
+.lab-stage-nogl {
+	display: none;
+}
+.lab-no-webgl .lab-stage-nogl {
+	display: block;
+}

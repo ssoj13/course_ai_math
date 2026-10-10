@@ -1,0 +1,16 @@
+---
+/**
+ * Server-rendered frame for a client:only scene island: the caption is real HTML (a11y, no-JS and no-WebGL
+ * fallback) and min-height reserves the stage's space so hydration causes no layout shift.
+ */
+interface Props {
+	caption: string;
+	height?: string;
+}
+const { caption, height = '20rem' } = Astro.props;
+---
+
+<figure class="lab-scene not-content" style={{ minHeight: height }}>
+	<slot />
+	<figcaption>{caption}</figcaption>
+</figure>

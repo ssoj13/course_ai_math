@@ -46,6 +46,7 @@ export default defineConfig({
 				Sidebar: './src/components/overrides/Sidebar.astro',
 				PageTitle: './src/components/overrides/PageTitle.astro',
 				Footer: './src/components/overrides/Footer.astro',
+				PageFrame: './src/components/overrides/PageFrame.astro',
 			},
 			routeMiddleware: './src/lib/route-links.ts',
 			lastUpdated: true,
