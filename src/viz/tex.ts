@@ -10,7 +10,7 @@ import katex, { type KatexOptions } from 'katex';
 export const OPTS: KatexOptions = {
 	throwOnError: true,
 	output: 'html',
-	trust: (ctx) => ctx.command === '\htmlData',
+	trust: (ctx) => ctx.command === '\\htmlData',
 	strict: (code) => (code === 'htmlExtension' ? 'ignore' : 'error'),
 };
 
