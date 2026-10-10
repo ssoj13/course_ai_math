@@ -4,9 +4,14 @@
  * their space before hydration) and lazy wrappers for the three/drei scenes.
  */
 import { lazyIsland } from '../island';
+import { Formula } from '../Formula';
 import { lessonStore, useVal } from '../store';
 
-const S = lessonStore('demo', { x: 0 });
+const S = lessonStore('demo', { x: 0, theta: 60 });
+
+// Hoisted: Formula memoizes on these identities.
+const THETA = { theta: { min: 0, max: 180, step: 1 } };
+const FMT = { theta: (v: number) => `${v}^\\circ` };
 
 export const DemoBoxA = lazyIsland(() => import('./engine.impl').then((m) => m.DemoBoxA));
 export const DemoBoxB = lazyIsland(() => import('./engine.impl').then((m) => m.DemoBoxB));
@@ -20,4 +25,9 @@ export function DemoSlider(): React.JSX.Element {
 			<input type="range" min={-2} max={2} step={0.05} value={x} onChange={(e) => S.getState().set('x', Number(e.currentTarget.value))} />
 		</label>
 	);
+}
+
+/** DOM-only linked formula (no three/drei), so it lives in the light entry and is server-rendered. */
+export function DemoFormula(): React.JSX.Element {
+	return <Formula lesson="demo" tex={String.raw`\t{ang}{\theta} = \s{theta}`} scrub={THETA} fmt={FMT} block label="Angle theta in degrees; drag or use arrow keys" />;
 }

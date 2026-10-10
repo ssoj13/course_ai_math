@@ -344,3 +344,23 @@
 .lab-no-webgl .lab-stage-nogl {
 	display: block;
 }
+
+/* Linked formulas (Formula/Num): term highlight and scrub handles. */
+.lab-formula [data-t] {
+	border-radius: 3px;
+	transition: background-color 0.12s;
+}
+.lab-formula [data-t].is-hot {
+	background: var(--viz-hot-bg);
+}
+.lab-formula [data-s],
+.lab-num {
+	cursor: ew-resize;
+	border-bottom: 1px dashed currentColor;
+	touch-action: none;
+}
+@media (prefers-reduced-motion: reduce) {
+	.lab-formula [data-t] {
+		transition: none;
+	}
+}

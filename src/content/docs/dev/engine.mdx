@@ -8,7 +8,7 @@ head:
 ---
 
 import SceneIsland from '../../../viz/SceneIsland.astro';
-import { DemoBoxA, DemoBoxB, DemoBoxC, DemoSlider } from '../../../viz/demo/engine';
+import { DemoBoxA, DemoBoxB, DemoBoxC, DemoSlider, DemoFormula } from '../../../viz/demo/engine';
 
 Three stages below live in three separate islands (separate React roots). The page must have exactly one
 `canvas`, and the slider (a fourth island) must move all three boxes.
@@ -18,6 +18,10 @@ Three stages below live in three separate islands (separate React roots). The pa
 </SceneIsland>
 
 <DemoSlider client:load />
+
+A linked formula (DOM-only, server-rendered so it takes its space before hydration). Drag the underlined value or focus it and use the arrow keys:
+
+<DemoFormula client:load />
 
 <SceneIsland caption="Stage B: 2D box at x">
 	<DemoBoxB client:only="react" />
