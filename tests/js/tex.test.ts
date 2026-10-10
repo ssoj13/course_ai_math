@@ -45,3 +45,10 @@ test('linked math shares the non-ASCII guard, including text produced by fmt', (
 test('a scrub key without a numeric value is an error, not silent text', () => {
 	expect(() => renderLinked(String.raw`\s{missing}`, {})).toThrow(/missing/);
 });
+
+test('texText turns short TeX values into aria text', async () => {
+	const { texText } = await import('../../src/viz/tex');
+	expect(texText(String.raw`60^\circ`)).toBe('60°');
+	expect(texText(String.raw`\pi/2`)).toBe('π/2');
+	expect(texText('1.5')).toBe('1.5');
+});

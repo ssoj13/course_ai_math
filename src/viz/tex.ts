@@ -25,10 +25,35 @@ export function renderStaticMath(tex: string, block: boolean): string {
 	return katex.renderToString(tex, { ...OPTS, displayMode: block });
 }
 
+/** TeX shown for scrub value `k`: `fmt[k]` or the value rounded to 2 decimals. */
+export function showVal(k: string, v: number, fmt?: Record<string, (v: number) => string>): string {
+	return fmt?.[k]?.(v) ?? String(Math.round(v * 100) / 100);
+}
+
+const PLAIN: Record<string, string> = { circ: '°', theta: 'θ', pi: 'π', times: '×', cdot: '·', to: '→' };
+
+/**
+ * Best-effort plain text for a short TeX value (`60^\circ` gives "60°"), used for aria-valuetext only.
+ * It is not math, so Unicode is fine here; unknown commands lose their backslash, braces are dropped.
+ */
+export function texText(tex: string): string {
+	return tex
+		.replace(/\^\s*\{?\\circ\}?/g, '°')
+		.replace(/\\([a-zA-Z]+)/g, (_, c: string) => PLAIN[c] ?? c)
+		.replace(/\\[,;: !]/g, ' ')
+		.replace(/[{}]/g, '')
+		.trim();
+}
+
 /**
  * Expands the authoring macros before KaTeX sees the source: `\t{id}{` becomes `\htmlData{t=id}{` (a term to
  * hover-link) and `\s{key}` becomes `\htmlData{s=key}{<value>}` (a live, scrubbable value).
  * `\htmlData` rather than `\htmlId`: one term may appear in several formulas on a page and ids must be unique.
+ *
+ * Limits: this is a plain regex pass, not a TeX parser. `\t{id}{` and `\s{key}` are expanded everywhere,
+ * including inside `\text{...}` and right after a `\\` line break (`\\s{k}` would become a line break plus
+ * a value). Authoring rule: ids and keys match `[\w-]+`, and the two macros are written only in math, never
+ * inside `\text`/`\mathrm` arguments or glued to a preceding backslash.
  */
 export function expand(tex: string, vals: Record<string, Val>, fmt: Record<string, (v: number) => string> = {}): string {
 	return tex
@@ -36,8 +61,7 @@ export function expand(tex: string, vals: Record<string, Val>, fmt: Record<strin
 		.replace(/\\s\{([\w-]+)\}/g, (_, k: string) => {
 			const v = vals[k];
 			if (typeof v !== 'number') throw new Error(`Formula: no numeric value for scrub key "${k}"`);
-			const shown = fmt[k]?.(v) ?? String(Math.round(v * 100) / 100);
-			return `\\htmlData{s=${k}}{${shown}}`;
+			return `\\htmlData{s=${k}}{${showVal(k, v, fmt)}}`;
 		});
 }
 

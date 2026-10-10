@@ -1,7 +1,8 @@
 import './dom';
-import { afterEach, beforeEach, expect, test } from 'bun:test';
-import { act, type ReactElement } from 'react';
+import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test';
+import { act, useState, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import * as texMod from '../../src/viz/tex';
 import { Formula } from '../../src/viz/Formula';
 import { Num } from '../../src/viz/Num';
 import { lessonStore } from '../../src/viz/store';
@@ -100,4 +101,73 @@ test('Num drags and key-scrubs through the same store', () => {
 	act(() => void num.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true, cancelable: true })));
 	expect(val(lesson)).toBe(60);
 	expect(num.textContent).toBe('60');
+});
+
+test('stale keyboard focus is never restored after the user moved away', () => {
+	const lesson = 'fdom-stale';
+	const s = lessonStore(lesson, { theta: 60 });
+	const host = mount(<Formula lesson={lesson} tex={TEX} scrub={{ theta: spec }} label="angle" />);
+	act(() => host.querySelector<HTMLElement>('[data-s]')!.focus());
+	act(() => void host.querySelector('[data-s]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true, cancelable: true })));
+	expect((document.activeElement as HTMLElement).dataset.s).toBe('theta'); // restored while focus was inside
+	act(() => (document.activeElement as HTMLElement).blur()); // click on blank page
+	expect(document.activeElement).toBe(document.body);
+	act(() => s.getState().setHot(['x']));
+	act(() => s.getState().set('theta', 100));
+	expect(host.querySelector('[data-s]')!.getAttribute('aria-valuenow')).toBe('100');
+	expect(document.activeElement).toBe(document.body);
+});
+
+test('pointerout over non-term spans does not write the store when nothing is hot', () => {
+	const lesson = 'fdom-out';
+	const s = lessonStore(lesson, { theta: 60 });
+	const host = mount(<Formula lesson={lesson} tex={TEX} scrub={{ theta: spec }} label="angle" />);
+	const before = s.getState().hot;
+	let writes = 0;
+	const unsub = s.subscribe(() => writes++);
+	act(() => void host.querySelector('.katex-html')!.dispatchEvent(new PointerEvent('pointerout', { bubbles: true })));
+	unsub();
+	expect(writes).toBe(0);
+	expect(s.getState().hot).toBe(before);
+});
+
+test('inline fmt/derived/scrub objects do not re-render KaTeX when the parent re-renders', () => {
+	const lesson = 'fdom-memo';
+	lessonStore(lesson, { theta: 60 });
+	const spy = spyOn(texMod, 'renderLinked');
+	const calls = () => spy.mock.calls.length;
+	let bump = (): void => {};
+	function Parent() {
+		const [n, setN] = useState(0);
+		bump = () => setN(n + 1);
+		return (
+			<Formula
+				lesson={lesson}
+				tex={TEX}
+				scrub={{ theta: { ...spec } }}
+				fmt={{ theta: (v) => `${v}^\\circ` }}
+				derived={{ twice: (v) => (v.theta as number) * 2 }}
+				label="angle"
+			/>
+		);
+	}
+	const host = mount(<Parent />);
+	expect(calls()).toBe(1);
+	for (let i = 0; i < 3; i++) act(() => bump());
+	expect(calls()).toBe(1);
+	act(() => lessonStore(lesson).getState().set('theta', 61));
+	expect(calls()).toBe(2);
+	expect(host.querySelector('[data-s]')!.getAttribute('aria-valuemax')).toBe('180');
+	spy.mockRestore();
+});
+
+test('a11y: root is a labelled group and handles carry readable aria-valuetext', () => {
+	const lesson = 'fdom-a11y';
+	lessonStore(lesson, { theta: 60 });
+	const fmt = { theta: (v: number) => `${v}^\\circ` };
+	const host = mount(<Formula lesson={lesson} tex={TEX} scrub={{ theta: spec }} fmt={fmt} label="angle" />);
+	const root = host.querySelector('.lab-formula')!;
+	expect(root.getAttribute('role')).toBe('group');
+	expect(root.getAttribute('aria-label')).toBe('angle');
+	expect(host.querySelector('[data-s]')!.getAttribute('aria-valuetext')).toBe('60°');
 });
