@@ -49,10 +49,11 @@ export function counts(progress: Progress): Counts {
 	return c;
 }
 
-/** "12/15 core · 1/3 optional" */
+/** "12/15 core" (+ " · 1/3 optional" when the course has optional modules) */
 export function describe(progress: Progress): string {
 	const c = counts(progress);
-	return `${c.core}/${c.coreTotal} core · ${c.optional}/${c.optionalTotal} optional`;
+	const core = `${c.core}/${c.coreTotal} core`;
+	return c.optionalTotal ? `${core} · ${c.optional}/${c.optionalTotal} optional` : core;
 }
 
 /** Sidebar link path (base-prefixed, trailing slash) -> lesson slug. */

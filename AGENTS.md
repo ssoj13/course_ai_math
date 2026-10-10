@@ -15,6 +15,10 @@ progress, lesson links) — read its AGENTS.md before building infrastructure.
 Reader profile: CG/VFX developer (Maya, Houdini, shaders), self-described as needing very
 gentle, step-by-step explanations. Explain via CG analogies (N·L, xforms, Graph Editor curves).
 
+## Toolchain
+
+- **bun 1.4.3 is required** (`packageManager` in package.json). bun 1.3.12 crashes on Astro React SSR: its `react-dom/server.bun.js` loader aborts with "Expected CommonJS module to have a function wrapper". The build runs on bun, no Node needed.
+
 ## Decisions (2026-10-10)
 
 - Language: **English** (chat with the user stays Russian).
