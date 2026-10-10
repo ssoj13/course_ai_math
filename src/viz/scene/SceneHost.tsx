@@ -2,10 +2,12 @@
  * The one WebGL context of a page. Browsers cap live contexts (~16 per page on desktop Chromium, fewer on
  * mobile; the oldest is lost), and a lesson has several scenes, so every Stage is a drei <View> rendered here.
  * frameloop="demand": a textbook page must not burn GPU while idle; stages call invalidate() on change.
+ * `flat`: no tone mapping, so palette colors render exactly as specified (r3f defaults to ACES, which lightens them).
  */
 import { Canvas, useThree } from '@react-three/fiber';
 import { View } from '@react-three/drei';
 import { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
 import { webglAvailable } from './webgl';
 
 /** drei recomputes each View's scissor rect only while rendering; on-demand rendering must be poked on scroll/resize. */
@@ -30,7 +32,7 @@ function InvalidateOnScroll() {
 
 const markNoWebgl = () => document.documentElement.classList.add('lab-no-webgl'); // CSS shows the inline notice in every stage
 
-export default function SceneHost(): React.JSX.Element | null {
+function SceneHost(): React.JSX.Element | null {
 	const [ok] = useState(webglAvailable);
 	useEffect(() => {
 		if (!ok) markNoWebgl();
@@ -38,7 +40,7 @@ export default function SceneHost(): React.JSX.Element | null {
 	if (!ok) return null;
 	return (
 		<Canvas
-			className="lab-scene-host"
+			flat
 			frameloop="demand"
 			eventSource={document.body}
 			onCreated={({ gl }) => gl.domElement.addEventListener('webglcontextlost', markNoWebgl)}
@@ -48,4 +50,20 @@ export default function SceneHost(): React.JSX.Element | null {
 			<View.Port />
 		</Canvas>
 	);
+}
+
+let mounted = false;
+
+/**
+ * Mounts the shared canvas on the first Stage of a page, as its own React root at the end of <body>. Mounting on
+ * demand (instead of from the page frame) keeps pages without scenes free of three/drei and of a GL context.
+ * The Views find the Port through drei's module-level tunnel, which every island shares (one ES module per page).
+ */
+export function ensureSceneHost(): void {
+	if (mounted) return;
+	mounted = true;
+	const el = document.createElement('div');
+	el.className = 'lab-scene-host';
+	document.body.append(el);
+	createRoot(el).render(<SceneHost />);
 }

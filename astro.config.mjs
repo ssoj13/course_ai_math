@@ -10,6 +10,7 @@ import katexMath from './src/lib/satteri-math.mjs';
 const BASE = '/math-course';
 
 // Course structure comes from one manifest (see src/lib/course.ts); numbering rules must match it.
+/** @type {{ modules: import('./src/lib/course').ModuleJson[] }} */
 const course = JSON.parse(readFileSync(new URL('./src/data/course.json', import.meta.url), 'utf8'));
 
 let lessonNum = 0;
@@ -31,8 +32,14 @@ export default defineConfig({
 	site: 'https://ssoj13.github.io',
 	base: BASE,
 	markdown: { processor: satteri({ features: { math: true }, mdastPlugins: [courseLinks({ base: BASE }), katexMath()] }) },
-	// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
-	vite: { worker: { format: 'es' } },
+	vite: {
+		// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
+		worker: { format: 'es' },
+		// The scene chunk (three + r3f + drei, ~937 kB raw) cannot shrink: r3f registers all of THREE (`import *`), so
+		// three core is not tree-shaken. The limit is set just above it so any further growth warns; the real gate is
+		// the gzip budget per page enforced by scripts/size-report.ts (Task 11). The chunk loads only on scene pages.
+		build: { chunkSizeWarningLimit: 940 },
+	},
 	integrations: [
 		starlight({
 			title: 'Math for AI',
@@ -46,7 +53,6 @@ export default defineConfig({
 				Sidebar: './src/components/overrides/Sidebar.astro',
 				PageTitle: './src/components/overrides/PageTitle.astro',
 				Footer: './src/components/overrides/Footer.astro',
-				PageFrame: './src/components/overrides/PageFrame.astro',
 			},
 			routeMiddleware: './src/lib/route-links.ts',
 			lastUpdated: true,

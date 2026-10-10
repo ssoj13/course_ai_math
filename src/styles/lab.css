@@ -265,7 +265,8 @@
 }
 
 /* Scene stages (src/viz/scene/Stage.tsx). The shared canvas is fixed behind the article; each stage's View div
-   only marks where its scene is scissored in, so the stage itself must reserve the box. */
+   only marks where its scene is scissored in. The server-rendered .lab-scene-box (SceneIsland.astro) owns the size
+   and the stage fills it absolutely, so hydration cannot shift layout. */
 .lab-scene {
 	margin: 1.5rem 0;
 }
@@ -274,10 +275,14 @@
 	color: var(--sl-color-gray-3);
 	margin-top: 0.4rem;
 }
-.lab-stage {
+.lab-scene-box {
 	position: relative;
 	aspect-ratio: 16 / 10;
 	border: 1px solid var(--sl-color-hairline-light);
+}
+.lab-stage {
+	position: absolute;
+	inset: 0;
 	touch-action: pan-y;
 }
 .lab-stage-view {

@@ -103,6 +103,10 @@ transformer block → LoRA, with "zoom down" from any number to the fundamentals
 
 ## Tests
 
+- Required gates before every commit: `bun test tests/js`, `bun run check` (astro check = TypeScript over the whole
+  repo incl. tests, 0 errors/warnings/hints) and `bun run build` (0 warnings).
+- `tsconfig.json` sets `"types": ["bun"]`: TypeScript 6 defaults `types` to `[]`, so `bun:test` would not resolve.
+  TypeScript is pinned to 6.x because `@astrojs/check` 0.9.10 peers `^5 || ^6` (TS 7 is out but unsupported).
 - Pure tests (`tests/js/*.test.ts`) run under plain `bun test tests/js` with no DOM. Keep modules they import DOM-free.
 - DOM/component tests (`*.test.tsx` that mount React) opt in by importing `./dom` as the FIRST import. `tests/js/dom.ts` registers happy-dom via `@happy-dom/global-registrator` (devDependency, exact pin) and sets `IS_REACT_ACT_ENVIRONMENT`. It is not preloaded, so pure tests never see `document`; bun shares one process, so after a DOM file loads, later files do see the globals.
 - Mount with `react-dom/client` `createRoot` and wrap updates in `act` from `react`.
@@ -117,43 +121,56 @@ transformer block → LoRA, with "zoom down" from any number to the fundamentals
 
 ## Scenes (Spike A result)
 
-Decision (2026-10-10): **primary path kept** - one shared `<Canvas frameloop="demand">` per page (`src/viz/scene/SceneHost.tsx`,
-mounted by the `PageFrame` override) and every `Stage` is a drei `<View>` living in its own Astro island. No `manualChunks`
-and no per-stage Canvas fallback were needed.
+Decision (2026-10-10): one shared `<Canvas flat frameloop="demand">` per page (`src/viz/scene/SceneHost.tsx`), and
+every `Stage` is a drei `<View>` living in its own Astro island. No `manualChunks`, no per-stage Canvas fallback.
+- **Host on demand**: the first `Stage` calls `ensureSceneHost()` (module singleton), which creates
+  `<div class="lab-scene-host">` at the end of `<body>` and mounts the Canvas there as its own React root. Pages
+  without stages load no three/drei, create no GL context and never run the WebGL probe. (No PageFrame override.)
+- `flat` = no tone mapping: r3f's default ACES rendered `#4f7cff` lighter; with `flat` the center pixel is exactly
+  `#4f7cff` (measured), so palette colors render as specified.
+- `FitView` refits from a ResizeObserver on the stage element: drei's View portal captures `size` once at mount
+  (measured stale: 66 px box after 1280->900 px resize, expected 58.8). Ortho zoom = `min(w,h)/(2*extent)`.
+- No CLS: `SceneIsland.astro` renders `.lab-scene-box` (aspect-ratio 16/10, or an explicit `height`) with the border;
+  `.lab-stage` fills it absolutely, so hydration cannot change layout. Accessible name = the server `<figcaption>`
+  (Stage has no `caption` prop and no aria-label).
+- `.lab-stage-overlay` needs `z-index: 1`: the fixed canvas (z-index 0) is later in the DOM and would paint over labels.
+- The WebGL drawing buffer is not preserved, so Views need no clear between frames.
 
-Evidence (headless Chrome 1280x1300 driven over CDP with real key/wheel/mouse input; same results on `astro dev` and on
-the production build via `astro preview`; script + screenshots in `.superpowers/sdd/2026-10-10-engine-and-spikes/task-4-evidence/`):
-- `document.querySelectorAll('canvas').length === 1` with 3 stages in 3 islands; no "too many active WebGL contexts".
-- 30 x ArrowRight on the slider island (x = 1.50) moved the boxes in stages A and B to world x = 1.48 (pixel centroid,
-  1 px rounding); box side 66 px = expected `min(w,h)/(2*extent)` = 65.8 px, so `FitOrtho` is right. Stage C moved too.
-- After wheel-scrolling 1939 px, stage C's box stayed inside its slot (0 colored pixels outside any stage rect).
-- Mouse drag over stage C orbits C only (OrbitControls attach per View; 2D stages unaffected).
-- `prefers-reduced-motion: reduce` (CDP emulation): identical measurements.
-- `WEBGL_lose_context.loseContext()` -> `<html class="lab-no-webgl">`, the notice is `display:block` in all 3 stages.
-- Store sharing: the four demo islands are separate React roots; the slider root's `set('x')` re-renders boxes in the
-  other roots, so they share one `lessonStore('demo')`. In `dist/`, all four islands load the same `engine.*.js` URL
-  (one ES module instance = one `stores` Map), and drei's `tunnel-rat` store lives once in the shared `View.*.js` chunk
-  that both `SceneHost.*.js` and `engine.*.js` import. ES module semantics make this hold for any chunking: a module
-  URL is instantiated once per page.
+### Lesson authoring pattern (islands)
 
-Traps learned:
-- r3f's default `toneMapping` (ACES) + sRGB output shifts flat colors: `#4f7cff` renders lighter. Task 5 palette must
-  render exact theme colors -> `<Canvas flat>` or `toneMapped={false}` on materials.
-- The WebGL drawing buffer is not preserved, so Views need no explicit clear between frames; drei clears a View's rect
-  only when it goes off-screen/unmounts.
-- `.lab-stage-overlay` needs `z-index: 1`: the fixed canvas (z-index 0) comes later in the DOM and would paint over labels.
-- drei's View `size` in the portal is the rect at mount; it is not refreshed on resize (FitOrtho reads it). [ ] verify
-  zoom after a window resize in Task 6.
+- MDX keeps the `import` of `client:only` components in the server page module (only the `.astro` compiler strips
+  them), so importing a scene module from MDX made the prerender evaluate drei/fiber/maath. Those packages have no
+  `exports` map, so the server loaded their CJS `main`, which calls `require("three")` -> `THREE_CJS_DEPRECATED`.
+  An SSR `noExternal` list did not cure it (more CJS deps behind); not evaluating the code on the server does.
+- Each lesson has an **entry** `src/viz/lessons/<slug>.tsx` (demo: `src/viz/demo/engine.tsx`) that MDX imports, and an
+  **implementation** `<slug>.impl.tsx` with the scenes. The entry holds only SSR-safe code: the module-level
+  `lessonStore(...)` init, DOM-only controls, and `lazyIsland(() => import('./<slug>.impl').then((m) => m.X))`
+  wrappers (`src/viz/island.tsx`: `React.lazy` + `Suspense fallback={null}`; SceneIsland already reserves the box).
+- Mount scenes with `client:only="react"` inside `<SceneIsland caption="...">`. DOM-only controls (sliders, readouts)
+  use `client:load` so they are server-rendered and take their space before hydration (a `client:only` slider caused
+  a 0.0085 layout shift).
 
-Open issues (need a decision, not yet fixed):
-- [ ] `SceneHost` is in `PageFrame`, so **every** page (home, roadmap, glossary) downloads the three/r3f/drei chunk
-  (`View.*.js` 911 kB, 239 kB gz) and creates a WebGL context even with no stage. Violates "no heavy work on page load".
-  Options: mount `SceneHost` only on pages with scenes (frontmatter flag read in PageFrame), or have SceneHost
-  dynamic-`import()` the Canvas only when a `.lab-stage` exists.
-- [ ] New build warnings: (1) Vite chunk-size > 500 kB for `View.*.js` (three core is not tree-shaken under r3f's
-  `import * as THREE` catalogue); (2) `THREE_CJS_DEPRECATED` during prerender of `/dev/engine/`: satteri MDX keeps the
-  `import` of `client:only` components in the server module (only the `.astro` compiler strips them), so the server
-  loads drei/fiber/maath, whose packages have no `exports` map, via their CJS `main`, which `require("three")`.
-  `vite.ssr.noExternal: ['@react-three/fiber','@react-three/drei','maath']` did NOT remove it (more CJS deps behind).
-- [ ] Browser console: `THREE.Clock: This module has been deprecated` comes from r3f 9.8.1 itself (`clock: new
-  THREE.Clock()` with three 0.186); upstream, not ours. `favicon.svg` 404 (no `public/` dir) predates this task.
+### Evidence (headless Chrome over CDP, real key/wheel/mouse input, production build via `astro preview`)
+
+Script, JSON reports, screenshots: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-4-evidence/` (`fix1/` = current).
+- Home page: 0 canvases, no `.lab-scene-host`, scripts = page/Search/preload-helper/ui-core only (no scene chunk).
+- Demo: 1 canvas for 3 stages; no "too many active WebGL contexts".
+- Shared store across roots/chunks: the slider (entry chunk, `client:load` root) sets x = 1.50 and the boxes in stages
+  A and B (impl chunk, separate `client:only` roots) measure world x = 1.489 (pixel centroid); C moves too. `store.ts`
+  is one shared chunk imported by both (one ES module instance per page).
+- Scroll 1939 px: C's box stays inside its slot (0 colored pixels outside stage rects). Drag orbits only C.
+- Resize after load to 900 px and 360 px: box side 59 / 35 px vs expected 58.8 / 33.8, world x -2.006 / -2.01 at
+  x = -2; `scrollWidth` 900 / 360 (no horizontal scroll at 360 px).
+- CLS: `.lab-scene-box` heights 395/395/395 at DOMContentLoaded (0 stages mounted) and after hydration; 0
+  `layout-shift` entries.
+- `prefers-reduced-motion: reduce`: identical numbers. `WEBGL_lose_context` -> `html.lab-no-webgl`, notice
+  `display:block` in all 3 stages.
+
+Upstream / known console noise:
+- `THREE.Clock: This module has been deprecated` is logged by three >= 0.183 because r3f 9.8.1 (current latest)
+  creates `new THREE.Clock()`. three 0.182.0 does not warn (checked on unpkg), but we keep 0.186.1: downgrading four
+  releases to silence a deprecation notice is worse than the notice. Revisit when r3f moves to `THREE.Timer`.
+- `favicon.svg` 404: there is no `public/` dir yet (predates Task 4).
+- [ ] Scene chunk `engine.impl.*.js` is 937 kB raw / 246 kB gz (three core is not tree-shaken under r3f's
+  `import * as THREE`). `chunkSizeWarningLimit: 940` in astro.config.mjs; the real gate is the per-page gzip budget
+  of scripts/size-report.ts (Task 11).
