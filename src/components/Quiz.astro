@@ -1,0 +1,195 @@
+---
+/**
+ * Self-check multiple choice. Markup is rendered at build time (so the page is readable
+ * without JS); the `lab-quiz` element only grades answers and keeps the score.
+ */
+import { questionErrors, type Question } from '../lib/quiz';
+
+interface Props {
+	questions: Question[];
+}
+
+const { questions } = Astro.props;
+
+// Content mistakes must fail the build, not silently ship a quiz that can never be answered right.
+// The rules are shared with tests/js/quiz-lint.test.ts.
+if (!Array.isArray(questions) || questions.length === 0) {
+	throw new Error('<Quiz>: `questions` must be a non-empty array.');
+}
+questions.forEach((item, i) => {
+	const errs = questionErrors(item);
+	if (errs.length) throw new Error(`<Quiz> question ${i + 1} ("${String(item?.q).slice(0, 40)}"): ${errs.join('; ')}.`);
+});
+
+// Deterministic id (djb2 of the content) keeps radio groups unique per quiz without
+// making every build emit different HTML.
+const seed = [...JSON.stringify(questions)].reduce((h, c) => ((h << 5) + h + c.charCodeAt(0)) >>> 0, 5381);
+const gid = `quiz-${seed.toString(36)}`;
+---
+
+<lab-quiz class="lab-card not-content" data-total={questions.length}>
+	<p class="lab-eyebrow">Self-check</p>
+	<p class="lab-card-title">Check your understanding</p>
+
+	{
+		questions.map((item, qi) => (
+			<fieldset class="quiz-q" data-answer={item.answer}>
+				<legend>
+					<span class="quiz-num">{qi + 1}.</span> {item.q}
+				</legend>
+				{item.options.map((opt, oi) => (
+					<label class="quiz-opt">
+						<input type="radio" name={`${gid}-${qi}`} value={oi} />
+						<span>{opt}</span>
+					</label>
+				))}
+				<div class="lab-row quiz-actions">
+					<button type="button" class="lab-button" data-check>
+						Check
+					</button>
+				</div>
+				<p class="lab-msg quiz-result" data-result role="status" hidden />
+				<p class="lab-muted quiz-explain" data-explain hidden>
+					{item.explain}
+				</p>
+			</fieldset>
+		))
+	}
+
+	<div class="lab-row quiz-foot">
+		<strong class="quiz-score" data-score aria-live="polite">Score: 0/{questions.length}</strong>
+		<button type="button" class="lab-button" data-reset>Reset</button>
+	</div>
+</lab-quiz>
+
+<style>
+	.quiz-q {
+		border: 0;
+		border-top: 1px solid var(--lab-border);
+		margin: 0.9rem 0 0;
+		padding: 0.8rem 0 0;
+		min-width: 0; /* fieldsets default to min-content width and would force horizontal scroll at 360px */
+	}
+	legend {
+		font-weight: 600;
+		color: var(--sl-color-white);
+		padding: 0;
+		margin-bottom: 0.4rem;
+	}
+	.quiz-num {
+		color: var(--lab-accent-high);
+	}
+	.quiz-opt {
+		display: flex;
+		gap: 0.55rem;
+		align-items: flex-start;
+		padding: 0.4rem 0.6rem;
+		margin-top: 0.3rem;
+		border: 1px solid var(--lab-border);
+		border-radius: 0.45rem;
+		background: var(--lab-surface-2);
+		font-size: var(--sl-text-sm);
+		cursor: pointer;
+		overflow-wrap: anywhere;
+	}
+	.quiz-opt input {
+		margin-top: 0.25rem;
+		accent-color: var(--lab-accent);
+	}
+	.quiz-opt:focus-within {
+		outline: 2px solid var(--lab-accent);
+		outline-offset: 1px;
+	}
+	.quiz-opt.is-correct {
+		border-color: var(--lab-ok);
+	}
+	.quiz-opt.is-correct span::after {
+		content: ' ✓';
+		color: var(--lab-ok);
+	}
+	.quiz-opt.is-wrong {
+		border-color: var(--lab-err);
+	}
+	.quiz-opt.is-wrong span::after {
+		content: ' ✗';
+		color: var(--lab-err);
+	}
+	.quiz-actions {
+		margin-top: 0.6rem;
+	}
+	.quiz-explain {
+		margin: 0.3rem 0 0;
+	}
+	.quiz-foot {
+		justify-content: space-between;
+		margin-top: 1rem;
+		padding-top: 0.8rem;
+		border-top: 1px solid var(--lab-border);
+	}
+</style>
+
+<script>
+	import { LabElement, define } from '../lib/element';
+
+	/** Grades each fieldset against its `data-answer` and aggregates the score (state lives in the DOM). */
+	class LabQuiz extends LabElement {
+		protected mount() {
+			this.on(this, 'click', (e) => {
+				const target = e.target as HTMLElement;
+				const check = target.closest<HTMLElement>('[data-check]');
+				if (check) this.grade(check.closest('fieldset') as HTMLFieldSetElement);
+				else if (target.closest('[data-reset]')) this.reset();
+			});
+		}
+
+		private grade(q: HTMLFieldSetElement): void {
+			const picked = q.querySelector<HTMLInputElement>('input:checked');
+			const result = q.querySelector<HTMLElement>('[data-result]')!;
+			result.hidden = false;
+			if (!picked) {
+				result.className = 'lab-msg quiz-result is-warn';
+				result.textContent = 'Choose an option first.';
+				return;
+			}
+			const answer = Number(q.dataset.answer);
+			const ok = Number(picked.value) === answer;
+			const inputs = [...q.querySelectorAll<HTMLInputElement>('input[type=radio]')];
+			inputs.forEach((input, i) => {
+				input.disabled = true;
+				const label = input.closest('label')!;
+				label.classList.toggle('is-correct', i === answer);
+				label.classList.toggle('is-wrong', input === picked && !ok);
+			});
+			q.dataset.state = ok ? 'correct' : 'wrong';
+			result.className = `lab-msg quiz-result ${ok ? 'is-ok' : 'is-err'}`;
+			result.textContent = ok ? 'Correct.' : 'Not quite. The correct answer is marked.';
+			q.querySelector<HTMLElement>('[data-explain]')!.hidden = false;
+			q.querySelector<HTMLButtonElement>('[data-check]')!.disabled = true;
+			this.updateScore();
+		}
+
+		private updateScore(): void {
+			const total = Number(this.dataset.total);
+			const right = this.querySelectorAll('fieldset[data-state=correct]').length;
+			const done = this.querySelectorAll('fieldset[data-state]').length;
+			this.querySelector('[data-score]')!.textContent =
+				`Score: ${right}/${total}` + (done < total ? ` (${done} answered)` : '');
+		}
+
+		private reset(): void {
+			this.querySelectorAll<HTMLFieldSetElement>('fieldset').forEach((q) => {
+				delete q.dataset.state;
+				q.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach((input) => {
+					input.checked = false;
+					input.disabled = false;
+					input.closest('label')!.classList.remove('is-correct', 'is-wrong');
+				});
+				q.querySelector<HTMLElement>('[data-result]')!.hidden = true;
+				q.querySelector<HTMLElement>('[data-explain]')!.hidden = true;
+				q.querySelector<HTMLButtonElement>('[data-check]')!.disabled = false;
+			});
+			this.updateScore();
+		}
+	}
+	define('lab-quiz', LabQuiz);
+</script>

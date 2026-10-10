@@ -1,0 +1,27 @@
+---
+/**
+ * Custom 404 (Starlight's own route is disabled via `disable404Route`). GitHub Pages serves this
+ * file at any missing path depth, so links must be absolute and include the base path.
+ */
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { href, pageHref } from '../lib/course';
+
+
+---
+
+<StarlightPage
+	frontmatter={{
+		title: 'Page not found',
+		template: 'splash',
+		editUrl: false,
+		pagefind: false,
+		hero: {
+			title: 'Page not found',
+			tagline: 'This page does not exist. Lesson URLs follow the pattern module/lesson/ - see the roadmap for the full list.',
+			actions: [
+				{ text: 'Start the course', link: href('squares-and-plane'), icon: 'right-arrow' },
+				{ text: 'Course roadmap', link: pageHref('course/roadmap'), variant: 'minimal' },
+			],
+		},
+	}}
+/>

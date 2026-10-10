@@ -1,5 +1,20 @@
+# Superpowers / oh-my-harness working state.
 .superpowers/
 .omh/
+
+# Astro / Node tooling.
 node_modules/
 dist/
 .astro/
+*-debug.log*
+*-error.log*
+
+# Python cache and virtual environment (notebook tooling).
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local environment files and OS junk.
+.env
+.env.production
+.DS_Store

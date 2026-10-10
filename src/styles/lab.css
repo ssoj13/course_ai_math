@@ -1,0 +1,265 @@
+/*
+ * Shared design tokens and primitives for interactive lab widgets.
+ * Widgets keep their own layout in scoped <style> blocks and build on these classes,
+ * so every widget looks like one system in both Starlight themes.
+ */
+:root {
+	--lab-radius: 0.6rem;
+	--lab-gap: 0.75rem;
+	--lab-border: var(--sl-color-gray-5);
+	--lab-surface: var(--sl-color-gray-6);
+	--lab-surface-2: var(--sl-color-black);
+	--lab-text-muted: var(--sl-color-gray-3);
+	--lab-accent: var(--sl-color-accent);
+	--lab-accent-high: var(--sl-color-accent-high);
+	--lab-ok: var(--sl-color-green);
+	--lab-warn: var(--sl-color-orange);
+	--lab-err: var(--sl-color-red);
+	/* Chart series: weights, KV cache, overhead, free/headroom. */
+	--lab-series-1: #4f8ff7;
+	--lab-series-2: #e5a33b;
+	--lab-series-3: #9c6ade;
+	--lab-series-4: #3fb27f;
+}
+
+/*
+ * Primitives below set `display` (flex/grid), which would beat the UA `[hidden]` rule;
+ * widgets toggle `hidden` to show/hide parts, so restore its meaning inside cards.
+ */
+.lab-card [hidden] {
+	display: none !important;
+}
+
+/* Card that frames every interactive widget. */
+/*
+ * Widget roots (custom elements wrapping a .lab-card, or the card itself) can become flex/grid items of
+ * Starlight's layout; their default `min-width: auto` would grow them to the min-content width of wide
+ * children (tables, SVG), defeating `overflow-x: auto` inside. Keep every widget within its column.
+ */
+:where(:has(> .lab-card)) {
+	display: block;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.lab-card {
+	/* Widgets are custom elements, which are display:inline by default. */
+	display: block;
+	min-width: 0;
+	max-width: 100%;
+	border: 1px solid var(--lab-border);
+	border-radius: var(--lab-radius);
+	background: var(--lab-surface);
+	padding: 1rem 1.1rem;
+	margin-block: 1.5rem;
+}
+.lab-card > :first-child {
+	margin-top: 0;
+}
+
+/*
+ * Spacing and typography inside widget cards. Cards carry `not-content`, so Starlight's markdown
+ * styles do not leak into widget internals; these zero-specificity rules replace them and any
+ * widget class overrides them.
+ */
+:where(.lab-card > * + *) {
+	margin-top: var(--lab-gap);
+}
+:where(.lab-card) :where(ul, ol) {
+	padding-inline-start: 1.25rem;
+	margin-top: 0.4rem;
+}
+:where(.lab-card) :where(li + li) {
+	margin-top: 0.2rem;
+}
+:where(.lab-card) :where(h4) {
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-white);
+	margin-top: 0.8rem;
+}
+:where(.lab-card) :where(summary) {
+	cursor: pointer;
+}
+:where(.lab-card) :where(a:not(.lab-button)) {
+	color: var(--sl-color-text-accent);
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+}
+:where(.lab-card) :where(code) {
+	font-family: var(--__sl-font-mono);
+	font-size: 0.9em;
+	background: var(--lab-surface-2);
+	border: 1px solid var(--lab-border);
+	border-radius: 0.25rem;
+	padding: 0.05em 0.3em;
+	overflow-wrap: anywhere;
+}
+.lab-card-title {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-weight: 600;
+	font-size: var(--sl-text-lg);
+	color: var(--sl-color-white);
+	margin: 0 0 0.25rem;
+}
+.lab-eyebrow {
+	font-size: var(--sl-text-xs);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--lab-accent-high);
+	margin: 0;
+}
+.lab-muted {
+	color: var(--lab-text-muted);
+	font-size: var(--sl-text-sm);
+}
+
+.lab-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lab-gap);
+	align-items: center;
+}
+.lab-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+	gap: var(--lab-gap);
+}
+
+.lab-button {
+	appearance: none;
+	border: 1px solid var(--lab-border);
+	border-radius: 0.45rem;
+	background: var(--lab-surface-2);
+	color: var(--sl-color-white);
+	font: inherit;
+	font-size: var(--sl-text-sm);
+	padding: 0.45rem 0.9rem;
+	cursor: pointer;
+}
+.lab-button:hover:not(:disabled) {
+	border-color: var(--lab-accent);
+}
+.lab-button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+.lab-button.is-primary {
+	background: var(--lab-accent);
+	border-color: var(--lab-accent);
+	color: var(--sl-color-black);
+	font-weight: 600;
+}
+.lab-button.is-danger {
+	border-color: var(--lab-err);
+	color: var(--lab-err);
+}
+
+.lab-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	font-size: var(--sl-text-sm);
+}
+.lab-field > span {
+	color: var(--lab-text-muted);
+}
+.lab-input,
+.lab-card select,
+.lab-card textarea,
+.lab-card input[type='text'],
+.lab-card input[type='number'],
+.lab-card input[type='url'],
+.lab-card input[type='password'] {
+	font: inherit;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-white);
+	background: var(--lab-surface-2);
+	border: 1px solid var(--lab-border);
+	border-radius: 0.4rem;
+	padding: 0.4rem 0.55rem;
+	width: 100%;
+	box-sizing: border-box;
+}
+.lab-card textarea {
+	font-family: var(--__sl-font-mono);
+	resize: vertical;
+}
+.lab-card input[type='range'] {
+	width: 100%;
+	accent-color: var(--lab-accent);
+}
+
+/* Read-only result panes (logs, streamed output). */
+.lab-output {
+	font-family: var(--__sl-font-mono);
+	font-size: var(--sl-text-xs);
+	white-space: pre-wrap;
+	word-break: break-word;
+	background: var(--lab-surface-2);
+	border: 1px solid var(--lab-border);
+	border-radius: 0.4rem;
+	padding: 0.6rem 0.75rem;
+	max-height: 22rem;
+	overflow: auto;
+	margin: 0.75rem 0 0;
+}
+
+/* Key numbers shown as small tiles. */
+.lab-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+	gap: 0.5rem;
+	margin-top: 0.75rem;
+}
+.lab-stat {
+	background: var(--lab-surface-2);
+	border: 1px solid var(--lab-border);
+	border-radius: 0.4rem;
+	padding: 0.45rem 0.6rem;
+}
+.lab-stat b {
+	display: block;
+	font-size: var(--sl-text-xl);
+	font-variant-numeric: tabular-nums;
+	color: var(--sl-color-white);
+}
+.lab-stat span {
+	font-size: var(--sl-text-xs);
+	color: var(--lab-text-muted);
+	/* Labels carry long unbreakable metric names (vllm:inter_token_latency_seconds). */
+	overflow-wrap: anywhere;
+}
+.lab-stat {
+	min-width: 0;
+}
+
+.lab-msg {
+	font-size: var(--sl-text-sm);
+	margin: 0.6rem 0 0;
+}
+.lab-msg.is-ok {
+	color: var(--lab-ok);
+}
+.lab-msg.is-warn {
+	color: var(--lab-warn);
+}
+.lab-msg.is-err {
+	color: var(--lab-err);
+}
+
+/* Sidebar mark for lessons the reader has completed (set by the progress widget). */
+.lab-nav-complete::after {
+	content: ' ✓';
+	color: var(--lab-ok);
+}
+
+/* Sidebar: the per-module overview entry (astro.config.mjs) reads as navigation, not as a lesson. */
+.sidebar-content a.module-overview-link {
+	font-style: italic;
+	color: var(--sl-color-gray-3);
+}
+.sidebar-content a.module-overview-link[aria-current='page'] {
+	color: var(--sl-color-text-invert);
+}

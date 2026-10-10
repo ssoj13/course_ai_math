@@ -1,0 +1,15 @@
+---
+/**
+ * Starlight Footer override: on lesson pages renders the completion toggle above the stock footer, so
+ * lesson files need no per-lesson chrome. The stock footer's prev/next links follow the sidebar, which
+ * is generated from course.json, so they already run in course order across modules.
+ */
+import Default from '@astrojs/starlight/components/Footer.astro';
+import LessonDone from '../LessonDone.astro';
+import { lessonByPath } from '../../lib/course';
+
+const lesson = lessonByPath(Astro.locals.starlightRoute.id);
+---
+
+{lesson && <LessonDone lesson={lesson.slug} />}
+<Default><slot /></Default>

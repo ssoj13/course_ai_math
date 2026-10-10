@@ -1,0 +1,85 @@
+---
+/**
+ * "Mark lesson complete" toggle + overall progress bar, rendered by the Footer override on every lesson
+ * page. State lives in KEYS.progress (Record<lesson slug, boolean>), read by the sidebar override. The
+ * lesson is the current route's; the optional `lesson` slug prop exists for tests. When browser storage
+ * is blocked, store.ts keeps the record in memory for this page view, so the toggle still works.
+ */
+import { lessonByPath, lessonBySlug } from '../lib/course';
+
+interface Props {
+	lesson?: string;
+}
+
+const slug = Astro.props.lesson ?? lessonByPath(Astro.locals.starlightRoute?.id ?? '')?.slug;
+const lesson = slug ? lessonBySlug(slug) : undefined;
+if (!lesson) {
+	throw new Error(`<LessonDone>: not a lesson page and no valid \`lesson\` slug (got ${JSON.stringify(slug)}).`);
+}
+---
+
+<lab-lesson-done class="lab-card not-content" data-lesson={lesson.slug}>
+	<p class="lab-eyebrow">Progress</p>
+	<div class="lab-row">
+		<button type="button" class="lab-button" data-ref="toggle" aria-pressed="false">Mark lesson complete</button>
+		<span class="lab-muted" data-ref="label"></span>
+	</div>
+	<progress class="done-bar" data-ref="bar" max="1" value="0" aria-label="Core course progress"></progress>
+	<p class="lab-msg is-warn" data-ref="warn" hidden>
+		Browser storage is blocked, so progress will not be remembered after you leave this page.
+	</p>
+</lab-lesson-done>
+
+<style>
+	.done-bar {
+		display: block;
+		width: 100%;
+		height: 0.55rem;
+		margin-top: 0.75rem;
+		accent-color: var(--lab-accent);
+	}
+	[aria-pressed='true'] {
+		border-color: var(--lab-ok);
+		color: var(--lab-ok);
+	}
+	lab-lesson-done {
+		margin-top: 2rem;
+	}
+</style>
+
+<script>
+	import { LabElement, define } from '../lib/element';
+	import { KEYS, save } from '../lib/store';
+	import { counts, describe, markSidebar, readProgress } from '../lib/progress';
+
+	class LabLessonDone extends LabElement {
+		protected mount() {
+			this.on(this.ref('toggle'), 'click', () => {
+				const slug = this.dataset.lesson ?? '';
+				const progress = readProgress();
+				if (progress[slug]) delete progress[slug];
+				else progress[slug] = true;
+				// save() always notifies watchers (this and sibling widgets re-render), even when only
+				// the in-memory fallback took the value.
+				if (!save(KEYS.progress, progress)) this.ref('warn').hidden = false;
+			});
+			this.watch(KEYS.progress, () => this.render());
+			this.render();
+		}
+
+		private render(): void {
+			const progress = readProgress();
+			const done = progress[this.dataset.lesson ?? ''] === true;
+			const c = counts(progress);
+			const btn = this.ref<HTMLButtonElement>('toggle');
+			btn.textContent = done ? '✓ Completed' : 'Mark lesson complete';
+			btn.setAttribute('aria-pressed', String(done));
+			this.ref('label').textContent = `Completed: ${describe(progress)}`;
+			const bar = this.ref<HTMLProgressElement>('bar');
+			bar.max = c.coreTotal;
+			bar.value = c.core;
+			markSidebar(progress);
+		}
+	}
+	define('lab-lesson-done', LabLessonDone);
+</script>

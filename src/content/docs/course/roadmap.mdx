@@ -1,0 +1,20 @@
+---
+title: Course roadmap
+description: The lessons of the course in order.
+---
+
+import { modules } from '../../../lib/course';
+
+{modules.map((m) => (
+	<>
+		<h2>{m.num}. {m.title}</h2>
+		<p>{m.summary}</p>
+		<ol start={m.lessons[0].num}>
+			{m.lessons.map((l) => (
+				<li>
+					<a href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/${l.path}/`}>{l.label}</a>{l.branch && ' (side branch)'} — {l.summary}
+				</li>
+			))}
+		</ol>
+	</>
+))}

@@ -1,0 +1,14 @@
+---
+/**
+ * Starlight Sidebar override: renders the stock sidebar and marks completed lessons
+ * on every page, not only on pages that include <LessonDone>.
+ */
+import Default from '@astrojs/starlight/components/Sidebar.astro';
+---
+
+<Default />
+
+<script>
+	import { trackSidebar } from '../../lib/progress';
+	trackSidebar();
+</script>

@@ -1,0 +1,50 @@
+---
+/**
+ * "Open in Colab" badge for a notebook in `notebooks/` of the course repo.
+ * Pure markup; the badge is inline SVG so no external image is hotlinked.
+ */
+interface Props {
+	/** File name without extension, e.g. "01-vectors". */
+	notebook: string;
+	label?: string;
+}
+
+const { notebook, label = 'Open in Colab' } = Astro.props;
+if (!/^[\w.-]+$/.test(notebook)) {
+	throw new Error(`<ColabBadge>: \`notebook\` must be a bare file name, got ${JSON.stringify(notebook)}.`);
+}
+
+const path = `ssoj13/math-course/blob/main/notebooks/${notebook}.ipynb`;
+const colab = `https://colab.research.google.com/github/${path}`;
+const github = `https://github.com/${path}`;
+---
+
+<div class="lab-card not-content colab">
+	<div class="lab-row">
+		<a class="lab-button is-primary colab-link" href={colab} target="_blank" rel="noopener noreferrer">
+			<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+				<path
+					fill="currentColor"
+					d="M16.9 5.1a7 7 0 0 0-9.9 0L2.5 9.6a7 7 0 0 0 0 9.9l.9.9 3.1-3.1-.9-.9a2.6 2.6 0 0 1 0-3.7l4.5-4.5a2.6 2.6 0 0 1 3.7 3.7l-1.1 1.1 3.1 3.1 1.1-1.1a7 7 0 0 0 0-9.9z"
+				></path>
+			</svg>
+			<span>{label}</span>
+		</a>
+		<a href={github} target="_blank" rel="noopener noreferrer">View on GitHub</a>
+	</div>
+	<p class="lab-muted colab-note">
+		The free CPU runtime is enough for this course. <code>{notebook}.ipynb</code>
+	</p>
+</div>
+
+<style>
+	.colab-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		text-decoration: none;
+	}
+	.colab-note {
+		margin: 0.6rem 0 0;
+	}
+</style>

@@ -1,0 +1,35 @@
+{
+  "name": "math-course",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "bun test tests/js",
+    "size": "bun scripts/size-report.ts"
+  },
+  "dependencies": {
+    "@astrojs/react": "7.0.1",
+    "@astrojs/starlight": "0.42.6",
+    "@astrojs/markdown-satteri": "0.4.3",
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.1",
+    "@xyflow/react": "12.12.0",
+    "astro": "7.3.8",
+    "elkjs": "0.12.0",
+    "katex": "0.19.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "sharp": "0.35.5",
+    "three": "0.186.1",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@types/katex": "0.16.8",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0"
+  }
+}
