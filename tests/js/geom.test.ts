@@ -73,10 +73,46 @@ test('arc takes the shorter way regardless of orientation (2D clockwise)', () =>
 	expect(mid[0]).toBeCloseTo(Math.SQRT1_2);
 	expect(mid[1]).toBeCloseTo(Math.SQRT1_2);
 });
-test('arc with parallel, antiparallel, zero or mismatched inputs throws', () => {
-	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [2, 0, 0], 1)).toThrow();
-	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1)).toThrow();
-	expect(() => arcPoints([0, 0], [0, 0], [1, 0], 1)).toThrow();
+test('arc: mismatched dims, bad n, zero rays throw with distinct messages', () => {
 	expect(() => arcPoints([0, 0], [1, 0], [0, 1, 0], 1)).toThrow();
 	expect(() => arcPoints([0, 0], [1, 0], [0, 1], 1, 0)).toThrow();
+	expect(() => arcPoints([0, 0], [0, 0], [1, 0], 1)).toThrow(/"from"/);
+	expect(() => arcPoints([0, 0], [1, 0], [0, 0], 1)).toThrow(/"to"/);
+});
+test('arc radius must be finite and non-negative', () => {
+	expect(() => arcPoints([0, 0], [1, 0], [0, 1], -1)).toThrow();
+	expect(() => arcPoints([0, 0], [1, 0], [0, 1], NaN)).toThrow();
+	expect(() => arcPoints([0, 0], [1, 0], [0, 1], Infinity)).toThrow();
+	expect(arcPoints([0, 0], [1, 0], [0, 1], 0, 2).length).toBe(3);
+});
+test('parallel rays give a zero-length arc of n+1 identical points', () => {
+	const pts = arcPoints([1, 1, 1], [1, 0, 0], [2, 0, 0], 3, 5);
+	expect(pts.length).toBe(6);
+	for (const p of pts) {
+		expect(p[0]).toBeCloseTo(4);
+		expect(p[1]).toBeCloseTo(1);
+		expect(p[2]).toBeCloseTo(1);
+	}
+});
+test('2D antiparallel rays sweep the CCW semicircle', () => {
+	const pts = arcPoints([0, 0], [1, 0], [-1, 0], 2, 4);
+	expect(pts[2][0]).toBeCloseTo(0);
+	expect(pts[2][1]).toBeCloseTo(2);
+	expect(pts[4][0]).toBeCloseTo(-2);
+});
+test('3D antiparallel semicircle lies in the from/normal plane on the radius', () => {
+	const c = [0, 1, 0];
+	const pts = arcPoints(c, [1, 0, 0], [-2, 0, 0], 2, 6, [0, 0, 1]);
+	expect(pts.length).toBe(7);
+	for (const p of pts) {
+		const d = sub(p, c);
+		expect(norm(d)).toBeCloseTo(2);
+		expect(d[1]).toBeCloseTo(0); // plane spanned by from (x) and normal (z)
+	}
+	expect(pts[3][2]).toBeCloseTo(2);
+});
+test('3D antiparallel without a usable normal throws', () => {
+	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1)).toThrow(/normal/);
+	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1, 8, [3, 0, 0])).toThrow(/normal/);
+	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1, 8, [0, 0, 0])).toThrow(/normal/);
 });
