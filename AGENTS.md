@@ -101,6 +101,12 @@ transformer block → LoRA, with "zoom down" from any number to the fundamentals
 - [ ] Stage 4: calculus (Jacobian zoom, comp graph, GD)
 - [ ] Stage 5: statistics ("why squares"), remaining base track, advanced track, capstones
 
+## Tests
+
+- Pure tests (`tests/js/*.test.ts`) run under plain `bun test tests/js` with no DOM. Keep modules they import DOM-free.
+- DOM/component tests (`*.test.tsx` that mount React) opt in by importing `./dom` as the FIRST import. `tests/js/dom.ts` registers happy-dom via `@happy-dom/global-registrator` (devDependency, exact pin) and sets `IS_REACT_ACT_ENVIRONMENT`. It is not preloaded, so pure tests never see `document`; bun shares one process, so after a DOM file loads, later files do see the globals.
+- Mount with `react-dom/client` `createRoot` and wrap updates in `act` from `react`.
+
 ## Math authoring
 
 - Plain math in prose: `$a\cdot b$` inline; display math MUST be fenced (`$$` on its own lines). A one-line `$$x$$` is parsed as *inline* math (micromark rule), not display. Rendered to KaTeX HTML at build time by `src/lib/satteri-math.mjs` (satteri `features.math` + `renderStaticMath` in `src/viz/tex.ts`); pages ship no math JS. Katex CSS comes from `customCss`.

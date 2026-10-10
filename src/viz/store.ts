@@ -27,8 +27,10 @@ const stores = new Map<string, StoreApi<LessonState>>();
 export function lessonStore(lesson: string, init: Record<string, Val> = {}): StoreApi<LessonState> {
 	let s = stores.get(lesson);
 	if (!s) {
+		// Seeding at creation (not only via the merge below) makes init part of the initial state, so
+		// getInitialState() and SSR/server snapshots already carry the first caller's defaults.
 		s = createStore<LessonState>()((set) => ({
-			vals: {},
+			vals: { ...init },
 			hot: new Set(),
 			step: {},
 			set: (key, v) => set((st) => ({ vals: { ...st.vals, [key]: v } })),

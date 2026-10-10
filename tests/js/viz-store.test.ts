@@ -31,8 +31,14 @@ test('setStep clamps negative to 0', () => {
 	expect(s.getState().step.t).toBe(0);
 });
 
-test('setStep maps a non-finite index (NaN) to 0', () => {
-	const s = lessonStore('vector-nan');
+test('setStep maps a non-finite index (NaN, Infinity) to 0', () => {
+	const s = lessonStore('vector-nonfinite');
 	s.getState().setStep('t', Number.NaN);
 	expect(s.getState().step.t).toBe(0);
+	s.getState().setStep('t', Number.POSITIVE_INFINITY);
+	expect(s.getState().step.t).toBe(0);
+});
+
+test('init seeds the initial state at creation (server snapshots see it)', () => {
+	expect(lessonStore('seeded', { a: 1 }).getInitialState().vals.a).toBe(1);
 });
