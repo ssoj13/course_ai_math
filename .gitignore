@@ -1,0 +1,5 @@
+.superpowers/
+.omh/
+node_modules/
+dist/
+.astro/
