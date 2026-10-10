@@ -30,3 +30,9 @@ test('setStep clamps negative to 0', () => {
 	s.getState().setStep('t', -3);
 	expect(s.getState().step.t).toBe(0);
 });
+
+test('setStep maps a non-finite index (NaN) to 0', () => {
+	const s = lessonStore('vector-nan');
+	s.getState().setStep('t', Number.NaN);
+	expect(s.getState().step.t).toBe(0);
+});

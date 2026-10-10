@@ -33,17 +33,22 @@ export function lessonStore(lesson: string, init: Record<string, Val> = {}): Sto
 			step: {},
 			set: (key, v) => set((st) => ({ vals: { ...st.vals, [key]: v } })),
 			setHot: (ids) => set({ hot: new Set(ids) }),
-			setStep: (t, i) => set((st) => ({ step: { ...st.step, [t]: Math.max(0, Math.trunc(i)) } })),
+			// NaN/Infinity would poison the step index (and any `step[t] + 1` UI arithmetic), so they reset to 0.
+			setStep: (t, i) => set((st) => ({ step: { ...st.step, [t]: Number.isFinite(i) ? Math.max(0, Math.trunc(i)) : 0 } })),
 		}));
 		stores.set(lesson, s);
 	}
-	const missing = Object.entries(init).filter(([k]) => !(k in s.getState().vals));
+	const missing = Object.entries(init).filter(([k]) => !Object.hasOwn(s.getState().vals, k));
 	if (missing.length) s.setState((st) => ({ vals: { ...st.vals, ...Object.fromEntries(missing) } }));
 	return s;
 }
 
 export function useVal<T extends Val>(lesson: string, key: string, fallback: T): T {
-	return useStore(lessonStore(lesson), (st) => (st.vals[key] as T | undefined) ?? fallback);
+	// The selector returns only the stored reference or undefined, both stable across renders. A caller's
+	// fallback literal (e.g. `[0, 0]`) is a new object each render, and returning it from the selector would
+	// make useSyncExternalStore see a new snapshot every time.
+	const v = useStore(lessonStore(lesson), (st) => st.vals[key]);
+	return (v as T | undefined) ?? fallback;
 }
 
 export function useHot(lesson: string, id: string): boolean {
