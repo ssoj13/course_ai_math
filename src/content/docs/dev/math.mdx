@@ -1,0 +1,18 @@
+---
+title: Math test page
+description: Hidden page that exercises build-time math in MDX.
+pagefind: false
+head:
+  - tag: meta
+    attrs: { name: robots, content: noindex }
+---
+
+Inline: $a\cdot b$, comparison $a < b$, set $\{x\}$, snake_case outside math and a literal \{brace\}.
+
+Fenced display math (the only block form; one-line `$$...$$` stays inline):
+
+$$
+|a-b|^2 = |a|^2+|b|^2-2|a||b|\cos\theta
+$$
+
+Angle in degrees: $60^\circ$ and an arrow $x \to y$, next to an expression {1 + 1}.

@@ -5,6 +5,7 @@ import react from '@astrojs/react';
 import { readFileSync } from 'node:fs';
 import { satteri } from '@astrojs/markdown-satteri';
 import courseLinks from './src/lib/remark-lesson-links.mjs';
+import katexMath from './src/lib/satteri-math.mjs';
 
 const BASE = '/math-course';
 
@@ -29,8 +30,7 @@ const moduleGroups = course.modules.map((m, i) => ({
 export default defineConfig({
 	site: 'https://ssoj13.github.io',
 	base: BASE,
-	// The math plugin (build-time KaTeX) joins `mdastPlugins` in the engine task.
-	markdown: { processor: satteri({ features: { math: true }, mdastPlugins: [courseLinks({ base: BASE })] }) },
+	markdown: { processor: satteri({ features: { math: true }, mdastPlugins: [courseLinks({ base: BASE }), katexMath()] }) },
 	// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
 	vite: { worker: { format: 'es' } },
 	integrations: [
