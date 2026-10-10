@@ -35,10 +35,11 @@ export default defineConfig({
 	vite: {
 		// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
 		worker: { format: 'es' },
-		// The scene chunk (three + r3f + drei, ~937 kB raw) cannot shrink: r3f registers all of THREE (`import *`), so
-		// three core is not tree-shaken. The limit is set just above it so any further growth warns; the real gate is
+		// The scene chunk (three + r3f + drei, ~969 kB raw / 257 kB gz) cannot shrink: r3f registers all of THREE
+		// (`import *`), so three core is not tree-shaken. Task 6b added drei's Line (three-stdlib Line2/LineMaterial,
+		// ~32 kB) for pixel-stable lines. The limit is set just above it so any further growth warns; the real gate is
 		// the gzip budget per page enforced by scripts/size-report.ts (Task 11). The chunk loads only on scene pages.
-		build: { chunkSizeWarningLimit: 940 },
+		build: { chunkSizeWarningLimit: 975 },
 	},
 	integrations: [
 		starlight({

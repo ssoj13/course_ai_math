@@ -7,7 +7,7 @@
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { useStore } from 'zustand';
-import { lessonStore } from './store';
+import { hotOn, lessonStore } from './store';
 import { renderLinked, showVal, texText, type Derived } from './tex';
 import { keyStep, scrubValue, type ScrubSpec } from './scrub';
 import { startScrubDrag } from './useScrub';
@@ -77,10 +77,6 @@ export function Formula(p: FormulaProps): React.JSX.Element {
 
 	const term = (e: React.SyntheticEvent) => (e.target as HTMLElement).closest<HTMLElement>('[data-t]')?.dataset.t;
 	const handleKey = (e: React.SyntheticEvent) => (e.target as HTMLElement).closest<HTMLElement>('[data-s]')?.dataset.s;
-	const setHot = (id: string) => {
-		const cur = store.getState().hot;
-		if (!(cur.size === 1 && cur.has(id))) store.getState().setHot([id]);
-	};
 
 	const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
 		// The pressed span is only read for its key: the first value change re-renders innerHTML and removes it,
@@ -110,7 +106,7 @@ export function Formula(p: FormulaProps): React.JSX.Element {
 			aria-label={p.label}
 			onPointerOver={(e) => {
 				const t = term(e);
-				if (t) setHot(t);
+				if (t) hotOn(p.lesson, t);
 			}}
 			onPointerOut={(e) => {
 				// Moving between nested KaTeX spans of the same term fires pointerout; clear only when leaving the
@@ -120,7 +116,7 @@ export function Formula(p: FormulaProps): React.JSX.Element {
 			}}
 			onFocus={(e) => {
 				const t = term(e);
-				if (t) setHot(t);
+				if (t) hotOn(p.lesson, t);
 			}}
 			onPointerDown={onPointerDown}
 			onKeyDown={onKeyDown}

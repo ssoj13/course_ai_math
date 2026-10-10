@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { lessonStore } from '../../src/viz/store';
+import { hotOff, hotOn, lessonStore } from '../../src/viz/store';
 
 test('one store per lesson id, shared by every caller (islands share it via the module singleton)', () => {
 	const a = lessonStore('dot-product', { theta: 60 });
@@ -41,4 +41,19 @@ test('setStep maps a non-finite index (NaN, Infinity) to 0', () => {
 
 test('init seeds the initial state at creation (server snapshots see it)', () => {
 	expect(lessonStore('seeded', { a: 1 }).getInitialState().vals.a).toBe(1);
+});
+
+test('hotOn/hotOff write only when the hot set actually changes', () => {
+	const s = lessonStore('hot-guard');
+	let writes = 0;
+	const off = s.subscribe(() => writes++);
+	hotOn('hot-guard', 'a');
+	hotOn('hot-guard', 'a'); // already exactly {a}: no write
+	expect([...s.getState().hot]).toEqual(['a']);
+	hotOff('hot-guard', 'b'); // not lit: no write
+	hotOff('hot-guard', 'a');
+	hotOff('hot-guard', 'a');
+	expect(s.getState().hot.size).toBe(0);
+	expect(writes).toBe(2);
+	off();
 });

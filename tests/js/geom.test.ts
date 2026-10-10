@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { add, angleBetween, arcPoints, dot, norm, normalize, project, scale, signedArea2, sub } from '../../src/viz/geom';
+import { add, angleBetween, arcPoints, dot, norm, normalize, project, scale, signedArea2, sub, to3 } from '../../src/viz/geom';
 test('dot/norm/angle', () => {
 	expect(dot([1, 2], [3, 4])).toBe(11);
 	expect(norm([3, 4])).toBe(5);
@@ -115,4 +115,10 @@ test('3D antiparallel without a usable normal throws', () => {
 	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1)).toThrow(/normal/);
 	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1, 8, [3, 0, 0])).toThrow(/normal/);
 	expect(() => arcPoints([0, 0, 0], [1, 0, 0], [-1, 0, 0], 1, 8, [0, 0, 0])).toThrow(/normal/);
+});
+
+test('to3 lifts 2D points to z = 0 and rejects other dimensions', () => {
+	expect(to3([1, 2])).toEqual([1, 2, 0]);
+	expect(to3([1, 2, 3])).toEqual([1, 2, 3]);
+	expect(() => to3([1])).toThrow();
 });

@@ -83,3 +83,10 @@ export function signedArea2(a: V, b: V): number {
 	if (a.length !== 2 || b.length !== 2) throw new Error('signedArea2 is 2D only');
 	return a[0] * b[1] - a[1] * b[0];
 }
+
+/** A 2D or 3D point as a three.js-style [x, y, z]; 2D data lives in the z = 0 plane. */
+export function to3(a: V): [number, number, number] {
+	if (a.length === 2) return [a[0], a[1], 0];
+	if (a.length === 3) return [a[0], a[1], a[2]];
+	throw new Error(`expected a 2D or 3D point, got ${a.length} components`);
+}

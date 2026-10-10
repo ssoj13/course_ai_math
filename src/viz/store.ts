@@ -60,3 +60,18 @@ export function useHot(lesson: string, id: string): boolean {
 export function useStep(lesson: string, timeline: string): number {
 	return useStore(lessonStore(lesson), (st) => st.step[timeline] ?? 0);
 }
+
+/**
+ * Lights exactly `id` (hover/focus/drag of one object). Writes only on a change: pointer and frame handlers call
+ * this constantly, and every write re-renders all subscribers of the lesson.
+ */
+export function hotOn(lesson: string, id: string): void {
+	const s = lessonStore(lesson).getState();
+	if (!(s.hot.size === 1 && s.hot.has(id))) s.setHot([id]);
+}
+
+/** Clears the highlight if `id` is lit, so leaving one object never wipes a highlight another view set meanwhile. */
+export function hotOff(lesson: string, id: string): void {
+	const s = lessonStore(lesson).getState();
+	if (s.hot.has(id)) s.setHot([]);
+}

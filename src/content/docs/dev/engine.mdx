@@ -8,7 +8,7 @@ head:
 ---
 
 import SceneIsland from '../../../viz/SceneIsland.astro';
-import { DemoBoxA, DemoBoxB, DemoBoxC, DemoSlider, DemoFormula } from '../../../viz/demo/engine';
+import { DemoBoxA, DemoBoxB, DemoBoxC, DemoSlider, DemoFormula, DemoVec2D, DemoVec3D, DemoVecReadout } from '../../../viz/demo/engine';
 
 Three stages below live in three separate islands (separate React roots). The page must have exactly one
 `canvas`, and the slider (a fourth island) must move all three boxes.
@@ -71,3 +71,24 @@ libero. Proin nonummy, lacus eget pulvinar lacinia, pede felis dignissim leo, at
 <SceneIsland caption="Stage C: 3D box at x (drag to orbit)">
 	<DemoBoxC client:only="react" />
 </SceneIsland>
+
+## Draggable vectors
+
+Drag the tip of $a$ or $b$ (or the point P), or press Tab to reach their hidden buttons and use the arrow keys
+(Shift moves by 1). On a phone, a swipe that starts on empty grid scrolls the page; a swipe that starts on a tip drags it.
+
+<SceneIsland caption="2D: vectors a and b with a dashed segment between their tips">
+	<DemoVec2D client:only="react" />
+</SceneIsland>
+
+<DemoVecReadout client:load />
+
+<SceneIsland caption="3D: vectors u and v with component legs (drag a tip to move it, drag elsewhere to orbit)">
+	<DemoVec3D client:only="react" />
+</SceneIsland>
+
+Tail paragraph so the last stage can be scrolled to the middle of a phone screen. In 3D, PageUp and PageDown move a
+focused tip along z.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna
+aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.

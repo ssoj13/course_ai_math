@@ -171,9 +171,33 @@ Upstream / known console noise:
   creates `new THREE.Clock()`. three 0.182.0 does not warn (checked on unpkg), but we keep 0.186.1: downgrading four
   releases to silence a deprecation notice is worse than the notice. Revisit when r3f moves to `THREE.Timer`.
 - `favicon.svg` 404: there is no `public/` dir yet (predates Task 4).
-- [ ] Scene chunk `engine.impl.*.js` is 937 kB raw / 246 kB gz (three core is not tree-shaken under r3f's
-  `import * as THREE`). `chunkSizeWarningLimit: 940` in astro.config.mjs; the real gate is the per-page gzip budget
-  of scripts/size-report.ts (Task 11).
+- [ ] Scene chunk `engine.impl.*.js` is 969 kB raw / 257 kB gz since Task 6b (three core is not tree-shaken under r3f's
+  `import * as THREE`; drei Line = three-stdlib Line2/LineMaterial added ~32 kB). `chunkSizeWarningLimit: 975` in
+  astro.config.mjs; the real gate is the per-page gzip budget of scripts/size-report.ts (Task 11).
+
+### Scene primitives and dragging (Task 6b)
+
+- Files: `scene/{Grid,Arrow,Point,Segment}.tsx` (primitives), `scene/handles.tsx` (three-free: per-stage drag registry
+  `createStage`, `StageCtx`/`useStage`, `usePos`, `useDraggable`, `DragKeys` overlay), `scene/view.tsx` (r3f: `DragLayer`,
+  `SLine`, `wppAt`, `usePxScale`), `scene/drag.ts` (pure: `hitHandle`, `snap`, `moved`, `keyDelta`, `worldPerPx`, `rayPlane`).
+- Positions are a literal `V` or a store key string; a missing/scalar key throws (no silent fallback). 3D data is y-up.
+- React context does not cross drei's View tunnel: Stage creates ONE registry and provides it INSIDE `<View>`, and passes
+  the same object to the overlay (`DragKeys`). Primitives outside a Stage throw.
+- Drag start, hover cursor and the touch scroll lock all use ONE hit test: `reg.pick` = `hitHandle` (14 px) over handles
+  projected with the View camera. There is no hit mesh. Listeners are on `.lab-stage` in the capture phase, so a handle
+  press disables OrbitControls (`controls.enabled = false`) before its own pointerdown runs on the View div.
+- Touch: `touch-action` is latched at touchstart, so toggling it after a hit cannot stop the scroll of that gesture. A
+  non-passive `touchstart` that calls `preventDefault()` on a handle hit does. OrbitControls sets `touch-action:none` on
+  the 3D View div; DragLayer clears it, so on phones a vertical swipe over a 3D stage scrolls and a horizontal one orbits.
+- `moved(vals, keys, raw)`: keys[0] snaps to 0.1, the rest get the same delta ('whole' = translate without reshaping).
+  Drags and keyboard (`keyDelta`: arrows 0.1, Shift 1, PageUp/PageDown = z in 3D) share it; `writeMove` skips no-op writes.
+- Pixel sizes never come from r3f `size` (stale in a View): `SLine` refreshes LineMaterial `resolution` (and `dashPx`)
+  from the stage element per frame; heads/dots/glyphs scale per frame via `wppAt`.
+- `hotOn`/`hotOff` in store.ts are the only hot writers for single objects (write only on change; Formula uses hotOn).
+- Axis letters are stroked line glyphs (no font, no network). Visible text labels on arrows/points are Label (Task 6c);
+  `label` on Arrow/Point currently names the keyboard button only.
+- Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6b-evidence/` (`cdp-drag.ts`, `final/`).
+- [ ] Default 3D camera (Stage) does not frame the whole `extent`: grid corners and the top of the y axis are cut off.
 
 ### Palette (Task 5)
 

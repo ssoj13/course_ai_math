@@ -4,11 +4,13 @@
  */
 import { OrbitControls, OrthographicCamera, PerspectiveCamera, View } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { OrthographicCamera as OrthoCam } from 'three';
 import { usePalette } from '../palette';
 import { lessonStore } from '../store';
+import { createStage, DragKeys, StageCtx } from './handles';
 import { ensureSceneHost } from './SceneHost';
+import { DragLayer } from './view';
 
 function InvalidateOnStore({ lesson }: { lesson: string }) {
 	const invalidate = useThree((s) => s.invalidate);
@@ -67,24 +69,40 @@ export function Stage(p: { lesson: string; mode: '2d' | '3d'; extent: number; ch
 	useEffect(ensureSceneHost, []);
 	const ref = useRef<HTMLDivElement>(null);
 	const { w, h } = useBoxSize(ref);
+	// One drag registry per stage, created once (the mode of a mounted stage never changes).
+	const [reg] = useState(() => createStage(p.mode));
+	useLayoutEffect(() => {
+		reg.el = ref.current;
+		return () => {
+			reg.el = null;
+		};
+	}, [reg]);
 	return (
 		<div className="lab-stage" ref={ref}>
 			<View className="lab-stage-view">
-				<InvalidateOnStore lesson={p.lesson} />
-				<InvalidateOnTheme />
-				<FitView extent={p.extent} w={w} h={h} />
-				{p.mode === '2d' ? (
-					<OrthographicCamera makeDefault position={[0, 0, 10]} zoom={1} />
-				) : (
-					<>
-						<PerspectiveCamera makeDefault position={[p.extent * 1.6, p.extent * 1.2, p.extent * 1.8]} fov={40} />
-						<OrbitControls enableDamping={false} minDistance={p.extent} maxDistance={p.extent * 6} makeDefault />
-					</>
-				)}
-				{p.children}
+				{/* The provider sits inside the View: context does not cross drei's tunnel into the shared Canvas. */}
+				<StageCtx.Provider value={reg}>
+					<InvalidateOnStore lesson={p.lesson} />
+					<InvalidateOnTheme />
+					<FitView extent={p.extent} w={w} h={h} />
+					{p.mode === '2d' ? (
+						<OrthographicCamera makeDefault position={[0, 0, 10]} zoom={1} />
+					) : (
+						<>
+							<PerspectiveCamera makeDefault position={[p.extent * 1.6, p.extent * 1.2, p.extent * 1.8]} fov={40} />
+							<OrbitControls enableDamping={false} minDistance={p.extent} maxDistance={p.extent * 6} makeDefault />
+						</>
+					)}
+					{/* After the camera and controls, so its effects see the controls already connected. */}
+					<DragLayer />
+					{p.children}
+				</StageCtx.Provider>
 			</View>
 			{/* Sibling of the View div (see interface note): DOM here never blocks scene raycasts outside its own boxes. */}
-			<div className="lab-stage-overlay">{p.overlay}</div>
+			<div className="lab-stage-overlay">
+				<DragKeys reg={reg} />
+				{p.overlay}
+			</div>
 			<p className="lab-stage-nogl">This scene needs WebGL, which is unavailable here. The formula and table next to it show the same values.</p>
 		</div>
 	);
