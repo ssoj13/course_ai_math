@@ -3,4 +3,222 @@ title: "Length, Σ notation and normalization"
 description: "Pythagoras over all components; unit vectors."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Distance and Pythagoras](lesson:pythagoras)
+
+`normalize(N)` is the most common call in any shader. Occasionally it returns `NaN` and a whole patch of the mesh goes black. By the end of this lesson you will know exactly what `normalize` computes, why it is Pythagoras in disguise, and which input makes it fail.
+
+## 1. Length is Pythagoras
+
+A vector $v = (3, 4)$ is the hypotenuse of a right triangle with legs 3 and 4. Its length, written $\lvert v \rvert$, is what [Pythagoras](lesson:pythagoras) gives:
+
+$$
+\lvert v \rvert = \sqrt{3^2 + 4^2} = \sqrt{9 + 16} = \sqrt{25} = 5
+$$
+
+Draw a square on each leg: a 3-by-3 square of area 9 and a 4-by-4 square of area 16. Their areas add to 25, the square on the hypotenuse. The squared length $\lvert v \rvert^2 = 25$ is a sum of areas; the length itself is the root.
+
+{/* scene: 1.3-1 — Pythagoras tiles on each component; a timeline unfolds |v|² = Σ vᵢ² one component at a time as the running sum grows */}
+
+In 3D we did Pythagoras twice in lesson 0.3 (floor diagonal first, then up), and the result was one formula with three squares. For $v = (1, 1, 1)$:
+
+$$
+\lvert v \rvert = \sqrt{1^2 + 1^2 + 1^2} = \sqrt{3} \approx 1.732
+$$
+
+Note that $\sqrt{3}$ is not 3. The length of $(1, 1)$ is $\sqrt{2} \approx 1.414$, not 2.
+
+## 2. Σ notation: "add these up"
+
+Writing $v_1^2 + v_2^2 + v_3^2 + \cdots + v_n^2$ gets old. Mathematicians compress "add this expression for $i$ from 1 to $n$" into one symbol:
+
+$$
+\sum_{i=1}^{n} v_i^2 = v_1^2 + v_2^2 + \cdots + v_n^2
+$$
+
+Read $\sum$ (capital sigma) as "sum of". The letter under it is the loop counter, the number above it is the last value, and the expression to the right is what gets added each time. It is literally a `for` loop with an accumulator:
+
+```python
+total = 0.0
+for i in range(n):
+    total += v[i] ** 2
+```
+
+With it, the length of a vector with any number of components is one line:
+
+$$
+\lvert v \rvert = \sqrt{\sum_{i=1}^{n} v_i^2}
+$$
+
+For $v = (3, 4)$ this is $n = 2$: $\sqrt{9 + 16} = 5$. For $(1, 1, 1)$ it is $n = 3$: $\sqrt{3}$. For a vector of eight ones, $n = 8$: $\sqrt{8} \approx 2.83$. The formula does not care about the count.
+
+## 3. Length in n dimensions
+
+Here is an 8-component vector, $v = (2, 1, 2, 0, 4, 0, 1, 2)$. There is no picture of it. Compute anyway:
+
+$$
+\sum v_i^2 = 4 + 1 + 4 + 0 + 16 + 0 + 1 + 4 = 30, \qquad \lvert v \rvert = \sqrt{30} \approx 5.48
+$$
+
+That is the whole method. A 4096-dimensional embedding has a length in exactly this sense: square each component, add, take the root.
+
+{/* scene: 1.3-3 — n-D: an 8-component bar chart; drag bars, the length readout updates: no picture needed, the same formula */}
+
+Two facts that follow from the squares:
+
+- $\lvert -v \rvert = \lvert v \rvert$. Flipping an arrow does not change its length, because $(-v_i)^2 = v_i^2$. Squares forget the sign (lesson 0.G).
+- $\lvert s\,v \rvert = \lvert s \rvert \cdot \lvert v \rvert$. Scaling by 3 makes the arrow 3 times longer; scaling by $-2$ makes it 2 times longer and flips it. Check with $v = (3, 4)$, $s = -2$: $(-6, -8)$ has length $\sqrt{36 + 64} = 10 = 2 \cdot 5$.
+
+**Misconception to drop:** "$\lvert -v \rvert = -\lvert v \rvert$". Length is never negative. It is a root of a sum of squares.
+
+## 4. Normalization: keep the direction, set the length to 1
+
+A **unit vector** is a vector of length 1. To turn any non-zero vector into a unit vector pointing the same way, divide it by its own length:
+
+$$
+\hat{v} = \frac{v}{\lvert v \rvert}
+$$
+
+This is scaling by the scalar $1 / \lvert v \rvert$, so the direction is kept (section 2 of [lesson 1.2](lesson:vector-arithmetic)) and the new length is $\lvert v \rvert / \lvert v \rvert = 1$.
+
+Example 1. $v = (0, 5)$: length 5, so $\hat{v} = (0/5,\; 5/5) = (0, 1)$.
+
+Example 2. $v = (1, 1)$: length $\sqrt{2} \approx 1.414$, so
+
+$$
+\hat{v} = \left(\tfrac{1}{\sqrt 2},\; \tfrac{1}{\sqrt 2}\right) \approx (0.707,\; 0.707)
+$$
+
+Check: $0.707^2 + 0.707^2 = 0.5 + 0.5 = 1$. The tip lands on the unit circle from [lesson 0.4](lesson:unit-circle); in 3D it lands on the unit sphere.
+
+Example 3. $v = (3, 4)$: $\hat{v} = (0.6, 0.8)$, and $0.36 + 0.64 = 1$.
+
+{/* scene: 1.3-2 — scrub a blend from v to v/|v|; the tip lands on the unit circle (2D) or unit sphere (3D); the divisor |v| in the formula is highlighted */}
+
+**Misconception to drop:** "normalizing changes the direction". It only changes the length. The arrow $(0.6, 0.8)$ points exactly where $(3, 4)$ points.
+
+**The one input that fails.** The zero vector $(0, 0, 0)$ has length 0. Dividing by 0 gives `NaN` (or infinity), and there is no direction to keep anyway: the zero arrow does not point anywhere. This is the black patch in your shader: a degenerate triangle produced a zero-length normal, `normalize` divided by zero, and every pixel lit with that normal became `NaN`. Every robust `normalize` checks for a tiny length first.
+
+**Length versus length squared.** Comparing two lengths does not need the root: $\lvert a \rvert < \lvert b \rvert$ exactly when $\lvert a \rvert^2 < \lvert b \rvert^2$, because squaring keeps the order of non-negative numbers. CG code therefore compares `length2(v) < r*r` and skips the square root (lesson 0.G named this; here is where it pays).
+
+> **Say it simpler.** Length = Pythagoras with as many legs as there are components. Normalizing = keep the direction, make the length 1. You cannot normalize nothing.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "The length of (1, 1) is…",
+      options: [
+        "2, one for each component",
+        "1, the longest component",
+        "√2, about 1.41",
+        "0.5, half of each component"
+      ],
+      answer: 2,
+      explain: "Square each component (1 and 1), add (2), take the root: √2 ≈ 1.414. The diagonal of a unit square is shorter than walking two sides."
+    },
+    {
+      q: "Normalizing the vector (3, 4) gives (0.6, 0.8). What changed?",
+      options: [
+        "Only the length: it is now 1, the direction is the same",
+        "Only the direction: it now points along the diagonal",
+        "Both the length and the direction",
+        "Nothing changed; (0.6, 0.8) and (3, 4) are the same vector drawn twice"
+      ],
+      answer: 0,
+      explain: "Division by |v| = 5 scales every component by the same positive number, which keeps the direction and sets the length to 1. (0.6, 0.8) and (3, 4) are different vectors with the same direction."
+    },
+    {
+      q: "If |v| = 7, then |−v| is…",
+      options: [
+        "−7",
+        "7",
+        "0",
+        "49"
+      ],
+      answer: 1,
+      explain: "Length is a root of a sum of squares and squares forget the sign: (−vᵢ)² = vᵢ². A flipped arrow is just as long. Length is never negative."
+    },
+    {
+      q: "Can the zero vector (0, 0, 0) be normalized?",
+      options: [
+        "Yes, the result is (1, 1, 1) divided by √3, the default direction for a missing normal",
+        "Yes, the result is (0, 0, 0) again",
+        "No: its length is 0, the division is undefined and it has no direction",
+        "Only in 2D, not in 3D"
+      ],
+      answer: 2,
+      explain: "v / |v| divides by zero. There is nothing to rescue: the zero arrow points nowhere. In a shader this is the NaN normal; production code guards against a near-zero length."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. $\lvert (3, 4) \rvert$
+2. $\lvert (1, 1, 1) \rvert$
+3. Normalize $(0, 5)$.
+4. Normalize $(1, 1)$.
+5. $v = (2, -3)$. Compare $\lvert -v \rvert$ with $\lvert v \rvert$ without computing either.
+6. Which is longer, $(5, 0, 0)$ or $(3, 4, 0)$? Decide without square roots.
+
+<details>
+<summary>Answers</summary>
+
+1. $5$.
+2. $\sqrt{3} \approx 1.732$.
+3. $(0, 1)$.
+4. $(1/\sqrt 2,\; 1/\sqrt 2) \approx (0.707, 0.707)$.
+5. Equal. Every component is squared, so the signs disappear.
+6. Compare squared lengths: $25$ versus $9 + 16 = 25$. A tie; the two are equally long.
+
+</details>
+
+## Python
+
+`np.linalg.norm` is the length. Normalizing is dividing by it. Watch the last line: in floating point the normalized length is often `0.9999999...` rather than exactly `1.0`, because $1/\sqrt{2}$ cannot be stored exactly. Compare with a tolerance, never with `==`.
+
+```python
+import numpy as np
+
+v = np.array([3., 4.])
+print(np.linalg.norm(v))                 # 5.0
+print(np.sqrt((v**2).sum()))             # 5.0   the same, by hand (Sigma notation)
+
+ones8 = np.ones(8)
+print(np.linalg.norm(ones8))             # 2.828... = sqrt(8)
+
+v_hat = v / np.linalg.norm(v)
+print(v_hat)                             # [0.6 0.8]
+print(np.linalg.norm(v_hat))             # 1.0
+
+w = np.array([1., 1.])
+w_hat = w / np.linalg.norm(w)
+print(w_hat, np.linalg.norm(w_hat))      # [0.7071 0.7071] 0.9999999999999999
+print(np.isclose(np.linalg.norm(w_hat), 1.0))   # True: compare with a tolerance
+
+# the failure case
+z = np.zeros(3)
+with np.errstate(invalid='ignore'):
+    print(z / np.linalg.norm(z))         # [nan nan nan]
+
+def safe_normalize(v, eps=1e-12):
+    n = np.linalg.norm(v)
+    return v / n if n > eps else np.zeros_like(v)
+print(safe_normalize(z))                 # [0. 0. 0.]
+```
+
+<details>
+<summary>Machine layer: rsqrt, epsilon and fp16</summary>
+
+Hardware normalizes as `v * rsqrt(dot(v, v))`: the reciprocal square root (`rsqrtss` on x86, `inversesqrt` in GLSL) is one fast instruction and one multiply replaces a division. The epsilon guard above is what every engine's `normalize` does, sometimes silently returning zero.
+
+A second trap matters for AI. Half precision (`fp16`) cannot store numbers above 65 504. Take a vector of 100 components each about 30: every square is about 900 and the sum of squares is about 90 000, which overflows to infinity before the root is even taken. That is why norms, and LayerNorm in a network, are accumulated in `fp32` even when the weights are stored in `fp16`. This thread continues into the number-formats branch at the end of the course.
+
+</details>
+
+## What this opens
+
+We can measure how long any arrow is. Two arrows, though, also have an *angle* between them, and we have no way to compute it from components yet. The [law of cosines](lesson:law-of-cosines) will give it to us, and a new operation falls out: [the dot product](lesson:dot-product).
