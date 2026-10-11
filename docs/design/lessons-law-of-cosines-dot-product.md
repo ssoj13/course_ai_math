@@ -158,7 +158,7 @@ No separate NumTable: the AREAS rows of the N-panel are the numbers view of this
 | 8 | "Lean it back upright: it is exactly the rectangle c × FB. The leftover of a has become the first part of c²." | phase 3: shear to `[B, F, F + c·m, B + c·m]`; `R1c` outline fills (vecA 18% keeps the piece's colour inside the green square); lit: `R1c` | hidden (line 1 appears at step 9) | row `R1c` lights and shows `= R1` |
 | 9 | "The leftover of b does the same dance around A (lean, quarter turn counter-clockwise, lean) and lands as c × AF. Together they fill the square on c: c² = a·DB + b·EA." | `R2` runs its three phases as one chained spring sequence (3 × 180 ms; reduced motion: one cut): shear to `[A, A + b·n_b, A + b·n_b + (B − A), B]`, rotate **counter-clockwise 90° about A** (`A + b·n_b → C`, `B → A + c·m`), shear to `[F, A, A + c·m, F + c·m]`; lit: `R2c` | line 1 visible, `R1`, `R2` lit | `R2c` |
 | 10 | "Count the paper. The leftovers were the squares minus the strips. So c² = a² + b² − (strip) − (strip) = a² + b² − 2·a·b cos θ. Drag θ to 90°: the shadows shrink to a point, the strips vanish, and this is Pythagoras — in fact, the dance you just watched is Euclid's own proof of it. Drag past 90°: the shadows point backwards, the strips flip to hatched (negative area) and get *added*." | strips, `p`, `q` lit in turn; at `th === 90` `rt` appears and both strips are gone; for `th > 90` strips are hatched outside the squares beyond C and `R1`, `R2` overflow their squares by the strip; lit: `corr` | lines 2–3 visible; `corr` lit; at `th === 90` `strip_a`, `strip_b`, `corr` `dim` and a caption "= Pythagoras" | all rows |
-| 11 | "One more look at the strip: its area is |a| × (shadow of b on a). Lesson 1.4 gives that product a name — the dot product a·b — and shows it needs no angle at all. So the law of cosines reads |a − b|² = |a|² + |b|² − 2 a·b: a Pythagoras with two rectangles cut out." | `strip_a` lit; N-panel row `ab` appears; both strips' labels switch to `a·b = 6.00` | line 4 visible with live numbers; a fifth line appears: `\t{ab}{a\cdot b} = \t{strip_a}{\lvert a\rvert\,(b\cos\theta)} = \s{strip_a}` | `ab` row added |
+| 11 | "One more look at the strip: its area is the length of side a times the shadow of side b on it. In the next lessons the sides become arrows, written in bold **a**, **b**, with lengths |**a**|, |**b**|; the strip is |**a**| (|**b**| cos θ). Lesson 1.4 gives that product a name — the dot product **a**·**b**, a new meaning of the dot (not plain multiplication) — and shows it needs no angle at all. So the law of cosines reads |**a** − **b**|² = |**a**|² + |**b**|² − 2 **a**·**b**: a Pythagoras with two rectangles cut out." | `strip_a` lit; N-panel row `ab` appears; both strips' labels switch to `a·b = 6.00` | line 4 visible with live numbers; a fifth line appears: `\t{ab}{a\cdot b} = \t{strip_a}{\lvert a\rvert\,(b\cos\theta)} = \s{strip_a}` | `ab` row added |
 
 **Hover map.**
 
@@ -289,7 +289,7 @@ Geometry (derive): shoulder `S = [0, 0]`; `d = |ik_hand|`; direction `u = ik_han
 | `hand` | Point | `ik_hand` | vecC | `target` | yes (vector key, grid snap) |
 | `gap` | Segment dashed | W→T, visible when `d > reachMax + 1e-9` | axisX (warning red) | `out of reach` | — |
 | `d` | Segment dashed | S→T, visible while `hot` has `d` or `cosphi` | vecC | `d = 2.92` | — |
-| `phi` | AngleArc | at E, E→S to E→W, r = 0.5, sector 10% | ink | `φ = 108°` | — |
+| `phi` | AngleArc | at E, E→S to E→W, r = 0.5, sector 10% | ink | `φ = 112°` | — |
 | `rt` | RightAngle | at E when `|cosc| < 1e-12` | ink | — | — |
 
 The checkbox row `ik_flip` is a rig's pole vector in one bit (flips which side of S→T the elbow bends to).
@@ -356,7 +356,7 @@ print(law_of_cosines(3, 4, 120))  # 6.082...
 
 # the two strips: a * (b cos th) and b * (a cos th) are the same number
 a, b, th = 3.0, 4.0, np.radians(60)
-print(a * (b*np.cos(th)), b * (a*np.cos(th)))   # 6.0 6.0
+print(a * (b*np.cos(th)), b * (a*np.cos(th)))   # 6.000000000000002 6.000000000000002 (float rounding; round() in the lesson)
 print(a*a + b*b - 2*6.0)                        # 13.0 = c^2
 
 # sweep the corner: c grows monotonically from |a-b| to a+b
