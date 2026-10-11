@@ -86,7 +86,7 @@ function Plane() {
 			<Point lesson={LESSON} id="footy" at={fy} role="muted" size={4} />
 			<RightAngle lesson={LESSON} id="rtx" at={fx} u={sub(P, fx)} v={[-z.px, 0]} show />
 			<RightAngle lesson={LESSON} id="rty" at={fy} u={sub(P, fy)} v={[0, -z.py]} show />
-			{labels && <Label lesson={LESSON} id="legx" at={fx} offset={[0, below]} role="axisX">{'x = ' + fmt1(z.px)}</Label>}
+			{labels && <Label lesson={LESSON} id="legx" at={fx} offset={[0, 2 * below]} role="axisX">{'x = ' + fmt1(z.px)}</Label>}
 			{labels && <Label lesson={LESSON} id="legy" at={fy} offset={[beside, 0]} role="axisY">{'y = ' + fmt1(z.py)}</Label>}
 		</Show>
 		{/* Transient squares of the two readings, on the rulers, away from P: x² on [0, x] of the x axis, y² on [0, y]. */}
