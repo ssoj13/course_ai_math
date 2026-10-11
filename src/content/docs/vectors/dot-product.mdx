@@ -8,6 +8,7 @@ import UiStrings from '../../../components/UiStrings.astro';
 import SceneIsland from '../../../viz/SceneIsland.astro';
 import { DotScene, DotControls } from '../../../viz/lessons/dot-product';
 import { rowsFor } from '../../../viz/lessons/dot-product.rows';
+import PyCell from '../../../components/PyCell.astro';
 
 export const locale = 'en';
 
@@ -344,6 +345,8 @@ The dashed circle where $\mathbf{N} \cdot \mathbf{L} = 0$ is the terminator: the
 
 Three spellings of the same sum, the angle recovered from it (with the clip that every real codebase needs), the derivation checked numerically, Lambert, and one machine-layer surprise at the end. The comments show the output of Python 3.13 with NumPy 2.4 on a desktop x86-64 CPU. The two float32 sums of the last line differ between runtimes already in the third decimal place (the desktop and browser rows of its comment): the difference itself shows that summation order matters. The float64 value is the same everywhere.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -380,6 +383,8 @@ print(np.dot(x, y), np.dot(x[::-1], y[::-1]), float(np.sum((x * y).astype(np.flo
 # browser (Pyodide, wasm): -204.33473 -204.33762
 # float64 agrees everywhere: -204.34922361053668
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: FMA chains, lanes and summation order</summary>

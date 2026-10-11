@@ -246,12 +246,35 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - `<UiStrings ns=[...]>` (`src/components/UiStrings.astro`) emits each namespace once per page for that locale. The
   declared set must equal the reachable client module graph (incl. lazy impls, row factories, workers); missing
   namespaces/keys/placeholders fail. Current sets: EngineDemo `viewport, gizmo, hud, status, challenge, rows, demo,
-  holo`; Probe `viewport, gizmo, status, hud, probe`; LessonDone `done, progress`; Quiz `quiz`; sidebar `progress`.
+  holo`; Probe `viewport, gizmo, status, hud, probe`; LessonDone `done, progress`; Quiz `quiz`; PyCell `py`;
+  sidebar `progress`.
 - Translate labels, hints, captions, accessible names; never translate ids, store keys, ranges or TeX.
 - Russian pages carry `translatedFrom` (git blob of the EN source, `scripts/i18n-stamp.ts`); the parity test compares
   MDX props/code/links and TeX in order. `src/i18n/untranslated.json` lists English fallback pages exactly.
 - Lesson UI strings belong in namespaced dictionaries under the parity tests, not inline `words(locale, en, ru)`
   pairs (LC fix2 moves them).
+
+### Python cells (Task 8)
+
+- Authoring: wrap an unchanged fence: `<PyCell>`, blank line, the ```` ```python ```` fence, blank line, `</PyCell>`
+  (`import PyCell from '.../components/PyCell.astro'`). Optional `colab="<notebook>"` (failure fallback link; no
+  notebooks exist before Task 10, so no lesson passes it) and `rows={n}` (output pane lines when `outputRows`
+  misjudges, e.g. a matrix printed without a `# [[...` comment). RU pages must wrap the same code (pyclient.test.ts).
+- The fence is the single code source: `fenceCode` (`src/viz/py/fence.ts`) reads Expressive Code's copy payload
+  (`data-code`, lines joined by U+007F) from the rendered slot; the build fails unless exactly one python block.
+- Runtime: `<lab-py>` (`src/viz/py/cell.ts`, ~1.5 kB gz) -> `sharedPy()` (`pyclient.ts`) -> one module worker per
+  page (`py.worker.ts`) importing Pyodide 314.0.7 from jsDelivr only on the first Run (9.2 MB cold, measured); NumPy
+  via `loadPackagesFromImports`; each run in fresh globals; stdout+stderr one stream (`isatty` = line-buffered).
+  Two clocks per run, split by the worker's `{ id, ready }` notice (Python + packages loaded): 120 s before it
+  (timeout = `fail: 'load'`), 30 s after it (`'timeout'`, worker terminated). Worker load errors, `error` events and a
+  `new Worker` that throws are `'load'`; Python exceptions `'py'` via `cleanTrace` (drops `/lib/` runner frames).
+  Every run settles (queue never poisoned); Run again = retry. Idle cells `watch()` the client and switch between
+  the first-run note and "Python is loaded" for the whole page.
+- Layout: SSR with reserved sizes (status 2 lines, 3 under 40rem; output pane `--py-rows`); Edit swaps views inside
+  one `.py-code` box at the sub-pixel height. Change status classes with `classList` only: assigning `className`
+  dropped Astro's scoped class and its min-height (a measured shift).
+- Pyodide/wasm has no FP exception flags: NumPy prints `nan` for `arccos(-1.625)` without the `RuntimeWarning`, and
+  fp32 `np.dot` sums differ from desktop BLAS. Lesson comments promising either describe desktop Python only.
 
 ## Authoring rules
 
@@ -319,7 +342,9 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - [ ] 1.4 dot product scenes DP-1..4; 0.G / 0.2 powers scenes (TileGrid, FnCurve, "square is an area" 2D + 3D).
 - [ ] Remaining lessons in course-completion order (P3 services → P4 Part 0/1 → P5..P15), each EN + RU, scenes,
   Python/Colab, term map; implementer → reviewer (different model) → visual verifier.
-- [ ] Tasks 8 (Pyodide), 9 (term graph/TermMap), 10 (notebooks + ColabBadge), 11 (size report).
+- [x] Task 8 (Pyodide cells) implemented; awaiting review. 0.G squares-and-plane python block not wrapped yet
+  (file owned by the 0.G agent): wrap it like the others.
+- [ ] Tasks 9 (term graph/TermMap), 10 (notebooks + ColabBadge; then pass `colab` to PyCell), 11 (size report).
 - [ ] Port quiz-lint from vllm_en (`tests/js/quiz-lint.test.ts` missing).
 - [ ] Decide whether `/dev/` pages are filtered from `@astrojs/sitemap`; favicon.svg 404.
 - [ ] Brittle `Function.toString()` comparison in `tests/js/i18n-course.test.ts:37`.

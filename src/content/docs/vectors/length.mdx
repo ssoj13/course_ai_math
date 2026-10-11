@@ -4,6 +4,7 @@ description: "Pythagoras over all components; unit vectors."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Distance and Pythagoras](lesson:pythagoras)
 
@@ -39,6 +40,8 @@ $$
 
 Read $\sum$ (capital sigma) as "sum of". The letter under it is the loop counter, the number above it is the last value, and the expression to the right is what gets added each time. It is literally a `for` loop with an accumulator. Python counts from 0, so `range(n)` runs $i = 0 \ldots n-1$ where $\sum$ writes $1 \ldots n$; same $n$ terms.
 
+<PyCell>
+
 ```python
 v = [3., 4.]
 n = len(v)
@@ -47,6 +50,8 @@ for i in range(n):
     total += v[i] ** 2
 print(total, total ** 0.5)   # 25.0 5.0
 ```
+
+</PyCell>
 
 With it, the length of a vector with any number of components is one line:
 
@@ -183,6 +188,8 @@ Example 3. $\mathbf{v} = (3, 4)$: $\hat{\mathbf{v}} = (0.6, 0.8)$, and $0.36 + 0
 
 `np.linalg.norm` is the length. Normalizing is dividing by it. Watch the last line: in floating point the normalized length is often `0.9999999...` rather than exactly `1.0`, because $1/\sqrt{2}$ cannot be stored exactly. Compare with a tolerance, never with `==`.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -212,6 +219,8 @@ def safe_normalize(v, eps=1e-12):
     return v / n if n > eps else np.zeros_like(v)
 print(safe_normalize(z))                 # [0. 0. 0.]
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: rsqrt, epsilon and fp16</summary>

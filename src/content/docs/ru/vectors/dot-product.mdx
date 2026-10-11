@@ -1,7 +1,7 @@
 ---
 title: "Скалярное произведение: вывод из теоремы косинусов"
 description: "Σ aᵢbᵢ = |a||b| cos θ и что означает его знак."
-translatedFrom: e3f519b280bf14c851030d2b01e0bed6ba245603
+translatedFrom: a79a8ba239af34c41fcf4881db7985ac56717c1a
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
@@ -9,6 +9,7 @@ import UiStrings from '../../../../components/UiStrings.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { DotScene, DotControls } from '../../../../viz/lessons/dot-product';
 import { rowsFor } from '../../../../viz/lessons/dot-product.rows';
+import PyCell from '../../../../components/PyCell.astro';
 
 export const locale = 'ru';
 
@@ -345,6 +346,8 @@ $$
 
 Три записи одной и той же суммы, угол, восстановленный из неё (с обрезкой диапазона, которая нужна любому настоящему коду), численная проверка вывода, Ламберт и в конце — сюрприз машинного уровня. Комментарии показывают вывод Python 3.13 с NumPy 2.4 на настольном процессоре x86-64. Две суммы во float32 в последней строке расходятся между средами выполнения уже в третьем знаке после запятой (строки «desktop» и «browser» в её комментарии): само это расхождение показывает, что порядок суммирования важен. Значение во float64 везде одинаковое.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -381,6 +384,8 @@ print(np.dot(x, y), np.dot(x[::-1], y[::-1]), float(np.sum((x * y).astype(np.flo
 # browser (Pyodide, wasm): -204.33473 -204.33762
 # float64 agrees everywhere: -204.34922361053668
 ```
+
+</PyCell>
 
 <details>
 <summary>Машинный уровень: цепочки FMA, полосы SIMD и порядок суммирования</summary>

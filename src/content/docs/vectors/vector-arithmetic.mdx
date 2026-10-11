@@ -4,6 +4,7 @@ description: "Head-to-tail addition, scaling, blend shapes as linear combination
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [A vector: an arrow and a list of numbers](lesson:vector)
 
@@ -183,6 +184,8 @@ The physics line is the same shape: `v += g * dt` is $\mathbf{v}' = \mathbf{v} +
 
 NumPy applies `+`, `-` and `*` by a scalar component by component, for arrays of any length. The code for 2 components and for 4096 is the same line.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -205,6 +208,8 @@ print(base + w[0] * deltas[0] + w[1] * deltas[1])   # [1.1  0.55]
 big = np.ones(4096)
 print((2 * big + 3 * big)[:3])   # [5. 5. 5.]
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: why adding vectors is cheap</summary>

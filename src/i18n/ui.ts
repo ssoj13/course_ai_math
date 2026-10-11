@@ -539,7 +539,25 @@ export const en = {
   "sq.ch4Hint": "13 = 4 + 9. Which whole numbers have the squares 4 and 9? Swap them, or flip their signs.",
   "sq.ch5": "Find an area whose side is a whole number, other than 9.",
   "sq.ch6": "Make the side exactly 1.5.",
-  "sq.ch6Hint": "Which area has the side 1.5? Multiply 1.5 by itself."
+  "sq.ch6Hint": "Which area has the side 1.5? Multiply 1.5 by itself.",
+  // In-browser Python cells (src/components/PyCell.astro, src/viz/py/).
+  "py.eyebrow": "Python in your browser",
+  "py.run": "Run",
+  "py.edit": "Edit",
+  "py.reset": "Reset",
+  "py.code": "Python code",
+  "py.output": "Output",
+  "py.placeholder": "Press Run: the output appears here.",
+  "py.first": "The first Run downloads Python and NumPy (~{mb} MB, then cached).",
+  "py.ready": "Python is loaded: runs are instant now.",
+  "py.editing": "Editing: Ctrl+Enter runs, Reset restores the lesson's code.",
+  "py.loading": "Loading Python and NumPy (first run)…",
+  "py.running": "Running…",
+  "py.done": "Done in {s} s.",
+  "py.failLoad": "Could not load Python (offline or CDN blocked). Press Run to retry.",
+  "py.failPy": "Python raised an error: see the traceback below.",
+  "py.failTimeout": "Stopped after {s} s: the code ran too long. Press Run to retry.",
+  "py.colab": "Run it in Colab instead",
 } as const;
 export type UiKey = keyof typeof en;
 export const ru: Record<UiKey, string> = {
@@ -1078,7 +1096,25 @@ export const ru: Record<UiKey, string> = {
   "sq.ch4Hint": "13 = 4 + 9. У каких целых чисел квадраты 4 и 9? Поменяйте их местами или знаки.",
   "sq.ch5": "Найдите площадь, у которой сторона — целое число, кроме 9.",
   "sq.ch6": "Сделайте сторону ровно 1.5.",
-  "sq.ch6Hint": "У какой площади сторона 1.5? Умножьте 1.5 само на себя."
+  "sq.ch6Hint": "У какой площади сторона 1.5? Умножьте 1.5 само на себя.",
+  // Ячейки Python в браузере (src/components/PyCell.astro, src/viz/py/).
+  "py.eyebrow": "Python прямо в браузере",
+  "py.run": "Запустить",
+  "py.edit": "Изменить",
+  "py.reset": "Сбросить",
+  "py.code": "Код на Python",
+  "py.output": "Вывод",
+  "py.placeholder": "Нажми «Запустить»: вывод появится здесь.",
+  "py.first": "Первый запуск скачает Python и NumPy (~{mb} МБ, потом из кэша).",
+  "py.ready": "Python загружен: теперь запуск мгновенный.",
+  "py.editing": "Правка: Ctrl+Enter запускает, «Сбросить» вернёт код урока.",
+  "py.loading": "Загружаю Python и NumPy (первый запуск)…",
+  "py.running": "Выполняю…",
+  "py.done": "Готово за {s} с.",
+  "py.failLoad": "Не удалось загрузить Python (нет сети или CDN заблокирован). Нажми «Запустить» ещё раз.",
+  "py.failPy": "Ошибка Python: трассировка ниже.",
+  "py.failTimeout": "Остановлено через {s} с: код работал слишком долго. Нажми «Запустить» ещё раз.",
+  "py.colab": "Запустить в Colab",
 };
 /** Both dictionaries: registered with core.ts for server-side `t()`, read by `slice()` and by the tests. */
 export const DICT: Readonly<Record<Locale, Readonly<Record<UiKey, string>>>> = { en, ru };

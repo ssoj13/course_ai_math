@@ -1,7 +1,7 @@
 ---
 title: "Теорема косинусов"
 description: "Пифагор плюс поправка для непрямого угла; IK для двух костей."
-translatedFrom: e2b16f5429e31655b1cd4ac1c737c90b0d9e088f
+translatedFrom: bb95412240c384a3d1748ad2074dc8b74db2d610
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
@@ -9,6 +9,7 @@ import UiStrings from '../../../../components/UiStrings.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { LawScene, LawControls, LawDetail, LawDetailControls } from '../../../../viz/lessons/law-of-cosines';
 import { rowsFor } from '../../../../viz/lessons/law-of-cosines.rows';
+import PyCell from '../../../../components/PyCell.astro';
 
 export const locale = 'ru';
 
@@ -213,6 +214,8 @@ $$
 
 Другой конец: цель ближе, чем $|L_1 - L_2| = 0.5$, например $d = 0.3$, даёт $\cos\varphi = (6.25 - 0.09) / 6 \approx 1.027$; ограничение до $1$, $\varphi = 0^\circ$ — рука полностью сложена.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -224,6 +227,8 @@ c   = np.clip(c, -1.0, 1.0)      # finite positive bone lengths: out of reach ->
 phi = np.arccos(c)               # elbow angle, radians
 print(round(d, 4), round(c, 4), round(np.degrees(phi), 2))   # 2.9155 -0.375 112.02
 ```
+
+</PyCell>
 
 Для положения локтя солверу нужен ещё один угол — отклонение плеча от линии «плечо — цель». Это та же теорема с переобозначенными сторонами: $\cos\beta = (L_1^2 + d^2 - L_2^2) / (2 L_1 d)$. Последней информации — сгибается ли локоть влево или вправо от этой линии — в формуле вообще нет. Для этого нужен pole vector.
 
@@ -340,6 +345,8 @@ print(round(d, 4), round(c, 4), round(np.degrees(phi), 2))   # 2.9155 -0.375 112
 
 ## В NumPy
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -369,6 +376,8 @@ print(elbow_deg(2, 1.5, 2.5))     # 90.0
 print(elbow_deg(2, 1.5, 4.0))     # 180.0 (out of reach, clamped)
 print(np.arccos(-1.625))          # nan
 ```
+
+</PyCell>
 
 Настольный NumPy вдобавок печатает `RuntimeWarning: invalid value encountered in arccos`; в браузере (Pyodide,
 WebAssembly) нет флагов исключений плавающей точки, и там он молчит. Не полагайтесь на предупреждение: проверяйте

@@ -1,5 +1,6 @@
 ---
 import { pageLocale, t } from '../i18n/ui';
+import { colabUrl, githubUrl } from '../lib/colab';
 const locale = pageLocale(Astro);
 /**
  * "Open in Colab" badge for a notebook in `notebooks/` of the course repo.
@@ -12,13 +13,8 @@ interface Props {
 }
 
 const { notebook, label = t(locale, 'colab.open') } = Astro.props;
-if (!/^[\w.-]+$/.test(notebook)) {
-	throw new Error(`<ColabBadge>: \`notebook\` must be a bare file name, got ${JSON.stringify(notebook)}.`);
-}
-
-const path = `ssoj13/math-course/blob/main/notebooks/${notebook}.ipynb`;
-const colab = `https://colab.research.google.com/github/${path}`;
-const github = `https://github.com/${path}`;
+const colab = colabUrl(notebook);
+const github = githubUrl(notebook);
 ---
 
 <div class="lab-card not-content colab">

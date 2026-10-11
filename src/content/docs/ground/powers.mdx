@@ -4,6 +4,7 @@ description: "x³ is a volume, x⁰ = 1, x⁻¹ undoes x, x^½ is the side of a 
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [Squares, roots and the plane](lesson:squares-and-plane) (a square is an area, a root undoes it).
 
@@ -302,6 +303,8 @@ Work these on paper before opening the answers.
 
 ## In NumPy
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -340,6 +343,8 @@ with np.errstate(invalid='ignore', divide='ignore'):
     print(np.float64(0.0)**-1)          # inf
 print(0.0**0)                           # 1.0  by convention, not by the ladder
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: how pow is computed, and why x² is not pow(x, 2)</summary>
