@@ -1,15 +1,23 @@
 ---
 title: "Cosine similarity and embeddings"
-description: "Meaning as direction: comparing embeddings."
+description: "Meaning as direction: comparing embeddings, and how AI systems use them."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { CosScene, CosControls, CosLookup, CosNeighbours, CosAnalogy, CosSearch, CosAttention } from '../../../viz/lessons/cosine-similarity';
+import { rowsFor } from '../../../viz/lessons/cosine-similarity.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'cs']} />
 
 **Built on:** [The dot product](lesson:dot-product) · [Length, Σ notation and normalization](lesson:length) · [Basis, span, independence and dimension](lesson:basis)
 
-Smooth shading has a crease angle: two faces share a soft edge when their normals are within 30°, a hard edge otherwise. The test is not an angle at all; for unit normals it is `dot(N1, N2) > cos(30°)`. An asset library that finds "similar" textures does the same test on much longer vectors. This lesson is that one test, named, and its use on the vectors that stand for words.
+Smooth shading has a crease angle: two faces share a soft edge when their normals are within 30°, a hard edge otherwise. The test is not an angle at all; for unit normals it is `dot(N1, N2) > cos(30°)`. An asset library that finds "similar" textures does the same test on much longer vectors. So does every AI system that finds "similar" words, documents or images. This lesson is that one test, named, and then a tour of where AI uses it.
 
 ## 1. Cosine similarity: direction only
 
@@ -31,15 +39,25 @@ Example 2. $(1, 0)$ and $(0, 1)$: $\mathbf{a} \cdot \mathbf{b} = 0$, similarity 
 
 Example 3. $(1, 2)$ and $(2, 1)$: $\mathbf{a} \cdot \mathbf{b} = 2 + 2 = 4$, both lengths $\sqrt 5$, so $\cos\theta = 4/5 = 0.8$. Similar but not identical ($\theta \approx 37^\circ$).
 
-{/* scene: 1.7-1 — toy semantic space: 2D/3D arrows labelled cat, dog, car; drag them, the cosine readout and the angle arc update */}
+One rule before we go on: the **zero vector** $(0, 0)$ has no direction. The formula would divide by its length, 0, so its cosine similarity with anything is *undefined* (not 0). Every scene below shows a dash in that case.
 
-A toy picture, hand-made, not a real embedding: give every word two made-up features, "furry" and "has wheels". cat $= (0.9, 0.1)$, dog $= (0.8, 0.2)$, car $= (0.1, 0.9)$. Then
+A toy picture, hand-made, not a real embedding: give every word two made-up features, "furry" and "has wheels". Cat $= (0.9, 0.1)$, dog $= (0.8, 0.2)$, car $= (0.1, 0.9)$. For cat and dog the dot product is $0.72 + 0.02 = 0.74$ and the lengths are $0.906$ and $0.825$; for cat and car the dot product is $0.09 + 0.09 = 0.18$ and both lengths are $0.906$:
 
 $$
-\cos(\text{cat}, \text{dog}) = \frac{0.72 + 0.02}{0.906 \cdot 0.825} \approx 0.99, \qquad \cos(\text{cat}, \text{car}) = \frac{0.09 + 0.09}{0.906 \cdot 0.906} \approx 0.22
+\begin{aligned}
+\frac{0.74}{0.906 \cdot 0.825} &\approx 0.99 \\
+\frac{0.18}{0.906 \cdot 0.906} &\approx 0.22
+\end{aligned}
 $$
 
-Cat and dog point almost the same way; cat and car do not. Real embeddings do the same with hundreds of features that nobody labelled by hand.
+Cat and dog point almost the same way; cat and car do not. Drag the tips of the three arrows (or type in the panel): the arcs show the two angles, and the panel shows all three similarities.
+
+<SceneIsland caption="COS-1 · A toy meaning space: three hand-made word arrows (furry, has wheels); the cosine of each pair follows the angle between the arrows." rows={rowsFor(1, locale)}>
+  <CosScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<CosControls scene={1} locale={locale} client:load />
+
+Real embeddings do the same with hundreds of features that nobody labelled by hand. Section 3 uses a real table.
 
 ## 2. What cosine ignores: length
 
@@ -47,7 +65,12 @@ Scale one vector and the similarity does not move. $(3, 4)$ and $(6, 8)$: $\math
 
 Euclidean distance ([lesson 0.3](lesson:pythagoras)) sees the opposite picture. $(3, 4)$ to $(6, 8)$ is $\lvert (-3, -4) \rvert = 5$ apart; $(3, 4)$ to $(4, 3)$ is $\lvert (-1, 1) \rvert = \sqrt 2 \approx 1.41$ apart. By distance, $(4, 3)$ is the closer one; by cosine, $(6, 8)$ is the perfect match. Neither is wrong; they measure different things. Cosine asks "same direction?", distance asks "same place?".
 
-{/* scene: 1.7-3 — scrub a scale on one vector: the cosine readout stays put while the Euclidean distance changes */}
+In the scene, $\mathbf{a} = (3, 4)$ and the second arrow is $s \cdot \mathbf{b}$ with $\mathbf{b} = (4, 3)$. Drag its tip along the dashed line (or scrub $s$ in the formula): the cosine stays at $0.960$ while the distance between the tips changes. At $s = 0$ the arrow shrinks to the zero vector and the cosine is undefined.
+
+<SceneIsland caption="COS-2 · Scale invariance: stretching s·b leaves cos θ at 0.960; the distance between the tips changes; at s = 0 the cosine is undefined." rows={rowsFor(2, locale)}>
+  <CosScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<CosControls scene={2} locale={locale} client:load />
 
 **Misconception to drop:** "cosine similarity is a distance." It is not: it grows when things get *closer* in direction, it ignores length entirely, and it can be negative. People sometimes use $1 - \cos\theta$ as a "cosine distance", which at least points the right way.
 
@@ -55,20 +78,70 @@ Euclidean distance ([lesson 0.3](lesson:pythagoras)) sees the opposite picture. 
 
 ## 3. Embeddings: meaning as an arrow
 
-An **embedding** is a vector that stands for something that is not a number: a word, a token, an image, an audio clip. A model learns the components so that things used in similar ways end up pointing in similar directions. The vector for "cat" in a text model might have 768 or 4096 components ([lesson 1.1](lesson:vector): dimension is a count of slots), and no component has a name like "furry". Only the geometry means something, and the geometry is read with cosine similarity.
+An **embedding** is a vector that stands for something that is not a number: a word, a token, an image, an audio clip. A model learns the components so that things used in similar ways end up pointing in similar directions. No component has a name like "furry"; only the geometry means something, and the geometry is read with cosine similarity.
 
-{/* scene: 1.7-2 — a real small table of ~60 words × 16 dims (precomputed JSON, provenance recorded) shown as a heatmap of cosine similarities; hover a cell → the two word vectors as component bars with the products aᵢbᵢ, and the two arrows in a 3-PC display projection */}
+### The embedding table an LLM starts with
 
-Two cautions that matter in practice:
+A language model never sees letters. Its first step is a **tokenizer** that cuts the text into pieces and replaces each piece by an integer, its **token id**. Its second step is a lookup in the **embedding table**: a big grid of numbers with one row per token id. Token id 5 451 means "copy row 5 451". That is the whole operation; no arithmetic happens, exactly like reading texel $(u, v)$ from a texture by integer coordinates.
 
-- A negative similarity does not reliably mean "opposite meaning". In a high-dimensional space most directions are nearly perpendicular to each other, and the learned geometry is not organized as neat antonym pairs. Treat negative values as "far", not "anti".
-- Random vectors in high dimension are almost always nearly perpendicular. With 4096 components each drawn at random, the cosine between two of them is typically a few hundredths. A similarity of 0.3 is therefore far above the random baseline of about 0 in 4096-D, while in 2D two random directions show 0.3 all the time. The baseline also depends on the model: many trained embedding spaces have all cosines shifted positive, so compare against typical values for that model, not against 0. Part 10 uses the random-vector fact to explain the $\sqrt d$ in attention.
+The table below is real. It is a slice of **GloVe** (Stanford, 2014), a classic table of 400 001 rows (one padding row plus 400 000 words), 300 numbers per row, learned from Wikipedia and newswire text. The rows are sorted by how often the word occurs, so "the" is row 1 and "cat" is row 5 451. Click a word of the sentence, or a row of the heatmap:
 
-{/* scene: 1.7-4 — nearest-neighbours list recomputed live when the reader edits one coordinate of a word vector */}
+<CosLookup locale={locale} client:load />
 
-## 4. All pairs at once
+Every row is a 300-dimensional arrow. The same idea at full scale: a modern LLM's table has around 150 000 rows of a few thousand numbers each, and the rows are learned together with the rest of the model.
 
-With $n$ embeddings you often want the similarity of every pair. First normalize every vector; then each similarity is a plain dot product, no divisions left. The explicit loop, on the toy table of section 1:
+### Similar meaning, similar direction
+
+Here are 62 real GloVe rows, compared in all 300 dimensions: one cell per pair of words, coloured by their cosine similarity. The blocks along the diagonal are the groups (animals, vehicles, people, places, food, graphics, qualities): words of one group point in similar directions. Pick a pair to see its 300 products $a_i b_i$ (the table of [lesson 1.4](lesson:dot-product), 300 cells long); their sum is the dot product.
+
+You cannot draw 300 dimensions. The 3D view shows the 62 words **projected** onto the three directions along which they spread the most (principal component analysis, PCA, a later lesson). Treat it like a shadow of a 300-dimensional object: those three directions keep only about a quarter of the spread, so two points that look close may be far apart, and the angle drawn between the two arrows is not the real angle. The panel shows both: the real cosine and angle in 300 dimensions, and the angle in the picture. Click a point to compare it with the last word you picked.
+
+<SceneIsland caption="COS-3 · 62 real GloVe words projected to 3D for display; the pair's real cosine is computed in all 300 dimensions." rows={rowsFor(3, locale)}>
+  <CosScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<CosControls scene={3} locale={locale} client:load />
+
+Concrete numbers from this table: `cat` and `dog` have cosine $0.68$, `cat` and `car` $0.15$, `king` and `queen` $0.63$. Three cautions that matter in practice:
+
+- **Opposite meaning is not opposite direction.** `hot` and `cold` have cosine $0.51$, `good` and `bad` $0.65$: antonyms are used in the same sentences ("the water is hot / cold"), so they point in similar directions. Of the 1 891 pairs in this table only 150 have a negative cosine, and the most negative is just $-0.19$. Treat negative values as "far", not "anti".
+- **Random vectors in high dimension are almost always nearly perpendicular.** With 300 random components the cosine between two vectors is typically within about $\pm 0.06$ of 0 (roughly $1/\sqrt{300}$); with 4 096 components, within about $\pm 0.016$. So $0.3$ is far above chance in 300-D, while in 2D two random directions show $0.3$ all the time. The baseline also depends on the model: many trained spaces have all cosines shifted positive, as here, so compare against typical values for that model, not against 0. Part 10 uses the random-vector fact to explain the $\sqrt d$ in attention.
+- **The picture is not the space.** Every 2D or 3D map of embeddings is a projection; judge similarity by the number, not by the drawing.
+
+### Nearest neighbours
+
+The most common question asked of an embedding table: which rows are most similar to this one? Compute the cosine with every row and sort. Below, the search runs over the 62 table words, live. Change one of the 300 numbers of the chosen word and watch the ranking move: meaning is spread over all the numbers, and no single one carries it. For a few words the list from GloVe's full 400 000-word vocabulary is shown too (computed once by the build script). It contains surprises: the nearest word to `paris` is `prohertrib`, a garbage token that slipped into the training text. Real tables are learned from real, messy text.
+
+<CosNeighbours locale={locale} client:load />
+
+This "sort by cosine" is also how **recommendation** works: a film or a product gets an embedding, you get an embedding from what you watched or bought, and the nearest rows are what you are shown next.
+
+### Analogies: arithmetic on arrows, and where it breaks
+
+Directions can carry relations. The arrow from `man` to `woman` (the difference `woman − man`) is roughly the same as the arrow from `king` to `queen`. So start at `king`, subtract `man`, add `woman`, and look for the nearest word: **king − man + woman ≈ ?** The arithmetic is plain vector arithmetic from [lesson 1.2](lesson:vector-arithmetic), done on all 300 components at once.
+
+In GloVe the nearest word (inputs excluded) is "queen", with cosine $0.69$. Try the examples, then build your own with the three selectors. Read the verdict under each example: several famous-looking results only work because the three input words are dropped from the answers, and some relations do not survive the arithmetic at all.
+
+<CosAnalogy locale={locale} client:load />
+
+What to take away: analogy arithmetic works for relations the training text repeats thousands of times (gender of family words, capital of a country) and fails quietly elsewhere, because nearest-neighbour search always returns *something*. It is a demonstration of the geometry, not a reasoning engine.
+
+### Dimension: hundreds to thousands of numbers
+
+How long are these arrows in practice? GloVe uses 300 numbers per word. The search model of the next section uses 384 numbers per text. The token table of the 1.7-billion-parameter LLM above uses 2 048, and large models use 4 096 to over 12 000. In [lesson 1.6](lesson:basis) terms, the dimension is just the count of slots in each row: more slots let the model keep more distinctions apart, at a cost in memory and compute that grows with every row.
+
+## 4. Semantic search and RAG
+
+An embedding model does not have to stop at single words. A **text embedding model** reads a whole sentence or paragraph and returns one vector for it, trained so that a question and a passage that answers it point in similar directions, even when they share no words.
+
+**Semantic search** is then nearest neighbours again: embed every document once and store the vectors (this store is called a **vector database**); embed the question when it arrives; rank the documents by cosine; return the top $k$. Below, 12 short passages and 5 questions were embedded by a real model (snowflake-arctic-embed-xs, 384 numbers per text). Your browser only computes the cosines and sorts. Notice that "How do I make a loaf at home?" finds the passage about dough and baking, although "loaf" appears nowhere in it.
+
+<CosSearch locale={locale} client:load />
+
+**RAG** (retrieval-augmented generation) is this search plus one more step: the top passages are pasted into the prompt of a language model, which answers from them. The language model does no searching itself; the cosine ranking decides what it gets to read. When a chatbot answers from your company's documents, this is usually what happens behind it.
+
+## 5. All pairs at once
+
+With $n$ embeddings you often want the similarity of every pair (the heatmap above is such a table). First normalize every vector; then each similarity is a plain dot product, no divisions left. The explicit loop, on the toy table of section 1:
 
 <PyCell>
 
@@ -92,7 +165,15 @@ print(np.round(S, 2))
 
 NumPy writes the same loop as `S = E_hat @ E_hat.T`. **This `@` between two matrices is Part 2 material.** For now read it as exactly the double loop above: every row of the first dotted with every row of the second, all at once. It is shown here only so the Python cell matches what you will see in real code.
 
-> **Say it simpler.** Cosine similarity ignores length and keeps only direction: 1 = same direction, 0 = unrelated, −1 = opposite. An embedding is an arrow that stands for a word; similar words point the same way.
+## 6. Preview: attention compares embeddings with dot products
+
+The central operation of a transformer, **attention**, starts with exactly the table of section 5: for a sentence of $n$ tokens it computes the dot product of every token's vector with every other token's vector and uses the scores to decide which tokens each token should "look at". Here is that raw table for "the cat sat on the mat", using the GloVe rows directly:
+
+<CosAttention locale={locale} client:load />
+
+Two things are missing that the real mechanism adds, and both are Part 10: the vectors are first multiplied by learned matrices (so "cat" can look for its verb rather than for itself, which is why the diagonal dominates here), and the scores are divided by $\sqrt d$ and turned into weights that sum to 1. The comparison itself is the dot product you already know.
+
+> **Say it simpler.** Cosine similarity ignores length and keeps only direction: 1 = same direction, 0 = unrelated, −1 = opposite. An embedding is an arrow that stands for a word or a text; an AI system finds "similar" things by finding arrows that point the same way.
 
 ## Check yourself
 
@@ -129,7 +210,7 @@ NumPy writes the same loop as `S = E_hat @ E_hat.T`. **This `@` between two matr
         "the words are nearly synonyms, since 0.1 is close to zero"
       ],
       answer: 0,
-      explain: "Learned spaces are not organized as antonym pairs, and most directions in high dimension are nearly perpendicular. A small negative value means dissimilar, not opposite in meaning."
+      explain: "Learned spaces are not organized as antonym pairs (hot and cold have cosine 0.51 in GloVe), and most directions in high dimension are nearly perpendicular. A small negative value means dissimilar, not opposite in meaning."
     },
     {
       q: "In a 4096-dimensional space, two vectors with random components are typically…",
@@ -141,6 +222,28 @@ NumPy writes the same loop as `S = E_hat @ E_hat.T`. **This `@` between two matr
       ],
       answer: 2,
       explain: "Positive and negative products aᵢbᵢ cancel across thousands of components, so the dot product of random vectors is tiny compared with the product of the lengths. This is the seed of the √d scaling in attention (Part 10)."
+    },
+    {
+      q: "What does an LLM do with token id 5451 before any arithmetic?",
+      options: [
+        "multiplies it by the embedding table",
+        "copies row 5451 of the embedding table",
+        "normalizes it to length 1",
+        "computes its cosine with every other token id"
+      ],
+      answer: 1,
+      explain: "The embedding lookup is a row read by index, like fetching a texel by integer coordinates. Arithmetic starts after the rows have been copied."
+    },
+    {
+      q: "A RAG system answers a question from your documents. Which step uses cosine similarity?",
+      options: [
+        "the language model writing the answer word by word",
+        "splitting the documents into sentences",
+        "translating the question into English",
+        "ranking the stored passages against the question's embedding to choose what goes into the prompt"
+      ],
+      answer: 3,
+      explain: "Retrieval embeds the question, compares it with the stored passage vectors by cosine and keeps the top k. The language model only reads what retrieval chose."
     }
   ]}
 />
@@ -151,6 +254,7 @@ NumPy writes the same loop as `S = E_hat @ E_hat.T`. **This `@` between two matr
 2. Of $(1, 0)$ and $(0, 1)$.
 3. Of $(1, 2)$ and $(2, 1)$.
 4. Which pair is more similar by cosine: $(3, 4), (4, 3)$ or $(3, 4), (6, 8)$? And which pair is closer by Euclidean distance?
+5. Of $(0, 0)$ and $(1, 2)$.
 
 <details>
 <summary>Answers</summary>
@@ -159,6 +263,7 @@ NumPy writes the same loop as `S = E_hat @ E_hat.T`. **This `@` between two matr
 2. $0$ (perpendicular).
 3. $4 / (\sqrt 5 \cdot \sqrt 5) = 0.8$.
 4. By cosine: $(3, 4), (6, 8)$ with similarity $1$ beats $0.96$. By distance: $(3, 4), (4, 3)$ at $\sqrt 2$ beats $5$.
+5. Undefined: the zero vector has no direction, and the formula would divide by $0$.
 
 </details>
 
@@ -203,13 +308,28 @@ print(round(cosine(x, y), 3))            # close to 0: a few hundredths at most
 <details>
 <summary>Machine layer: where embeddings live</summary>
 
-An embedding table is a matrix with one row per token; looking a token up is picking a row by index, no arithmetic. Search systems store the rows already normalized, so a similarity query is one dot product per row, and they often quantize the components to `int8` or `fp16` to fit more rows in memory, accepting a small error in each cosine. That trade is the subject of the number-formats branch at the end of the course.
+An embedding table is a matrix with one row per token; looking a token up is picking a row by index, no arithmetic. Search systems store the rows already normalized, so a similarity query is one dot product per row, and they often quantize the components to `int8` or `fp16` to fit more rows in memory, accepting a small error in each cosine. That trade is the subject of the number-formats branch at the end of the course. Even this page makes the trade on a small scale: its GloVe rows are rounded to 3 decimals, which changes no cosine by more than 0.0003.
+
+With millions of rows, comparing the query with every row is too slow, so vector databases use *approximate* nearest-neighbour indexes (graphs or clusters of rows) that check only a small fraction of the rows and occasionally miss the true best match.
+
+</details>
+
+<details>
+<summary>Where the data on this page comes from</summary>
+
+Nothing here is hand-typed. The build script `notebooks/build/embeddings.py` downloads pinned revisions of three freely licensed sources and writes `src/data/embeddings-small.json`, with its provenance inside:
+
+- **Words:** GloVe 6B 300d (Pennington, Socher and Manning, 2014; Wikipedia 2014 + Gigaword 5), public domain (ODC-PDDL), read from the `sentence-transformers/average_word_embeddings_glove.6B.300d` copy. 66 rows are kept (62 table words and 4 more for the sentence), rounded to 3 decimals; full-vocabulary neighbours and analogies are computed over all 400 000 words by the script.
+- **Texts:** `Snowflake/snowflake-arctic-embed-xs` (Apache-2.0), run with its ONNX export, first-token pooling and normalization, as its model card prescribes.
+- **LLM table facts:** the config and tokenizer of `Qwen/Qwen3-1.7B` (Apache-2.0); no weights.
+
+The 3D picture is a PCA projection of the 62 table words, for display only; every cosine on the page is computed from the 300-dimensional rows.
 
 </details>
 
 ## What this opens
 
-Every tool in Part 1 acts on one arrow, or compares two. A model acts on *all* arrows at once, turning every vector in a space by the same rule. That rule is a matrix, and it is where Part 2 begins. (The side branch [The cross product](lesson:cross-product) can be read before or after.)
+Every tool in Part 1 acts on one arrow, or compares two. A model acts on *all* arrows at once, turning every vector in a space by the same rule: the learned matrices that attention multiplies its embeddings by are such rules. That rule is a matrix, and it is where Part 2 begins. (The side branch [The cross product](lesson:cross-product) can be read before or after.)
 
 ## Term map
 

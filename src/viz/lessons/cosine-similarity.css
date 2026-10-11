@@ -1,0 +1,384 @@
+/*
+ * Lesson 1.7 page-side widgets (heatmaps, lists, search, attention table). Page-side = they follow the Starlight
+ * theme, unlike the always-dark viewports. The heatmap ramp is three literal #rrggbb colours per theme because canvas
+ * pixels are painted from them in script (cosine-similarity.tsx reads these variables and re-reads on a theme flip):
+ * blue = negative, neutral = zero, orange = positive (a colour-blind-safe diverging pair).
+ */
+:root {
+	--cs-neg: #3b82f6;
+	--cs-mid: #24262b;
+	--cs-pos: #f59e0b;
+	--cs-mark: #ffffff;
+}
+:root[data-theme='light'] {
+	--cs-neg: #1d4ed8;
+	--cs-mid: #f3f4f6;
+	--cs-pos: #c2410c;
+	--cs-mark: #111111;
+}
+
+.cs-controls,
+.cs-widget {
+	display: grid;
+	gap: 0.75rem;
+	margin-block: 1rem 1.5rem;
+}
+.cs-widget {
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.5rem;
+	padding: 0.9rem 1rem 1rem;
+}
+.cs-widget-title {
+	margin: 0;
+	font-size: var(--sl-text-lg);
+}
+.cs-note,
+.cs-row-read {
+	margin: 0;
+	font-size: var(--sl-text-sm);
+	color: var(--sl-color-gray-2);
+}
+.cs-big {
+	margin: 0;
+	font-size: var(--sl-text-base);
+}
+.cs-fig {
+	margin: 0;
+	display: grid;
+	gap: 0.35rem;
+}
+.cs-fig figcaption {
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-3);
+}
+
+/* Heatmaps: the box is sized by CSS before any script (no layout shift); the canvas fills it. */
+.cs-heat {
+	display: block;
+	width: 100%;
+	touch-action: manipulation;
+	image-rendering: pixelated;
+	border-radius: 2px;
+}
+.cs-heat:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 2px;
+}
+.cs-heat-square {
+	aspect-ratio: 1;
+	cursor: crosshair;
+}
+.cs-heat-table {
+	aspect-ratio: 300 / 66;
+	min-height: 140px;
+	cursor: pointer;
+}
+.cs-heat-strip {
+	height: 48px;
+}
+
+/* Cosine heatmap with group bands along the top and left edges. */
+.cs-pair-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+	gap: 1rem;
+	align-items: start;
+}
+@media (max-width: 40rem) {
+	.cs-pair-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+.cs-heat-box {
+	display: grid;
+	grid-template-columns: 5px minmax(0, 1fr);
+	grid-template-rows: 5px auto;
+	gap: 2px;
+}
+.cs-edge {
+	display: flex;
+}
+.cs-edge span {
+	flex: 1 1 0;
+}
+.cs-edge-top {
+	grid-column: 2;
+	grid-row: 1;
+}
+.cs-edge-left {
+	grid-column: 1;
+	grid-row: 2;
+	flex-direction: column;
+}
+.cs-heat-box .cs-heat {
+	grid-column: 2;
+	grid-row: 2;
+}
+.cs-pair-side {
+	display: grid;
+	gap: 0.6rem;
+}
+
+.cs-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem 1rem;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--sl-text-sm);
+}
+.cs-legend li {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	margin: 0;
+}
+.cs-swatch {
+	display: inline-block;
+	width: 0.7rem;
+	height: 0.7rem;
+	border-radius: 50%;
+	flex: none;
+	box-shadow: 0 0 0 1px var(--sl-color-gray-5);
+}
+
+/* Inputs. */
+.cs-row-inputs {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	gap: 0.5rem 0.75rem;
+}
+.cs-field {
+	display: grid;
+	gap: 0.2rem;
+	font-size: var(--sl-text-sm);
+	min-width: 0;
+}
+.cs-field > span {
+	color: var(--sl-color-gray-2);
+}
+.cs-field-wide {
+	flex: 1 1 14rem;
+}
+.cs-field select,
+.cs-field input[type='number'] {
+	font: inherit;
+	padding: 0.25rem 0.4rem;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.3rem;
+	background: var(--sl-color-black);
+	color: var(--sl-color-white);
+	max-width: 100%;
+}
+.cs-field input[type='number'] {
+	width: 5.5rem;
+}
+.cs-field select {
+	min-width: 7rem;
+}
+.cs-field input[type='range'] {
+	width: 100%;
+}
+.cs-op {
+	padding-bottom: 0.3rem;
+	font-size: var(--sl-text-lg);
+}
+.cs-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: var(--sl-text-sm);
+	padding-bottom: 0.3rem;
+}
+.cs-btn,
+.cs-chip,
+.cs-token {
+	font: inherit;
+	font-size: var(--sl-text-sm);
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 999px;
+	background: transparent;
+	color: inherit;
+	padding: 0.2rem 0.7rem;
+	cursor: pointer;
+}
+.cs-btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+.cs-chip.is-on,
+.cs-token.is-on {
+	border-color: var(--sl-color-accent);
+	background: var(--sl-color-accent-low);
+}
+.cs-presets,
+.cs-tokens {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+.cs-token {
+	display: inline-grid;
+	justify-items: center;
+	border-radius: 0.4rem;
+	padding: 0.25rem 0.6rem;
+	line-height: 1.25;
+}
+.cs-token-word {
+	font-family: var(--lab-font-mono, monospace);
+}
+.cs-token-id {
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-3);
+	font-variant-numeric: tabular-nums;
+}
+
+/* Ranked lists with a cosine bar. */
+.cs-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 0.25rem;
+	counter-reset: cs;
+}
+.cs-list li {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(4rem, 8rem) 3.6rem;
+	align-items: center;
+	gap: 0.6rem;
+	margin: 0;
+	font-size: var(--sl-text-sm);
+}
+.cs-list-word {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-family: var(--lab-font-mono, monospace);
+	min-width: 0;
+}
+.cs-list li.is-input .cs-list-word {
+	color: var(--sl-color-gray-3);
+}
+.cs-tag {
+	font-family: var(--lab-font-ui, inherit);
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-3);
+}
+.cs-num {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	font-family: var(--lab-font-mono, monospace);
+}
+.cs-bar {
+	position: relative;
+	height: 0.55rem;
+	border-radius: 2px;
+	background: var(--sl-color-gray-6);
+}
+.cs-bar::after {
+	content: '';
+	position: absolute;
+	left: 50%;
+	top: -2px;
+	bottom: -2px;
+	width: 1px;
+	background: var(--sl-color-gray-3);
+}
+.cs-bar-fill {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	background: var(--cs-pos);
+	border-radius: 2px;
+}
+.cs-bar-fill.is-neg {
+	background: var(--cs-neg);
+}
+.cs-docs li {
+	grid-template-columns: minmax(0, 1fr) minmax(3rem, 6rem) 3.6rem;
+	padding: 0.3rem 0.4rem;
+	border-radius: 0.3rem;
+}
+.cs-docs li.is-top {
+	background: var(--sl-color-accent-low);
+}
+.cs-doc {
+	display: grid;
+	gap: 0.15rem;
+}
+.cs-orig {
+	margin: 0;
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-3);
+}
+.cs-prompt {
+	margin: 0;
+	padding: 0.6rem 0.75rem;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	font-size: var(--sl-text-xs);
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.4rem;
+	background: var(--sl-color-gray-7, var(--sl-color-black));
+}
+.cs-verdict {
+	margin: 0;
+	padding: 0.5rem 0.75rem;
+	border-left: 3px solid var(--sl-color-accent);
+	font-size: var(--sl-text-sm);
+}
+
+/* Attention preview: a small numeric table with diverging backgrounds. */
+.cs-att {
+	border-collapse: collapse;
+	font-size: var(--sl-text-xs);
+	font-variant-numeric: tabular-nums;
+	width: auto;
+	max-width: 100%;
+	display: table;
+}
+.cs-att th,
+.cs-att td {
+	padding: 0.3rem 0.45rem;
+	text-align: right;
+	border: 1px solid var(--sl-color-gray-6);
+}
+.cs-att th {
+	font-family: var(--lab-font-mono, monospace);
+	font-weight: 600;
+}
+.cs-att th.is-hot {
+	color: var(--sl-color-accent-high);
+}
+/* Text on a saturated cell: the dark theme's orange is light (dark text), its blue and both light-theme ends are dark. */
+.cs-att td.is-strong-pos {
+	color: #111111;
+}
+.cs-att td.is-strong-neg,
+:root[data-theme='light'] .cs-att td.is-strong-pos {
+	color: #ffffff;
+}
+.cs-att-wrap {
+	max-width: 100%;
+	overflow-x: auto;
+}
+@media (max-width: 40rem) {
+	.cs-att th,
+	.cs-att td {
+		padding: 0.25rem 0.3rem;
+	}
+	/* Phones: the passage takes the whole row, its bar and number go underneath. */
+	.cs-docs li {
+		grid-template-columns: minmax(0, 1fr) 3.6rem;
+	}
+	.cs-docs .cs-doc {
+		grid-column: 1 / -1;
+	}
+}
+.cs-att td:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: -2px;
+}
