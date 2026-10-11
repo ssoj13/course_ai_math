@@ -1,6 +1,4 @@
 /** Pure vector helpers for lesson scenes. Arrays in/out, any dimension unless noted; no DOM, no three. */
-/** World-unit glass grid; zero means the fill alone is readable at this scale. */
-export function gridStep(pxPerUnit: number): number { return pxPerUnit < 14 ? 0 : pxPerUnit >= 80 ? .5 : 1; }
 /** Measured side tick law; endpoints remain exact, labels disappear before they crowd. */
 export function rulerTicks(length: number, pxPerUnit: number): {value:number;major:boolean;label:boolean}[] {
  if(!Number.isFinite(length)||length<0||pxPerUnit<=0)return [];
@@ -23,15 +21,6 @@ export function screenDimension(a:V,b:V,out:V,px=14): {a:number[];b:number[];nor
  return {a:[a[0]+px*nx,a[1]+px*ny],b:[b[0]+px*nx,b[1]+px*ny],normal:[nx,ny]};
 }
 /** World-aligned orthonormal plane basis. Anchor is world origin projected into the plane, never a face corner. */
-export function worldPlaneBasis(u:V,v:V): [number[],number[]] {
- if(u.length===2)return [[1,0,0],[0,1,0]];
- let n=normalize(cross(u,v));
- const dominant=n.reduce((a,x,i)=>Math.abs(x)>Math.abs(n[a])?i:a,0);
- if(n[dominant]<0)n=scale(n,-1);
- const seed=Math.abs(n[0])<.9?[1,0,0]:[0,1,0];
- const x=normalize(sub(seed,scale(n,dot(seed,n))));
- return [x,normalize(cross(n,x))];
-}
 export type V = readonly number[];
 
 /** Silent truncation by `zip` would hide a 2D/3D mix-up in a lesson, so mismatches are loud. */

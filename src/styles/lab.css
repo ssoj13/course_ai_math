@@ -1,40 +1,170 @@
+/*
+ * HUD instruments and formula plate of the holographic look (src/viz/scene/Instruments.tsx, FormulaPlate.tsx; layout
+ * numbers in scene/hud.ts). The instruments fill the free stage area (left of an open N-panel) as one SVG; they are
+ * decoration over the scene, so they never take pointer events (vertex drags pass through).
+ * Phones (< 720 px): a stage that carries instruments is square (more room for the figure and slim instrument
+ * columns inside it); the formula plate gets its own reserved strip under the stage, the same height on the server
+ * skeleton (SceneIsland) and on the live card, so hydration shifts nothing.
+ */
+.lab-instruments {
+	position: absolute;
+	inset: 0 var(--lab-vp-inset, 0px) 0 0;
+	z-index: 2;
+	pointer-events: none;
+	color: color-mix(in srgb, var(--viz-vec-a) 62%, var(--viz-muted));
+	font-family: var(--lab-font-mono);
+}
+.lab-instruments[data-look='clay'] {
+	color: var(--viz-clay-ink);
+}
+.lab-hud {
+	position: absolute;
+	inset: 0;
+	overflow: visible;
+	stroke: currentColor;
+	stroke-width: 1;
+	fill: currentColor;
+}
+.lab-hud text {
+	stroke: none;
+	fill: currentColor;
+	opacity: 0.9;
+}
+.lab-hud-arc {
+	stroke-opacity: 0.28;
+}
+.lab-hud-ruler > path:first-child {
+	stroke-opacity: 0.8;
+}
+.lab-hud-ruler > path:nth-child(2) {
+	stroke-opacity: 0.75;
+}
+.lab-hud-target,
+.lab-hud-dial {
+	fill: none;
+}
+.lab-hud-dial > circle:last-child {
+	fill: currentColor;
+}
+.lab-hud-hot {
+	stroke: var(--viz-vec-a);
+	stroke-width: 1.5;
+}
+.lab-instruments[data-look='clay'] .lab-hud-hot {
+	stroke: var(--viz-clay-accent);
+}
+.lab-hud-galaxy rect,
+.lab-hud-galaxy path {
+	fill: none;
+}
+.lab-hud-caption {
+	position: absolute;
+	display: grid;
+	justify-items: end;
+	/* hud.ts reserves exactly `lines` x 1.2 font for the caption (the right galaxy panel starts below it). */
+	line-height: 1.2;
+	text-align: right;
+	color: var(--viz-ink);
+}
+.lab-hud-caption > * {
+	max-width: 100%;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+.lab-hud-caption > span:first-child,
+.lab-hud-note {
+	color: color-mix(in srgb, var(--viz-vec-a) 55%, var(--viz-muted));
+}
+.lab-hud-caption output {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+.lab-instruments[data-look='clay'] .lab-hud-caption,
+.lab-instruments[data-look='clay'] .lab-hud-caption > span {
+	color: var(--viz-clay-ink);
+}
 
-/* Holographic measurements remain available on phones: reserved strips, never hidden by a breakpoint. */
-.lab-stage-overlay > .lab-instruments { pointer-events:none; }
-.lab-instruments { position:absolute; inset: 32px max(8px, calc(var(--lab-vp-inset,0px) + 6px)) 32px 8px; z-index:2; pointer-events:none; color:var(--viz-muted); opacity:.72; font:10px var(--lab-font-mono); }
-.lab-instruments svg { position:absolute; overflow:visible; }
-.lab-instruments text { fill:currentColor; stroke:none; font:12px var(--lab-font-mono); }
-.lab-hud-ruler { left:0; top:-32px; width:44px; height:calc(100% + 64px); }
-.lab-hud-dial { right:0; top:54px; width:72px; height:76px; }
-.lab-hud-planet { right:0; bottom:0; width:65px; height:65px; }
-.lab-stage[data-look="clay"] .lab-label { color: var(--viz-clay-ink); text-shadow: none; }
-.lab-stage[data-look="clay"] .lab-instruments { color: var(--viz-clay-ink); }
-.lab-hud-galaxies { position:absolute; left:37px; top:20px; width:44px; display:grid; gap:95px; }
-.lab-hud-galaxies .lab-hud-galaxy { position:static; width:44px; height:44px; }
-.lab-hud-readout { position:absolute; left:4px; bottom:0; display:grid; max-width:130px; padding:5px; border:1px solid color-mix(in srgb,var(--viz-vec-a) 35%,transparent); background:color-mix(in srgb,var(--viz-plate) 55%,transparent); }
-.lab-hud-readout span,.lab-hud-readout output { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.lab-formula-plate { position:absolute; z-index:3; bottom:34px; left:24px; right:calc(var(--lab-vp-inset,0px) + 24px); padding:9px 15px; background:color-mix(in srgb,var(--viz-plate) 55%,transparent); color:var(--viz-ink); border:1px solid color-mix(in srgb,var(--viz-vec-a) 60%,transparent); clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px); box-shadow:inset 0 0 7px color-mix(in srgb,var(--viz-vec-a) 38%,transparent); font-size:14px; }
-.lab-vp-card[data-formula] .lab-hud-readout, .lab-vp-card[data-formula] .lab-hud-planet { bottom:55px; }
-.lab-formula-plate .lab-formula { margin:0; max-height:100%; overflow:auto; }
-@media(max-width:719.98px){
- .lab-vp[data-hud] .lab-vp-skel > :nth-child(2) { margin-bottom:100px; }
- .lab-vp[data-formula] .lab-vp-skel > :nth-child(2) { margin-bottom:var(--lab-vp-formula-h,76px); }
- .lab-vp[data-hud][data-formula] .lab-vp-skel > :nth-child(2) { margin-bottom:calc(100px + var(--lab-vp-formula-h,76px)); }
- .lab-vp-card[data-hud] .lab-stage { height:calc(100% - 100px); }
- .lab-vp-card[data-formula] .lab-stage { height:calc(100% - var(--lab-vp-formula-h,76px)); }
- .lab-vp-card[data-hud][data-formula] .lab-stage { height:calc(100% - 100px - var(--lab-vp-formula-h,76px)); }
- .lab-instruments { inset:auto 0 -100px 0; height:100px; display:flex; align-items:center; gap:4px; padding:5px; background:var(--viz-bg-bottom); opacity:1; }
- .lab-instruments svg { position:static; flex-shrink:0; width:56px; height:80px; }
- .lab-instruments .lab-hud-ruler { width:44px; }
- .lab-instruments .lab-hud-ruler text { font-size:11px; }
- .lab-instruments .lab-hud-dial text { font-size:15px; }
- .lab-stage[data-look="clay"] .lab-instruments,.lab-stage[data-look="clay"] .lab-hud-readout { background:var(--viz-clay-plate); }
- .lab-hud-readout { position:static; flex:1; min-width:0; font-size:11px; padding:2px; }
- .lab-instruments .lab-hud-planet { width:42px; }
- .lab-hud-galaxies { position:static; width:36px; flex-shrink:0; gap:0; }
- .lab-hud-galaxies .lab-hud-galaxy { width:36px; height:36px; }
- .lab-instruments .lab-hud-dial { width:66px; }
- .lab-formula-plate { bottom:calc(var(--lab-vp-status,22px) + var(--lab-vp-chips, var(--lab-vp-chip-h,0px))); left:0; right:0; height:var(--lab-vp-formula-h,76px); display:flex; align-items:center; font-size:11px; overflow:auto; }
+/* Formula plate: the linked Formula on a framed, glowing, chamfered glass plate (frame drawn by FormulaPlate's SVG),
+   centred between the instrument columns over the floor. */
+.lab-formula-plate {
+	position: absolute;
+	z-index: 3;
+	bottom: calc(var(--lab-vp-status) + var(--lab-vp-chips) + 4%);
+	left: var(--lab-hud-l, 24px);
+	right: calc(var(--lab-vp-inset, 0px) + var(--lab-hud-r, 24px));
+	width: fit-content;
+	max-width: calc(100% - var(--lab-vp-inset, 0px) - var(--lab-hud-l, 24px) - var(--lab-hud-r, 24px));
+	margin-inline: auto;
+	box-sizing: border-box;
+	padding: 10px 30px;
+	color: var(--viz-ink);
+	font-size: 15px;
+}
+.lab-plate-frame {
+	position: absolute;
+	inset: -6px;
+	width: calc(100% + 12px);
+	height: calc(100% + 12px);
+	overflow: visible;
+	pointer-events: none;
+}
+.lab-formula-plate > .lab-plate-body {
+	position: relative;
+	width: max-content;
+	max-width: none;
+}
+/* The plate fits its formula by text size (FormulaPlate useFitText); a formula never scrolls inside the plate, even
+   where a lesson lets its page-side formulas scroll sideways. */
+.lab-formula-plate .lab-plate-body .lab-formula {
+	margin: 0;
+	overflow: visible;
+	max-width: none;
+}
+.lab-formula-plate[data-look='clay'] {
+	color: var(--viz-clay-ink);
+}
+@media (max-width: 719.98px) {
+	.lab-vp[data-hud] .lab-vp-skel > :nth-child(2) {
+		aspect-ratio: 1 / 1;
+	}
+	.lab-vp[data-formula] .lab-vp-skel > :nth-child(2) {
+		margin-bottom: var(--lab-vp-formula-h, 76px);
+	}
+	.lab-vp-card[data-formula] .lab-stage {
+		height: calc(100% - var(--lab-vp-formula-h, 76px));
+	}
+	.lab-formula-plate {
+		bottom: calc(var(--lab-vp-status) + var(--lab-vp-chips));
+		left: 0;
+		right: 0;
+		width: auto;
+		max-width: none;
+		margin: 0;
+		height: var(--lab-vp-formula-h, 76px);
+		display: flex;
+		align-items: center;
+		padding: 6px 14px;
+		font-size: 12px;
+		background: var(--viz-bg-bottom);
+	}
+	.lab-formula-plate[data-look='clay'] {
+		background: var(--viz-clay-bg-bottom);
+	}
+	.lab-plate-frame {
+		inset: 4px 6px;
+		width: calc(100% - 12px);
+		height: calc(100% - 8px);
+	}
+	.lab-formula-plate > .lab-plate-body {
+		margin-inline: auto;
+		text-align: center;
+	}
+}
+/* Clay studio: labels are dark ink on the light backdrop, without the hologram glow. */
+.lab-stage[data-look="clay"] .lab-label {
+	color: var(--viz-clay-ink);
+	text-shadow: none;
 }
 
 /*
@@ -361,6 +491,10 @@ h1#_top,
 	--viz-clay-accent: #f2994a;
 	--viz-clay-plate: #ece9e3;
 	--viz-clay-ink: #2a2e36;
+	/* Clay studio backdrop (light sweep, top/bottom) and its floor grid. */
+	--viz-clay-bg-top: #d6dae1;
+	--viz-clay-bg-bottom: #c4c9d2;
+	--viz-clay-grid: #b9bfc9;
 	/* Page-side formula term highlight: hot at 22 % (CSS only, not a scene role). */
 	--viz-hot-bg: color-mix(in srgb, var(--viz-hot) 22%, transparent);
 	--lab-vp-head: 28px;
@@ -435,6 +569,31 @@ h1#_top,
 	   row only if the chips ever need more (ViewportCard), never shrinks it. */
 	.lab-vp[data-panel] {
 		--lab-vp-chips: var(--lab-vp-chip-h);
+	}
+}
+@media (min-width: 360px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-360, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 390px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-390, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 412px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-412, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 480px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-480, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 600px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-600, var(--lab-vp-chip-h));
 	}
 }
 
@@ -535,6 +694,24 @@ h1#_top,
 	width: 12px;
 	height: 12px;
 	flex: none;
+}
+@media (max-width: 719.98px) {
+	/* No N-panel toggle on phones (StatusBar hintSegments). */
+	.lab-vp-status .lab-st-panel {
+		display: none;
+	}
+}
+.lab-vp-head[data-fit] .lab-vp-label {
+	display: none;
+}
+.lab-vp-head[data-fit='wrap'] .lab-vp-name {
+	white-space: normal;
+	text-align: right;
+	font-size: 10px;
+	line-height: 11px;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 }
 .lab-vp-name {
 	margin-left: auto;
@@ -644,18 +821,28 @@ h1#_top,
 }
 .lab-np-row {
 	display: grid;
-	grid-template-columns: 50px minmax(0, 1fr);
+	grid-template-columns: var(--np-label-w, 50px) minmax(0, 1fr);
 	align-items: start;
 	gap: 6px;
 	padding: 1px 0;
+}
+.lab-np-row.is-pending {
+	display: none;
 }
 .lab-np-label {
 	line-height: 20px;
 	text-align: right;
 	color: var(--viz-ink);
 	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+}
+/* The column is sized to the longest label (NPanel useLabelColumn); only labels past its maximum wrap. */
+@media (min-width: 720px) {
+	.lab-vp-panel[data-wrap] .lab-np-label {
+		white-space: normal;
+		line-height: 14px;
+		padding-block: 3px;
+		overflow-wrap: anywhere;
+	}
 }
 .lab-np-vec {
 	display: grid;
@@ -821,6 +1008,16 @@ h1#_top,
 		height: var(--np-h);
 		padding: 0;
 	}
+	.lab-np-row.is-pending {
+		display: flex;
+		opacity: 0.32;
+	}
+	.lab-np-pending {
+		flex: 1;
+		height: 2px;
+		border-radius: 1px;
+		background: var(--viz-field);
+	}
 	/* Mono at 11 px (advance <= 6.9 px): the label fits the model's 7 px per character with any fallback font. */
 	.lab-np-label {
 		flex: none;
@@ -897,6 +1094,20 @@ h1#_top,
 	background: var(--viz-field);
 	color: var(--viz-ink);
 	font: 600 9.5px/1.3 var(--lab-font-ui);
+}
+/* A hint wider than the bar: two smaller lines in the same 22 px (StatusBar fit). */
+.lab-vp-status[data-fit='wrap'] > span {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	white-space: normal;
+	font-size: 9.5px;
+	line-height: 10px;
+}
+.lab-vp-status[data-fit='wrap'] kbd {
+	padding: 0 3px;
+	font-size: 8.5px;
+	line-height: 9.5px;
 }
 
 /* Tooltips (500 ms, Blender-like): title, one line, and the formula term. */

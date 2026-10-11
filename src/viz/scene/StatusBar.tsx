@@ -8,7 +8,7 @@ import { useLocale } from '../../i18n/react';
  * constantly and would flood a screen reader; the same information is in the labels and the caption.
  * Three-free (DOM only); `hintFor` is pure.
  */
-import { useSyncExternalStore } from 'react';
+import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import { useStore } from 'zustand';
 import { lessonStore, type LessonState } from '../store';
 import { GIZMO_ID } from './Gizmo';
@@ -98,6 +98,17 @@ export function hintTokens(s: string): { text: string; key: boolean }[] {
 	return out;
 }
 
+const SEP = ' · ';
+
+/**
+ * A hint as its ' · '-separated segments of tokens; `panel` marks the segment that names the `[N]` key. The N-panel
+ * toggle does not exist on phones (the panel is the chip row there), so that segment is hidden under 720 px (CSS)
+ * and the rest of the hint fits the narrow bar.
+ */
+export function hintSegments(s: string): { tokens: { text: string; key: boolean }[]; panel: boolean }[] {
+	return s.split(SEP).map((part) => ({ tokens: hintTokens(part), panel: part.includes('[N]') }));
+}
+
 // Whether the reader is on touch: a coarse primary pointer, then whatever pointer was last pressed (hybrid devices).
 // One page-wide listener shared by every status bar.
 let touchNow = false;
@@ -129,12 +140,33 @@ export function StatusBar({ reg, lesson, spec }: { reg: StageReg; lesson: string
 	const touch = useSyncExternalStore(touchSubscribe, touchSnap, () => false);
 	// Only the hint text re-renders the bar, not every store write.
 	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode, touch, locale));
+	const bar = useRef<HTMLDivElement>(null);
+	// A hint longer than the bar (phones, long lesson hints) is never cut: it switches to two smaller lines, which fit
+	// the same 22 px bar (no layout change, the bar's height is fixed by the server skeleton).
+	useLayoutEffect(() => {
+		const el = bar.current;
+		if (!el) return;
+		const fit = () => {
+			const line = el.firstElementChild as HTMLElement | null;
+			el.removeAttribute('data-fit');
+			if (line && line.scrollWidth > line.clientWidth + 0.5) el.setAttribute('data-fit', 'wrap');
+		};
+		fit();
+		const ro = new ResizeObserver(fit);
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, [text]);
 	return (
-		<div className="lab-vp-status">
+		<div className="lab-vp-status" ref={bar}>
 			{/* Keyed by the text: a new hint is new nodes, so token spans reused by index never "move" (each such move was
 			    a layout-shift entry during every drag, measured at 360 px). */}
 			<span key={text}>
-				{hintTokens(text).map((t, i) => (t.key ? <kbd key={i}>{t.text}</kbd> : <span key={i}>{t.text}</span>))}
+				{hintSegments(text).map((seg, j) => (
+					<span key={j} className={seg.panel ? 'lab-st-panel' : undefined}>
+						{j > 0 && SEP}
+						{seg.tokens.map((t, i) => (t.key ? <kbd key={i}>{t.text}</kbd> : <span key={i}>{t.text}</span>))}
+					</span>
+				))}
 			</span>
 		</div>
 	);

@@ -144,6 +144,25 @@ function Text({ id, at, text, offset = [0, -9], role = 'ink', lane }: { id: stri
 	return <Show ov="labels"><Label lesson={LESSON} id={id} at={at} offset={offset} role={role}>{text}</Label></Show>;
 }
 
+/**
+ * Screen offset (CSS px, y down) that puts a bone's length label beside the bone a-b, on the side away from `away`
+ * (the other joint), so it never sits on the bone, the joint glyphs or the target point at the bone's end.
+ */
+function besideBone(a: V, b: V, away: V): [number, number] {
+	const d = sub(b, a);
+	const n = Math.hypot(d[0], d[1]) || 1;
+	let nx = -d[1] / n;
+	let ny = d[0] / n;
+	const m = midpoint(a, b);
+	if (nx * (away[0] - m[0]) + ny * (away[1] - m[1]) > 0) {
+		nx = -nx;
+		ny = -ny;
+	}
+	// Clear the label's half box along the normal: ~32 px half width sideways, ~8 px half height up/down.
+	const px = 10 + 32 * Math.abs(nx) + 8 * Math.abs(ny);
+	return [nx * px, -ny * px];
+}
+
 /** The shared triangle: sides, vertices (A polar drag, B along x), angle arc with magnet ticks, right angle at 90°. */
 function Triangle() {
 	const z = derive(useVals(LESSON)), labels = useOverlay('labels');
@@ -178,7 +197,8 @@ function Shadow({ side = 1, solid = false, names = true, lanes = false, lane }: 
 }
 
 type LanePolyProps = PolyProps & {
-	lane: Lane;
+	/** Screen lane of the label (with a leader), or null: the label sits on its polygon (the a², b², c² squares). */
+	lane: Lane | null;
 	/** Draw-in: the square unfolds outward from this side of the triangle (LC-0 first view). */
 	unfold?: 'a' | 'b' | 'c';
 	/** Label anchor other than the polygon centre (spec step 2: the square's label moves to its remainder). */
@@ -203,7 +223,7 @@ function LanePoly({ lane, unfold, anchor, ...p }: LanePolyProps) {
 	const hot = useHot(LESSON, p.id), visible = !!p.label;
 	center.current = centroid(p.pts(vals, p.step ?? step));
 	useLabel(visible ? { lesson: LESSON, text: p.label!(vals), role: p.role, hot: p.id, at: () => center.current, offset: offset.current } : null);
-	const line = useLeader(reg, visible, p.id);
+	const line = useLeader(reg, visible && lane !== null, p.id);
 	useFrame(() => {
 		if (unfold && group.current) {
 			// Unfold = a shear from the side's line: scale across the side grows from 0 to 1 with the stage reveal.
@@ -230,6 +250,11 @@ function LanePoly({ lane, unfold, anchor, ...p }: LanePolyProps) {
 				found = true;
 				center.current = centroid(meshPoints(m));
 			});
+		}
+		if (lane === null) {
+			offset.current[0] = 0;
+			offset.current[1] = 0;
+			return;
 		}
 		const point = reg.project?.(center.current);
 		const { x, y } = laneXY(reg, lane);
@@ -306,13 +331,13 @@ function Missing() {
 	return <>
 		<Triangle />
 		<Show ov="squares">
-			<Fade alpha={squareAlpha} lesson={LESSON} unfold="a" lane={[0, 3]} id="sq_a" pts={(vals) => { const d = derive(vals); return square(d.C, d.B); }} role="vecA"
+			<Fade alpha={squareAlpha} lesson={LESSON} unfold="a" lane={null} id="sq_a" pts={(vals) => { const d = derive(vals); return square(d.C, d.B); }} role="vecA"
 				anchor={step >= 2 ? (vals) => centroid(pieceAt(vals, 1, 0)) : undefined}
 				label={labels && step < 4 ? (vals) => 'a² = ' + fmt(derive(vals).a2) : undefined} />
-			<Fade alpha={squareAlpha} lesson={LESSON} unfold="b" lane={[0, 0]} id="sq_b" pts={(vals) => { const d = derive(vals); return square(d.A, d.C); }} role="vecB"
+			<Fade alpha={squareAlpha} lesson={LESSON} unfold="b" lane={null} id="sq_b" pts={(vals) => { const d = derive(vals); return square(d.A, d.C); }} role="vecB"
 				anchor={step >= 3 ? (vals) => centroid(pieceAt(vals, 2, 0)) : undefined}
 				label={labels && step < 4 ? (vals) => 'b² = ' + fmt(derive(vals).b2) : undefined} />
-			{!z.degenerate && <LanePoly lesson={LESSON} unfold="c" lane={[1, 0]} id="sq_c" pts={(vals) => { const d = derive(vals); return square(d.B, d.A); }} role="vecC" fill={STYLE.fillA}
+			{!z.degenerate && <LanePoly lesson={LESSON} unfold="c" lane={null} id="sq_c" pts={(vals) => { const d = derive(vals); return square(d.B, d.A); }} role="vecC" fill={STYLE.fillA}
 				label={labels && step < 5 ? (vals) => 'c² = ' + fmt(derive(vals).c2) : undefined} />}
 		</Show>
 		<Show ov="shadows">{step >= 1 && <Shadow lane={[1, 2]} />}{step >= 3 && <Shadow side={2} lane={[1, 3]} />}</Show>
@@ -381,10 +406,10 @@ function Proof() {
 				label={labels ? (v) => (step === 4 ? 'DB² = ' : '(a − b cos θ)² = ') + fmt(derive(v).rest2) : undefined} />}
 			<Fade lane={[2, 0]} alpha={step >= 7 ? 1 - fade : 1} lesson={LESSON} id={step >= 7 ? 'bsin2' : 'rise2'} timeline="proof" pts={sq('A', 'D')} role="vecB" fill={.16}
 				label={labels ? (v) => riseName + fmt(derive(v).rise2) : undefined} />
-			{!z.degenerate && <LanePoly lane={[1, 0]} lesson={LESSON} id="c2" pts={sq('B', 'A')} role="vecC" fill={.16} label={labels ? (v) => 'c² = ' + fmt(derive(v).c2) : undefined} />}
-			{step >= 6 && <LanePoly lane={[0, 0]} lesson={LESSON} id="a2" pts={sq('C', 'B')} role="vecA" label={labels ? (v) => 'a² = ' + fmt(derive(v).a2) : undefined} />}
+			{!z.degenerate && <LanePoly lane={null} lesson={LESSON} id="c2" pts={sq('B', 'A')} role="vecC" fill={.16} label={labels ? (v) => 'c² = ' + fmt(derive(v).c2) : undefined} />}
+			{step >= 6 && <LanePoly lane={null} lesson={LESSON} id="a2" pts={sq('C', 'B')} role="vecA" label={labels ? (v) => 'a² = ' + fmt(derive(v).a2) : undefined} />}
 			{step >= 7 && <Fade lane={[2, 2]} alpha={1 - fade} lesson={LESSON} id="bcos2" pts={sq('C', 'D')} role="vecB" label={labels ? (v) => 'b² cos² θ = ' + fmt(derive(v).bcos2) : undefined} />}
-			{step >= 7 && <Fade lane={[0, 1]} alpha={fade} lesson={LESSON} id="b2" pts={sq('A', 'C')} role="vecB" label={labels ? (v) => 'b² = ' + fmt(derive(v).b2) : undefined} />}
+			{step >= 7 && <Fade lane={null} alpha={fade} lesson={LESSON} id="b2" pts={sq('A', 'C')} role="vecB" label={labels ? (v) => 'b² = ' + fmt(derive(v).b2) : undefined} />}
 		</>}</Show>
 	</>;
 }
@@ -414,8 +439,8 @@ function IK() {
 		<Text id="S" at={z.S} text={t(locale, 'lc.shoulder')} offset={[-20, 16]} />
 		<Text id="E" at={z.E} text={t(locale, 'lc.elbow')} offset={[12, -15]} />
 		<Text id="hand" at={z.T} text={t(locale, 'lc.targetLabel')} offset={[20, 16]} />
-		<Text id="l1" at={midpoint(z.S, z.E)} text={'L₁ = ' + fmt(z.l1)} offset={[-24, 0]} role="vecA" />
-		<Text id="l2" at={midpoint(z.E, z.W)} text={'L₂ = ' + fmt(z.l2)} offset={[24, 0]} role="vecB" />
+		<Text id="l1" at={midpoint(z.S, z.E)} text={'L₁ = ' + fmt(z.l1)} offset={besideBone(z.S, z.E, z.W)} role="vecA" />
+		<Text id="l2" at={midpoint(z.E, z.W)} text={'L₂ = ' + fmt(z.l2)} offset={besideBone(z.E, z.W, z.S)} role="vecB" />
 		{(z.outside || z.inside) && <>
 			<Segment lesson={LESSON} id={hot.has('clamp') ? 'clamp' : 'gap'} a={z.W} b={z.T} dashed role="axisX" />
 			<Text id="gap" at={midpoint(z.W, z.T)} text={t(locale, 'lc.unreachable')} role="axisX" />

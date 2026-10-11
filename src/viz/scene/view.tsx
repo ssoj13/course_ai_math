@@ -6,7 +6,7 @@
 import { Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { AdditiveBlending, BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
+import { AdditiveBlending, Box3, BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Mesh, type Object3D } from 'three';
 import { sub, to3, type V } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
@@ -42,6 +42,35 @@ export function wppAt(camera: Camera, p: V, hPx: number): number {
 	return wppVec(camera, setV(pt, p), hPx);
 }
 
+const part = new Box3();
+
+/**
+ * World bounds of the figure under `root` (the Stage's content group) into `out`; empty when nothing is drawn yet.
+ * Scene furniture marked `userData.aux` (grids, half-planes, the floor) is skipped, and glyphs sized in screen px
+ * (`usePxScale`: points, arrow heads) count as their anchor point only. Bounding boxes are recomputed: shapes rewrite their buffers in place
+ * (`writeGeo`), so a cached box can be stale. Called only when the home view is computed, not per frame.
+ */
+export function contentBox(root: Object3D, out: Box3): Box3 {
+	out.makeEmpty();
+	root.updateWorldMatrix(true, true);
+	const visit = (o: Object3D) => {
+		if (o.userData.pxSized) {
+			out.expandByPoint(o.getWorldPosition(pt));
+			return;
+		}
+		if (o.userData.aux) return;
+		const geo = (o as Mesh).geometry;
+		if (geo) {
+			geo.computeBoundingBox();
+			const b = geo.boundingBox;
+			if (b && !b.isEmpty() && Number.isFinite(b.min.x) && Number.isFinite(b.max.x)) out.union(part.copy(b).applyMatrix4(o.matrixWorld));
+		}
+		for (const c of o.children) visit(c);
+	};
+	visit(root);
+	return out;
+}
+
 /**
  * Keeps `obj` (unit-sized geometry) `px` CSS pixels big wherever it is: pixel-stable heads, dots and markers.
  * Runs per frame because orbiting (3D) and resizing change the scale without a React render. `billboard` also turns
@@ -50,6 +79,10 @@ export function wppAt(camera: Camera, p: V, hPx: number): number {
  */
 export function usePxScale(obj: React.RefObject<Object3D | null>, px: number | ((reveal: number) => number), billboard = false): void {
 	const reg = useStage();
+	// A glyph sized in screen px has no world extent: the figure's bounds (contentBox) count only its position.
+	useLayoutEffect(() => {
+		if (obj.current) obj.current.userData.pxSized = true;
+	});
 	useFrame(({ camera }) => {
 		const o = obj.current;
 		if (!o || !reg.el) return;

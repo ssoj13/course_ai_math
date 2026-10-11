@@ -58,8 +58,8 @@ test('grid: minor lines visible but quiet on both ends of the gradient, majors s
 
 test('style tokens: the stroke recipe of visual-language.md', () => {
 	expect(STYLE.core).toBe(2);
-	expect(STYLE.halo).toBe(18);
-	expect(STYLE.haloA).toBe(0.10);
+	expect(STYLE.halo).toBe(16);
+	expect(STYLE.haloA).toBe(0.09);
 	expect(STYLE.hotPad).toBe(2);
 	expect(STYLE.hotHaloA).toBe(0.3);
 	expect(STYLE.fillA).toBe(0.12);

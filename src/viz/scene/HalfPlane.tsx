@@ -34,6 +34,8 @@ const FAN5 = [0, 1, 2, 0, 2, 3, 0, 3, 4];
 const DISC = new CircleGeometry(1, 64);
 const Z = new Vector3(0, 0, 1);
 
+const AUX = { aux: true };
+
 export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	const reg = useStage();
 	const n = usePos(p.lesson, p.normal);
@@ -42,7 +44,8 @@ export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
-	const base = p.opacity ?? 0.1;
+	// 0.18 (was 0.1 on the flat 6d background): over the holographic nebulae a 10 % tint no longer read as a side.
+	const base = p.opacity ?? 0.18;
 	const alpha = hot ? 2 * base : base;
 	const fill = useRef<MeshBasicMaterial>(null);
 	const group = useRef<Group>(null);
@@ -76,11 +79,12 @@ export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	return (
 		<group ref={group} {...hover}>
 			{poly ? (
-				<mesh geometry={geo} frustumCulled={false} renderOrder={-1}>
+				// A half-plane is 50 x extent wide: scene furniture for framing and the floor reflection (`aux`).
+				<mesh geometry={geo} frustumCulled={false} renderOrder={-1} userData={AUX}>
 					{mat}
 				</mesh>
 			) : (
-				<mesh geometry={DISC} quaternion={q ?? undefined} scale={reg.extent} renderOrder={-1}>
+				<mesh geometry={DISC} quaternion={q ?? undefined} scale={reg.extent} renderOrder={-1} userData={AUX}>
 					{mat}
 				</mesh>
 			)}

@@ -179,9 +179,12 @@ test('visible() hides rows; authoring errors throw', () => {
 		{ id: 'a', label: 'a', kind: 'num', key: 'a', spec: LEN },
 		{ id: 'x', label: 'x', kind: 'ro', value: () => 1, visible: (v) => (v.a as number) > 3 },
 	]);
-	expect(host.querySelectorAll('.lab-np-row').length).toBe(1);
+	// A hidden row keeps only an inert placeholder (the phone chip reserved for it), no field or value.
+	expect(host.querySelectorAll('.lab-np-row:not(.is-pending)').length).toBe(1);
+	expect(host.querySelector('.lab-np-row.is-pending')?.getAttribute('aria-hidden')).toBe('true');
 	act(() => lessonStore('np9').getState().set('a', 3.5));
-	expect(host.querySelectorAll('.lab-np-row').length).toBe(2);
+	expect(host.querySelectorAll('.lab-np-row:not(.is-pending)').length).toBe(2);
+	expect(host.querySelectorAll('.lab-np-row.is-pending').length).toBe(0);
 	expect(() => panel('np9', [{ id: 'a', label: 'a', kind: 'num', key: 'a' }])).toThrow(/spec/);
 	expect(() => panel('np9', [{ id: 'r', label: 'r', kind: 'ro' }])).toThrow(/key or value/);
 });

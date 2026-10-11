@@ -5,9 +5,11 @@
  * 2D lies in the z = 0 plane with "infinite" axes and no fade (a sheet of graph paper); 3D lies on the floor
  * (y = 0, y-up), fades with distance like Blender's floor, and adds a vertical y axis and a z axis.
  * Drawn first and without depth writes, so anything coplanar draws on top.
+ * Scene furniture (`userData.aux`): never reflected by the holographic floor and not part of the figure's bounds,
+ * so the home view frames what the lesson draws (vectors, shapes), not the +-extent of the axes.
  */
 import { Grid as ShaderGrid } from '@react-three/drei';
-import { LookCtx, useMirror } from './look';
+import { LookCtx } from './look';
 import { useContext, useLayoutEffect, useMemo, useRef } from 'react';
 import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
 import { tickText, tickValues } from '../geom';
@@ -45,11 +47,9 @@ function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' 
 	return null;
 }
 
-export function Grid(props: GridProps): React.JSX.Element | null {
- const mirror = useMirror();
- return mirror ? null : <GridContent {...props}/>;
-}
-function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
+const AUX = { aux: true };
+
+export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
 	const pal = usePalette();
 	const studio = useContext(LookCtx) === 'clay';
@@ -77,7 +77,7 @@ function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true
 	const labelled = showTicks ? vals.filter((v) => Math.round(Math.abs(v) / step) % every === 0) : [];
 	const flat = { transparent: true, depthWrite: false };
 	return (
-		<group>
+		<group userData={AUX}>
 			<ShaderGrid
 				ref={mesh}
 				args={[2, 2]}
@@ -88,8 +88,8 @@ function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true
 				sectionSize={step}
 				cellThickness={minor ? 1 : 0}
 				sectionThickness={1}
-				cellColor={studio ? '#b9bfc9' : pal.gridMinor}
-				sectionColor={studio ? '#b9bfc9' : pal.grid}
+				cellColor={studio ? pal.clayGrid : pal.gridMinor}
+				sectionColor={studio ? pal.clayGrid : pal.grid}
 				fadeDistance={is3d ? e * 7 : 1e4}
 				fadeStrength={is3d ? 1.6 : 0}
 				side={DoubleSide}

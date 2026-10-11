@@ -91,7 +91,7 @@ export function Overlays({ lesson, card, overlays }: { lesson: string; card: str
 				if (open && to && !e.currentTarget.contains(to)) setOpen(false);
 			}}
 		>
-			<button ref={btn} type="button" className="lab-vp-btn" aria-expanded={open} aria-controls={popId} onClick={() => setOpen((o) => !o)}>
+			<button ref={btn} type="button" className="lab-vp-btn" aria-label={t(locale, 'viewport.overlays')} aria-expanded={open} aria-controls={popId} onClick={() => setOpen((o) => !o)}>
 				{Icon.overlays}
 				<span className="lab-vp-label">{t(locale, 'viewport.overlays')}</span>
 				{Icon.caret}

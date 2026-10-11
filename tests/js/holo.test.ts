@@ -1,9 +1,6 @@
 import {test,expect} from 'bun:test';
-import {gridStep,rulerTicks,dimensionLayout,dot,sub,norm} from '../../src/viz/geom';
+import {rulerTicks,dimensionLayout,dot,sub,norm} from '../../src/viz/geom';
 import {assertSubject,hotAlpha,lightened} from '../../src/viz/scene/look';
-test('glass subdivisions count world units across zoom thresholds',()=>{
- expect([13.99,14,79.99,80].map(gridStep)).toEqual([0,1,1,.5]);
-});
 test('ruler ticks preserve metre scale and suppress unreadable labels',()=>{
  expect(rulerTicks(3,23).filter(t=>t.label)).toEqual([]);
  expect(rulerTicks(3,24).filter(t=>t.label).map(t=>t.value)).toEqual([0,1,2,3]);

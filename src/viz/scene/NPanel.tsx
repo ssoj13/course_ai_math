@@ -458,6 +458,30 @@ function useOverflowCheck(panel: React.RefObject<HTMLElement | null>): void {
 	});
 }
 
+/** Desktop label column bounds (CSS px): labels up to the max sit on one line, longer ones wrap (never truncated). */
+const LABEL_W: readonly [number, number] = [50, 112];
+
+/**
+ * Sizes the desktop sidebar's label column to its longest label (EN and RU labels differ by up to 2.4x), within
+ * LABEL_W, and widens the sidebar by the same amount, so "−2ab cos θ" or a Russian label is shown whole. Labels
+ * longer than the maximum wrap onto a second line. Phones (chips) size labels from the chip model instead.
+ */
+function useLabelColumn(panel: React.RefObject<HTMLElement | null>, labels: string): void {
+	// Only when the set of labels changes (a locale, a revealed row): measuring forces a layout.
+	useLayoutEffect(() => {
+		const el = panel.current;
+		if (!el || matchMedia('(max-width: 719.98px)').matches) return;
+		// Natural one-line widths: measured with wrapping off.
+		el.removeAttribute('data-wrap');
+		let widest = 0;
+		for (const l of el.querySelectorAll<HTMLElement>('.lab-np-row:not(.is-pending) > .lab-np-label')) widest = Math.max(widest, l.scrollWidth);
+		const w = Math.ceil(Math.min(LABEL_W[1], Math.max(LABEL_W[0], widest + 1)));
+		el.style.setProperty('--np-label-w', `${w}px`);
+		el.style.setProperty('--lab-vp-panel', `calc(200px + ${w - LABEL_W[0]}px)`);
+		if (widest + 1 > LABEL_W[1]) el.setAttribute('data-wrap', '');
+	}, [panel, labels]);
+}
+
 export interface NPanelProps {
 	lesson: string;
 	rows: readonly Row[];
@@ -476,18 +500,36 @@ export function NPanel({ lesson, rows, reg, open = true, id }: NPanelProps): Rea
 	const steps = useStore(store, (s) => s.step);
 	const hot = useStore(store, (s) => s.hot);
 	const tip = useTip();
-	const shown = rows.filter((r) => !r.visible || r.visible(vals, steps));
+	const isShown = (r: Row) => !r.visible || r.visible(vals, steps);
+	const shown = rows.filter(isShown);
 	const panel = useRef<HTMLElement>(null);
 	useOverflowCheck(panel);
+	useLabelColumn(panel, shown.map((r) => r.label).join('|'));
 	return (
 		<aside ref={panel} id={id} className={open ? 'lab-vp-panel' : 'lab-vp-panel is-closed'} aria-label={t(locale, 'viewport.properties')} style={CHIP_VARS}>
-			{shown.map((r, i) => (
-				<RowGroup key={r.id} sep={r.group && r.group !== shown[i - 1]?.group ? r.group : null}>
-					<RowView lesson={lesson} row={r} vals={vals} hot={hot.has(r.id)} reg={reg} tip={tip.bind} />
-				</RowGroup>
-			))}
+			{rows.map((r) => {
+				// Phones reserve a chip for every row (chips.ts), so a row a later timeline step reveals is shown as a
+				// faded placeholder in its place until then: the reserved space reads as "coming", never as a gap.
+				if (!isShown(r)) return <PendingChip key={r.id} row={r} />;
+				const i = shown.indexOf(r);
+				return (
+					<RowGroup key={r.id} sep={r.group && r.group !== shown[i - 1]?.group ? r.group : null}>
+						<RowView lesson={lesson} row={r} vals={vals} hot={hot.has(r.id)} reg={reg} tip={tip.bind} />
+					</RowGroup>
+				);
+			})}
 			{tip.node}
 		</aside>
+	);
+}
+
+/** Placeholder of a not-yet-revealed row in the phone chip row (hidden on desktop); exactly the chip's model width. */
+function PendingChip({ row }: { row: Row }): React.JSX.Element {
+	return (
+		<div className="lab-np-row is-pending" aria-hidden="true" data-id={row.id} style={{ width: `${chipBox(row).w}px` }}>
+			<span className="lab-np-label">{row.label}</span>
+			<span className="lab-np-pending" />
+		</div>
 	);
 }
 

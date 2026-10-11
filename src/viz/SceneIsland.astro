@@ -10,7 +10,7 @@
  * the card checks that its rows give the same line count. No `rows` (or an empty array) = a card without an N-panel.
  * `chipLines` overrides the computed line count (only for a deliberate exception; the card then skips its check).
  */
-import { chipHeight, chipLines as linesOf, type ChipRow } from './scene/chips';
+import { CHIP_BUCKETS, chipHeight, chipLines as linesOf, type ChipRow } from './scene/chips';
 
 interface Props {
 	caption: string;
@@ -25,7 +25,10 @@ const { caption, rows = [], chipLines, hud = false, formula = false, formulaHeig
 const panel = rows.length > 0;
 const lines = panel ? (chipLines ?? linesOf(rows)) : 0;
 if (!Number.isFinite(formulaHeight) || formulaHeight < 76) throw new Error('formulaHeight must be at least 76 CSS px');
-const style = `--lab-vp-chip-h: ${chipHeight(lines)}px; --lab-vp-formula-h: ${formulaHeight}px`;
+// Wider phones wrap the same fixed-width chips into the same or fewer lines (chips.ts): one reservation per width
+// bucket (lab.css picks the largest bucket <= the viewport), so a 412 px phone gets no empty line reserved for 320 px.
+const buckets = panel && chipLines === undefined ? CHIP_BUCKETS.map((vw) => `--lab-vp-chip-h-${vw}: ${chipHeight(linesOf(rows, vw))}px`) : [];
+const style = [`--lab-vp-chip-h: ${chipHeight(lines)}px`, ...buckets, `--lab-vp-formula-h: ${formulaHeight}px`].join('; ');
 ---
 
 <figure
