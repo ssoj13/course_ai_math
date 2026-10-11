@@ -62,6 +62,11 @@ export function termsOf(lessonSlug: string): Term[] {
 	return TERMS.terms.filter((t) => t.lessons.includes(lessonSlug));
 }
 
+/** Terms a lesson introduces (its slug is their first lesson): the focus of its term map. */
+export function introducedIn(lessonSlug: string): Term[] {
+	return TERMS.terms.filter((t) => t.lessons[0] === lessonSlug);
+}
+
 /** Anchor id of a term's glossary entry. */
 export const glossId = (id: string): string => `term-${id}`;
 

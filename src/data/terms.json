@@ -51,7 +51,7 @@
       "def": "Squared distance compares sizes without a square root, which costs several multiplies (dist² < r²).",
       "depth": "machine",
       "lessons": ["squares-and-plane"],
-      "edges": [{ "type": "built-on", "to": "distance" }],
+      "edges": [{ "type": "built-on", "to": "square" }, { "type": "built-on", "to": "point" }],
       "ru": { "label": "Квадрат расстояния", "def": "Квадрат расстояния сравнивает размеры без квадратного корня, который стоит нескольких умножений (dist² < r²)." }
     },
     {
@@ -216,7 +216,7 @@
       "depth": "ground",
       "lessons": ["law-of-cosines"],
       "edges": [{ "type": "built-on", "to": "law-of-cosines" }, { "type": "built-on", "to": "arccos" }],
-      "ru": { "label": "IK для двух костей", "def": "IK для двух костей находит угол в локте по длинам двух костей и дотягиванию, по теореме косинусов." }
+      "ru": { "label": "IK для двух костей", "def": "IK для двух костей находит угол в локте по длинам двух костей и расстоянию до цели, по теореме косинусов." }
     },
     {
       "id": "acos-clamp",
@@ -306,7 +306,7 @@
       "depth": "machine",
       "lessons": ["vector-arithmetic"],
       "edges": [{ "type": "used-in", "to": "vector-add" }, { "type": "used-in", "to": "dot-product" }],
-      "ru": { "label": "SIMD-линия", "def": "SIMD-линия — это одно из нескольких чисел, которые обрабатывает одна инструкция." }
+      "ru": { "label": "SIMD-канал", "def": "SIMD-канал — это одно из нескольких чисел, которые обрабатывает одна инструкция." }
     },
     {
       "id": "sigma-notation",
@@ -372,7 +372,7 @@
         { "type": "built-on", "to": "norm" },
         { "type": "built-on", "to": "sigma-notation" }
       ],
-      "ru": { "label": "Скалярное произведение", "def": "Скалярное произведение Σ aᵢbᵢ равно |a||b| cos θ; оно измеряет, насколько две стрелки согласны." }
+      "ru": { "label": "Скалярное произведение", "def": "Скалярное произведение Σ aᵢbᵢ равно |a||b| cos θ; оно измеряет, насколько две стрелки смотрят в одну сторону." }
     },
     {
       "id": "angle-between",
@@ -419,7 +419,7 @@
       "label": "Rounding",
       "def": "Rounding is the error from storing a real number in finite bits.",
       "depth": "machine",
-      "lessons": ["dot-product"],
+      "lessons": ["law-of-cosines", "dot-product"],
       "edges": [{ "type": "built-on", "to": "float" }],
       "ru": { "label": "Округление", "def": "Округление — это ошибка от хранения вещественного числа в конечном числе битов." }
     },
@@ -568,7 +568,7 @@
       "depth": "machine",
       "lessons": [],
       "edges": [{ "type": "built-on", "to": "number" }, { "type": "built-on", "to": "power" }],
-      "ru": { "label": "Плавающая точка", "def": "Число с плавающей точкой хранит вещественное число как знак, степень двойки и фиксированное число значащих битов." }
+      "ru": { "label": "Число с плавающей точкой", "def": "Число с плавающей точкой хранит вещественное число как знак, степень двойки и фиксированное число значащих битов." }
     },
     {
       "id": "matrix",

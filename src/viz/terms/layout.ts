@@ -8,7 +8,7 @@
  * under what they implement. `special-case-of` / `equivalent-to` are lateral relations: they do not constrain the
  * layers and are drawn afterwards as straight lines between the placed boxes.
  */
-import type { EdgeType, MapEdge } from './graph';
+import { FIT_PAD, flow, isLayered, LAYER_GAP, type MapEdge } from './graph';
 
 /** A node box in map coordinates (top-left origin). */
 export interface Box {
@@ -33,21 +33,10 @@ export interface Point {
 	y: number;
 }
 
-/** Node box height and paddings in CSS px (terms.css draws the same box: 12 px text, 6 px depth dot). */
-export const NODE_H = 28;
-const PAD_X = 12;
+/** Node paddings in CSS px (terms.css draws the same box: 12 px text, 8 px depth dot + 6 px gap). */
+const PAD_X = 10;
 const DOT = 14; // dot width + gap
 
-/** Whether an edge type takes part in layering. */
-const layered = (t: EdgeType): boolean => t === 'built-on' || t === 'is-a' || t === 'used-in';
-
-/**
- * ELK source/target of a layered edge: the lower (more fundamental) end first. `X built-on Y` and `X is-a Y` put Y
- * below X; `X used-in Y` puts X below Y.
- */
-export function flow(e: MapEdge): [lower: string, upper: string] {
-	return e.type === 'used-in' ? [e.from, e.to] : [e.to, e.from];
-}
 
 /** Box width for a label of `textW` px. */
 export const nodeW = (textW: number): number => Math.ceil(textW + 2 * PAD_X + DOT);
@@ -153,21 +142,23 @@ const OPTIONS: Record<string, string> = {
 	'elk.algorithm': 'layered',
 	'elk.direction': 'UP',
 	'elk.edgeRouting': 'SPLINES',
-	'elk.spacing.nodeNode': '16',
-	'elk.layered.spacing.nodeNodeBetweenLayers': '40',
+	'elk.spacing.nodeNode': '12',
+	'elk.layered.spacing.nodeNodeBetweenLayers': String(LAYER_GAP),
 	'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+	// Network-simplex placement packs a layer tighter than the default (dot-product card: 715 -> 640 px wide).
+	'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
 	'elk.padding': '[top=8,left=8,bottom=8,right=8]',
 };
 
 /**
- * Places the given nodes (id -> box width) and routes the edges. Results are memoized per graph signature, so the
+ * Places the given nodes (id -> box size) and routes the edges. Results are memoized per graph signature, so the
  * inline map and its full-screen copy share one layout.
  */
-export function place(widths: ReadonlyMap<string, number>, edges: readonly MapEdge[]): Promise<Placed> {
-	const key = JSON.stringify([[...widths], edges]);
+export function place(sizes: ReadonlyMap<string, { w: number; h: number }>, edges: readonly MapEdge[]): Promise<Placed> {
+	const key = JSON.stringify([[...sizes], edges]);
 	let p = cache.get(key);
 	if (!p) {
-		p = run(widths, edges);
+		p = run(sizes, edges);
 		cache.set(key, p);
 		p.catch(() => cache.delete(key)); // a failed layout may be retried
 	}
@@ -176,12 +167,12 @@ export function place(widths: ReadonlyMap<string, number>, edges: readonly MapEd
 
 const cache = new Map<string, Promise<Placed>>();
 
-async function run(widths: ReadonlyMap<string, number>, edges: readonly MapEdge[]): Promise<Placed> {
-	const lay = edges.map((e, i) => ({ e, i })).filter(({ e }) => layered(e.type));
+async function run(sizes: ReadonlyMap<string, { w: number; h: number }>, edges: readonly MapEdge[]): Promise<Placed> {
+	const lay = edges.map((e, i) => ({ e, i })).filter(({ e }) => isLayered(e.type));
 	const graph = {
 		id: 'root',
 		layoutOptions: OPTIONS,
-		children: [...widths].map(([id, w]) => ({ id, width: w, height: NODE_H })),
+		children: [...sizes].map(([id, s]) => ({ id, width: s.w, height: s.h })),
 		edges: lay.map(({ e, i }) => {
 			const [lo, up] = flow(e);
 			return { id: `e${i}`, sources: [lo], targets: [up] };
@@ -189,12 +180,12 @@ async function run(widths: ReadonlyMap<string, number>, edges: readonly MapEdge[
 	};
 	const out = (await send({ cmd: 'layout', graph, layoutOptions: {}, options: {} })) as ElkOut;
 	const boxes = new Map<string, Box>();
-	for (const c of out.children ?? []) boxes.set(c.id, { x: c.x ?? 0, y: c.y ?? 0, w: c.width ?? 0, h: c.height ?? NODE_H });
-	for (const id of widths.keys()) if (!boxes.has(id)) throw new Error(`layout: ELK returned no position for "${id}"`);
+	for (const c of out.children ?? []) boxes.set(c.id, { x: c.x ?? 0, y: c.y ?? 0, w: c.width ?? 0, h: c.height ?? 0 });
+	for (const id of sizes.keys()) if (!boxes.has(id)) throw new Error(`layout: ELK returned no position for "${id}"`);
 	const routes = new Map((out.edges ?? []).map((e) => [e.id, e.sections?.[0]]));
 	const routed = edges.map((e, i): Routed => {
 		const s = routes.get(`e${i}`);
-		if (layered(e.type)) {
+		if (isLayered(e.type)) {
 			if (!s) throw new Error(`layout: ELK returned no route for ${e.from} ${e.type} ${e.to}`);
 			return { ...e, d: splinePath(s.startPoint, s.bendPoints ?? [], s.endPoint) };
 		}
@@ -203,4 +194,24 @@ async function run(widths: ReadonlyMap<string, number>, edges: readonly MapEdge[
 		return { ...e, d: straightPath(a, b) };
 	});
 	return { boxes, edges: routed };
+}
+
+/** How a map opens: React Flow `fitView` options. */
+export interface Opening {
+	padding: number;
+	maxZoom: number;
+	minZoom?: number;
+	nodes?: { id: string }[];
+}
+
+/**
+ * Opening view of a map with content `bounds` in a box: everything when that keeps the zoom at `floor` or more,
+ * otherwise the focus terms at zoom `floor` (the reader pans to the rest, or uses Fit / full screen). `floor` 0 =
+ * always everything (a genealogy is read as a whole tree).
+ */
+export function openView(bounds: { width: number; height: number }, box: { width: number; height: number }, focus: readonly string[], floor: number): Opening {
+	const all = Math.min(box.width / bounds.width, box.height / bounds.height) / (1 + 2 * FIT_PAD);
+	if (all >= floor || focus.length === 0) return { padding: FIT_PAD, maxZoom: 1.25 };
+	// Exactly the floor zoom: zooming further in on the focus would only push more of the map out of the box.
+	return { padding: FIT_PAD, nodes: focus.map((id) => ({ id })), minZoom: floor, maxZoom: floor };
 }

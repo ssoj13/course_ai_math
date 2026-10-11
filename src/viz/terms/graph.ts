@@ -62,8 +62,9 @@ export function edgesOf(g: TermGraph): MapEdge[] {
 /**
  * Every problem of the graph as a readable line; [] = valid. Checks: ids (format, duplicates), texts (English and
  * Russian, non-empty), depth and edge types, edge targets, self/duplicate/symmetric-duplicate edges, a `used-in`
- * that restates a reversed `built-on`, lesson slugs (known, and every known lesson teaches at least one term) and
- * cycles over the foundation edges (`built-on cycle: a → b → a`).
+ * that restates a reversed `built-on`, lesson slugs (known, and every known lesson teaches at least one term), course
+ * order (`lessonSlugs` in course order: no foundation edge to a term introduced later) and cycles over the foundation
+ * edges (`built-on cycle: a → b → a`).
  */
 export function validate(g: TermGraph, lessonSlugs: readonly string[]): string[] {
 	const out: string[] = [];
@@ -103,6 +104,17 @@ export function validate(g: TermGraph, lessonSlugs: readonly string[]): string[]
 		if (e.type === 'equivalent-to' && pairs.has(`${e.to}|${e.from}`)) out.push(`${e.from}: equivalent-to "${e.to}" is also stored the other way`);
 		if (e.type === 'used-in' && g.terms.find((t) => t.id === e.to)?.edges.some((b) => b.type === 'built-on' && b.to === e.from)) {
 			out.push(`${e.from}: used-in "${e.to}" restates "${e.to}" built-on "${e.from}"`);
+		}
+	}
+	// Course order: a term may only rest on terms introduced in the same or an earlier lesson (forward terms, with no
+	// lesson yet, are exempt), so every genealogy is also a valid reading order.
+	const rank = new Map(lessonSlugs.map((s, i) => [s, i]));
+	const intro = new Map(g.terms.map((t) => [t.id, t.lessons[0] === undefined ? undefined : rank.get(t.lessons[0])]));
+	for (const e of edgesOf(g)) {
+		const a = intro.get(e.from);
+		const b = intro.get(e.to);
+		if (isFoundation(e.type) && a !== undefined && b !== undefined && b > a) {
+			out.push(`${e.from}: ${e.type} "${e.to}", which is introduced in a later lesson (${lessonSlugs[b]} after ${lessonSlugs[a]})`);
 		}
 	}
 	for (const l of lessonSlugs) if (!taught.has(l)) out.push(`lesson "${l}" has no terms`);
@@ -203,15 +215,98 @@ export function neighborhood(g: TermGraph, focus: string | readonly string[], ho
 }
 
 /**
- * Genealogy of `id`: the term, all its foundation ancestors with the foundation edges between them, plus the
- * machine-level terms (`isMachine`) that are `used-in` any of them ("down to the machine"). Order follows `order`.
+ * Genealogy of `id`: the term, all its foundation ancestors, the machine-level terms (`isMachine`) that are `used-in`
+ * any of them ("down to the machine") and, in turn, the foundations of those machine terms (FMA -> rounding ->
+ * floating point), with the foundation and machine `used-in` edges between them. Order follows `order`.
  */
 export function genealogyIn(order: readonly string[], edges: readonly MapEdge[], id: string, isMachine: (id: string) => boolean): Slice {
 	const chain = new Set([id, ...ancestorsIn(edges, id)]);
 	const machine = edges.filter((e) => e.type === 'used-in' && chain.has(e.to) && isMachine(e.from));
-	const ids = new Set([...chain, ...machine.map((e) => e.from)]);
-	const kept = edges.filter((e) => (isFoundation(e.type) && chain.has(e.from) && chain.has(e.to)) || machine.includes(e));
-	return { ids: order.filter((x) => ids.has(x)), edges: kept.filter((e) => ids.has(e.from) && ids.has(e.to)) };
+	const ids = new Set(chain);
+	for (const m of machine) for (const x of [m.from, ...ancestorsIn(edges, m.from)]) ids.add(x);
+	const kept = edges.filter((e) => (isFoundation(e.type) && ids.has(e.from) && ids.has(e.to)) || machine.includes(e));
+	return { ids: order.filter((x) => ids.has(x)), edges: kept };
+}
+
+/**
+ * The inline slice of a lesson map: the focus terms and the DIRECT foundations (one `built-on`/`is-a` hop down) of
+ * the `expand` ones (default: all focus terms), with every edge among them. Small enough to read without zooming; the wider neighbourhood is the full-screen view.
+ */
+export function foundationsIn(order: readonly string[], edges: readonly MapEdge[], focus: readonly string[], expand: readonly string[] = focus): Slice {
+	const set = new Set(focus);
+	for (const e of edges) if (isFoundation(e.type) && expand.includes(e.from)) set.add(e.to);
+	return { ids: order.filter((id) => set.has(id)), edges: within(edges, set) };
+}
+
+/** Height of a node box in a drawn map, CSS px at zoom 1 (terms.css draws the same box). */
+export const NODE_H = 28;
+/** Gap between layers of a drawn map, CSS px at zoom 1 (ELK `nodeNodeBetweenLayers`). */
+export const LAYER_GAP = 34;
+/** Fit padding of a drawn map, as a fraction of the view on each side. */
+export const FIT_PAD = 0.06;
+
+/** Extra height of each further label line of a node, CSS px (terms.css line height). */
+export const LINE_H = 14;
+/** Labels longer than this many characters wrap onto two lines (keeps wide layers inside a readable card). */
+const WRAP_AT = 12;
+
+/**
+ * Lines of a node label: one line, or two split at the space nearest the middle when the label is longer than
+ * WRAP_AT characters and has a space. Deterministic, so the server (box height) and the map (node boxes) agree.
+ */
+export function wrapLabel(label: string): string[] {
+	if (label.length <= WRAP_AT) return [label];
+	let best = -1;
+	for (let i = label.indexOf(' '); i >= 0; i = label.indexOf(' ', i + 1)) if (best < 0 || Math.abs(i - label.length / 2) < Math.abs(best - label.length / 2)) best = i;
+	return best < 0 ? [label] : [label.slice(0, best), label.slice(best + 1)];
+}
+
+/** Node box height for a label of `lines` lines. */
+export const nodeH = (lines: number): number => NODE_H + (lines - 1) * LINE_H;
+
+/**
+ * Box height (CSS px) that shows `layers` layers at zoom 1 with the fit padding, clamped to [200, 680]; `tall` = some
+ * label wraps, so a layer may be two lines high. The server reserves it, so the card never changes height when the
+ * map arrives.
+ */
+export function mapHeight(layers: number, tall = false): number {
+	const content = layers * nodeH(tall ? 2 : 1) + Math.max(0, layers - 1) * LAYER_GAP + 16; // + ELK's 8 px padding on both sides
+	return Math.min(680, Math.max(200, Math.ceil(content * (1 + 2 * FIT_PAD))));
+}
+/** Edge types that order the layers of a drawn map (lateral `special-case-of` / `equivalent-to` do not). */
+export const isLayered = (t: EdgeType): boolean => t === 'built-on' || t === 'is-a' || t === 'used-in';
+
+/**
+ * Lower and upper end of a layered edge: the more fundamental term first. `X built-on Y` and `X is-a Y` put Y below
+ * X; `X used-in Y` puts X (the implementation detail) below Y.
+ */
+export function flow(e: MapEdge): [lower: string, upper: string] {
+	return e.type === 'used-in' ? [e.from, e.to] : [e.to, e.from];
+}
+
+/**
+ * Number of layers a layered drawing of the slice needs: the node count of the longest path over layered edges
+ * (the lower bound ELK's layering meets for these small DAGs). Used to size a map box before any layout runs.
+ */
+export function layerCount(s: Slice): number {
+	const up = new Map<string, string[]>(); // lower -> upper
+	for (const e of s.edges) {
+		if (!isLayered(e.type)) continue;
+		const [lo, hi] = flow(e);
+		up.set(lo, [...(up.get(lo) ?? []), hi]);
+	}
+	const memo = new Map<string, number>();
+	const depth = (id: string, path: Set<string>): number => {
+		const m = memo.get(id);
+		if (m !== undefined) return m;
+		if (path.has(id)) throw new Error(`layerCount: cycle through "${id}"`);
+		path.add(id);
+		const d = 1 + Math.max(0, ...(up.get(id) ?? []).map((u) => depth(u, path)));
+		path.delete(id);
+		memo.set(id, d);
+		return d;
+	};
+	return Math.max(0, ...s.ids.map((id) => depth(id, new Set())));
 }
 
 /** The related terms of one kind: `out` = stored on the term (X built-on Y), `in` = pointing at it (Y is built on X). */

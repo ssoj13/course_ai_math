@@ -1,16 +1,18 @@
 ---
 /**
  * LessonMap - the local term map at the end of every lesson page (page template: "... Next question -> Local term
- * map"). The lesson is the current route's (also on a Russian fallback page, which therefore gets a Russian map); its
- * own terms (terms.json `lessons`) are the highlighted focus, drawn with everything within `hops` edges of them.
- * The slice and all texts/links are resolved here, so the island receives only what it draws.
+ * map"). The lesson is the current route's (also on a Russian fallback page, which therefore gets a Russian map). The
+ * terms it introduces (terms.json `lessons[0]`) are the highlighted focus. The card draws them with their direct
+ * foundations only (readable without zooming; the box height follows the layer count); full screen and the list hold
+ * everything within `hops` edges. Slices, texts, links and the box height are resolved here, so the island receives
+ * only what it draws.
  */
 import UiStrings from './UiStrings.astro';
 import { pageLocale } from '../i18n/ui';
 import { lessonByPath, lessonBySlug } from '../lib/course';
 import { TermMap } from '../viz/terms/TermMap';
-import { EDGES, ORDER, mapData, termsOf } from '../viz/terms/data';
-import { neighborhoodIn } from '../viz/terms/graph';
+import { EDGES, ORDER, introducedIn, mapData } from '../viz/terms/data';
+import { foundationsIn, layerCount, mapHeight, neighborhoodIn, wrapLabel } from '../viz/terms/graph';
 
 interface Props {
 	/** Lesson slug; defaults to the current route's lesson (the prop exists for non-lesson demo pages). */
@@ -21,11 +23,16 @@ interface Props {
 const locale = pageLocale(Astro);
 const slug = Astro.props.lesson ?? lessonByPath(Astro.locals.starlightRoute?.id ?? '')?.slug;
 if (!slug || !lessonBySlug(slug)) throw new Error(`<LessonMap>: not a lesson page and no valid \`lesson\` slug (got ${JSON.stringify(slug)}).`);
-const own = termsOf(slug).map((t) => t.id);
-if (own.length === 0) throw new Error(`<LessonMap>: lesson "${slug}" teaches no terms in src/data/terms.json`);
-const slice = neighborhoodIn(ORDER, EDGES, own, Astro.props.hops ?? 1);
-const data = mapData(slice.ids, slice.edges, locale);
+const intro = introducedIn(slug);
+const own = intro.map((t) => t.id);
+if (own.length === 0) throw new Error(`<LessonMap>: lesson "${slug}" introduces no terms in src/data/terms.json`);
+const near = neighborhoodIn(ORDER, EDGES, own, Astro.props.hops ?? 1);
+// Machine-level terms of the lesson are drawn, but their own foundations (rounding -> floating point) are left to full
+// screen: they widen the card past a readable zoom (measured on the dot-product lesson in Russian).
+const card = foundationsIn(ORDER, EDGES, own, intro.filter((t) => t.depth !== 'machine').map((t) => t.id));
+const data = mapData(near.ids, near.edges, locale);
+const tall = data.nodes.some((n) => card.ids.includes(n.id) && wrapLabel(n.label).length > 1);
 ---
 
-<TermMap client:visible locale={locale} data={data} mode="local" focus={own} />
+<TermMap client:visible locale={locale} data={data} mode="local" focus={own} inline={card.ids} height={mapHeight(layerCount(card), tall)} />
 <UiStrings ns={['terms']} />

@@ -1,30 +1,58 @@
 /**
  * The drawn term map (lazy chunk of TermMap.tsx): measures the node labels, gets positions and spline routes from ELK
- * (layout.ts, in a worker) and renders them with React Flow as a static, pannable/zoomable picture. Nodes are not
- * draggable, selectable or focusable: the keyboard and screen-reader route is the list view of the card.
+ * (layout.ts, in a worker) and renders them with React Flow as a static, pannable/zoomable picture. Nodes are links
+ * (not draggable, selectable or focusable: the keyboard and screen-reader route is the list view of the card).
+ *
+ * Opening view: React Flow's own `fitView` prop with options from `openView` (layout.ts), applied by React Flow once
+ * the nodes are in its store. Every view gets a fresh React Flow store (the provider is keyed by the view): reusing
+ * the store across a genealogy retarget fitted the OLD node set (the new nodes were not adopted yet) and left the new
+ * tree at zoom 1, mostly outside the box. Box resizes refit with the same options.
  */
 import { getNodesBounds, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow, type Edge, type EdgeProps, type Node, type NodeProps } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { t } from '../../i18n/core';
-import type { EdgeType, MapNode } from './graph';
-import { NODE_H, nodeW, place, type Placed } from './layout';
+import { FIT_PAD, nodeH, wrapLabel, type EdgeType, type MapNode } from './graph';
+import { nodeW, openView, place, type Placed } from './layout';
 import type { FlowProps } from './TermMap';
 
-type TermData = { node: MapNode; focus: boolean };
+type TermData = { node: MapNode; focus: boolean; activate: FlowProps['onActivate'] };
 type TermNodeT = Node<TermData, 'term'>;
 type TermEdgeT = Edge<{ d: string; type: EdgeType }, 'term'>;
 
+/** A press that moved farther than this (CSS px) was a pan, not a click on the node under it. */
+const CLICK_SLOP = 5;
+
 function TermNode({ data }: NodeProps<TermNodeT>): React.JSX.Element {
 	const n = data.node;
+	const down = useRef<{ x: number; y: number } | null>(null);
 	return (
-		<div className={`lab-tm-node${data.focus ? ' is-focus' : ''}${n.href ? '' : ' is-later'}`} data-depth={n.depth}>
+		<a
+			href={n.href ?? n.gloss}
+			tabIndex={-1}
+			draggable={false}
+			className={`lab-tm-node${data.focus ? ' is-focus' : ''}${n.href ? '' : ' is-later'}`}
+			data-depth={n.depth}
+			onPointerDown={(e) => {
+				down.current = { x: e.clientX, y: e.clientY };
+			}}
+			onClick={(e) => {
+				const d = down.current;
+				const moved = d !== null && Math.hypot(e.clientX - d.x, e.clientY - d.y) > CLICK_SLOP;
+				const touch = (e.nativeEvent as PointerEvent).pointerType === 'touch';
+				if (moved || !data.activate(n.id, touch)) e.preventDefault();
+			}}
+		>
 			{/* React Flow draws an edge only between handles; ours are invisible because routes come from ELK. */}
 			<Handle type="target" position={Position.Top} isConnectable={false} className="lab-tm-handle" />
 			<span className="lab-tm-dot" />
-			{n.label}
+			<span className="lab-tm-label">
+				{wrapLabel(n.label).map((s) => (
+					<span key={s}>{s}</span>
+				))}
+			</span>
 			<Handle type="source" position={Position.Bottom} isConnectable={false} className="lab-tm-handle" />
-		</div>
+		</a>
 	);
 }
 
@@ -37,13 +65,6 @@ function TermEdge({ data, markerEnd }: EdgeProps<TermEdgeT>): React.JSX.Element 
 		</g>
 	);
 }
-
-/** Lowest opening zoom: node labels are 12 px at zoom 1, so 0.8 keeps them at about 10 px. */
-const READABLE = 0.8;
-/** Lowest opening zoom of a genealogy overview on a wide box (labels about 7 px: shape first, details on hover). */
-const GLANCE = 0.55;
-/** Fit padding, as a fraction of the view. */
-const PAD = 0.06;
 
 const nodeTypes = { term: TermNode };
 const edgeTypes = { term: TermEdge };
@@ -58,21 +79,26 @@ function labelFont(el: Element): string {
 }
 
 export default function TermFlow(p: FlowProps): React.JSX.Element {
+	const key = useMemo(() => `${p.view.nodes.map((n) => n.id).join()}|${p.view.edges.length}`, [p.view]);
 	return (
-		<ReactFlowProvider>
+		<ReactFlowProvider key={key}>
 			<Inner {...p} />
 		</ReactFlowProvider>
 	);
 }
 
-function Inner({ view, locale, pan, overview, onHover, onPick, onFit }: FlowProps): React.JSX.Element {
+function Inner({ view, locale, floor, onHover, onActivate, onFit }: FlowProps): React.JSX.Element {
 	const host = useRef<HTMLDivElement>(null);
-	// A result belongs to the view it was computed for: after a view change (genealogy retarget) the previous layout
-	// must not be drawn with the new nodes, even for the one render before the new layout arrives.
-	const [res, setRes] = useState<{ view: FlowProps['view']; placed?: Placed; error?: string } | null>(null);
-	const placed = res?.view === view ? (res.placed ?? null) : null;
-	const error = res?.view === view ? (res.error ?? null) : null;
+	const [res, setRes] = useState<{ placed?: Placed; error?: string } | null>(null);
+	const [box, setBox] = useState<{ width: number; height: number } | null>(null);
 	const rf = useReactFlow();
+	// Node data must not change with the card's tap state (that would rebuild the nodes and refit the view), so nodes
+	// call the latest onActivate through a ref.
+	const act = useRef(onActivate);
+	useEffect(() => {
+		act.current = onActivate;
+	}, [onActivate]);
+	const activate = useCallback<FlowProps['onActivate']>((id, touch) => act.current(id, touch), []);
 
 	useEffect(() => {
 		const el = host.current;
@@ -81,16 +107,29 @@ function Inner({ view, locale, pan, overview, onHover, onPick, onFit }: FlowProp
 		const ctx = document.createElement('canvas').getContext('2d');
 		if (!ctx) throw new Error('TermMap: no 2D canvas context to measure labels');
 		ctx.font = labelFont(el);
-		const widths = new Map(view.nodes.map((n) => [n.id, nodeW(ctx.measureText(n.label).width)]));
-		place(widths, view.edges).then(
-			(r) => alive && setRes({ view, placed: r }),
-			(e: unknown) => alive && setRes({ view, error: e instanceof Error ? e.message : String(e) }),
+		const sizes = new Map(
+			view.nodes.map((n) => {
+				const lines = wrapLabel(n.label);
+				return [n.id, { w: nodeW(Math.max(...lines.map((s) => ctx.measureText(s).width))), h: nodeH(lines.length) }];
+			}),
 		);
+		place(sizes, view.edges).then(
+			(placed) => alive && setRes({ placed }),
+			(e: unknown) => alive && setRes({ error: e instanceof Error ? e.message : String(e) }),
+		);
+		const ro = new ResizeObserver(() => {
+			const w = el.clientWidth;
+			const h = el.clientHeight;
+			setBox((b) => (b && b.width === w && b.height === h ? b : { width: w, height: h }));
+		});
+		ro.observe(el);
 		return () => {
 			alive = false;
+			ro.disconnect();
 		};
 	}, [view]);
 
+	const placed = res?.placed ?? null;
 	const nodes = useMemo<TermNodeT[]>(
 		() =>
 			placed
@@ -102,19 +141,19 @@ function Inner({ view, locale, pan, overview, onHover, onPick, onFit }: FlowProp
 							type: 'term',
 							position: { x: b.x, y: b.y },
 							width: b.w,
-							height: NODE_H,
-							style: { width: b.w, height: NODE_H },
-							data: { node: n, focus: view.focus.has(n.id) },
+							height: b.h,
+							style: { width: b.w, height: b.h },
+							data: { node: n, focus: view.focus.has(n.id), activate },
 						};
 					})
 				: [],
-		[placed, view],
+		[placed, view, activate],
 	);
 	const edges = useMemo<TermEdgeT[]>(
 		() =>
 			placed
 				? placed.edges.map((e, i) => {
-						// The route runs lower -> upper for layered edges (layout.ts `flow`), from -> to for lateral ones.
+						// The route runs lower -> upper for layered edges (graph.ts `flow`), from -> to for lateral ones.
 						const [source, target] = e.type === 'used-in' || e.type === 'special-case-of' || e.type === 'equivalent-to' ? [e.from, e.to] : [e.to, e.from];
 						return {
 							id: `e${i}`,
@@ -129,37 +168,32 @@ function Inner({ view, locale, pan, overview, onHover, onPick, onFit }: FlowProp
 		[placed],
 	);
 
-	// The opening view keeps labels readable: the whole map when it fits at the floor zoom or more,
-	// otherwise the focus terms at the floor zoom (pan, full screen, or "Fit" for everything). Re-applied when
-	// the box changes size (the card is fluid; the dialog is the viewport). "Fit" always shows everything.
-	const fitStart = useCallback(() => {
-		const el = host.current;
-		if (!placed || !el) return;
-		const b = getNodesBounds(nodes);
-		const all = Math.min(el.clientWidth / b.width, el.clientHeight / b.height) / (1 + 2 * PAD);
-		const focus = nodes.filter((n) => n.data.focus).map((n) => ({ id: n.id }));
-		// A genealogy is read as a whole tree, so on a wide box it may open smaller; on a phone-wide box it may not.
-		const floor = overview && el.clientWidth >= 480 ? GLANCE : READABLE;
-		if (all >= floor || focus.length === 0) void rf.fitView({ padding: PAD, maxZoom: 1.25 });
-		else void rf.fitView({ padding: PAD, nodes: focus, minZoom: floor, maxZoom: Math.max(floor, 1) });
-	}, [placed, nodes, rf, overview]);
+	const opening = useMemo(() => {
+		if (!placed || !box || nodes.length === 0) return null;
+		const focus = nodes.filter((n) => n.data.focus).map((n) => n.id);
+		return openView(getNodesBounds(nodes), box, focus, floor);
+	}, [placed, box, nodes, floor]);
+
+	// "Fit" shows everything; a box resize re-applies the opening view (React Flow's fitView prop runs only once).
+	const first = useRef(true);
 	useEffect(() => {
-		if (!placed) return;
-		onFit(() => void rf.fitView({ padding: PAD, maxZoom: 1.25 }));
-		const el = host.current;
-		const ro = el ? new ResizeObserver(() => fitStart()) : null;
-		if (el) ro?.observe(el);
-		return () => {
-			ro?.disconnect();
-			onFit(null);
-		};
-	}, [placed, rf, onFit, fitStart]);
+		if (!opening) return;
+		onFit(() => void rf.fitView({ padding: FIT_PAD, maxZoom: 1.25 }));
+		if (first.current) first.current = false;
+		else void rf.fitView(opening);
+		return () => onFit(null);
+	}, [opening, rf, onFit]);
+
+	// The credit link of React Flow stays, but out of the tab order: it lives inside the aria-hidden drawing.
+	useEffect(() => {
+		host.current?.querySelector('.react-flow__attribution a')?.setAttribute('tabindex', '-1');
+	}, [opening]);
 
 	return (
 		<div ref={host} className="lab-tm-flow" aria-hidden="true">
-			{error ? (
-				<p className="lab-tm-msg is-err">{t(locale, 'terms.failed', { error })}</p>
-			) : !placed ? (
+			{res?.error ? (
+				<p className="lab-tm-msg is-err">{t(locale, 'terms.failed', { error: res.error })}</p>
+			) : !opening ? (
 				<p className="lab-tm-msg">{t(locale, 'terms.loading')}</p>
 			) : (
 				<ReactFlow
@@ -168,8 +202,9 @@ function Inner({ view, locale, pan, overview, onHover, onPick, onFit }: FlowProp
 					nodeTypes={nodeTypes}
 					edgeTypes={edgeTypes}
 					colorMode="dark"
-					onInit={fitStart}
-					minZoom={0.25}
+					fitView
+					fitViewOptions={opening}
+					minZoom={0.2}
 					maxZoom={2.5}
 					nodesDraggable={false}
 					nodesConnectable={false}
@@ -180,11 +215,10 @@ function Inner({ view, locale, pan, overview, onHover, onPick, onFit }: FlowProp
 					zoomOnScroll={false}
 					zoomOnDoubleClick={false}
 					preventScrolling={false}
-					panOnDrag={pan}
-					zoomOnPinch={pan}
+					panOnDrag
+					zoomOnPinch
 					onNodeMouseEnter={(_, n) => onHover(n.id)}
 					onNodeMouseLeave={() => onHover(null)}
-					onNodeClick={(e, n) => onPick(n.id, (e.nativeEvent as PointerEvent).pointerType === 'touch')}
 				/>
 			)}
 		</div>

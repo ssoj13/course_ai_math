@@ -2,34 +2,41 @@
  * TermMap: a mind map of the term graph (graph.ts), in the 6d Blender viewport look (always dark, like the scenes).
  *
  * Two modes, one component:
- *   - `local`: the slice the server computed for a lesson (its own terms, highlighted, plus one hop around them);
- *   - `genealogy`: the whole graph arrives, the reader picks a term and the map shows it with everything it is built
- *     on, down to the roots, plus the machine-level terms used in that chain.
+ *   - `local` (end of a lesson): the card draws the lesson's own terms (highlighted) and their direct foundations, small
+ *     enough to read at once in a box whose height the server derived from the layer count; full screen draws the
+ *     whole one-hop neighbourhood (`data`), which the list view also holds;
+ *   - `genealogy` (glossary): the whole graph arrives, the reader picks a term and the map shows it with everything it
+ *     is built on down to the roots, plus the machine-level terms used along the way and their own foundations.
  *
- * SSR-safe entry: the server renders the card, the legend and the list view (the accessible twin of the map: the same
- * terms, definitions, relations and links, keyboard- and screen-reader-friendly, and the whole content without
- * JavaScript). The drawn map (React Flow + ELK in a worker) is a lazy chunk fetched after hydration, which the
- * wrapper schedules with `client:visible`, so pages without a map never load it and pages with one load it only when
- * the map scrolls into view. The map itself is pointer-only (`aria-hidden`); the list carries the semantics.
+ * SSR-safe entry: the server renders the card, the legend and the list view (the accessible twin of the map: terms,
+ * definitions, relations and links, keyboard- and screen-reader-friendly, and the whole content without JavaScript).
+ * The drawn map (React Flow + ELK in a worker) is a lazy chunk mounted after hydration; lesson pages hydrate it with
+ * `client:visible`, so pages without a map never load it. The drawing is pointer-only (`aria-hidden`).
  *
- * Interaction: hover (mouse) or tap (touch) shows a term's definition in the status line; click opens the lesson that
- * introduces the term (forward terms: their glossary entry); touch needs a second tap so reading never navigates.
- * Plain wheel scrolls the page (Ruling T); Ctrl+wheel / pinch zoom. Inline on touch the map does not pan (a swipe
- * scrolls the page); the full-screen view (a modal <dialog>, top layer, Escape closes) pans and zooms.
+ * Interaction: hover (mouse) or a first tap (touch) shows a term's definition in the status line; a click (second tap)
+ * follows the node's link: the lesson that introduces the term, or its glossary entry for a forward term. Nodes are
+ * real links, so Ctrl/middle click open a new tab. Drag (one finger on touch) pans inside the box, while a swipe
+ * outside it scrolls the page; plain wheel scrolls the page (Ruling T), Ctrl+wheel / pinch zoom. Full screen is a
+ * modal <dialog> (top layer, Escape closes).
  */
 import { lazy, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { t, type Locale, type TextKey } from '../../i18n/core';
-import { genealogyIn, relations, type Depth, type EdgeType, type MapData, type MapEdge, type MapNode } from './graph';
+import { DEPTHS, genealogyIn, relations, type Depth, type EdgeType, type MapData, type MapEdge, type MapNode } from './graph';
 import './terms.css';
 
 const Flow = lazy(() => import('./TermMap.impl'));
 
 export interface TermMapProps {
 	locale: Locale;
+	/** local: the lesson's one-hop neighbourhood (full screen, list); genealogy: the whole graph. */
 	data: MapData;
 	mode: 'local' | 'genealogy';
 	/** Highlighted terms (local: the lesson's own terms); genealogy: the initially selected term. */
 	focus: string[];
+	/** local: ids drawn in the card (own terms + direct foundations); default all of `data`. */
+	inline?: string[];
+	/** local: box height in CSS px reserved by the server (graph.ts `mapHeight`); default from terms.css. */
+	height?: number;
 }
 
 /** Label keys of a relation, read from the term that stores the edge. */
@@ -56,41 +63,54 @@ export const DEPTH_KEY: Readonly<Record<Depth, TextKey>> = {
 	machine: 'terms.machine',
 };
 
-/** Edge types in legend order, with the stroke style terms.css gives each. */
+/** Edge types in legend order, with the stroke style terms.css gives each; arrowed ones as drawn on the map. */
 const LEGEND: readonly EdgeType[] = ['built-on', 'is-a', 'special-case-of', 'equivalent-to', 'used-in'];
+const ARROWED: ReadonlySet<EdgeType> = new Set(['built-on', 'is-a', 'used-in', 'special-case-of']);
 
-/** What the drawn map shows: node list (slice order) and its edges. */
+/** Lowest opening zoom of a lesson map: node labels are 12 px at zoom 1, so 0.88 keeps them at 10.6 px. */
+export const READABLE = 0.88;
+
+/** What a drawn map shows: node list (slice order) and its edges. */
 export interface View {
 	nodes: MapNode[];
 	edges: MapEdge[];
 	focus: ReadonlySet<string>;
 }
 
-/** Callbacks the lazy map reports to the card. */
+/** Props of the lazy drawn map. */
 export interface FlowProps {
 	view: View;
 	locale: Locale;
-	/** Pan with a drag and zoom with a pinch (full screen, or any fine pointer). */
-	pan: boolean;
-	/** A whole tree (genealogy): on a wide box it opens on everything down to a lower zoom than a lesson map. */
-	overview: boolean;
+	/** Lowest opening zoom: below it the map opens on its focus terms instead of everything (0 = always everything). */
+	floor: number;
 	onHover: (id: string | null) => void;
-	onPick: (id: string, touch: boolean) => void;
-	/** Receives the fit-view action once the map is laid out. */
+	/** A node link was activated; returns false to keep the browser from following it (first tap on touch). */
+	onActivate: (id: string, touch: boolean) => boolean;
+	/** Receives the fit-everything action once the map is laid out. */
 	onFit: (fit: (() => void) | null) => void;
 }
+
+const sliceOf = (byId: ReadonlyMap<string, MapNode>, ids: readonly string[], edges: readonly MapEdge[], focus: ReadonlySet<string>): View => {
+	const set = new Set(ids);
+	return { nodes: ids.map((id) => byId.get(id) as MapNode), edges: edges.filter((e) => set.has(e.from) && set.has(e.to)), focus };
+};
 
 export function TermMap(p: TermMapProps): React.JSX.Element {
 	const { locale, data, mode } = p;
 	const byId = useMemo(() => new Map(data.nodes.map((n) => [n.id, n])), [data]);
 	const [sel, setSel] = useState(p.focus[0] ?? data.nodes[0]?.id ?? '');
-	if (!byId.has(sel)) throw new Error(`TermMap: focus "${sel}" is not in the map data`);
-	const view = useMemo<View>(() => {
-		if (mode === 'local') return { nodes: data.nodes, edges: data.edges, focus: new Set(p.focus) };
-		const order = data.nodes.map((n) => n.id);
-		const s = genealogyIn(order, data.edges, sel, (id) => byId.get(id)?.depth === 'machine');
-		return { nodes: s.ids.map((id) => byId.get(id) as MapNode), edges: s.edges, focus: new Set([sel]) };
-	}, [mode, data, sel, byId, p.focus]);
+	for (const id of [sel, ...p.focus, ...(p.inline ?? [])]) if (!byId.has(id)) throw new Error(`TermMap: "${id}" is not in the map data`);
+	const order = useMemo(() => data.nodes.map((n) => n.id), [data]);
+	// `full` = the dialog and the list; `card` = the inline drawing.
+	const { full, card } = useMemo(() => {
+		if (mode === 'genealogy') {
+			const s = genealogyIn(order, data.edges, sel, (id) => byId.get(id)?.depth === 'machine');
+			const v = sliceOf(byId, s.ids, s.edges, new Set([sel]));
+			return { full: v, card: v };
+		}
+		const focus = new Set(p.focus);
+		return { full: sliceOf(byId, order, data.edges, focus), card: sliceOf(byId, p.inline ?? order, data.edges, focus) };
+	}, [mode, order, data, sel, byId, p.focus, p.inline]);
 
 	// The lazy map is mounted after hydration only (the server and the first client render show the SSR message).
 	const [live, setLive] = useState(false);
@@ -118,17 +138,13 @@ export function TermMap(p: TermMapProps): React.JSX.Element {
 
 	const [hover, setHover] = useState<string | null>(null);
 	const [picked, setPicked] = useState<string | null>(null);
-	const onPick = useCallback(
+	const onActivate = useCallback(
 		(id: string, viaTouch: boolean) => {
-			const n = byId.get(id);
-			if (!n) return;
-			if (viaTouch && picked !== id) {
-				setPicked(id);
-				return;
-			}
-			location.assign(n.href ?? n.gloss);
+			if (!viaTouch || picked === id) return true;
+			setPicked(id); // first tap reads, the second one follows the link
+			return false;
 		},
-		[byId, picked],
+		[picked],
 	);
 	const shown = byId.get(hover ?? picked ?? '');
 
@@ -136,10 +152,12 @@ export function TermMap(p: TermMapProps): React.JSX.Element {
 	const onFit = useCallback((f: (() => void) | null) => {
 		fitRef.current = f;
 	}, []);
+	const noFit = useCallback(() => undefined, []);
 	const dialog = useRef<HTMLDialogElement>(null);
-	const [full, setFull] = useState(false);
+	const [open, setOpen] = useState(false);
 	const titleId = useId();
 	const title = t(locale, mode === 'local' ? 'terms.title' : 'terms.genealogy');
+	const floor = mode === 'local' ? READABLE : 0;
 
 	const head = (inDialog: boolean) => (
 		<div className="lab-tm-head">
@@ -176,10 +194,10 @@ export function TermMap(p: TermMapProps): React.JSX.Element {
 				<button
 					type="button"
 					className="lab-tm-btn lab-tm-icon"
-					title={t(locale, 'terms.full')}
-					aria-label={t(locale, 'terms.full')}
+					title={t(locale, mode === 'local' ? 'terms.fullLocal' : 'terms.full')}
+					aria-label={t(locale, mode === 'local' ? 'terms.fullLocal' : 'terms.full')}
 					onClick={() => {
-						setFull(true);
+						setOpen(true);
 						dialog.current?.showModal();
 					}}
 				>
@@ -191,10 +209,10 @@ export function TermMap(p: TermMapProps): React.JSX.Element {
 		</div>
 	);
 
-	const flow = (pan: boolean, fit: FlowProps['onFit']) =>
+	const draw = (view: View, fit: FlowProps['onFit']) =>
 		live ? (
 			<Suspense fallback={<p className="lab-tm-msg">{t(locale, 'terms.loading')}</p>}>
-				<Flow view={view} locale={locale} pan={pan} overview={mode === 'genealogy'} onHover={setHover} onPick={onPick} onFit={fit} />
+				<Flow view={view} locale={locale} floor={floor} onHover={setHover} onActivate={onActivate} onFit={fit} />
 			</Suspense>
 		) : (
 			<p className="lab-tm-msg">{t(locale, 'terms.noscript')}</p>
@@ -214,44 +232,58 @@ export function TermMap(p: TermMapProps): React.JSX.Element {
 		t(locale, touch ? 'terms.hintTouch' : 'terms.hint')
 	);
 
+	const depths = DEPTHS.filter((d) => data.nodes.some((n) => n.depth === d));
 	return (
-		<figure className="lab-tm not-content" data-mode={mode} aria-labelledby={titleId}>
+		<figure
+			className="lab-tm not-content"
+			data-mode={mode}
+			aria-labelledby={titleId}
+			style={p.height ? ({ '--lab-tm-box': `${p.height}px` } as React.CSSProperties) : undefined}
+		>
 			{head(false)}
-			<div className="lab-tm-box" role="img" aria-label={t(locale, 'terms.aria', { count: view.nodes.length })}>
-				{flow(!touch, onFit)}
+			<div className="lab-tm-box" role="img" aria-label={t(locale, 'terms.aria', { count: card.nodes.length })}>
+				{draw(card, onFit)}
 			</div>
-			<Legend locale={locale} />
+			<Legend locale={locale} depths={depths} later={data.nodes.some((n) => !n.href)} />
 			<p className="lab-tm-status" aria-live="polite">
 				{status}
 			</p>
-			<TermList locale={locale} view={view} />
-			<dialog ref={dialog} className="lab-tm-dialog" aria-label={title} onClose={() => setFull(false)}>
+			<TermList locale={locale} view={full} />
+			<dialog ref={dialog} className="lab-tm-dialog" aria-label={title} onClose={() => setOpen(false)}>
 				{head(true)}
-				<div className="lab-tm-box">{full && flow(true, () => undefined)}</div>
+				<div className="lab-tm-box">{open && draw(full, noFit)}</div>
 				<p className="lab-tm-status">{status}</p>
 			</dialog>
 		</figure>
 	);
 }
 
-function Legend({ locale }: { locale: Locale }): React.JSX.Element {
+function Legend({ locale, depths, later }: { locale: Locale; depths: readonly Depth[]; later: boolean }): React.JSX.Element {
 	return (
 		<div className="lab-tm-legend" aria-hidden="true">
-			{(['ground', 'vectors', 'machine'] as const).map((d) => (
+			{depths.map((d) => (
 				<span key={d} className="lab-tm-key" data-depth={d}>
 					<span className="lab-tm-dot" />
 					{t(locale, DEPTH_KEY[d])}
 				</span>
 			))}
+			{later && (
+				<span className="lab-tm-key">
+					<span className="lab-tm-swatch" />
+					{t(locale, 'terms.laterKey')}
+				</span>
+			)}
 			{LEGEND.map((type) => (
 				<span key={type} className="lab-tm-key">
-					<svg width="26" height="10" viewBox="0 0 26 10" className={`lab-tm-edge t-${type}`}>
-						{type === 'equivalent-to' && <path className="lab-tm-under" d="M1 5 H25" />}
-						<path d="M1 5 H25" />
+					<svg width="28" height="10" viewBox="0 0 28 10" className={`lab-tm-edge t-${type}`}>
+						{type === 'equivalent-to' && <path className="lab-tm-under" d="M1 5 H27" />}
+						<path d={ARROWED.has(type) ? 'M1 5 H21' : 'M1 5 H27'} />
+						{ARROWED.has(type) && <path className="lab-tm-head" d="M27 5 L20 1.5 L20 8.5 Z" />}
 					</svg>
 					{t(locale, OUT_KEY[type])}
 				</span>
 			))}
+			<span className="lab-tm-note">{t(locale, 'terms.arrow')}</span>
 		</div>
 	);
 }
