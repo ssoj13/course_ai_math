@@ -1,6 +1,6 @@
 /**
  * A filled polygon with a fixed vertex count whose placement can move along a lesson timeline (shears, rigid turns,
- * pieces sliding into place): a glass face (Glass.tsx), an optional hatch (negative area), a glowing edge (solid,
+ * pieces sliding into place): a flat translucent fill, an optional hatch (negative area), a glowing edge (solid,
  * dashed or none) and an optional centre label.
  *
  * - `pts(vals, step)` gives the target vertices; `path(vals, from, to, progress)` (optional) the in-between
@@ -10,22 +10,19 @@
  *   reader-controlled fractional placement) bypasses the internal clock entirely.
  * - Vertices must stay coplanar and their count fixed (both throw); a degenerate polygon hides fill and edge.
  */
-import { lazy, Suspense, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { DoubleSide, Float32BufferAttribute, ShapeUtils, Vector2 } from 'three';
+import { DoubleSide, ShapeUtils, Vector2 } from 'three';
 import { to3, sub, dot, cross, normalize, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useVals, useStep, useHot, type LessonState } from '../store';
 import { useLabel, useHoverable, HOVER_RANK } from './handles';
 import { useDynGeo, writeGeo, Stroke } from './view';
 import { SPRING_MS, reducedMotion, springProgress } from './motion';
-import { LookCtx, assertSubject } from './look';
 import { Hatch } from './hatchMaterial';
 import { lerpVertices, polygonInfo } from './polygon';
 
 type Vals = LessonState['vals'];
-
-const Glass = lazy(() => import('./Glass').then((m) => ({ default: m.Glass })));
 
 /** Smallest area drawn; below it the polygon is degenerate (fill and edge hidden, the label stays). */
 const MIN_AREA = 1e-9;
@@ -35,23 +32,6 @@ function firstEdge(coords: number[][]): number[] {
 	const other = coords.find((q) => q.some((x, j) => x !== coords[0][j]));
 	if (!other) throw new Error('Poly: all vertices coincide');
 	return normalize(sub(other, coords[0]));
-}
-
-/**
- * Glass coordinates of a polygon: `local` = position in world units along the first edge `u` and its in-plane normal
- * `v` (the glass grid then counts unit cells aligned with that edge: squares and strips show their own cells), `uv` =
- * the same normalised to the polygon's extent in those directions (rim glow; exact for rectangles).
- */
-function glassCoords(coords: number[][], u: number[], v: number[]): { local: number[]; uv: number[] } {
-	const o = coords[0];
-	const l = coords.map((p) => [dot(sub(p, o), u), dot(sub(p, o), v)]);
-	const lo = [Math.min(...l.map((q) => q[0])), Math.min(...l.map((q) => q[1]))];
-	const hi = [Math.max(...l.map((q) => q[0])), Math.max(...l.map((q) => q[1]))];
-	const span = [Math.max(hi[0] - lo[0], 1e-9), Math.max(hi[1] - lo[1], 1e-9)];
-	return {
-		local: l.flatMap((q) => [q[0] - lo[0], q[1] - lo[1]]),
-		uv: l.flatMap((q) => [(q[0] - lo[0]) / span[0], (q[1] - lo[1]) / span[1]]),
-	};
 }
 
 export interface PolyProps {
@@ -81,7 +61,6 @@ interface Motion {
 }
 
 export function Poly(p: PolyProps): React.JSX.Element {
-	assertSubject(useContext(LookCtx), true);
 	const vals = useVals(p.lesson);
 	const timeline = useStep(p.lesson, p.timeline ?? 'cut');
 	const step = p.position ?? p.step ?? timeline;
@@ -154,11 +133,6 @@ export function Poly(p: PolyProps): React.JSX.Element {
 	useLayoutEffect(() => {
 		geo.setIndex(indices);
 		writeGeo(geo, coords);
-		if (info.area < MIN_AREA) return;
-		const u = firstEdge(coords);
-		const g = glassCoords(coords, u, cross(info.normal, u));
-		geo.setAttribute('local', new Float32BufferAttribute(g.local, 2));
-		geo.setAttribute('uv', new Float32BufferAttribute(g.uv, 2));
 	}, [geo, points, indices]);
 	useLabel(p.label ? { lesson: p.lesson, text: p.label(vals), role: p.role, hot: p.id, at: () => info.center } : null);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
@@ -169,9 +143,7 @@ export function Poly(p: PolyProps): React.JSX.Element {
 			{info.area >= MIN_AREA && (
 				<>
 					<mesh geometry={geo} frustumCulled={false}>
-						<Suspense fallback={<meshBasicMaterial color={color} side={DoubleSide} transparent opacity={alpha} depthWrite={false} polygonOffset polygonOffsetFactor={1} />}>
-							<Glass color={color} hot={hot} alpha={alpha} />
-						</Suspense>
+						<meshBasicMaterial color={color} side={DoubleSide} transparent opacity={alpha} depthWrite={false} polygonOffset polygonOffsetFactor={1} />
 					</mesh>
 					{p.hatched?.(vals) && <Hatch geometry={geo} role={p.role} />}
 					{p.edge !== 'none' && <Stroke points={[...coords, coords[0]]} color={color} hot={hot} width={STYLE.edge} dashPx={p.edge === 'dashed' ? [5, 4] : undefined} />}

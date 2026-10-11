@@ -8,32 +8,21 @@ import { useLocale, LocaleContext } from '../../i18n/react';
  */
 import { OrbitControls, OrthographicCamera, PerspectiveCamera, View } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { Box3, MOUSE, OrthographicCamera as OrthoCam, PerspectiveCamera as PerspCam, Sphere, TOUCH, Vector3, type Group } from 'three';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { Box3, MOUSE, OrthographicCamera as OrthoCam, PerspectiveCamera as PerspCam, TOUCH, Vector3, type Group } from 'three';
 import type { V } from '../geom';
 import { usePalette } from '../palette';
 import { lessonStore, ShownCtx } from '../store';
 import { Gizmo, XYCorner } from './Gizmo';
-import { createStage, DragKeys, Labels, overlayOn, StageCtx, type StageReg } from './handles';
-import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, VIEW_MS, type Pose } from './motion';
+import { createStage, DragKeys, Labels, StageCtx, type StageReg } from './handles';
+import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, SPRING_MS, VIEW_MS, type Pose } from './motion';
 import { ensureSceneHost } from './SceneHost';
 import { useSizeState, viewVisible } from './sizeModes';
 import { contentBox, DragLayer, DrawIn, GizmoSync, LabelLayer } from './view';
-import { useStore } from 'zustand';
-
-import { LookCtx, type Look } from './look';
-
-import { fit2d, fit3d, MARGIN_2D, type Bounds, type FramePad } from './framing';
-export type { FramePad } from './framing';
-
-// The look's furniture (sky, floor and reflection, instrument feed) is its own lazy chunk.
-const HoloLayer = lazy(() => import('./HoloLayer').then((m) => ({ default: m.HoloLayer })));
-
-const NO_PAD: FramePad = { l: 0, r: 0, t: 0, b: 0 };
+import { fit2d, fit3d, MARGIN_2D, stepRefitDelay, type Bounds } from './framing';
 
 export interface StageProps {
 	lesson: string;
-	look?: Look;
 	mode: '2d' | '3d';
 	extent: number;
 	children: React.ReactNode;
@@ -48,21 +37,6 @@ export interface StageProps {
 	inset?: number;
 	/** The lesson's one first-view draw-in (visual-language.md "Motion"). */
 	drawIn?: boolean;
-	/** Space the home view keeps free around the figure (ViewportCard: instrument columns and formula plate). */
-	pad?: FramePad;
-}
-
-/**
- * Whether the holographic floor is shown: always in the holo look unless the card declares a `floor` overlay that
- * the reader switched off; never in the clay studio (its light floor is the background itself).
- */
-export function useFloor(reg: StageReg, look: Look): boolean {
-	const card = reg.card;
-	return useStore(lessonStore(card?.lesson ?? 'scene'), (s) => {
-		if (look !== 'holo') return false;
-		const def = card?.overlays.find((o) => o.id === 'floor');
-		return !card || !def || overlayOn(s.vals, card.id, def);
-	});
 }
 
 function InvalidateOnStore({ lesson }: { lesson: string }) {
@@ -114,8 +88,6 @@ const home3 = (e: number): [number, number, number] => [e * 1.6, e * 1.2, e * 1.
 /** Radius, in units of `extent`, of the sphere the default 3D view must show whole: the axes reach +-extent, and the
  * margin keeps the axis letters, tip labels and the gizmo corner clear of the frame. */
 const FRAME_3D = 1.3;
-/** Horizon of the 2D floor, as a share of the figure's height above its base line. */
-const HORIZON = 0.12;
 /** 2D home zoom range relative to the fit of the whole extent: a tiny figure is not blown up without limit. */
 const HOME_2D: readonly [number, number] = [0.25, 6];
 /**
@@ -156,8 +128,6 @@ interface NavProps {
 	pose: React.RefObject<Pose | null>;
 	/** The figure (the Stage's content group): the home view frames its bounds, like Blender's View All. */
 	content: RefObject<Group | null>;
-	pad: FramePad;
-	floor: boolean;
 }
 
 /** Plain bounds of a three Box3 for the pure framing math. */
@@ -172,7 +142,7 @@ const HOME_DIR = home3(1 / Math.hypot(...home3(1)));
  * swings around the target with the shared spring over VIEW_MS, or cuts under reduced motion. Grabbing the view
  * mid-animation cancels it (direct manipulation is never fought).
  */
-function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, floor }: NavProps) {
+function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavProps) {
 	const camera = useThree((s) => s.camera);
 	const controls = useThree((s) => s.controls) as unknown as OrbitImpl | null;
 	const invalidate = useThree((s) => s.invalidate);
@@ -182,11 +152,6 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 	const anim = useRef<{ from: Pose; to: Pose; t0: number } | null>(null);
 
 	const ortho = camera instanceof OrthoCam;
-	// Read by frame callbacks and late layout effects: the latest props, not those of the render that bound them.
-	const padRef = useRef(pad);
-	padRef.current = pad;
-	const floorRef = useRef(floor);
-	floorRef.current = floor;
 	/** Figure bounds captured by the last home view (null: frame the extent, e.g. nothing drawn yet). */
 	const homeBox = useRef<Box3 | null>(null);
 	/** End of the settling period (performance.now()), 0 before the first frame; -1 once the reader took over. */
@@ -206,44 +171,29 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 		const base = extentZoom(width, height);
 		if (!box) return base;
 		if (mode === '3d') return fit3dFor(box, width, height).zoom;
-		const z = fit2d(boundsOf(box), width, height, inset, padRef.current, floorRef.current).zoom;
+		const z = fit2d(boundsOf(box), width, height, inset).zoom;
 		return Math.min(base * HOME_2D[1], Math.max(base * HOME_2D[0], z));
 	};
-	/** 3D fit in the view left free by the N-panel, the HUD columns and the plate. */
-	const fit3dFor = (box: Box3, width: number, height: number) => {
-		const p = padRef.current;
-		return fit3d(boundsOf(box), HOME_DIR, width - inset - p.l - p.r, height - p.t - p.b, TAN);
-	};
+	/** 3D fit in the view left free by the N-panel. */
+	const fit3dFor = (box: Box3, width: number, height: number) => fit3d(boundsOf(box), HOME_DIR, width - inset, height, TAN);
 	/** Measures the figure (View All) without applying it; null when nothing is drawn yet. */
 	const figure = (): Box3 | null => {
 		const root = content.current;
 		const box = root ? contentBox(root, new Box3()) : null;
 		return box && !box.isEmpty() ? box : null;
 	};
-	/** Re-measures the figure and publishes where its floor is. */
+	/** Re-measures the figure (the home view frames it). */
 	const measure = (b: Box3 | null = figure()) => {
 		homeBox.current = b;
-		if (mode === '3d') {
-			const s = b ? b.getBoundingSphere(new Sphere()) : new Sphere(new Vector3(), e);
-			reg.frame.set({ y: Math.min(0, b ? b.min.y : 0), horizon: 0, cx: s.center.x, cz: s.center.z, size: s.radius });
-		} else {
-			const size = b ? b.max.y - b.min.y : 2 * e;
-			reg.frame.set({ y: b ? b.min.y : center[1] - e, horizon: HORIZON * size, cx: b ? (b.min.x + b.max.x) / 2 : center[0], cz: 0, size });
-		}
 	};
 	/** The home view for a `width` x `height` stage (default: the last measured size). */
 	const home = (width = w, height = h): Pose => {
 		const box = homeBox.current;
 		if (mode === '2d') {
 			if (!box) return poseOf([center[0], center[1], 10], center, fitZoom(width, height));
-			const f = fit2d(boundsOf(box), width, height, inset, padRef.current, floorRef.current);
-			const zoom = fitZoom(width, height);
-			// A clamped zoom scales the box's offset from the camera centre with it, keeping it in the free area.
-			const mx = (box.min.x + box.max.x) / 2;
-			const my = (box.min.y + box.max.y) / 2;
-			const k = f.zoom / zoom;
-			const target: [number, number, number] = [mx + (f.cx - mx) * k, my + (f.cy - my) * k, 0];
-			return poseOf([target[0], target[1], 10], target, zoom);
+			const f = fit2d(boundsOf(box), width, height, inset);
+			const target: [number, number, number] = [f.cx, f.cy, 0];
+			return poseOf([f.cx, f.cy, 10], target, fitZoom(width, height));
 		}
 		// Same three-quarter direction as before. Without a figure: the sphere of radius FRAME_3D * extent.
 		const dir = HOME_DIR;
@@ -327,20 +277,21 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 	};
 	useLayoutEffect(refit, [w, h, inset, camera, controls, e]);
 
-	useLayoutEffect(() => {
-		const go = (to: Pose) => {
-			if (!controls) return;
-			const from = current();
-			if (reducedMotion()) {
-				anim.current = null;
-				apply(to);
-				pose.current = current();
-				invalidate();
-				return;
-			}
-			anim.current = { from, to, t0: performance.now() };
+	/** Smooth view to `to` (Blender's smooth view with the shared spring), a cut under reduced motion. */
+	const go = (to: Pose) => {
+		if (!controls) return;
+		const from = current();
+		if (reducedMotion()) {
+			anim.current = null;
+			apply(to);
+			pose.current = current();
 			invalidate();
-		};
+			return;
+		}
+		anim.current = { from, to, t0: performance.now() };
+		invalidate();
+	};
+	useLayoutEffect(() => {
 		reg.nav = {
 			reset: () => {
 				measure();
@@ -407,6 +358,49 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 		refit();
 		again();
 	}, -1);
+	// Step-revealed geometry (LC-0/LC-2 tiles, DP-1's squares and rectangle) arrives after the settling window: while
+	// the view is still home (the reader has not zoomed, panned or orbited), a timeline step re-measures the figure once
+	// its step motion has played and glides to the new View All. A reader's navigation clears `atHome`, so their view
+	// is never taken away; a handle drag does not navigate, so the home view keeps following the figure on the next step.
+	const stepRefit = useRef(0);
+	useEffect(() => {
+		const lesson = reg.card?.lesson;
+		if (!lesson) return;
+		return lessonStore(lesson).subscribe((s, prev) => {
+			if (s.step === prev.step) return;
+			const delay = stepRefitDelay(prev.step, s.step, SPRING_MS, reducedMotion());
+			if (delay === null) return;
+			stepRefit.current = performance.now() + delay;
+			invalidate();
+		});
+	}, [reg, invalidate]);
+	useFrame(({ invalidate: again }) => {
+		const due = stepRefit.current;
+		if (!due || !controls || !h) return;
+		// The settling period measures on its own; a step during it needs nothing extra.
+		if (settle.current > 0 || !atHome.current) {
+			stepRefit.current = 0;
+			return;
+		}
+		if (performance.now() < due) {
+			again();
+			return;
+		}
+		stepRefit.current = 0;
+		const box = figure();
+		if (!moved(box, homeBox.current)) return;
+		measure(box);
+		const to = home();
+		// The zoom limits follow the new home zoom (as a resize would set them).
+		const f = fitZoom();
+		if (camera instanceof OrthoCam && mode === '2d') {
+			controls.minZoom = f * ZOOM_2D[0];
+			controls.maxZoom = f * ZOOM_2D[1];
+		}
+		fit.current = f;
+		go(to);
+		atHome.current = true;
+	});
 	// A pointer press on the stage (a handle drag, a pan) ends the settling: the view is the reader's now.
 	useEffect(() => {
 		const el = reg.el;
@@ -451,15 +445,13 @@ export function Stage(p: StageProps): React.JSX.Element {
 	useLayoutEffect(() => { reg.nav?.redraw(); }, [visible, reg]);
 	const pose = useRef<Pose | null>(null);
 	const content = useRef<Group>(null);
-	const look = p.look ?? 'holo';
-	const floor = useFloor(reg, look);
 	const inset = p.inset ?? 0;
 	const c = p.center ?? [0, 0];
 	const center: [number, number, number] = [c[0], c[1], 0];
 	const e = p.extent;
 	const proj = p.mode === '2d' ? 'ortho' : (p.proj ?? 'persp');
 	return (
-		<div className="lab-stage" data-look={look} ref={ref} style={{ '--lab-vp-inset': `${inset}px` } as React.CSSProperties}>
+		<div className="lab-stage" ref={ref} style={{ '--lab-vp-inset': `${inset}px` } as React.CSSProperties}>
 			<View className="lab-stage-view" visible={visible}>
 				{/* The provider sits inside the View: context does not cross drei's tunnel into the shared Canvas. */}
 				<LocaleContext.Provider value={locale}><StageCtx.Provider value={reg}>
@@ -492,7 +484,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 							mouseButtons={{ LEFT: MOUSE.ROTATE, MIDDLE: MOUSE.ROTATE, RIGHT: MOUSE.PAN }}
 						/>
 					)}
-					<Nav reg={reg} mode={p.mode} extent={e} center={center} inset={inset} w={w} h={h} pose={pose} content={content} pad={p.pad ?? NO_PAD} floor={floor} />
+					<Nav reg={reg} mode={p.mode} extent={e} center={center} inset={inset} w={w} h={h} pose={pose} content={content} />
 					{/* After the camera and controls, so its effects see the controls already connected. */}
 					<DragLayer />
 					<LabelLayer />
@@ -500,13 +492,8 @@ export function Stage(p: StageProps): React.JSX.Element {
 					{p.drawIn && <DrawIn />}
 					{/* Scene code reads the drawn values: eased writes glide here while readouts jump (store.ts). */}
 					<ShownCtx.Provider value={true}>
-						<LookCtx.Provider value={look}>
-							<Suspense fallback={null}>
-								<HoloLayer look={look} floor={floor} content={content} inset={inset} />
-							</Suspense>
-							{/* The figure: framed by the home view and drawn a second time, mirrored, into the floor. */}
-							<group ref={content}>{p.children}</group>
-						</LookCtx.Provider>
+						{/* The figure: the home view frames its bounds (View All). */}
+						<group ref={content}>{p.children}</group>
 					</ShownCtx.Provider>
 				</StageCtx.Provider></LocaleContext.Provider>
 			</View>

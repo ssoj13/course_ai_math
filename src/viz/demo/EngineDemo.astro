@@ -3,34 +3,27 @@ import { pageLocale, t } from '../../i18n/ui';
 import UiStrings from '../../components/UiStrings.astro';
 import SceneIsland from '../SceneIsland.astro';
 import { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout } from './engine';
-import { DemoHolo, DemoFloor, DemoClay, ROWSHOLO } from './holo';
 import { ROWS2, ROWS3, ROWSLC, ROWSPOLAR, ROWSSIGN, ROWSLAMP } from './engine.rows';
-const components = { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout, DemoHolo, DemoFloor, DemoClay };
+const components = { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout };
 interface Props { kind: keyof typeof components }
 const locale = pageLocale(Astro);
 const kind = Astro.props.kind;
 const scenes = {
- Demo2D: { caption: t(locale, 'demo.captionDemo2D'), rows: ROWS2(locale), hud: false, formula: false },
- DemoCosines: { caption: t(locale, 'demo.captionDemoCosines'), rows: ROWSLC(locale), hud: false, formula: false },
- Demo3D: { caption: t(locale, 'demo.captionDemo3D'), rows: ROWS3(locale), hud: false, formula: false },
- DemoHolo: { caption: t(locale, 'demo.captionDemoHolo'), rows: ROWSHOLO(locale), hud: true, formula: true },
- DemoFloor: { caption: t(locale, 'demo.captionDemoFloor'), rows: [], hud: true, formula: false },
- DemoClay: { caption: t(locale, 'demo.captionDemoClay'), rows: [], hud: true, formula: false },
- DemoPolar: { caption: t(locale, 'demo.captionDemoPolar'), rows: ROWSPOLAR(locale), hud: false, formula: false },
- DemoSign: { caption: t(locale, 'demo.captionDemoSign'), rows: ROWSSIGN(locale), hud: false, formula: false },
- DemoLamp: { caption: t(locale, 'demo.captionDemoLamp'), rows: ROWSLAMP(locale), hud: false, formula: false },
+ Demo2D: { caption: t(locale, 'demo.captionDemo2D'), rows: ROWS2(locale) },
+ DemoCosines: { caption: t(locale, 'demo.captionDemoCosines'), rows: ROWSLC(locale) },
+ Demo3D: { caption: t(locale, 'demo.captionDemo3D'), rows: ROWS3(locale) },
+ DemoPolar: { caption: t(locale, 'demo.captionDemoPolar'), rows: ROWSPOLAR(locale) },
+ DemoSign: { caption: t(locale, 'demo.captionDemoSign'), rows: ROWSSIGN(locale) },
+ DemoLamp: { caption: t(locale, 'demo.captionDemoLamp'), rows: ROWSLAMP(locale) },
 };
 ---
-<UiStrings ns={['viewport', 'gizmo', 'hud', 'status', 'challenge', 'rows', 'demo', 'holo']} />
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'rows', 'demo']} />
 {kind === 'Demo2D' && <SceneIsland {...scenes.Demo2D}><Demo2D locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'Demo3D' && <SceneIsland {...scenes.Demo3D}><Demo3D locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoCosines' && <SceneIsland {...scenes.DemoCosines}><DemoCosines locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoPolar' && <SceneIsland {...scenes.DemoPolar}><DemoPolar locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoSign' && <SceneIsland {...scenes.DemoSign}><DemoSign locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoLamp' && <SceneIsland {...scenes.DemoLamp}><DemoLamp locale={locale} client:only="react" /></SceneIsland>}
-{kind === 'DemoHolo' && <SceneIsland {...scenes.DemoHolo}><DemoHolo locale={locale} client:only="react" /></SceneIsland>}
-{kind === 'DemoFloor' && <SceneIsland {...scenes.DemoFloor}><DemoFloor locale={locale} client:only="react" /></SceneIsland>}
-{kind === 'DemoClay' && <SceneIsland {...scenes.DemoClay}><DemoClay locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoDotFormula' && <DemoDotFormula locale={locale} client:load />}
 {kind === 'DemoLedger' && <DemoLedger locale={locale} client:load />}
 {kind === 'DemoChallenges' && <DemoChallenges locale={locale} client:load />}

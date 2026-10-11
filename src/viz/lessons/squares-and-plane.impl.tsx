@@ -11,7 +11,7 @@ import { Segment } from '../scene/Segment';
 import { RightAngle } from '../scene/RightAngle';
 import { AreaTile } from '../scene/AreaTile';
 import { Label } from '../scene/Label';
-import { Dimension } from '../scene/Dimension';
+import { Arrow } from '../scene/Arrow';
 import { TileGrid } from '../scene/TileGrid';
 import { snap } from '../scene/drag';
 import { Show, useOverlay, type Draggable } from '../scene/handles';
@@ -40,6 +40,20 @@ function Reach({ lo, hi }: { lo: V; hi: V }) {
 		position={[(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0]} scale={[hi[0] - lo[0], hi[1] - lo[1], 0.01]} />;
 }
 
+/**
+ * The measured side: an arrow from the origin to the side's end, drawn just outside the square (below it for a positive
+ * side, above it for a mirrored one), with its signed value. It grows from the origin in the draw-in; zero length draws
+ * only the value at the origin.
+ */
+function Side({ to, text, id, role }: { to: number; text: string; id: string; role: 'vecA' | 'vecC' }) {
+	const labels = useOverlay('labels');
+	const y = to < 0 ? 0.3 : -0.3;
+	return <>
+		{to !== 0 && <Arrow lesson={LESSON} id={id} from={[0, y]} to={[to, y]} role={role} drag="none" />}
+		{labels && <Label lesson={LESSON} id={id} at={[to / 2, y]} offset={[0, to < 0 ? -14 : 14]} role={role}>{text}</Label>}
+	</>;
+}
+
 /** 0.G-1 side handle: x only, snapped to 0.1; the store's linked resolver derives A in the same write. */
 const moveSide: Draggable['move'] = (vals, raw) => ({ set: { x: snap((vals.x as number) + (raw[0] ?? 0)) } });
 
@@ -56,9 +70,8 @@ function Square() {
 			<TileGrid lesson={LESSON} id="sq" shape={(s) => squareBox(s.x as number)} negative="mirror" role="vecA" count rise
 				parts={{ whole: 'whole', partial: 'partial' }} label={labels ? (total) => 'x² = ' + total : false} />
 		</Show>
-		{/* The measurement grows from the origin toward x; negative x points left (the sign the length cannot carry). */}
-		<Dimension lesson={LESSON} id="side" a={[0, 0]} b={[x, 0]} label={sideText} />
-		{x === 0 && labels && <Label lesson={LESSON} id="side" at={[0, 0]} offset={[0, 26]}>{sideText}</Label>}
+		{/* Negative x points left: the sign the length alone cannot carry. */}
+		<Side to={x} text={sideText} id="side" role="vecA" />
 		<Point lesson={LESSON} id="o" at={[0, 0]} role="muted" size={6} />
 		{labels && <Label lesson={LESSON} id="o" at={[0, 0]} offset={[-12, 12]}>0</Label>}
 		<Point lesson={LESSON} id="side" at={(s) => [s.x as number, 0]} keys={['x']} move={moveSide} role="vecA" label={t(locale, 'sq.handleSide')} />
@@ -109,8 +122,7 @@ function Root() {
 			<TileGrid lesson={LESSON} id="sq" shape={(w) => squareBox(Math.sqrt(w.A as number))} role="vecC" count
 				label={labels ? (total) => 'A = ' + total : false} />
 		</Show>
-		<Dimension lesson={LESSON} id="side" a={[0, 0]} b={[s, 0]} label={sideText} />
-		{s === 0 && labels && <Label lesson={LESSON} id="side" at={[0, 0]} offset={[0, 26]}>{sideText}</Label>}
+		<Side to={s} text={sideText} id="side" role="vecC" />
 		<Point lesson={LESSON} id="o" at={[0, 0]} role="muted" size={6} />
 		{labels && <Label lesson={LESSON} id="o" at={[0, 0]} offset={[-12, 12]}>0</Label>}
 	</>;

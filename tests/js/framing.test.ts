@@ -1,32 +1,19 @@
 import { expect, test } from 'bun:test';
-import { fit2d, fit3d, FILL_3D, FLOOR_SHARE, MARGIN_2D, type Bounds } from '../../src/viz/scene/framing';
-import { hudLayout } from '../../src/viz/scene/hud';
+import { fit2d, fit3d, FILL_3D, MARGIN_2D, stepRefitDelay, type Bounds } from '../../src/viz/scene/framing';
 import { hintSegments } from '../../src/viz/scene/StatusBar';
 import { separate, type Placed } from '../../src/viz/scene/handles';
 
-const NO_PAD = { l: 0, r: 0, t: 0, b: 0 };
 const box = (x0: number, y0: number, x1: number, y1: number, z0 = 0, z1 = 0): Bounds => ({ min: [x0, y0, z0], max: [x1, y1, z1] });
 
-test('2D: the figure fills the free rectangle above the floor band, between the pads', () => {
+test('2D: the figure fills the stage left of the N-panel, with a margin, centred on its box', () => {
 	const b = box(-1, -3, 6, 5);
-	const f = fit2d(b, 600, 400, 0, { l: 60, r: 60, t: 0, b: 0 }, true);
-	// Height-limited: 8 units into 400 - 0.3 * 400 - 2 margins.
-	expect(f.zoom).toBeCloseTo((400 - FLOOR_SHARE * 400 - 2 * MARGIN_2D) / 8, 9);
-	// Screen y of the box bottom = the bottom of the free rectangle.
-	const y = (wy: number) => 200 - (wy - f.cy) * f.zoom;
-	expect(y(-3)).toBeCloseTo(400 - FLOOR_SHARE * 400 - MARGIN_2D, 6);
-	expect(y(5)).toBeCloseTo(MARGIN_2D, 6);
-	// Horizontally centred between the pads.
-	const x = (wx: number) => 300 + (wx - f.cx) * f.zoom;
-	expect((x(-1) + x(6)) / 2).toBeCloseTo(300, 6);
-});
-
-test('2D: an open N-panel and a plate taller than the floor band shrink the rectangle', () => {
-	const b = box(0, 0, 4, 4);
-	const open = fit2d(b, 600, 400, 200, NO_PAD, false);
-	expect(open.zoom).toBeCloseTo((400 - 2 * MARGIN_2D) / 4, 9);
-	const plate = fit2d(b, 1200, 400, 0, { l: 0, r: 0, t: 0, b: 200 }, true);
-	expect(plate.zoom).toBeCloseTo((400 - 200 - 2 * MARGIN_2D) / 4, 9);
+	const f = fit2d(b, 600, 400, 0);
+	// Height-limited: 8 units into 400 - 2 margins.
+	expect(f.zoom).toBeCloseTo((400 - 2 * MARGIN_2D) / 8, 9);
+	expect([f.cx, f.cy]).toEqual([2.5, 1]);
+	// An open N-panel narrows the free width: width-limited now.
+	const open = fit2d(b, 600, 400, 300);
+	expect(open.zoom).toBeCloseTo((300 - 2 * MARGIN_2D) / 7, 9);
 });
 
 test('3D: every corner of the bounds projects inside the view; a flat figure is framed by its box, not a sphere', () => {
@@ -55,17 +42,6 @@ test('3D: every corner of the bounds projects inside the view; a flat figure is 
 	expect(f.dist).toBeLessThan(r / Math.sin(Math.atan(tan)));
 });
 
-test('HUD: the dial caption is part of the right column, above the galaxy panel, clear of the ruler ticks', () => {
-	for (const [w, h, gizmo] of [[432, 395, true], [432, 395, false], [1080, 850, true], [328, 328, true]] as const) {
-		const L = hudLayout(w, h, gizmo, !gizmo);
-		const bottom = L.caption.top + L.caption.lines * 1.2 * L.caption.font;
-		expect(bottom).toBeLessThanOrEqual(L.panels[1].y);
-		expect(L.caption.right).toBeGreaterThanOrEqual(w - L.ruler.xr + L.ruler.major);
-		// The planet's ring stays inside the right column (it never reaches the formula plate).
-		expect(L.planet.x - 2.05 * L.planet.size).toBeGreaterThanOrEqual(w - L.right);
-	}
-});
-
 test('status hint segments: the N-panel segment is marked (hidden on phones)', () => {
 	const s = hintSegments('Ctrl+Wheel zoom · MMB pan · [N] panel');
 	expect(s.map((x) => x.panel)).toEqual([false, false, true]);
@@ -82,4 +58,12 @@ test('label separation: an overlapping label moves to the nearest free slot; tic
 	expect(list[1].x).toBe(105);
 	expect(list[1].y).toBe(102 + 12 + 2);
 	expect([list[2].x, list[2].y]).toEqual([100, 100]);
+});
+
+test('a new timeline step re-measures the home view after its step motion; bookkeeping keys and reduced motion', () => {
+	expect(stepRefitDelay({ derive: 0 }, { derive: 0, 'derive:max': 3 }, 180, false)).toBeNull();
+	expect(stepRefitDelay({ derive: 0 }, { derive: 1, 'derive:max': 1, 'derive:phases': 1 }, 180, false)).toBe(240);
+	expect(stepRefitDelay({ cut: 8 }, { cut: 9, 'cut:phases': 3 }, 180, false)).toBe(600);
+	expect(stepRefitDelay({ derive: 7 }, { derive: 8 }, 180, true)).toBe(0);
+	expect(stepRefitDelay({ a: 1 }, { a: 1 }, 180, false)).toBeNull();
 });

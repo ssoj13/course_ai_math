@@ -16,25 +16,18 @@ interface Props {
 	caption: string;
 	rows?: readonly ChipRow[];
 	chipLines?: number;
-	hud?: boolean;
-	formula?: boolean;
-	/** Authored mobile formula slot height; shared by SSR skeleton and live plate through one CSS variable. */
-	formulaHeight?: number;
 }
-const { caption, rows = [], chipLines, hud = false, formula = false, formulaHeight = 76 } = Astro.props;
+const { caption, rows = [], chipLines } = Astro.props;
 const panel = rows.length > 0;
 const lines = panel ? (chipLines ?? linesOf(rows)) : 0;
-if (!Number.isFinite(formulaHeight) || formulaHeight < 76) throw new Error('formulaHeight must be at least 76 CSS px');
 // Wider phones wrap the same fixed-width chips into the same or fewer lines (chips.ts): one reservation per width
 // bucket (lab.css picks the largest bucket <= the viewport), so a 412 px phone gets no empty line reserved for 320 px.
 const buckets = panel && chipLines === undefined ? CHIP_BUCKETS.map((vw) => `--lab-vp-chip-h-${vw}: ${chipHeight(linesOf(rows, vw))}px`) : [];
-const style = [`--lab-vp-chip-h: ${chipHeight(lines)}px`, ...buckets, `--lab-vp-formula-h: ${formulaHeight}px`].join('; ');
+const style = [`--lab-vp-chip-h: ${chipHeight(lines)}px`, ...buckets].join('; ');
 ---
 
 <figure
 	class="lab-scene lab-vp not-content"
-	data-hud={hud ? "" : undefined}
-	data-formula={formula ? "" : undefined}
 	data-panel={panel ? '' : undefined}
 	data-chip-lines={panel ? lines : undefined}
 	data-chip-override={chipLines !== undefined ? '' : undefined}

@@ -44,8 +44,7 @@ export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
-	// 0.18 (was 0.1 on the flat 6d background): over the holographic nebulae a 10 % tint no longer read as a side.
-	const base = p.opacity ?? 0.18;
+	const base = p.opacity ?? 0.1;
 	const alpha = hot ? 2 * base : base;
 	const fill = useRef<MeshBasicMaterial>(null);
 	const group = useRef<Group>(null);
@@ -79,7 +78,7 @@ export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	return (
 		<group ref={group} {...hover}>
 			{poly ? (
-				// A half-plane is 50 x extent wide: scene furniture for framing and the floor reflection (`aux`).
+				// A half-plane is 50 x extent wide: scene furniture, not part of the figure the home view frames (`aux`).
 				<mesh geometry={geo} frustumCulled={false} renderOrder={-1} userData={AUX}>
 					{mat}
 				</mesh>

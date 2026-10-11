@@ -21,7 +21,6 @@ import { Hatch } from '../scene/hatchMaterial';
 import { reducedMotion } from '../scene/motion';
 import { Show, useOverlay, useHoverable, useLabel, useStage, HOVER_RANK, type StageReg } from '../scene/handles';
 import type { StatusSpec } from '../scene/StatusBar';
-import { LawFormula } from './law-of-cosines';
 import { rowsFor } from './law-of-cosines.rows';
 import { LESSON, derive, solveIK, square, strip, pieceAt, moveA, moveB, MAGNETS, fmt, fmtAngle } from './law-of-cosines.math';
 
@@ -508,7 +507,7 @@ export function LawScene({ scene }: { scene: Scene }) {
 	];
 	return <ViewportCard lesson={LESSON} id={'LC-' + scene} name={'LC-' + scene + ' · ' + names[scene]} mode="2d" extent={EXTENTS[scene]}
 		center={scene === 3 ? [0, 0] : [1.5, scene === 0 || scene === 2 ? 0 : 1]} rows={rowsFor(scene, locale, cut)} overlays={overlays} status={statusFor(scene, locale)}
-		instruments angleKey={scene === 3 ? undefined : 'th'} formula={scene === 3 ? undefined : <LawFormula scene={scene} compact />} drawIn={scene === 0}>
+		drawIn={scene === 0}>
 		<RowEmphasis scene={scene} />
 		<Show ov="grid"><Grid lesson={LESSON} extent={EXTENTS[scene]} step={1} axes={false} ticks={false} /></Show>
 		{scene === 0 ? <Missing /> : scene === 1 ? <LedgerScene /> : scene === 2 ? <Proof /> : <IK />}

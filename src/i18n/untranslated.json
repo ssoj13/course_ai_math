@@ -1,7 +1,6 @@
 [
   "course/roadmap",
   "dev/engine",
-  "dev/holo-probe",
   "dev/math",
   "glossary",
   "ground/powers",
@@ -11,7 +10,6 @@
   "vectors/basis",
   "vectors/cosine-similarity",
   "vectors/cross-product",
-  "vectors/dot-product",
   "vectors/length",
   "vectors/projection",
   "vectors/vector",

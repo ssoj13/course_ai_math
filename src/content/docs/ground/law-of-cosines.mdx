@@ -11,7 +11,7 @@ import { rowsFor } from '../../../viz/lessons/law-of-cosines.rows';
 
 export const locale = 'en';
 
-<UiStrings ns={['viewport', 'gizmo', 'hud', 'status', 'challenge', 'linked', 'lc']} />
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'lc']} />
 
 **Built on:** [Distance and Pythagoras](lesson:pythagoras) (squares on the sides, $c^2 = a^2 + b^2$ for a square
 corner) and [Angles, radians and the unit circle](lesson:unit-circle) (cos is the shadow of a length-1 stick).
@@ -37,7 +37,7 @@ Pythagoras promised $25$. Twelve units of area are missing. Where did they go?
 
 ## The missing rectangles
 
-<SceneIsland caption="LC-0 · Missing rectangles: shear, rigid turn and signed area balance." rows={rowsFor(0, locale)} hud formula formulaHeight={100}>
+<SceneIsland caption="LC-0 · Missing rectangles: shear, rigid turn and signed area balance." rows={rowsFor(0, locale)}>
   <LawScene scene={0} locale={locale} client:only="react" />
 </SceneIsland>
 <LawDetailControls locale={locale} client:load />
@@ -127,7 +127,7 @@ and the formula *becomes* Pythagoras. Pythagoras is not a different law; it is t
 
 ## Correction term
 
-<SceneIsland caption="LC-1 · The balance a² + b² − 2ab cos θ = c²." rows={rowsFor(1, locale)} hud formula formulaHeight={100}>
+<SceneIsland caption="LC-1 · The balance a² + b² − 2ab cos θ = c²." rows={rowsFor(1, locale)}>
   <LawScene scene={1} locale={locale} client:only="react" />
 </SceneIsland>
 <LawControls scene={1} locale={locale} client:load />
@@ -163,7 +163,7 @@ past $90^\circ$ sits on the left half of the circle.
 
 ## The same result from algebra
 
-<SceneIsland caption="LC-2 · A step-by-step proof using Pythagoras." rows={rowsFor(2, locale)} hud formula formulaHeight={100}>
+<SceneIsland caption="LC-2 · A step-by-step proof using Pythagoras." rows={rowsFor(2, locale)}>
   <LawScene scene={2} locale={locale} client:only="react" />
 </SceneIsland>
 <LawDetailControls proof locale={locale} client:load />
@@ -238,7 +238,7 @@ and $\cos\theta = -1$ gives $\theta = 180^\circ$ ($c = a + b$).
 
 ## Two-bone IK: the law of cosines in your rig
 
-<SceneIsland caption="LC-3 · Two-bone IK: target, elbow and cosine clamp." rows={rowsFor(3, locale)} hud>
+<SceneIsland caption="LC-3 · Two-bone IK: target, elbow and cosine clamp." rows={rowsFor(3, locale)}>
   <LawScene scene={3} locale={locale} client:only="react" />
 </SceneIsland>
 <LawControls scene={3} locale={locale} client:load />

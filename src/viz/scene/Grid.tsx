@@ -5,12 +5,11 @@
  * 2D lies in the z = 0 plane with "infinite" axes and no fade (a sheet of graph paper); 3D lies on the floor
  * (y = 0, y-up), fades with distance like Blender's floor, and adds a vertical y axis and a z axis.
  * Drawn first and without depth writes, so anything coplanar draws on top.
- * Scene furniture (`userData.aux`): never reflected by the holographic floor and not part of the figure's bounds,
- * so the home view frames what the lesson draws (vectors, shapes), not the +-extent of the axes.
+ * Scene furniture (`userData.aux`): not part of the figure's bounds, so the home view frames what the lesson draws
+ * (vectors, shapes), not the +-extent of the axes.
  */
 import { Grid as ShaderGrid } from '@react-three/drei';
-import { LookCtx } from './look';
-import { useContext, useLayoutEffect, useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
 import { tickText, tickValues } from '../geom';
 import { STYLE, usePalette } from '../palette';
@@ -52,7 +51,6 @@ const AUX = { aux: true };
 export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
 	const pal = usePalette();
-	const studio = useContext(LookCtx) === 'clay';
 	const is3d = reg.mode === '3d';
 	const mesh = useRef<Mesh>(null);
 	// drei's material writes depth; the grid must never hide what is drawn on or under it.
@@ -88,8 +86,8 @@ export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true
 				sectionSize={step}
 				cellThickness={minor ? 1 : 0}
 				sectionThickness={1}
-				cellColor={studio ? pal.clayGrid : pal.gridMinor}
-				sectionColor={studio ? pal.clayGrid : pal.grid}
+				cellColor={pal.gridMinor}
+				sectionColor={pal.grid}
 				fadeDistance={is3d ? e * 7 : 1e4}
 				fadeStrength={is3d ? 1.6 : 0}
 				side={DoubleSide}

@@ -5,20 +5,16 @@
  * plain quad in the plane of a and b (area |a x b| has no sign). Collinear or zero vectors span no area and draw
  * nothing (no throw: a reader can drag into that). `Quad` here is also the drawing of AreaTile.
  */
-import { lazy, Suspense, useContext, useLayoutEffect, useMemo, useRef } from 'react';
-import { Float32BufferAttribute, type Group } from 'three';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import { DoubleSide, type Group, type MeshBasicMaterial } from 'three';
 import { add, cross, norm, scale, signedArea2, to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useHoverable, useLabel, usePos } from './handles';
+import { Hatch } from './hatchMaterial';
 import { Stroke, useDynGeo, useReveal, writeGeo } from './view';
 
-import { Hatch } from './hatchMaterial';
-import { Point } from './Point';
-import { LookCtx, assertSubject } from './look';
-const Glass = lazy(() => import('./Glass').then((m) => ({ default: m.Glass })));
 const QUAD_INDEX = [0, 1, 2, 0, 2, 3];
-const QUAD_UV = [0, 0, 1, 0, 1, 1, 0, 1];
 const O2: V = [0, 0];
 const O3: V = [0, 0, 0];
 
@@ -36,13 +32,12 @@ export interface QuadProps {
 }
 
 /**
- * The parallelogram o + s*u + t*v: a glass face (Glass.tsx: tile-aligned unit grid, rim glow) with a 1.5 px glowing
- * edge and bright corners (visual-language.md, STYLE), plus the 45-degree hatch when `neg`. The caller guarantees a non-degenerate shape. The fill is pushed back in depth (polygonOffset) so
- * coplanar arrows and lines keep their exact color instead of being tinted. Hover lights `id`: the edge gets the hot
+ * The parallelogram o + s*u + t*v: an 18% fill with a 1.5 px edge (visual-language.md, STYLE), plus the 45-degree
+ * hatch when `neg` (CSS-pixel stripes shared with Poly). The caller guarantees a non-degenerate shape. The fill is
+ * pushed back in depth (polygonOffset) so coplanar arrows and lines keep their exact color instead of being tinted. Hover lights `id`: the edge gets the hot
  * outline, the fill keeps its color. Draw-in: the whole shape fades in with the reveal.
  */
 export function Quad(p: QuadProps): React.JSX.Element {
-	assertSubject(useContext(LookCtx), true);
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);
 	const { o, u, v } = p;
@@ -51,33 +46,33 @@ export function Quad(p: QuadProps): React.JSX.Element {
 		return { c, edge: [...c, c[0]], center: add(o, scale(add(u, v), 0.5)) };
 	}, [o, u, v]);
 	const geo = useDynGeo(4, QUAD_INDEX);
-	useLayoutEffect(() => {
-		writeGeo(geo, g.c);
-		geo.setAttribute('uv', new Float32BufferAttribute(QUAD_UV, 2));
-		// Tile-local coordinates in world units along u and v: the glass grid counts the tile's own unit cells.
-		const lu = norm(u);
-		const lv = norm(v);
-		geo.setAttribute('local', new Float32BufferAttribute([0, 0, lu, 0, lu, lv, 0, lv], 2));
-	}, [geo, g]);
+	useLayoutEffect(() => writeGeo(geo, g.c), [geo, g]);
 	useLabel(p.text === undefined ? null : { lesson: p.lesson, text: p.text, role: p.role, hot: p.id, at: () => g.center });
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
+	const fill = useRef<MeshBasicMaterial>(null);
 	const group = useRef<Group>(null);
 	useReveal((r) => {
+		if (fill.current) fill.current.opacity = STYLE.fillA * r;
 		if (group.current) group.current.visible = r > 0;
 	});
 	const color = pal[p.role];
 	return (
 		<group ref={group} {...hover}>
 			<mesh geometry={geo} frustumCulled={false} renderOrder={0}>
-				<Suspense fallback={<meshBasicMaterial color={color} transparent opacity={STYLE.glassBottomA} depthWrite={false} />}>
-					<Glass color={color} hot={hot} />
-				</Suspense>
+				<meshBasicMaterial
+					ref={fill}
+					color={color}
+					transparent
+					opacity={STYLE.fillA}
+					depthWrite={false}
+					side={DoubleSide}
+					polygonOffset
+					polygonOffsetFactor={1}
+					polygonOffsetUnits={1}
+				/>
 			</mesh>
-			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} innerAlpha={0.3} halo order={1} />
-			{g.c.map((at, i) => (
-				<Point key={i} lesson={p.lesson} id={p.id} size={5} at={at} drag={false} role={p.role} />
-			))}
-			{p.neg && <Hatch geometry={geo} role={p.role}/>}
+			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} halo={false} order={1} />
+			{p.neg && <Hatch geometry={geo} role={p.role} />}
 		</group>
 	);
 }
@@ -95,7 +90,6 @@ export interface ParallelogramProps {
 }
 
 export function Parallelogram(p: ParallelogramProps): React.JSX.Element | null {
-	assertSubject(useContext(LookCtx), true);
 	const a = usePos(p.lesson, p.a);
 	const b = usePos(p.lesson, p.b);
 	const o = usePos(p.lesson, p.at ?? (a.length === 3 ? O3 : O2));

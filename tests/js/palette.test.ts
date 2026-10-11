@@ -13,7 +13,7 @@ test('reads every role from --viz-* custom properties', () => {
 	const p = readPalette((n) => css[n] ?? '#000000');
 	expect(p.vecA).toBe('#1f77b4');
 	expect(p.vecB).toBe('#ff7f0e');
-	expect(Object.keys(p).length).toBe(33);
+	expect(Object.keys(p).length).toBe(18);
 });
 
 test('missing variable is an error, not a silent black', () => {
