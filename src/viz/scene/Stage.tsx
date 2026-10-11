@@ -23,16 +23,12 @@ import { useStore } from 'zustand';
 
 import { LookCtx, type Look } from './look';
 
+import { fit2d, fit3d, MARGIN_2D, type Bounds, type FramePad } from './framing';
+export type { FramePad } from './framing';
+
 // The look's furniture (sky, floor and reflection, instrument feed) is its own lazy chunk.
 const HoloLayer = lazy(() => import('./HoloLayer').then((m) => ({ default: m.HoloLayer })));
 
-/** CSS px of the stage kept clear of the figure at the home view (HUD columns, formula plate). */
-export interface FramePad {
-	l: number;
-	r: number;
-	t: number;
-	b: number;
-}
 const NO_PAD: FramePad = { l: 0, r: 0, t: 0, b: 0 };
 
 export interface StageProps {
@@ -110,7 +106,7 @@ const FOV = 40;
 const TAN = Math.tan((FOV * Math.PI) / 360);
 // 2D zoom range relative to the fitted zoom; 3D orbit distance range in units of `extent`.
 const ZOOM_2D: readonly [number, number] = [0.5, 8];
-const DIST_3D: readonly [number, number] = [1, 6];
+const DIST_3D: readonly [number, number] = [0.4, 6];
 
 /** Default 3D camera position: an elevated three-quarter view of the floor. */
 const home3 = (e: number): [number, number, number] => [e * 1.6, e * 1.2, e * 1.8];
@@ -118,17 +114,8 @@ const home3 = (e: number): [number, number, number] => [e * 1.6, e * 1.2, e * 1.
 /** Radius, in units of `extent`, of the sphere the default 3D view must show whole: the axes reach +-extent, and the
  * margin keeps the axis letters, tip labels and the gizmo corner clear of the frame. */
 const FRAME_3D = 1.3;
-/** Free px around the 2D extent, so tick numbers and labels at +-extent are not cut by the frame. */
-const MARGIN_2D = 16;
-/**
- * 2D home view with a floor: the figure stands in the upper part of the stage and the floor (and the formula plate
- * over it) take this share of the height below it, as in the reference (figure ~60 %, floor band ~30 %).
- */
-const FLOOR_SHARE = 0.3;
 /** Horizon of the 2D floor, as a share of the figure's height above its base line. */
 const HORIZON = 0.12;
-/** Extra radius around the figure's bounding sphere in the 3D home view (labels, arrow heads). */
-const MARGIN_3D = 1.1;
 /** 2D home zoom range relative to the fit of the whole extent: a tiny figure is not blown up without limit. */
 const HOME_2D: readonly [number, number] = [0.25, 6];
 /**
@@ -173,24 +160,10 @@ interface NavProps {
 	floor: boolean;
 }
 
-/**
- * 2D framing of `box` in a `width` x `height` stage: orthographic zoom and the camera centre that put the box in the
- * free rectangle (stage minus N-panel inset and pad, minus the floor band when there is a floor).
- */
-function fit2d(box: Box3, width: number, height: number, inset: number, pad: FramePad, floor: boolean) {
-	const fw = Math.max(1, width - inset);
-	const left = pad.l + MARGIN_2D;
-	const right = fw - pad.r - MARGIN_2D;
-	const top = pad.t + MARGIN_2D;
-	const bottom = height - Math.max(pad.b, floor ? FLOOR_SHARE * height : 0) - MARGIN_2D;
-	const bw = Math.max(box.max.x - box.min.x, 1e-6);
-	const bh = Math.max(box.max.y - box.min.y, 1e-6);
-	const zoom = Math.max(1e-6, Math.min((right - left) / bw, (bottom - top) / bh));
-	// Screen x grows with world x, screen y against world y; the camera looks at the centre of the free area.
-	const cx = (box.min.x + box.max.x) / 2 - ((left + right) / 2 - fw / 2) / zoom;
-	const cy = (box.min.y + box.max.y) / 2 + ((top + bottom) / 2 - height / 2) / zoom;
-	return { zoom, cx, cy };
-}
+/** Plain bounds of a three Box3 for the pure framing math. */
+const boundsOf = (b: Box3): Bounds => ({ min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] });
+/** Unit direction from the target to the default 3D camera. */
+const HOME_DIR = home3(1 / Math.hypot(...home3(1)));
 
 /**
  * Camera navigation of one stage: fitting (2D zoom so `extent` reaches the nearer edge of the free area, keeping the
@@ -232,9 +205,14 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 		const box = homeBox.current;
 		const base = extentZoom(width, height);
 		if (!box) return base;
-		if (mode === '3d') return Math.min(Math.max(1, width - inset), height) / (2 * box.getBoundingSphere(new Sphere()).radius * MARGIN_3D);
-		const z = fit2d(box, width, height, inset, padRef.current, floorRef.current).zoom;
+		if (mode === '3d') return fit3dFor(box, width, height).zoom;
+		const z = fit2d(boundsOf(box), width, height, inset, padRef.current, floorRef.current).zoom;
 		return Math.min(base * HOME_2D[1], Math.max(base * HOME_2D[0], z));
+	};
+	/** 3D fit in the view left free by the N-panel, the HUD columns and the plate. */
+	const fit3dFor = (box: Box3, width: number, height: number) => {
+		const p = padRef.current;
+		return fit3d(boundsOf(box), HOME_DIR, width - inset - p.l - p.r, height - p.t - p.b, TAN);
 	};
 	/** Measures the figure (View All) without applying it; null when nothing is drawn yet. */
 	const figure = (): Box3 | null => {
@@ -258,7 +236,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 		const box = homeBox.current;
 		if (mode === '2d') {
 			if (!box) return poseOf([center[0], center[1], 10], center, fitZoom(width, height));
-			const f = fit2d(box, width, height, inset, padRef.current, floorRef.current);
+			const f = fit2d(boundsOf(box), width, height, inset, padRef.current, floorRef.current);
 			const zoom = fitZoom(width, height);
 			// A clamped zoom scales the box's offset from the camera centre with it, keeping it in the free area.
 			const mx = (box.min.x + box.max.x) / 2;
@@ -267,14 +245,13 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 			const target: [number, number, number] = [mx + (f.cx - mx) * k, my + (f.cy - my) * k, 0];
 			return poseOf([target[0], target[1], 10], target, zoom);
 		}
-		// Same three-quarter direction as before, at the distance that frames the figure's bounding sphere.
-		const sphere = box ? box.getBoundingSphere(new Sphere()) : new Sphere(new Vector3(), (FRAME_3D * e) / MARGIN_3D);
-		const r = sphere.radius * MARGIN_3D;
-		const d = Math.min(e * DIST_3D[1], Math.max(e * DIST_3D[0], fitDistance(r, Math.max(1, width - inset), height)));
-		const c = sphere.center;
-		const dir = home3(1 / Math.hypot(...home3(1)));
-		const pos: [number, number, number] = [c.x + dir[0] * d, c.y + dir[1] * d, c.z + dir[2] * d];
-		return poseOf(pos, [c.x, c.y, c.z], ortho ? fitZoom(width, height) : 1);
+		// Same three-quarter direction as before. Without a figure: the sphere of radius FRAME_3D * extent.
+		const dir = HOME_DIR;
+		const c: readonly number[] = box ? fit3dFor(box, width, height).target : [0, 0, 0];
+		const fitD = box ? fit3dFor(box, width, height).dist : fitDistance(FRAME_3D * e, Math.max(1, width - inset), height);
+		const d = Math.min(e * DIST_3D[1], Math.max(e * DIST_3D[0], fitD));
+		const pos: [number, number, number] = [c[0] + dir[0] * d, c[1] + dir[1] * d, c[2] + dir[2] * d];
+		return poseOf(pos, [c[0], c[1], c[2]], ortho ? fitZoom(width, height) : 1);
 	};
 
 	const apply = (p: Pose) => {
@@ -410,7 +387,13 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 		const now = performance.now();
 		const first = settle.current === 0;
 		if (first) settle.current = now + SETTLE_MS;
-		else if (now > settle.current && seen.current) {
+		// Off screen (never seen yet): frame once, then wait for the IntersectionObserver instead of measuring the
+		// figure on every frame the shared canvas renders for other cards.
+		else if (!seen.current) return;
+		// During the draw-in the figure is still unfolding (its groups are scaled by the reveal): the first frame
+		// measured it whole, so wait for the draw-in to finish instead of zooming along with it.
+		else if (reg.reveal < 1) return;
+		else if (now > settle.current) {
 			settle.current = -1;
 			return;
 		}
@@ -519,7 +502,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 					<ShownCtx.Provider value={true}>
 						<LookCtx.Provider value={look}>
 							<Suspense fallback={null}>
-								<HoloLayer look={look} floor={floor} content={content} />
+								<HoloLayer look={look} floor={floor} content={content} inset={inset} />
 							</Suspense>
 							{/* The figure: framed by the home view and drawn a second time, mirrored, into the floor. */}
 							<group ref={content}>{p.children}</group>

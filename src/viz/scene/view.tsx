@@ -46,9 +46,8 @@ const part = new Box3();
 
 /**
  * World bounds of the figure under `root` (the Stage's content group) into `out`; empty when nothing is drawn yet.
- * Scene furniture marked `userData.aux` (grids, half-planes) is skipped, except for an explicit `userData.fitBox`
- * it declares (a coordinate grid's axes square), and glyphs sized in screen px (`usePxScale`: points, arrow heads)
- * count as their anchor point only. Bounding boxes are recomputed: shapes rewrite their buffers in place
+ * Scene furniture marked `userData.aux` (grids, half-planes, the floor) is skipped, and glyphs sized in screen px
+ * (`usePxScale`: points, arrow heads) count as their anchor point only. Bounding boxes are recomputed: shapes rewrite their buffers in place
  * (`writeGeo`), so a cached box can be stale. Called only when the home view is computed, not per frame.
  */
 export function contentBox(root: Object3D, out: Box3): Box3 {
@@ -59,11 +58,7 @@ export function contentBox(root: Object3D, out: Box3): Box3 {
 			out.expandByPoint(o.getWorldPosition(pt));
 			return;
 		}
-		if (o.userData.aux) {
-			const fit = o.userData.fitBox as Box3 | undefined;
-			if (fit) out.union(part.copy(fit).applyMatrix4(o.matrixWorld));
-			return;
-		}
+		if (o.userData.aux) return;
 		const geo = (o as Mesh).geometry;
 		if (geo) {
 			geo.computeBoundingBox();

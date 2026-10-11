@@ -6,13 +6,12 @@
  * (y = 0, y-up), fades with distance like Blender's floor, and adds a vertical y axis and a z axis.
  * Drawn first and without depth writes, so anything coplanar draws on top.
  * Scene furniture (`userData.aux`): never reflected by the holographic floor and not part of the figure's bounds,
- * except that a grid with axes is a coordinate plane, so its +-extent square (2D) or a cube whose bounding sphere has
- * radius 1.3 extent (3D, the old default framing) counts as the figure the home view frames (`userData.fitBox`).
+ * so the home view frames what the lesson draws (vectors, shapes), not the +-extent of the axes.
  */
 import { Grid as ShaderGrid } from '@react-three/drei';
 import { LookCtx } from './look';
 import { useContext, useLayoutEffect, useMemo, useRef } from 'react';
-import { Box3, DoubleSide, Vector3, type Mesh, type ShaderMaterial } from 'three';
+import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
 import { tickText, tickValues } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { useLabel, useStage } from './handles';
@@ -48,8 +47,7 @@ function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' 
 	return null;
 }
 
-/** Half-size of the 3D fit cube: its bounding sphere (half-diagonal sqrt(3) s), plus the 10 % framing margin, is 1.3 e. */
-const FIT_3D = 1.3 / (Math.sqrt(3) * 1.1);
+const AUX = { aux: true };
 
 export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
@@ -78,14 +76,8 @@ export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true
 	const every = Math.max(1, Math.ceil(vals.length / 2 / 5));
 	const labelled = showTicks ? vals.filter((v) => Math.round(Math.abs(v) / step) % every === 0) : [];
 	const flat = { transparent: true, depthWrite: false };
-	const userData = useMemo(() => {
-		if (!axes) return { aux: true };
-		// 3D: the cube stands on the floor plane y = 0 (the grid is the floor), so the reflective floor coincides with it.
-		const s = is3d ? e * FIT_3D : e;
-		return { aux: true, fitBox: new Box3(new Vector3(-s, is3d ? 0 : -s, is3d ? -s : 0), new Vector3(s, is3d ? 2 * s : s, is3d ? s : 0)) };
-	}, [axes, is3d, e]);
 	return (
-		<group userData={userData}>
+		<group userData={AUX}>
 			<ShaderGrid
 				ref={mesh}
 				args={[2, 2]}

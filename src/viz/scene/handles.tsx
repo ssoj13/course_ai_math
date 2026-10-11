@@ -593,7 +593,7 @@ export function placeLabels(reg: StageReg): void {
 }
 
 /** A label's box this frame: centre (x, y) and size in CSS px (labels are centred on their position). */
-interface Placed {
+export interface Placed {
 	el: HTMLElement;
 	x: number;
 	y: number;
@@ -616,7 +616,7 @@ const overlaps = (a: Placed, b: Placed, dx: number, dy: number) =>
  * few candidate offsets (down, up, right, left, by its own size) that frees it. Tick numbers (`small`) are laid out
  * by their axis and neither move nor push. Deterministic, so a label does not jitter between frames.
  */
-function separate(list: Placed[]): void {
+export function separate(list: Placed[]): void {
 	for (let i = 0; i < list.length; i++) {
 		const a = list[i];
 		if (a.small) continue;
