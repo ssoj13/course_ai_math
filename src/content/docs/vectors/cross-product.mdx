@@ -7,37 +7,37 @@ import Quiz from '../../../components/Quiz.astro';
 
 **Built on:** [The dot product](lesson:dot-product) · [A vector: an arrow and a list of numbers](lesson:vector)
 
-This lesson is a side branch: nothing on the main path depends on it until Part 2 (the determinant). Read it when you want to know where face normals come from and why flipping two vertices in a triangle turns it black.
+This lesson is a side branch: nothing on the main path depends on it until Part 2 (the determinant). Read it when you want to know where face normals come from and why flipping two vertices in a triangle turns it black or makes it vanish.
 
 Houdini computes a polygon's normal as `@N = normalize(cross(e1, e2))` from two edges. A shader builds the bitangent as `cross(N, T)`. A rasterizer decides front from back by the sign of a 2D cross product of the screen-space edges. Every one of these is the operation below.
 
 ## 1. Definition: the arrow that sticks out
 
-The **cross product** of two 3D vectors $a$ and $b$ is a new 3D vector:
+The **cross product** of two 3D vectors $\mathbf{a}$ and $\mathbf{b}$ is a new 3D vector:
 
 $$
-a \times b = (a_y b_z - a_z b_y,\;\; a_z b_x - a_x b_z,\;\; a_x b_y - a_y b_x)
+\mathbf{a} \times \mathbf{b} = (a_y b_z - a_z b_y,\;\; a_z b_x - a_x b_z,\;\; a_x b_y - a_y b_x)
 $$
 
 Each component is a small 2-by-2 "criss-cross": the x component uses only the y and z parts of the inputs, and so on, cycling x → y → z → x. Unlike the dot product, the result is a **vector**, and it exists only in 3D.
 
-Example. $a = (1, 0, 0)$, $b = (0, 1, 0)$:
+Example. $\mathbf{a} = (1, 0, 0)$, $\mathbf{b} = (0, 1, 0)$:
 
 $$
-a \times b = (0 \cdot 0 - 0 \cdot 1,\;\; 0 \cdot 0 - 1 \cdot 0,\;\; 1 \cdot 1 - 0 \cdot 0) = (0, 0, 1)
+\mathbf{a} \times \mathbf{b} = (0 \cdot 0 - 0 \cdot 1,\;\; 0 \cdot 0 - 1 \cdot 0,\;\; 1 \cdot 1 - 0 \cdot 0) = (0, 0, 1)
 $$
 
 The x axis crossed with the y axis is the z axis. The result points straight out of the plane of the two inputs.
 
-That is the general rule: $a \times b$ is **perpendicular to both** $a$ and $b$. Check it with the dot product on a less obvious pair, $a = (1, 2, 3)$, $b = (4, 5, 6)$:
+That is the general rule: $\mathbf{a} \times \mathbf{b}$ is **perpendicular to both** $\mathbf{a}$ and $\mathbf{b}$. Check it with the dot product on a less obvious pair, $\mathbf{a} = (1, 2, 3)$, $\mathbf{b} = (4, 5, 6)$:
 
 $$
-a \times b = (2 \cdot 6 - 3 \cdot 5,\;\; 3 \cdot 4 - 1 \cdot 6,\;\; 1 \cdot 5 - 2 \cdot 4) = (-3, 6, -3)
+\mathbf{a} \times \mathbf{b} = (2 \cdot 6 - 3 \cdot 5,\;\; 3 \cdot 4 - 1 \cdot 6,\;\; 1 \cdot 5 - 2 \cdot 4) = (-3, 6, -3)
 $$
 
 $(-3, 6, -3) \cdot (1, 2, 3) = -3 + 12 - 9 = 0$ and $(-3, 6, -3) \cdot (4, 5, 6) = -12 + 30 - 18 = 0$. Perpendicular to both, as promised.
 
-Which of the two perpendicular directions? The **right-hand rule**: curl the fingers of your right hand from $a$ toward $b$; the thumb points along $a \times b$. In a y-up, right-handed viewport, x crossed with y gives $+z$.
+Which of the two perpendicular directions? The formula always gives x × y = +z. The **right-hand rule** describes the picture in a right-handed system such as Maya or Houdini (y up, +z toward you): curl the fingers of your right hand from $\mathbf{a}$ toward $\mathbf{b}$ and the thumb points along $\mathbf{a} \times \mathbf{b}$. In a left-handed system (Unity, Unreal, RenderMan) the same numbers are drawn with +z pointing away, so the picture follows the left hand; the arithmetic is unchanged.
 
 {/* scene: 1.8-1 — a × b in 3D: the perpendicular result; the parallelogram spanned by a and b is filled and its area is linked to |a × b|; swap order → flips; drag toward parallel → shrinks to zero */}
 
@@ -46,26 +46,26 @@ Which of the two perpendicular directions? The **right-hand rule**: curl the fin
 The length of the cross product is
 
 $$
-\lvert a \times b \rvert = \lvert a \rvert\,\lvert b \rvert \sin\theta
+\lvert \mathbf{a} \times \mathbf{b} \rvert = \lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert \sin\theta
 $$
 
-Compare with the dot product's $\lvert a \rvert \lvert b \rvert \cos\theta$. Cosine measures the shadow; sine measures the height. Base times height is an area, so $\lvert a \times b \rvert$ is the **area of the parallelogram** spanned by $a$ and $b$.
+Compare with the dot product's $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$. Cosine measures the shadow; sine measures the height. Base times height is an area, so $\lvert \mathbf{a} \times \mathbf{b} \rvert$ is the **area of the parallelogram** spanned by $\mathbf{a}$ and $\mathbf{b}$.
 
-Check with the example: $\lvert (-3, 6, -3) \rvert = \sqrt{9 + 36 + 9} = \sqrt{54} \approx 7.35$. By the other route: $\lvert a \rvert = \sqrt{14}$, $\lvert b \rvert = \sqrt{77}$, $a \cdot b = 32$, so $\cos\theta = 32 / \sqrt{14 \cdot 77} \approx 0.9746$, $\sin\theta = \sqrt{1 - 0.9746^2} \approx 0.224$, and $\sqrt{14 \cdot 77} \cdot 0.224 \approx 7.35$. Same number.
+Check with the example: $\lvert (-3, 6, -3) \rvert = \sqrt{9 + 36 + 9} = \sqrt{54} \approx 7.35$. By the other route: $\lvert \mathbf{a} \rvert = \sqrt{14}$, $\lvert \mathbf{b} \rvert = \sqrt{77}$, $\mathbf{a} \cdot \mathbf{b} = 32$, so $\cos\theta = 32 / \sqrt{14 \cdot 77} \approx 0.9746$, $\sin\theta = \sqrt{1 - 0.9746^2} \approx 0.224$, and $\sqrt{14 \cdot 77} \cdot 0.224 \approx 7.35$. Same number.
 
 Two consequences:
 
 - Parallel arrows give the **zero vector**. $(1, 2, 0) \times (2, 4, 0) = (0 - 0,\; 0 - 0,\; 4 - 4) = (0, 0, 0)$: a parallelogram with no height has no area. The cross product is not undefined here; it is zero, and that zero is the degenerate normal that makes `normalize` fail in [lesson 1.3](lesson:length).
-- Perpendicular arrows give the biggest result, $\lvert a \rvert \lvert b \rvert$ (since $\sin 90^\circ = 1$). For other angles the length is strictly smaller.
+- Perpendicular arrows give the biggest result, $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert$ (since $\sin 90^\circ = 1$). For other angles the length is strictly smaller.
 
-**Misconception to drop:** "$\lvert a \times b \rvert = \lvert a \rvert \lvert b \rvert$ always." Only at 90°. In general there is a $\sin\theta$ factor, just as the dot product has a $\cos\theta$.
+**Misconception to drop:** "$\lvert \mathbf{a} \times \mathbf{b} \rvert = \lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert$ always." Only at 90°. In general there is a $\sin\theta$ factor, just as the dot product has a $\cos\theta$.
 
-## 3. Order matters: $b \times a = -(a \times b)$
+## 3. Order matters: $\mathbf{b} \times \mathbf{a} = -(\mathbf{a} \times \mathbf{b})$
 
 Swap the inputs and every criss-cross changes sign:
 
 $$
-b \times a = (b_y a_z - b_z a_y,\; \ldots) = -(a \times b)
+\mathbf{b} \times \mathbf{a} = (b_y a_z - b_z a_y,\; \ldots) = -(\mathbf{a} \times \mathbf{b})
 $$
 
 $(0, 1, 0) \times (1, 0, 0) = (0, 0, -1)$: y crossed with x is *minus* z. Same line, same area, opposite arrow. The dot product commutes ([lesson 1.4](lesson:dot-product), checkpoint 2); the cross product anti-commutes. This single fact is the whole story of winding order in section 5.
@@ -78,9 +78,9 @@ $$
 a_x b_y - a_y b_x
 $$
 
-This number is the **signed area** of the parallelogram spanned by $a$ and $b$. Example: $a = (2, 0)$, $b = (1, 3)$: $2 \cdot 3 - 0 \cdot 1 = 6$. The parallelogram has base 2 and height 3; area 6.
+This number is the **signed area** of the parallelogram spanned by $\mathbf{a}$ and $\mathbf{b}$. Example: $\mathbf{a} = (2, 0)$, $\mathbf{b} = (1, 3)$: $2 \cdot 3 - 0 \cdot 1 = 6$. The parallelogram has base 2 and height 3; area 6.
 
-The sign is the **orientation**: positive when turning from $a$ to $b$ is counter-clockwise, negative when clockwise, zero when they are on one line. $(1, 3)$ and $(2, 0)$ in the other order give $1 \cdot 0 - 3 \cdot 2 = -6$: same shape, clockwise turn, negative. This is the "dependence meter" of [lesson 1.6](lesson:basis): zero area means the two arrows span only a line.
+The sign is the **orientation**: positive when turning from $\mathbf{a}$ to $\mathbf{b}$ is counter-clockwise, negative when clockwise, zero when they are on one line. $(1, 3)$ and $(2, 0)$ in the other order give $1 \cdot 0 - 3 \cdot 2 = -6$: same shape, clockwise turn, negative. This is the "dependence meter" of [lesson 1.6](lesson:basis): zero area means the two arrows span only a line.
 
 {/* scene: 1.8-2 — 2D signed area aₓb_y − a_ybₓ: positive when counter-clockwise, the sign shown as the parallelogram tint (orientation); hatched when negative */}
 
@@ -88,19 +88,19 @@ The sign is the **orientation**: positive when turning from $a$ to $b$ is counte
 
 ## 5. Triangle normals and winding order
 
-A triangle with vertices $P_0, P_1, P_2$ has two edge vectors from $P_0$: $e_1 = P_1 - P_0$ and $e_2 = P_2 - P_0$ ([lesson 1.1](lesson:vector)). Its normal is
+A triangle with vertices $P_0, P_1, P_2$ has two edge vectors from $P_0$: $\mathbf{e}_1 = P_1 - P_0$ and $\mathbf{e}_2 = P_2 - P_0$ ([lesson 1.1](lesson:vector)). Its normal is
 
 $$
-N = \widehat{e_1 \times e_2}
+\mathbf{N} = \widehat{\mathbf{e}_1 \times \mathbf{e}_2}
 $$
 
-the cross product, normalized. Example: $P_0 = (0, 0, 0)$, $P_1 = (1, 0, 0)$, $P_2 = (0, 1, 0)$. Then $e_1 = (1, 0, 0)$, $e_2 = (0, 1, 0)$ and $N = (0, 0, 1)$: the triangle lies in the xy plane and faces $+z$. Its area is half the parallelogram, $\tfrac{1}{2} \lvert e_1 \times e_2 \rvert = 0.5$.
+the cross product, normalized. Example: $P_0 = (0, 0, 0)$, $P_1 = (1, 0, 0)$, $P_2 = (0, 1, 0)$. Then $\mathbf{e}_1 = (1, 0, 0)$, $\mathbf{e}_2 = (0, 1, 0)$ and $\mathbf{N} = (0, 0, 1)$: the triangle lies in the xy plane and faces $+z$. Its area is half the parallelogram, $\tfrac{1}{2} \lvert \mathbf{e}_1 \times \mathbf{e}_2 \rvert = 0.5$.
 
-Now list the vertices in the other order, $P_0, P_2, P_1$. The edges swap, the cross product flips, and $N = (0, 0, -1)$. The triangle did not move; only the **winding order** changed, and the normal now faces the other way. That is why a mesh with inconsistent winding shows black patches: the renderer's back-face test `dot(N, V) < 0` (the sign test of [lesson 1.4](lesson:dot-product)) rejects the faces whose normals point away, and lighting with a flipped normal gives $\max(0, N \cdot L) = 0$ on the side that should be lit.
+Now list the vertices in the other order, $P_0, P_2, P_1$. The edges swap, the cross product flips, and $\mathbf{N} = (0, 0, -1)$. The triangle did not move; only the **winding order** changed, and the normal now faces the other way. With back-face culling on, such a triangle simply disappears: the rasterizer drops it by the sign of its 2D signed area on screen (section 4). With two-sided display, it is drawn but lit with a flipped normal, and $\max(0, \mathbf{N} \cdot \mathbf{L}) = 0$ turns the side that should be lit black. Both symptoms of a mesh with inconsistent winding come from this one sign.
 
-{/* scene: 1.8-3 — triangle normal from two edges; flip the winding order and the normal flips: "this is why back-faces go dark" */}
+{/* scene: 1.8-3 — triangle normal from two edges; flip the winding order and the normal flips: "this is why back-faces vanish or go dark" */}
 
-The same logic builds tangent frames: given a normal $N$ and a tangent $T$, the bitangent is $B = N \times T$ (or $T \times N$, depending on the convention your normal maps were baked with; getting the order wrong mirrors every bump).
+The same logic builds tangent frames: given a normal $\mathbf{N}$ and a tangent $\mathbf{T}$, the bitangent is $\mathbf{B} = \mathbf{N} \times \mathbf{T}$ (or $\mathbf{T} \times \mathbf{N}$, depending on the convention your normal maps were baked with; getting the order wrong mirrors every bump).
 
 > **Say it simpler.** The cross product makes the arrow that sticks out of the plane of two arrows; its length is the area they span. Swap the two arrows and it points the other way.
 
@@ -112,40 +112,40 @@ The same logic builds tangent frames: given a normal $N$ and a tangent $T$, the 
       q: "How do a × b and b × a compare?",
       options: [
         "They are equal, like the dot product, because multiplication of components commutes",
-        "They have the same length and point in opposite directions",
         "They are perpendicular to each other",
+        "They have the same length and point in opposite directions",
         "They have different lengths"
       ],
-      answer: 1,
+      answer: 2,
       explain: "Swapping the inputs changes the sign of every component: b × a = −(a × b). Same line, same area, opposite arrow. This is why reversing a triangle's winding flips its normal."
     },
     {
-      q: "The cross product of two 2D vectors a = (aₓ, a_y) and b = (bₓ, b_y)…",
+      q: "The cross product of two 2D vectors a = (ax, ay) and b = (bx, by)…",
       options: [
+        "survives as one signed number, ax·by − ay·bx, the signed area of their parallelogram",
         "is a 2D vector perpendicular to both",
-        "is undefined, so 2D code never uses it and falls back to the dot product for orientation tests",
-        "survives as one signed number, aₓb_y − a_ybₓ, the signed area of their parallelogram",
+        "is undefined, so 2D code never uses it",
         "is the same as their dot product"
       ],
-      answer: 2,
+      answer: 0,
       explain: "There is no third axis to point along in 2D. What remains is the z component of the 3D formula: a signed area whose sign tells counter-clockwise from clockwise."
     },
     {
       q: "The cross product of two parallel vectors is…",
       options: [
         "undefined, like dividing by zero, so the call must be guarded before it is made",
-        "the zero vector, because the parallelogram they span has zero area",
         "a unit vector along their common line",
-        "the sum of the two vectors"
+        "the sum of the two vectors",
+        "the zero vector, because the parallelogram they span has zero area"
       ],
-      answer: 1,
+      answer: 3,
       explain: "|a × b| = |a||b| sin θ and sin 0 = 0. The result is a perfectly defined vector, (0, 0, 0). Normalizing it afterwards is what fails."
     },
     {
       q: "When is |a × b| equal to |a||b|?",
       options: [
         "Always",
-        "Only when a and b are perpendicular, since sin 90° = 1",
+        "Only at 90°, since sin 90° = 1",
         "Only when a and b are parallel",
         "Only when both are unit vectors, so that the lengths drop out of the product"
       ],
@@ -169,7 +169,7 @@ The same logic builds tangent frames: given a normal $N$ and a tangent $T$, the 
 1. $(0, 0, 1)$.
 2. $(0, 0, 0)$: the vectors are parallel.
 3. $2 \cdot 3 - 0 \cdot 1 = 6$.
-4. $e_1 \times e_2 = (0, 0, 1)$, already unit. Swapped: $(0, 0, -1)$.
+4. $\mathbf{e}_1 \times \mathbf{e}_2 = (0, 0, 1)$, already unit. Swapped: $(0, 0, -1)$.
 5. $(-3, 6, -3)$; $(-3)(1) + 6 \cdot 2 + (-3)(3) = -3 + 12 - 9 = 0$.
 
 </details>
@@ -186,7 +186,7 @@ print(np.cross(b, a))                  # [ 0.  0. -1.]   order flips the result
 p = np.array([1., 2., 3.]); q = np.array([4., 5., 6.])
 c = np.cross(p, q)
 print(c, c @ p, c @ q)                 # [-3.  6. -3.] 0.0 0.0   perpendicular to both
-print(np.linalg.norm(c))               # 7.348...  = parallelogram area
+print(round(np.linalg.norm(c), 4))     # 7.3485  = parallelogram area
 
 print(np.cross([1., 2., 0.], [2., 4., 0.]))   # [0. 0. 0.]  parallel
 
@@ -206,7 +206,7 @@ print(n / np.linalg.norm(n))           # [ 0.  0. -1.]
 <details>
 <summary>Machine layer: six multiplies, and a volume</summary>
 
-A cross product is 6 multiplications and 3 subtractions, no square root; it is cheaper than a normalize. One more identity to carry into Part 2: $(a \times b) \cdot c$ is the signed **volume** of the box spanned by three vectors (area of the base times the height along the normal). Its sign says whether the three vectors form a right-handed or left-handed frame. Part 2 will call this number the determinant.
+A cross product is 6 multiplications and 3 subtractions, no square root; it is cheaper than a normalize. One more identity to carry into Part 2: $(\mathbf{a} \times \mathbf{b}) \cdot \mathbf{c}$ is the signed **volume** of the box spanned by three vectors (area of the base times the height along the normal). Its sign says whether the three vectors form a right-handed or left-handed frame. Part 2 will call this number the determinant.
 
 </details>
 

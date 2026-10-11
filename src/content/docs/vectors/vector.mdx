@@ -9,21 +9,23 @@ import Quiz from '../../../components/Quiz.astro';
 
 Every vertex of a flat floor in Maya carries the same normal, `(0, 1, 0)`. Move the floor ten units to the right and the normal is still `(0, 1, 0)`. The position of each vertex changed; the normal did not. Both are three numbers, both are drawn as something in the viewport, yet one of them ignores where the object is. This lesson is about that difference, and about the one object that makes it precise: the vector.
 
+**A note on notation.** From here on, arrows are written in bold: $\mathbf{v}$, $\mathbf{a}$, $\mathbf{b}$. Plain letters such as $x$, $s$ or $a_x$ are ordinary numbers. In [lesson 0.5](lesson:law-of-cosines) the letters $a$, $b$, $c$ were side *lengths*; from now on a length is written with bars, $\lvert \mathbf{v} \rvert$, and the bare bold letter is the arrow itself.
+
 ## 1. An arrow is a list of numbers
 
 Take the arrow that goes 3 steps to the right and 2 steps up. We write it as
 
 $$
-v = (3, 2)
+\mathbf{v} = (3, 2)
 $$
 
-The two numbers are the **components** of $v$. The first component says how far the arrow goes along the x axis, the second how far along the y axis. Nothing else is stored. No start point, no end point, no length: those are all computed from the components when we need them.
+The two numbers are the **components** of $\mathbf{v}$. The first component says how far the arrow goes along the x axis, the second how far along the y axis. Nothing else is stored. No start point, no end point, no length: those are all computed from the components when we need them.
 
 Draw it and the two numbers become two dashed legs: a horizontal leg of length 3 and a vertical leg of length 2. The arrow is the hypotenuse of that right triangle, which is why [Pythagoras](lesson:pythagoras) will give its length in lesson 1.3.
 
 {/* scene: 1.1-1 — drag the arrow tip; the components (x, y) update in the formula and the table, and the dashed legs to the axes light up with the matching number */}
 
-In Houdini the same two (or three) numbers are what you read as `@P.x`, `@P.y`; in a shader they are `v.x`, `v.y`. A vector is a small list of numbers with a picture attached.
+In Houdini the same two (or three) numbers are what you read as `@v.x`, `@v.y` for a velocity; in a shader they are `v.x`, `v.y`. A vector is a small list of numbers with a picture attached.
 
 ## 2. A vector has no address
 
@@ -44,7 +46,7 @@ This is exactly the Maya `MPoint` versus `MVector` split, and Houdini's `@P` (a 
 Nothing changes in 3D except the count. The vector
 
 $$
-v = (2, 1, 3)
+\mathbf{v} = (2, 1, 3)
 $$
 
 goes 2 along x, 1 along y and 3 along z. In the viewport it has three dashed legs instead of two.
@@ -60,7 +62,7 @@ And nothing changes with four, or four thousand, components either. The vector $
 Points have addresses; vectors are the trips between them. If you stand at the point $A = (1, 2)$ and want to walk to $B = (4, 6)$, the trip is the vector
 
 $$
-v = B - A = (4 - 1,\; 6 - 2) = (3, 4)
+\mathbf{v} = B - A = (4 - 1,\; 6 - 2) = (3, 4)
 $$
 
 Each component is subtracted on its own: x from x, y from y. Walk 3 right and 4 up from $A$ and you arrive at $B$. By [Pythagoras](lesson:pythagoras) the trip is $\sqrt{3^2 + 4^2} = 5$ long, which is the distance between the two points. Distance is the length of the vector between them.
@@ -80,23 +82,23 @@ Order matters. $A - B = (1 - 4,\; 2 - 6) = (-3, -4)$ is the trip *back*, from $B
     {
       q: "The vector (3, 2) is drawn once starting at the origin and once starting at (5, 5). Which is true?",
       options: [
-        "They are two different vectors, because they are drawn in different places of the plane",
-        "They are the same vector, because a vector has components but no location",
+        "They are the same vector: a vector stores components but no location, so where it is drawn is not part of it",
+        "They are two different vectors, because they are in different places",
         "They are the same vector only if the second one is moved back to the origin",
         "They are different vectors with the same length but different components"
       ],
-      answer: 1,
+      answer: 0,
       explain: "A vector stores only its components (3, 2): which way and how far. Where you draw it is not part of the vector. Both arrows are the same vector."
     },
     {
       q: "A = (1, 2) and B = (4, 6). What is A − B?",
       options: [
         "(3, 4), the arrow from A to B",
-        "(−3, −4), the arrow from B to A",
         "5, the distance between them, since subtracting points gives a length",
-        "(5, 8), the sum of the coordinates"
+        "(5, 8), the sum of the coordinates",
+        "(−3, −4), from B to A"
       ],
-      answer: 1,
+      answer: 3,
       explain: "A − B = (1 − 4, 2 − 6) = (−3, −4). The thing you subtract is where you start, so A − B starts at B and points at A. B − A = (3, 4) is the opposite trip. Distance is a length, not a vector."
     },
     {
@@ -116,7 +118,7 @@ Order matters. $A - B = (1 - 4,\; 2 - 6) = (-3, -4)$ is the trip *back*, from $B
         "Always; a point and a vector are two names for the same pair of numbers, whatever the origin is",
         "Never; a point has no components",
         "When v is the arrow from the origin to P: the position measured from the origin",
-        "When v is the arrow from P to the origin"
+        "When v is the arrow from P to the origin, since the origin is where every vector starts"
       ],
       answer: 2,
       explain: "A point is a place; a vector is a trip. They coincide only when the trip starts at the origin: the position vector of P. Translate the scene and P moves while a free vector v does not, so they are not interchangeable in general."

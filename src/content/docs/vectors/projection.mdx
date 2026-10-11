@@ -1,6 +1,6 @@
 ---
 title: "Projection: shadows on an axis"
-description: "Coordinates are dot products with the basis vectors."
+description: "Shadows on a line; for perpendicular unit axes, coordinates are dot products with the axes."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
@@ -11,113 +11,113 @@ A character walks into a wall. The collision code does not stop him; it removes 
 
 ## 1. The length of a shadow
 
-Take an arrow $a$ and a direction $b$. Shine a light from directly above the line of $b$. The shadow of $a$ on that line has length
+Take an arrow $\mathbf{a}$ and a direction $\mathbf{b}$. Shine a light from directly above the line of $\mathbf{b}$. The shadow of $\mathbf{a}$ on that line has length
 
 $$
-\lvert a \rvert \cos\theta
+\lvert \mathbf{a} \rvert \cos\theta
 $$
 
-where $\theta$ is the angle between $a$ and $b$ ([lesson 0.4](lesson:unit-circle): cosine is the shadow of a length-1 stick; here the stick has length $\lvert a \rvert$). From the dot product, $a \cdot b = \lvert a \rvert \lvert b \rvert \cos\theta$, so
+where $\theta$ is the angle between $\mathbf{a}$ and $\mathbf{b}$ ([lesson 0.4](lesson:unit-circle): cosine is the shadow of a length-1 stick; here the stick has length $\lvert \mathbf{a} \rvert$). From the dot product, $\mathbf{a} \cdot \mathbf{b} = \lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$, so
 
 $$
-\lvert a \rvert \cos\theta = \frac{a \cdot b}{\lvert b \rvert} = a \cdot \hat{b}
+\lvert \mathbf{a} \rvert \cos\theta = \frac{\mathbf{a} \cdot \mathbf{b}}{\lvert \mathbf{b} \rvert} = \mathbf{a} \cdot \hat{\mathbf{b}}
 $$
 
-where $\hat{b} = b / \lvert b \rvert$ is the unit vector along $b$ ([lesson 1.3](lesson:length)). **The dot product with a unit vector is the length of the shadow on it.** This number is called the **scalar projection** of $a$ onto $b$.
+where $\hat{\mathbf{b}} = \mathbf{b} / \lvert \mathbf{b} \rvert$ is the unit vector along $\mathbf{b}$ ([lesson 1.3](lesson:length)). **The dot product with a unit vector is the length of the shadow on it.** This number is called the **scalar projection** of $\mathbf{a}$ onto $\mathbf{b}$.
 
-Example 1. $a = (3, 4)$, $b = (1, 0)$. Here $\hat{b} = (1, 0)$ already, and $a \cdot \hat{b} = 3 \cdot 1 + 4 \cdot 0 = 3$. The shadow of $(3, 4)$ on the x axis is 3 long.
+Example 1. $\mathbf{a} = (3, 4)$, $\mathbf{b} = (1, 0)$. Here $\hat{\mathbf{b}} = (1, 0)$ already, and $\mathbf{a} \cdot \hat{\mathbf{b}} = 3 \cdot 1 + 4 \cdot 0 = 3$. The shadow of $(3, 4)$ on the x axis is 3 long.
 
-Example 2. $a = (3, 4)$, $b = (1, 1)$. $\lvert b \rvert = \sqrt 2$, $\hat{b} = (0.707, 0.707)$, and
+Example 2. $\mathbf{a} = (3, 4)$, $\mathbf{b} = (1, 1)$. $\lvert \mathbf{b} \rvert = \sqrt 2$, $\hat{\mathbf{b}} = (0.707, 0.707)$, and
 
 $$
-a \cdot \hat{b} = 3 \cdot 0.707 + 4 \cdot 0.707 = 7 \cdot 0.707 \approx 4.95
+\mathbf{a} \cdot \hat{\mathbf{b}} = 3 \cdot 0.707 + 4 \cdot 0.707 = 7 \cdot 0.707 \approx 4.95
 $$
 
-The shadow is signed. If $a$ leans backwards relative to $b$ (angle past 90°) the cosine is negative and the shadow length is negative: it lies behind the start of $b$.
+The shadow is signed. If $\mathbf{a}$ leans backwards relative to $\mathbf{b}$ (angle past 90°) the cosine is negative and the shadow length is negative: it lies behind the start of $\mathbf{b}$.
 
 {/* scene: 1.5-1 — light from above the line of b; drag a, the shadow slides along b's line, goes negative past 90°; the term a·b̂ and the shadow segment share a color */}
 
-**Misconception to drop:** "the shadow depends on how long $b$ is." It does not. Scaling $b$ by 10 changes $a \cdot b$ by 10 and $\lvert b \rvert$ by 10; the ratio, the shadow, is unchanged. Only the *direction* of $b$ matters, which is why the formula uses $\hat{b}$.
+**Misconception to drop:** "the shadow depends on how long $\mathbf{b}$ is." It does not. Scaling $\mathbf{b}$ by 10 changes $\mathbf{a} \cdot \mathbf{b}$ by 10 and $\lvert \mathbf{b} \rvert$ by 10; the ratio, the shadow, is unchanged. Only the *direction* of $\mathbf{b}$ matters, which is why the formula uses $\hat{\mathbf{b}}$.
 
 ## 2. The vector projection and the leftover
 
 The shadow as an arrow, not a number, is the scalar projection times the unit direction:
 
 $$
-\text{proj}_b\, a = (a \cdot \hat{b})\, \hat{b}
+\operatorname{proj}_{\mathbf{b}} \mathbf{a} = (\mathbf{a} \cdot \hat{\mathbf{b}})\, \hat{\mathbf{b}}
 $$
 
 What is left after you remove the shadow is the **perpendicular part**:
 
 $$
-\text{perp} = a - \text{proj}_b\, a
+\mathbf{perp} = \mathbf{a} - \operatorname{proj}_{\mathbf{b}} \mathbf{a}
 $$
 
-Example. $a = (3, 4)$ onto $b = (1, 0)$: $\text{proj} = 3 \cdot (1, 0) = (3, 0)$ and $\text{perp} = (3, 4) - (3, 0) = (0, 4)$. Check that perp really is perpendicular to $b$: $(0, 4) \cdot (1, 0) = 0$. Yes.
+Example. $\mathbf{a} = (3, 4)$ onto $\mathbf{b} = (1, 0)$: $\mathbf{proj} = 3 \cdot (1, 0) = (3, 0)$ and $\mathbf{perp} = (3, 4) - (3, 0) = (0, 4)$. Check that perp really is perpendicular to $\mathbf{b}$: $(0, 4) \cdot (1, 0) = 0$. Yes.
 
-Example with the diagonal. $a = (3, 4)$ onto $b = (1, 1)$: scalar projection $4.95$, so $\text{proj} = 4.95 \cdot (0.707, 0.707) = (3.5, 3.5)$ and $\text{perp} = (3, 4) - (3.5, 3.5) = (-0.5, 0.5)$. Check: $(-0.5, 0.5) \cdot (1, 1) = -0.5 + 0.5 = 0$. Perpendicular.
+Example with the diagonal. $\mathbf{a} = (3, 4)$ onto $\mathbf{b} = (1, 1)$: scalar projection $4.95$, so $\mathbf{proj} = 4.95 \cdot (0.707, 0.707) = (3.5, 3.5)$ and $\mathbf{perp} = (3, 4) - (3.5, 3.5) = (-0.5, 0.5)$. Check: $(-0.5, 0.5) \cdot (1, 1) = -0.5 + 0.5 = 0$. Perpendicular.
 
-The two parts form a right triangle with $a$ as the hypotenuse, so Pythagoras holds once more:
+The two parts form a right triangle with $\mathbf{a}$ as the hypotenuse, so Pythagoras holds once more:
 
 $$
-\lvert a \rvert^2 = \lvert \text{proj} \rvert^2 + \lvert \text{perp} \rvert^2
+\lvert \mathbf{a} \rvert^2 = \lvert \mathbf{proj} \rvert^2 + \lvert \mathbf{perp} \rvert^2
 $$
 
 With the diagonal example: $3.5^2 + 3.5^2 = 24.5$, plus $0.5^2 + 0.5^2 = 0.5$, total $25 = \lvert (3, 4) \rvert^2$.
 
 {/* scene: 1.5-2 — the vector projection (a·b̂) b̂ and the leftover a − proj with the right angle marked; Pythagoras tiles |a|² = |proj|² + |perp|² */}
 
-Because $\lvert \cos\theta \rvert \le 1$, the shadow is never longer than the arrow: $\lvert \text{proj} \rvert \le \lvert a \rvert$, with equality only when $a$ already lies along $b$.
+Because $\lvert \cos\theta \rvert \le 1$, the shadow is never longer than the arrow: $\lvert \mathbf{proj} \rvert \le \lvert \mathbf{a} \rvert$, with equality only when $\mathbf{a}$ already lies on the line of $\mathbf{b}$ (in either direction).
 
-**If $b$ is not normalized.** You can skip the normalization by dividing twice:
+**If $\mathbf{b}$ is not normalized.** You can skip the normalization by dividing twice:
 
 $$
-\text{proj}_b\, a = \frac{a \cdot b}{b \cdot b}\; b
+\operatorname{proj}_{\mathbf{b}} \mathbf{a} = \frac{\mathbf{a} \cdot \mathbf{b}}{\mathbf{b} \cdot \mathbf{b}}\; \mathbf{b}
 $$
 
-Same vector: one $\lvert b \rvert$ cancels the length of $b$ in the dot product, the other cancels the length of $b$ itself ($b \cdot b = \lvert b \rvert^2$, checkpoint 1 of [lesson 1.4](lesson:dot-product)). Check: $a = (3, 4)$, $b = (1, 1)$: $a \cdot b = 7$, $b \cdot b = 2$, $\tfrac{7}{2}(1, 1) = (3.5, 3.5)$. Same as before.
+Same vector: one $\lvert \mathbf{b} \rvert$ cancels the length of $\mathbf{b}$ in the dot product, the other cancels the length of $\mathbf{b}$ itself ($\mathbf{b} \cdot \mathbf{b} = \lvert \mathbf{b} \rvert^2$, checkpoint 1 of [lesson 1.4](lesson:dot-product)). Check: $\mathbf{a} = (3, 4)$, $\mathbf{b} = (1, 1)$: $\mathbf{a} \cdot \mathbf{b} = 7$, $\mathbf{b} \cdot \mathbf{b} = 2$, $\tfrac{7}{2}(1, 1) = (3.5, 3.5)$. Same as before.
 
-**Misconception to drop:** "the scalar projection is a vector." It is one number, the signed shadow length. The vector projection is that number times $\hat{b}$.
+**Misconception to drop:** "the scalar projection is a vector." It is one number, the signed shadow length. The vector projection is that number times $\hat{\mathbf{b}}$.
 
 ## 3. Coordinates are shadows
 
-Now the small discovery this lesson is really about. Project $a = (3, 4)$ onto the two axis arrows $e_1 = (1, 0)$ and $e_2 = (0, 1)$. Both are already unit vectors, so the shadows are plain dot products:
+Now the small discovery this lesson is really about. Project $\mathbf{a} = (3, 4)$ onto the two axis arrows $\mathbf{e}_1 = (1, 0)$ and $\mathbf{e}_2 = (0, 1)$. Both are already unit vectors, so the shadows are plain dot products:
 
 $$
-a \cdot e_1 = 3 \cdot 1 + 4 \cdot 0 = 3, \qquad a \cdot e_2 = 3 \cdot 0 + 4 \cdot 1 = 4
+\mathbf{a} \cdot \mathbf{e}_1 = 3 \cdot 1 + 4 \cdot 0 = 3, \qquad \mathbf{a} \cdot \mathbf{e}_2 = 3 \cdot 0 + 4 \cdot 1 = 4
 $$
 
-The shadows are $3$ and $4$: the components of $a$. The x coordinate of a vector *is* its shadow on the x axis. The dashed legs we drew in [lesson 1.1](lesson:vector) were projections all along, and the "coefficients along the axes" of [lesson 1.2](lesson:vector-arithmetic) are the same numbers once more:
+The shadows are $3$ and $4$: the components of $\mathbf{a}$. The x coordinate of a vector *is* its shadow on the x axis. The dashed legs we drew in [lesson 1.1](lesson:vector) were projections all along, and the "coefficients along the axes" of [lesson 1.2](lesson:vector-arithmetic) are the same numbers once more:
 
 $$
-a = (a \cdot e_1)\, e_1 + (a \cdot e_2)\, e_2
+\mathbf{a} = (\mathbf{a} \cdot \mathbf{e}_1)\, \mathbf{e}_1 + (\mathbf{a} \cdot \mathbf{e}_2)\, \mathbf{e}_2
 $$
 
 {/* scene: 1.5-3 — project a onto e₁ and e₂: the shadows are exactly aₓ and a_y; the table reads a·e₁ = aₓ */}
 
-This is the sentence to remember from Part 1: **a coordinate is a dot product with a unit axis.** The next lesson asks which axes are allowed, and this sentence is what makes the answer work.
+This is the sentence to remember from Part 1: **when the axes are perpendicular unit arrows, a coordinate is a dot product with an axis.** The next lesson asks which axes are allowed, and shows that this shortcut works exactly for perpendicular unit axes.
 
 ## 4. 3D: a shadow on a plane is two shadows
 
 {/* scene: 1.5-4 — 3D: the shadow of a onto a plane is two projections (onto two perpendicular unit directions in the plane) plus the leftover along the normal */}
 
-In 3D, "project onto the ground plane" means: remove the part along the plane's normal $n$ (a unit vector) and keep the rest.
+In 3D, "project onto the ground plane" means: remove the part along the plane's normal $\mathbf{n}$ (a unit vector) and keep the rest.
 
 $$
-a_{\text{ground}} = a - (a \cdot n)\, n
+\mathbf{a}_{\text{ground}} = \mathbf{a} - (\mathbf{a} \cdot \mathbf{n})\, \mathbf{n}
 $$
 
-This is the collision line from the hook. Velocity $v = (2, -3, 1)$, floor normal $n = (0, 1, 0)$: $v \cdot n = -3$, so $v_{\text{slide}} = (2, -3, 1) - (-3)(0, 1, 0) = (2, 0, 1)$. The downward part is gone; the sliding part stays.
+This is the collision line from the hook. Velocity $\mathbf{v} = (2, -3, 1)$, floor normal $\mathbf{n} = (0, 1, 0)$: $\mathbf{v} \cdot \mathbf{n} = -3$, so $\mathbf{v}_{\text{slide}} = (2, -3, 1) - (-3)(0, 1, 0) = (2, 0, 1)$. The downward part is gone; the sliding part stays.
 
 Reflection removes that part *twice* (once to reach the surface, once more to bounce back out):
 
 $$
-r = d - 2\,(d \cdot n)\, n
+\mathbf{r} = \mathbf{d} - 2\,(\mathbf{d} \cdot \mathbf{n})\, \mathbf{n}
 $$
 
-Incoming $d = (1, -1, 0)$, mirror normal $n = (0, 1, 0)$: $d \cdot n = -1$, so $r = (1, -1, 0) - 2 \cdot (-1) \cdot (0, 1, 0) = (1, 1, 0)$. Down-and-right became up-and-right. Both formulas need $n$ to be a unit vector; otherwise the "$n \cdot n$" denominator from section 2 must come back.
+Incoming $\mathbf{d} = (1, -1, 0)$, mirror normal $\mathbf{n} = (0, 1, 0)$: $\mathbf{d} \cdot \mathbf{n} = -1$, so $\mathbf{r} = (1, -1, 0) - 2 \cdot (-1) \cdot (0, 1, 0) = (1, 1, 0)$. Down-and-right became up-and-right. Both formulas need $\mathbf{n}$ to be a unit vector; otherwise the "$\mathbf{n} \cdot \mathbf{n}$" denominator from section 2 must come back.
 
-> **Say it simpler.** The dot product with a unit arrow is the length of the shadow on it. Coordinates are shadows on the axes. "Along" plus "across" rebuilds the original arrow.
+> **Say it simpler.** The dot product with a unit arrow is the length of the shadow on it. Coordinates are shadows on perpendicular unit axes. "Along" plus "across" rebuilds the original arrow.
 
 ## Check yourself
 
@@ -126,23 +126,23 @@ Incoming $d = (1, -1, 0)$, mirror normal $n = (0, 1, 0)$: $d \cdot n = -1$, so $
     {
       q: "You project a onto b, then onto 10·b. How do the two shadows compare?",
       options: [
-        "The second shadow is 10 times longer, because the dot product a·b grows ten times when b does",
+        "The second shadow is 10 times longer, because a·b grows ten times when b does",
         "The second is 10 times shorter",
-        "They are the same: only the direction of b matters, since the formula uses b̂ = b/|b|",
-        "They point in opposite directions"
+        "They point in opposite directions",
+        "They are the same: only the direction of b matters, since the formula uses b̂ = b/|b|"
       ],
-      answer: 2,
+      answer: 3,
       explain: "a·(10b) / |10b| = 10 (a·b) / (10 |b|) = a·b / |b|. The scaling cancels. Normalizing b is what removes its length from the answer."
     },
     {
       q: "The scalar projection of a onto b is…",
       options: [
-        "a vector along b with the length of the shadow, pointing the same way as b does",
         "a single number: the signed length of the shadow of a on the line of b",
+        "a vector along b with the length of the shadow, pointing the same way as b does",
         "the vector a − proj, perpendicular to b",
         "the angle between a and b"
       ],
-      answer: 1,
+      answer: 0,
       explain: "Scalar projection = a·b̂, one number (negative when a leans backwards). The vector projection is that number times b̂; the leftover a − proj is the perpendicular part."
     },
     {
@@ -150,11 +150,11 @@ Incoming $d = (1, -1, 0)$, mirror normal $n = (0, 1, 0)$: $d \cdot n = -1$, so $
       options: [
         "Yes, when the direction is nearly perpendicular to a, because the shadow then stretches out",
         "Yes, when b is longer than a",
-        "No: its length is |a||cos θ| and |cos θ| never exceeds 1",
+        "No: |a||cos θ| never exceeds |a|",
         "Only in 3D, where there are more directions"
       ],
       answer: 2,
-      explain: "The shadow is |a| cos θ in size. Since the cosine lies between −1 and 1, the shadow is at most as long as the arrow, with equality only when a already lies along b."
+      explain: "The shadow is |a| cos θ in size. Since the cosine lies between −1 and 1, the shadow is at most as long as the arrow, with equality only when a lies on the line of b."
     },
     {
       q: "proj is the projection of a onto b and perp = a − proj. Which statement is true?",
@@ -176,7 +176,7 @@ Incoming $d = (1, -1, 0)$, mirror normal $n = (0, 1, 0)$: $d \cdot n = -1$, so $
 2. Project $(3, 4)$ onto the unit vector $(1, 1)/\sqrt 2$.
 3. The perpendicular remainder of $(3, 4)$ with respect to $(1, 0)$.
 4. Scalar versus vector projection of $(2, 1)$ onto $(0, 1)$.
-5. Reflect $d = (1, -1, 0)$ off a surface with unit normal $n = (0, 1, 0)$.
+5. Reflect $\mathbf{d} = (1, -1, 0)$ off a surface with unit normal $\mathbf{n} = (0, 1, 0)$.
 
 <details>
 <summary>Answers</summary>
@@ -185,7 +185,7 @@ Incoming $d = (1, -1, 0)$, mirror normal $n = (0, 1, 0)$: $d \cdot n = -1$, so $
 2. Scalar $7/\sqrt 2 \approx 4.95$; vector $(3.5, 3.5)$.
 3. $(3, 4) - (3, 0) = (0, 4)$.
 4. Scalar $1$ (the y component); vector $(0, 1)$.
-5. $d \cdot n = -1$; $r = d - 2(-1)\,n = (1, -1, 0) + (0, 2, 0) = (1, 1, 0)$.
+5. $\mathbf{d} \cdot \mathbf{n} = -1$; $\mathbf{r} = \mathbf{d} - 2(-1)\,\mathbf{n} = (1, -1, 0) + (0, 2, 0) = (1, 1, 0)$.
 
 </details>
 
@@ -201,10 +201,10 @@ bh = b / np.linalg.norm(b)          # unit direction
 scalar = a @ bh                      # length of the shadow
 proj = scalar * bh                   # the shadow as a vector
 perp = a - proj                      # the leftover
-print(scalar)                        # 4.949747...  (= 7 / sqrt 2)
+print(round(scalar, 4))              # 4.9497  (= 7 / sqrt 2)
 print(proj)                          # [3.5 3.5]
 print(perp)                          # [-0.5  0.5]
-print(proj @ perp)                   # 0.0 (up to rounding): perpendicular
+print(round(proj @ perp, 12))        # 0.0  (up to rounding): perpendicular
 print((a @ b) / (b @ b) * b)         # [3.5 3.5]   same, without normalizing b
 
 # coordinates are shadows on the axes
@@ -227,4 +227,4 @@ Projecting one vector onto $k$ unit directions is $k$ dot products with the same
 
 ## What this opens
 
-We projected onto the x and y axes and got the coordinates back. We also projected onto the diagonal and got two different numbers that still rebuilt the arrow. So which sets of axes are allowed? [Basis, span, independence and dimension](lesson:basis).
+We projected onto the x and y axes and got the coordinates back. A tilted pair of perpendicular axes, $(1, 1)/\sqrt 2$ and $(1, -1)/\sqrt 2$, would give two different numbers that still rebuild the arrow; and axes that are not perpendicular would not work this way at all. So which sets of axes are allowed? [Basis, span, independence and dimension](lesson:basis).

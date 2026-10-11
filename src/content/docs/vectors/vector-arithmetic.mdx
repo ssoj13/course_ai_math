@@ -14,27 +14,27 @@ A particle has velocity `v`. Every frame your solver does `v += gravity * dt`. A
 To add two vectors, walk the first, then walk the second from where you stopped. The sum is the arrow from where you started to where you ended. In components, that is just adding slot by slot:
 
 $$
-a + b = (a_x + b_x,\; a_y + b_y)
+\mathbf{a} + \mathbf{b} = (a_x + b_x,\; a_y + b_y)
 $$
 
-Example. $a = (1, 2)$ and $b = (3, -1)$:
+Example. $\mathbf{a} = (1, 2)$ and $\mathbf{b} = (3, -1)$:
 
 $$
-a + b = (1 + 3,\; 2 + (-1)) = (4, 1)
+\mathbf{a} + \mathbf{b} = (1 + 3,\; 2 + (-1)) = (4, 1)
 $$
 
-Walk 1 right and 2 up, then 3 right and 1 down; you end at $(4, 1)$. Draw both orders, "a then b" and "b then a", and you get the two halves of a parallelogram; the sum is its diagonal. The order does not matter: $a + b = b + a$.
+Walk 1 right and 2 up, then 3 right and 1 down; you end at $(4, 1)$. Draw both orders, "a then b" and "b then a", and you get the two halves of a parallelogram; the sum is its diagonal. The order does not matter: $\mathbf{a} + \mathbf{b} = \mathbf{b} + \mathbf{a}$.
 
 {/* scene: 1.2-1 — drag a and b; the sum is drawn as "walk a then b" and as the parallelogram diagonal; the table shows each aₓ + bₓ pair */}
 
-**Misconception to drop:** "the length of $a + b$ is the length of $a$ plus the length of $b$". Only when the arrows point the same way. $(3, 0)$ and $(0, 4)$ have lengths 3 and 4; their sum $(3, 4)$ has length 5, not 7. Walking east and then north is shorter than the sum of the two legs; that is Pythagoras again.
+**Misconception to drop:** "the length of $\mathbf{a} + \mathbf{b}$ is the length of $\mathbf{a}$ plus the length of $\mathbf{b}$". Only when the arrows point the same way. $(3, 0)$ and $(0, 4)$ have lengths 3 and 4; their sum $(3, 4)$ has length 5, not 7. Walking east and then north is shorter than the sum of the two legs; that is Pythagoras again.
 
 ## 2. Scaling: same direction, new length
 
 To scale a vector by a number $s$, multiply every component by $s$:
 
 $$
-s \cdot a = (s\,a_x,\; s\,a_y)
+s \, \mathbf{a} = (s\,a_x,\; s\,a_y)
 $$
 
 Example. $3 \cdot (2, -1) = (6, -3)$: three times as long, same direction. $0.5 \cdot (2, -1) = (1, -0.5)$: half as long. A plain number used this way is called a **scalar**, because it scales.
@@ -47,31 +47,31 @@ A negative scalar turns the arrow around: $-1 \cdot (2, -1) = (-2, 1)$ points th
 
 ## 3. Subtracting is adding the flipped arrow
 
-$a - b$ means $a + (-1) \cdot b$: walk $a$, then walk $b$ backwards. With $a = (1, 2)$ and $b = (3, -1)$:
+$\mathbf{a} - \mathbf{b}$ means $\mathbf{a} + (-1)\,\mathbf{b}$: walk $\mathbf{a}$, then walk $\mathbf{b}$ backwards. With $\mathbf{a} = (1, 2)$ and $\mathbf{b} = (3, -1)$:
 
 $$
-a - b = (1 - 3,\; 2 - (-1)) = (-2, 3)
+\mathbf{a} - \mathbf{b} = (1 - 3,\; 2 - (-1)) = (-2, 3)
 $$
 
-Geometrically $a - b$ is the arrow from the tip of $b$ to the tip of $a$, the same "destination minus start" rule as in [lesson 1.1](lesson:vector). The arrow from $a$ to $b$ is $b - a$.
+Geometrically $\mathbf{a} - \mathbf{b}$ is the arrow from the tip of $\mathbf{b}$ to the tip of $\mathbf{a}$, the same "destination minus start" rule as in [lesson 1.1](lesson:vector). The arrow from $\mathbf{a}$ to $\mathbf{b}$ is $\mathbf{b} - \mathbf{a}$.
 
-**Misconception to drop:** "$a - b$ is the arrow from $a$ to $b$". It is the arrow from $b$ to $a$. The second letter is where you start.
+**Misconception to drop:** "$\mathbf{a} - \mathbf{b}$ is the arrow from $\mathbf{a}$ to $\mathbf{b}$". It is the arrow from $\mathbf{b}$ to $\mathbf{a}$. The second letter is where you start.
 
 ## 4. Linear combinations
 
 Scale a few vectors and add them up: that is a **linear combination**.
 
 $$
-s \cdot a + t \cdot b
+s\,\mathbf{a} + t\,\mathbf{b}
 $$
 
-Example. With $a = (1, 2)$, $b = (3, -1)$, $s = 2$, $t = -1$:
+Example. With $\mathbf{a} = (1, 2)$, $\mathbf{b} = (3, -1)$, $s = 2$, $t = -1$:
 
 $$
-2a - b = (2, 4) + (-3, 1) = (-1, 5)
+2\mathbf{a} - \mathbf{b} = (2, 4) + (-3, 1) = (-1, 5)
 $$
 
-Now scrub $s$ and $t$ freely and watch where the tip of $s a + t b$ lands. Stamp every point you reach. With two arrows that do not lie on one line, the stamps fill the whole plane: every point is some $s a + t b$. That filled region has a name, **span**, which [lesson 1.6](lesson:basis) gives it.
+Now scrub $s$ and $t$ freely and watch where the tip of $s\,\mathbf{a} + t\,\mathbf{b}$ lands. Stamp every point you reach. With two arrows that do not lie on one line, the stamps fill the whole plane: every point is some $s\,\mathbf{a} + t\,\mathbf{b}$. That filled region has a name, **span**, which [lesson 1.6](lesson:basis) gives it.
 
 {/* scene: 1.2-3 — two scrubs s, t for s·a + t·b; a "paint" toggle stamps every reached point so the plane fills (span preview) */}
 
@@ -83,7 +83,7 @@ $$
 
 The components of a vector are exactly its coefficients along the axis arrows. We will see this again as "coordinates are shadows" in [lesson 1.5](lesson:projection).
 
-Coefficients can be any numbers: negative, zero, fractional. There is no rule that they must be positive or add up to 1 (that extra rule gives a *convex* combination, a different thing).
+Coefficients can be any numbers: negative, zero, fractional. There is no rule that they must be non-negative or add up to 1 (both rules together, non-negative *and* adding up to 1, give a *convex* combination, a different thing).
 
 {/* scene: 1.2-4 — 3D version with three vectors and three scrubs */}
 
@@ -92,10 +92,10 @@ Coefficients can be any numbers: negative, zero, fractional. There is no rule th
 A blend shape target is stored as a **delta**: for each vertex, the vector from the base position to the target position. The deformer computes
 
 $$
-P' = P_{\text{base}} + w_1\,\Delta_1 + w_2\,\Delta_2 + \cdots
+P' = P_{\text{base}} + w_1\,\boldsymbol{\Delta}_1 + w_2\,\boldsymbol{\Delta}_2 + \cdots
 $$
 
-which is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P = (1.0, 0.5)$, smile delta $\Delta_1 = (0.2, 0.3)$, jaw delta $\Delta_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
+which is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P = (1.0, 0.5)$, smile delta $\boldsymbol{\Delta}_1 = (0.2, 0.3)$, jaw delta $\boldsymbol{\Delta}_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
 
 $$
 P' = (1.0, 0.5) + 0.5\,(0.2, 0.3) + 0.25\,(0.0, -0.4) = (1.0 + 0.1 + 0.0,\; 0.5 + 0.15 - 0.1) = (1.1, 0.55)
@@ -103,7 +103,9 @@ $$
 
 Every vertex of the face does this with its own deltas and the same weights. The sliders you drag in the Shape Editor are the $w_i$.
 
-The physics line is the same shape: `v += g * dt` is $v' = v + dt \cdot g$. With $v = (2, 0)$, $g = (0, -9.8)$ and $dt = 0.1$: $v' = (2, 0) + (0, -0.98) = (2, -0.98)$.
+{/* scene: 1.2-5 — a 2D "face" of 6 points: two delta targets (smile, jaw), two weight sliders; every point moves by its own linear combination */}
+
+The physics line is the same shape: `v += g * dt` is $\mathbf{v}' = \mathbf{v} + dt \, \mathbf{g}$. With $\mathbf{v} = (2, 0)$, $\mathbf{g} = (0, -9.8)$ and $dt = 0.1$: $\mathbf{v}' = (2, 0) + (0, -0.98) = (2, -0.98)$.
 
 > **Say it simpler.** Adding = chaining the walks. Scaling = same direction, different length (negative = turn around). A linear combination = "some of this arrow plus some of that one".
 
@@ -114,46 +116,46 @@ The physics line is the same shape: `v += g * dt` is $v' = v + dt \cdot g$. With
     {
       q: "a = (3, 0) and b = (0, 4). The length of a + b is…",
       options: [
-        "7, because the lengths of the two arrows simply add together",
-        "5, because a + b = (3, 4) and its length is √(9 + 16)",
+        "7, because lengths add",
         "1, the difference of the lengths",
+        "5, because a + b = (3, 4) and its length is √(9 + 16)",
         "12, the product of the lengths"
       ],
-      answer: 1,
+      answer: 2,
       explain: "a + b = (3, 4), length 5. Lengths only add when the arrows point the same way; walking east then north is shorter than 3 + 4."
     },
     {
       q: "Multiplying a vector by −2…",
       options: [
-        "doubles its length and keeps its direction",
         "doubles its length and reverses its direction",
+        "doubles its length and keeps its direction",
         "rotates it by 90 degrees and also doubles its length",
         "halves it and reverses its direction"
       ],
-      answer: 1,
+      answer: 0,
       explain: "Scaling multiplies every component. The size 2 doubles the length; the minus sign flips the arrow. Scaling can never tilt a vector."
     },
     {
       q: "With a = (1, 2) and b = (3, −1), the vector a − b = (−2, 3) is the arrow…",
       options: [
         "from the tip of a to the tip of b",
-        "from the tip of b to the tip of a",
         "from the origin to the midpoint of a and b",
-        "from the tip of a back to the origin"
+        "from the tip of a back to the origin",
+        "from the tip of b to that of a"
       ],
-      answer: 1,
+      answer: 3,
       explain: "Destination minus start: a − b starts at b and ends at a. The arrow from a to b is b − a = (2, −3)."
     },
     {
       q: "In the linear combination s·a + t·b, the coefficients s and t…",
       options: [
         "must be positive",
-        "must add up to 1, like blend-shape weights usually do",
         "can be any numbers, including negative and zero",
-        "must be whole numbers"
+        "must add up to 1",
+        "must be whole numbers, one for each vector in the sum"
       ],
-      answer: 2,
-      explain: "A linear combination allows any scalars. The extra rules (positive, summing to 1) define a convex combination, which is a special case, not the definition."
+      answer: 1,
+      explain: "A linear combination allows any scalars. The extra rules (non-negative and summing to 1) define a convex combination, which is a special case, not the definition."
     }
   ]}
 />
@@ -162,7 +164,7 @@ The physics line is the same shape: `v += g * dt` is $v' = v + dt \cdot g$. With
 
 1. $(1, 2) + (3, -1)$
 2. $3 \cdot (2, -1)$
-3. $2a - b$ for $a = (1, 2)$, $b = (3, -1)$
+3. $2\mathbf{a} - \mathbf{b}$ for $\mathbf{a} = (1, 2)$, $\mathbf{b} = (3, -1)$
 4. Find $s$ and $t$ such that $s \cdot (1, 0) + t \cdot (0, 1) = (3, 4)$.
 5. A vertex has base position $(0, 1, 0)$ and one delta $(0, 0.5, 0.2)$ at weight $0.4$. Where is it?
 
