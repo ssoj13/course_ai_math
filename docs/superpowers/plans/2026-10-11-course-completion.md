@@ -123,6 +123,7 @@ All rows are initially open. “Deliverable” means real interactive content pl
 | 1.6 | Movable basis lattice and collapse, 3D coplanarity, orthonormal coordinate transfer; basis scene preview                                      | Same world vector under coordinate change; independence versus orthogonality; nonorthogonal mode points to 2.9               |
 | 1.7 | Editable toy semantic arrows explicitly labeled toy; real small embedding heatmap, component products, scale invariance and nearest neighbors | Asset provenance/generation; display PCA labeled projection; real cosine computed in full dimension; zero-vector guard       |
 | 1.8 | Orbitable cross-product normal, area parallelogram, operand swap/orientation, triangle normal                                                 | Cross orthogonal to both inputs; magnitude equals area; parallel zero; handedness and sign                                   |
+| 1.9 | Sampled signal as an N-vector next to cos/sin frequency rulers; live dot product per frequency ("how much the signal points in this direction"), spectrum bars, orthogonality grid, inverse rebuild by adding scaled rulers | DFT values equal NumPy `np.fft.rfft` within tolerance; orthogonality of rulers; Parseval; aliasing and leakage cases shown honestly |
 
 ### Part 2 — Matrices
 
@@ -239,7 +240,7 @@ All rows are initially open. “Deliverable” means real interactive content pl
 | A1  | Gram–Schmidt/QR step animation, basis rulers, least-squares solve and orthogonality residual        | QR reconstruction; dependent columns; classical versus modified stability example                              |
 | A2  | SVD sphere/ellipse, PCA centered cloud, rank truncation and LoRA low-rank update                    | Reconstruction/singular values; explained variance; low-rank error; actual LoRA parameter count/update         |
 | A3  | Quadratic forms, positive-definite ellipses, Hessian eigen-directions, Newton versus gradient steps | Symmetry assumptions, saddle/indefinite cases, damping and solve failures                                      |
-| A4  | Complex plane multiplication, Fourier phasors/signal reconstruction, RoPE connection                | Fourier normalization/convention explicit; inverse reconstruction; complex rotation identity                   |
+| A4  | Complex plane multiplication, Fourier phasors/signal reconstruction, DFT matrix and FFT butterfly, RoPE connection | Fourier normalization/convention explicit; inverse reconstruction; complex rotation identity; FFT equals DFT, op count n log n |
 | A5  | Matrix calculus, Jacobian-vector/VJP paths and forward/reverse work comparison                      | Shape-safe Jv and vᵀJ, same derivative result, tape/memory tradeoffs                                           |
 | A6  | Number-format/quantization entrance with rounding-grid and machine-depth map leading through Q1–Q12 | All Q nodes linked; representative error example executes; branch is required completion scope                 |
 | A7  | Warp grid/area cells, Jacobian determinant and density change in a toy flow                         | Density uses absolute determinant; invertibility/domain checked; probability mass conserved                    |
@@ -301,7 +302,7 @@ Tensor road “time”/nested axes and D4–D6 are representations of extra inpu
 
 | Requirement from task/notes                    | Implementation coverage                                                           | Acceptance evidence                                                                                         |
 | ---------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Whole coherent program                         | 76 spine entries + A1–A10 + Q1–Q12; all rows above                                | Compare manifest IDs to this register and CURRICULUM; no missing/duplicate entry                            |
+| Whole coherent program                         | 77 spine entries (1.9 DFT added 2026-10-11) + A1–A10 + Q1–Q12; all rows above                                | Compare manifest IDs to this register and CURRICULUM; no missing/duplicate entry                            |
 | Gentle explanations for CG/VFX reader          | C2/C4, IK, N·L, object/world basis, blend shapes, Graph Editor, tensors as images | Editorial review of every symbol/example; actionable challenges and explanation feedback                    |
 | Mind maps everywhere                           | C6, P3, 8.8, 10.6                                                                 | Course roadmap + per-lesson map + genealogy + depth + glossary + flashcards; one source graph               |
 | Every number linked                            | C3, Task 7, core, S3/S4/B2/10.6                                                   | Cross-view hover/focus and actual value provenance assertions                                               |

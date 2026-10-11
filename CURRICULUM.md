@@ -31,6 +31,7 @@ statistics, "why squares") → train machines (regression → MLP) → attention
 | 1.6 | Basis, span, linear independence, dimension; change of basis for orthonormal bases only (general case needs the inverse, 2.9) | 1.2, 1.5 | can meaning be an arrow? |
 | 1.7 | Cosine similarity and embeddings (words/images as vectors) | 1.4, 1.6 | how to move *all* arrows at once? |
 | 1.8 | Cross product — side branch (normals, area, orientation); dashed edge to 2.6 | 1.4 | volume and orientation return in 2.6 |
+| 1.9 | **Waves as vectors: the DFT is a list of dot products** — a sampled signal is a vector; each frequency is a cosine/sine "ruler"; the dot product with it measures how much the signal points in that frequency's direction; these rulers are orthogonal, so the DFT is a change to an orthogonal basis and the inverse rebuilds the signal (real cos/sin form, no complex numbers yet); FFT = the same numbers computed fast (preview, full treatment in A4) | 1.4, 1.5, 1.6, 0.4 | can a matrix do all those dot products at once? |
 
 ## Part 2 — Matrices
 
@@ -147,7 +148,7 @@ statistics, "why squares") → train machines (regression → MLP) → attention
 | A1 | Orthogonality, Gram–Schmidt, QR, least squares revisited | 1.6, 8.4 | stable solvers |
 | A2 | SVD, PCA, low rank | 2.11, 8.3 | **LoRA**, compression |
 | A3 | Quadratic forms, positive definite, Hessian, Newton | 2.11, 5.4 | curvature, optimizers |
-| A4 | Complex numbers as rotations, Fourier | 0.4, 2.3 | **RoPE** in depth |
+| A4 | Complex numbers as rotations, Fourier: complex DFT as dot products with phasors, the DFT matrix, FFT (divide and conquer, O(n log n)) | 0.4, 2.3, 1.9 | **RoPE** in depth |
 | A5 | Matrix calculus, VJPs, forward vs reverse mode | 5.4, 5.6 | how `backward()` works |
 | A6 | Number formats and quantization — full branch Q below | 3.3, 4.7, 7.5, 8.2 | quantization (vllm course) |
 | A7 | Change of variables, Jacobian determinant | 6.4, 2.6, 5.4 | normalizing flows |
