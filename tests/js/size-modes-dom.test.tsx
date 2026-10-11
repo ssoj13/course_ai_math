@@ -102,6 +102,27 @@ test('request targets documentElement; late success after unmount exits browser 
  await act(async()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:document.documentElement});resolve();await Promise.resolve()});
  expect(exits).toBe(1);expect(document.body.style.overflow).not.toBe('hidden');
 });
+test('browser-exit chrome reveal restores exact visibility/focus and cancels on mode change or unmount',async()=>{
+ const a=fixture('a'),b=fixture('b');
+ const savedRAF=globalThis.requestAnimationFrame,savedCancel=globalThis.cancelAnimationFrame;
+ let next=0;const frames=new Map<number,FrameRequestCallback>();
+ globalThis.requestAnimationFrame=fn=>{frames.set(++next,fn);return next};
+ globalThis.cancelAnimationFrame=id=>{frames.delete(id)};
+ const tick=()=>act(()=>{const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn(0))});
+ document.documentElement.requestFullscreen=async()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:document.documentElement})};
+ const full=async()=>{a.buttons[1].focus();await act(async()=>{a.buttons[1].click();await Promise.resolve()})};
+ const exit=()=>act(()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:null});document.dispatchEvent(new Event('fullscreenchange'))});
+ try {
+  a.el.style.setProperty('visibility','visible','important');
+  await full();exit();
+  expect(a.el.style.visibility).toBe('hidden');tick();expect(a.el.style.visibility).toBe('hidden');tick();
+  expect(a.el.style.visibility).toBe('visible');expect(a.el.style.getPropertyPriority('visibility')).toBe('important');expect(document.activeElement).toBe(a.buttons[1]);
+  await full();exit();act(()=>toggleSize('b','wide'));
+  expect(a.el.style.visibility).toBe('visible');expect(frames.size).toBe(0);expect(b.buttons[0].getAttribute('aria-pressed')).toBe('true');
+  key(b.el,'Escape');await full();exit();act(()=>clean.shift()!());
+  expect(a.el.style.visibility).toBe('visible');expect(frames.size).toBe(0);
+ } finally {globalThis.requestAnimationFrame=savedRAF;globalThis.cancelAnimationFrame=savedCancel}
+});
 test('system exit normalizes full mode; switching owners keeps single host',async()=>{
  const a=fixture('a'),b=fixture('b');
  const host=document.createElement('div');host.className='lab-scene-host';document.body.append(host);

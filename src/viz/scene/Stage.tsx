@@ -137,7 +137,10 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 	const ortho = camera instanceof OrthoCam;
 	// The free area is the stage minus the overlaid N-panel; both views fit their content into it.
 	const fw = Math.max(1, w - inset);
-	const fitZoom = () => (mode === '2d' ? (Math.min(fw, h) - 2 * MARGIN_2D) / (2 * e) : Math.min(fw, h) / (2 * FRAME_3D * e));
+	const fitZoom = (width = w, height = h) => {
+		const near = Math.min(Math.max(1, width - inset), height);
+		return mode === '2d' ? (near - 2 * MARGIN_2D) / (2 * e) : near / (2 * FRAME_3D * e);
+	};
 	const home = (): Pose => {
 		if (mode === '2d') return poseOf([center[0], center[1], 10], center, fitZoom());
 		// Same three-quarter direction as before, at the distance that frames the whole extent.
@@ -186,10 +189,13 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 		// Only a new camera/controls pair (or the first measured size) hands the pose over.
 	}, [camera, controls, h > 0]);
 
-	// Fit: refit on stage resize or N-panel inset; keep the reader's zoom relative to the fit.
-	useEffect(() => {
-		if (!w || !h || !controls) return;
-		const f = fitZoom();
+	// A mode redraw can precede ResizeObserver's React commit. Read its actual box
+	// synchronously so the first normal-size Canvas frame already has the normal fit.
+	const refit = () => {
+		const box = reg.el?.getBoundingClientRect();
+		const width = box?.width ?? w, height = box?.height ?? h;
+		if (!width || !height || !controls) return;
+		const f = fitZoom(width, height);
 		if (mode === '2d' && camera instanceof OrthoCam) {
 			const rel = fit.current ? camera.zoom / fit.current : 1;
 			camera.zoom = f * rel;
@@ -198,16 +204,17 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 		} else if (camera instanceof OrthoCam) {
 			const rel = fit.current ? camera.zoom / fit.current : 1;
 			camera.zoom = f * rel;
-			controls.minZoom = orthoZoom(e * DIST_3D[1], h);
-			controls.maxZoom = orthoZoom(e * DIST_3D[0], h);
+			controls.minZoom = orthoZoom(e * DIST_3D[1], height);
+			controls.maxZoom = orthoZoom(e * DIST_3D[0], height);
 		}
 		fit.current = f;
-		if (inset > 0) camera.setViewOffset(w, h, inset / 2, 0, w, h);
+		if (inset > 0) camera.setViewOffset(width, height, inset / 2, 0, width, height);
 		else camera.clearViewOffset();
 		if (camera instanceof OrthoCam || camera instanceof PerspCam) camera.updateProjectionMatrix();
 		pose.current = current();
 		invalidate();
-	}, [w, h, inset, camera, controls, e]);
+	};
+	useLayoutEffect(refit, [w, h, inset, camera, controls, e]);
 
 	useLayoutEffect(() => {
 		const go = (to: Pose) => {
@@ -230,7 +237,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 				const t = controls ? controls.target : new Vector3();
 				return camera.position.clone().sub(t).normalize().toArray();
 			},
-			redraw: () => invalidate(),
+			redraw: () => { refit(); invalidate(); },
 		};
 		return () => {
 			reg.nav = null;

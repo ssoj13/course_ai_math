@@ -15,7 +15,9 @@ const listeners = new Set<() => void>();
 const cards = new Map<string, { el: HTMLElement; redraw: () => void }>();
 let hovered: string | null = null;
 let generation = 0;
-let releaseFull: (() => void) | null = null;
+let releaseFull: (() => HTMLElement | null) | null = null;
+let finishRestore = () => {};
+let restoreOwner: string | null = null;
 let releaseNavigation: (() => void) | null = null;
 let browserOwned = false;
 let requesting = false;
@@ -84,10 +86,10 @@ function enterFull(el: HTMLElement) {
   body.style.overflow = overflow;
   html.style.overflow = htmlOverflow;
   window.scrollTo(x, y);
-  if (focus?.isConnected) focus.focus({ preventScroll: true });
+  return focus;
  };
 }
-function change(next: SizeState, request = false, settled = false) {
+function change(next: SizeState, request = false, settled = false, browserExit = false) {
  const prev = state;
  if (prev.mode === 'full' && next.mode !== 'full' && !settled && !reducedMotion()) {
   const c = prev.id && cards.get(prev.id);
@@ -103,9 +105,34 @@ function change(next: SizeState, request = false, settled = false) {
  }
  exiting = false;
  stopAnimation();
+ finishRestore();
  const entryRect = next.id ? cards.get(next.id)?.el.getBoundingClientRect() : undefined;
  const token = ++generation;
- if (prev.mode === 'full') { releaseFull?.(); releaseFull = null; }
+ if (prev.mode === 'full') {
+  const el = prev.id ? cards.get(prev.id)?.el : undefined;
+  const visibility = el?.style.getPropertyValue('visibility') ?? '';
+  const priority = el?.style.getPropertyPriority('visibility') ?? '';
+  // Browser exit is uncued. Reattach chrome between paints instead of painting its
+  // fixed-to-normal jump. The Canvas moves back to BODY and keeps rendering.
+  if (browserExit && el) el.style.setProperty('visibility', 'hidden', 'important');
+  const focus = releaseFull?.();
+  releaseFull = null;
+  let raf = 0;
+  const finish = () => {
+   cancelAnimationFrame(raf);
+   if (browserExit && el) {
+    if (visibility) el.style.setProperty('visibility', visibility, priority); else el.style.removeProperty('visibility');
+   }
+   if (focus?.isConnected) focus.focus({ preventScroll: true });
+   finishRestore = () => {};
+   restoreOwner = null;
+  };
+  if (browserExit && el) {
+   finishRestore = finish;
+   restoreOwner = prev.id;
+   raf = requestAnimationFrame(() => { raf = requestAnimationFrame(finish); });
+  } else finish();
+ }
  releaseNavigation?.();
  releaseNavigation = null;
  state = next;
@@ -168,7 +195,7 @@ function fullscreenChange() {
   if (requesting) browserOwned = true;
  } else if (browserOwned) {
   browserOwned = false;
-  if (state.mode === 'full' && !exiting) change(NORMAL, false, true);
+  if (state.mode === 'full' && !exiting) change(NORMAL, false, true, true);
  }
  redraw();
 }
@@ -185,11 +212,13 @@ export function registerSizeCard(id: string, el: HTMLElement, poke: () => void) 
  el.addEventListener('pointerleave', leave);
  return () => {
   if (state.id === id) change(NORMAL, false, true);
+  if (restoreOwner === id) finishRestore();
   cards.delete(id);
   leave();
   el.removeEventListener('pointerenter', enter);
   el.removeEventListener('pointerleave', leave);
   if (!cards.size) {
+   finishRestore();
    window.removeEventListener('keydown', key);
    document.removeEventListener('fullscreenchange', fullscreenChange);
   }
