@@ -25,7 +25,7 @@ test('NumGrid links cells, applies marks and reveals a column inside its own scr
 		expect(store.getState().hot.has('x1')).toBe(true);
 		await act(async () => store.getState().setHot(['y1']));
 		expect(host.querySelector('td[data-t="y1"]')!.classList.contains('is-hot')).toBe(true);
-		const box = host.querySelector<HTMLElement>('.lab-num-grid')!;
+		const box = host.querySelector<HTMLElement>('.lab-num-grid > div')!;
 		expect(box.style.overflowX).toBe('auto');
 		// Layout is not computed in happy-dom: give the column a position past the box and check the box (not the page) scrolls.
 		const th = host.querySelector<HTMLElement>('th[data-col="y"]')!;

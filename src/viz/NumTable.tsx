@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useId, useLayoutEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 import { t } from '../i18n/core';
 import { useLocale } from '../i18n/react';
@@ -49,7 +49,7 @@ export interface NumGridProps {
  */
 export function NumGrid(p: NumGridProps): React.JSX.Element {
  const s = lessonStore(p.lesson), hot = useStore(s, (st) => st.hot);
- const box = useRef<HTMLDivElement>(null);
+ const box = useRef<HTMLDivElement>(null), captionId = useId();
  useLayoutEffect(() => {
   const el = box.current, th = p.reveal ? el?.querySelector<HTMLElement>('th[data-col="' + p.reveal + '"]') : null;
   if (!el || !th) return;
@@ -68,10 +68,16 @@ export function NumGrid(p: NumGridProps): React.JSX.Element {
    onPointerEnter={() => hotOn(p.lesson, c.id)} onPointerLeave={() => hotOff(p.lesson, c.id)}
    onFocus={() => hotOn(p.lesson, c.id)} onBlur={() => hotOff(p.lesson, c.id)}>{show(c.value)}</td>;
  };
- return <div ref={box} className="lab-num-grid not-content" style={{ overflowX: 'auto', maxWidth: '100%' }}>
-  <table className="lab-num-table"><caption>{p.caption}</caption>
-   <thead><tr><th scope="col">{p.corner}</th>{p.cols.map((c) => <th key={c.id} scope="col" data-col={c.id}>{c.label}</th>)}</tr></thead>
-   <tbody>{p.rows.map((r, i) => <tr key={i}><th scope="row">{r.head}</th>{p.cols.map((c) => cell(r.cells[c.id], c.id))}</tr>)}</tbody>
-  </table>
+ // The caption stays outside the scroll box (it must not scroll away with the columns) and names the table;
+ // headers never wrap ("(aᵢ − bᵢ)²" broken over three lines is unreadable), the box scrolls instead.
+ const nowrap = { whiteSpace: 'nowrap' } as const;
+ return <div className="lab-num-grid not-content">
+  <p id={captionId} className="lab-num-grid-caption" style={{ margin: '.4rem 0' }}>{p.caption}</p>
+  <div ref={box} style={{ overflowX: 'auto', maxWidth: '100%' }}>
+   <table className="lab-num-table" aria-labelledby={captionId}>
+    <thead><tr><th scope="col" style={nowrap}>{p.corner}</th>{p.cols.map((c) => <th key={c.id} scope="col" data-col={c.id} style={nowrap}>{c.label}</th>)}</tr></thead>
+    <tbody>{p.rows.map((r, i) => <tr key={i}><th scope="row">{r.head}</th>{p.cols.map((c) => cell(r.cells[c.id], c.id))}</tr>)}</tbody>
+   </table>
+  </div>
  </div>;
 }
