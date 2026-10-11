@@ -1,3 +1,4 @@
+import { Glyph } from '../Glyph';
 import { t } from '../../i18n/core';
 import { useLocale } from '../../i18n/react';
 /**
@@ -52,6 +53,8 @@ export interface Row extends ChipRow {
 	snap?: number | readonly number[];
 	/** Read-only value derived from the store. */
 	value?: (vals: Vals) => number | V;
+	/** Optional glyph dimensions/components, while value remains the numeric readout. */
+	glyphValue?: (vals: Vals) => number | V;
 	fmt?: (v: number) => string;
 	/** Row shown only while true (e.g. revealed by a timeline step). */
 	visible?: (vals: Vals, step: Readonly<Record<string, number>>) => boolean;
@@ -147,6 +150,7 @@ interface FieldProps {
 	axis?: 0 | 1 | 2;
 	/** Reads the live value at event time (events can outrun React renders). */
 	get(): number;
+	checkpoint(): () => void;
 	/** Drags write cuts (the default); keys, step arrows and typed values ease (see the module note). */
 	set(v: number, how?: WriteHow): void;
 }
@@ -251,7 +255,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 				startScrubDrag(
 					e,
 					e.currentTarget,
-					{ get: p.get, set: p.set },
+					{ get: p.get, set: p.set, checkpoint: p.checkpoint },
 					(dx, ev) => {
 						if (vertical) return null;
 						if (!moved) {
@@ -309,7 +313,7 @@ const roText = (r: Row, v: number | V): string => {
 	return typeof v === 'number' ? one(v) : `(${v.map(one).join(', ')})`;
 };
 
-function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Row; vals: Vals; hot: boolean; reg?: StageReg; tip: ReturnType<typeof useTip>['bind'] }): React.JSX.Element {
+function RowView({ lesson, row, vals, hot, reg, tip, size='sm' }: { lesson: string; row: Row; vals: Vals; hot: boolean; reg?: StageReg; tip: ReturnType<typeof useTip>['bind']; size?: 'sm'|'lg' }): React.JSX.Element {
 	const store = lessonStore(lesson);
 	const raw = row.key ? vals[row.key] : undefined;
 	if (row.key && raw === undefined) throw new Error(`N-panel row "${row.id}": store key "${row.key}" is missing`);
@@ -324,7 +328,7 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 		);
 	} else if (row.kind === 'num') {
 		if (typeof raw !== 'number') throw new Error(`N-panel row "${row.id}": store key "${row.key}" is not a number`);
-		body = <NumField value={raw} spec={row.spec!} snap={row.snap} label={row.label} fmt={row.fmt} get={() => live() as number} set={(v, how) => store.getState().set(row.key!, v, how)} />;
+		body = <NumField checkpoint={() => store.getState().checkpoint([row.key!])} value={raw} spec={row.spec!} snap={row.snap} label={row.label} fmt={row.fmt} get={() => live() as number} set={(v, how) => store.getState().set(row.key!, v, how)} />;
 	} else if (row.kind === 'bool') {
 		if (raw !== 0 && raw !== 1) throw new Error(`N-panel row "${row.id}": store key "${row.key}" must hold 0 or 1, got ${String(raw)}`);
 		body = (
@@ -341,6 +345,7 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 				{vec.map((x, i) => (
 					<NumField
 						key={i}
+						checkpoint={() => store.getState().checkpoint([row.key!])}
 						value={x}
 						spec={row.spec!}
 						snap={row.snap}
@@ -382,10 +387,17 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 			}}
 			{...tip(row.tip ? { title: row.tip.title ?? row.label, ...row.tip } : undefined)}
 		>
-			<span className="lab-np-label">{row.label}</span>
+			<span className="lab-np-label">{row.glyph && <Glyph size={size} kind={row.glyph} value={row.glyphValue ? row.glyphValue(vals) : row.value ? row.value(vals) : (raw ?? 0)} />}{row.label}</span>
 			{body}
 		</div>
 	);
+}
+
+/** The same linked field cell outside a viewport (for page-side three-faces strips). */
+export function FieldCell({lesson,row,size='lg'}:{lesson:string;row:Row;size?:'sm'|'lg'}):React.JSX.Element {
+ checkRow(row);
+ const store=lessonStore(lesson),vals=useStore(store,s=>s.vals),hot=useStore(store,s=>s.hot.has(row.id)),tip=useTip();
+ return <div className={'lab-field-cell is-'+size}><RowView lesson={lesson} row={row} vals={vals} hot={hot} tip={tip.bind} size={size}/>{tip.node}</div>;
 }
 
 /** The chip geometry of chips.ts as the CSS variables lab.css reads under 720 px (one source for model and layout). */

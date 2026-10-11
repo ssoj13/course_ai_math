@@ -248,9 +248,6 @@ function hoverStore(): Hover {
 	};
 }
 
-const sameVal = (a: Val | undefined, b: Val): boolean =>
-	typeof a === 'number' || typeof b === 'number' ? a === b : a !== undefined && a.length === b.length && a.every((x, i) => x === b[i]);
-
 /**
  * Writes every key of a move (numbers or vectors); values that did not change are skipped so a still pointer causes
  * no re-render. `how`: a pointer drag is a cut (1:1), a key press eases the glyph (Ruling U, see store.ts); keys in
@@ -258,7 +255,7 @@ const sameVal = (a: Val | undefined, b: Val): boolean =>
  */
 export function writeMove(lesson: string, next: Record<string, Val>, how: WriteHow = 'cut', ease: readonly string[] = []): void {
 	const st = lessonStore(lesson).getState();
-	for (const [k, v] of Object.entries(next)) if (!sameVal(st.vals[k], v)) st.set(k, v, ease.includes(k) ? 'ease' : how);
+	st.setMany(next, how, ease);
 }
 
 const clamp1 = (x: number, r: Range) => Math.min(r.max, Math.max(r.min, x));

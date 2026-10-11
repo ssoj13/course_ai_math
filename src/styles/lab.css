@@ -18,11 +18,11 @@
 .lab-formula-plate .lab-formula { margin:0; max-height:100%; overflow:auto; }
 @media(max-width:719.98px){
  .lab-vp[data-hud] .lab-vp-skel > :nth-child(2) { margin-bottom:100px; }
- .lab-vp[data-formula] .lab-vp-skel > :nth-child(2) { margin-bottom:76px; }
- .lab-vp[data-hud][data-formula] .lab-vp-skel > :nth-child(2) { margin-bottom:176px; }
+ .lab-vp[data-formula] .lab-vp-skel > :nth-child(2) { margin-bottom:var(--lab-vp-formula-h,76px); }
+ .lab-vp[data-hud][data-formula] .lab-vp-skel > :nth-child(2) { margin-bottom:calc(100px + var(--lab-vp-formula-h,76px)); }
  .lab-vp-card[data-hud] .lab-stage { height:calc(100% - 100px); }
- .lab-vp-card[data-formula] .lab-stage { height:calc(100% - 76px); }
- .lab-vp-card[data-hud][data-formula] .lab-stage { height:calc(100% - 176px); }
+ .lab-vp-card[data-formula] .lab-stage { height:calc(100% - var(--lab-vp-formula-h,76px)); }
+ .lab-vp-card[data-hud][data-formula] .lab-stage { height:calc(100% - 100px - var(--lab-vp-formula-h,76px)); }
  .lab-instruments { inset:auto 0 -100px 0; height:100px; display:flex; align-items:center; gap:4px; padding:5px; background:var(--viz-bg-bottom); opacity:1; }
  .lab-instruments svg { position:static; flex-shrink:0; width:56px; height:80px; }
  .lab-instruments .lab-hud-ruler { width:44px; }
@@ -34,7 +34,7 @@
  .lab-hud-galaxies { position:static; width:36px; flex-shrink:0; gap:0; }
  .lab-hud-galaxies .lab-hud-galaxy { width:36px; height:36px; }
  .lab-instruments .lab-hud-dial { width:66px; }
- .lab-formula-plate { bottom:calc(var(--lab-vp-status,22px) + var(--lab-vp-chips, var(--lab-vp-chip-h,0px))); left:0; right:0; height:76px; display:flex; align-items:center; font-size:11px; overflow:auto; }
+ .lab-formula-plate { bottom:calc(var(--lab-vp-status,22px) + var(--lab-vp-chips, var(--lab-vp-chip-h,0px))); left:0; right:0; height:var(--lab-vp-formula-h,76px); display:flex; align-items:center; font-size:11px; overflow:auto; }
 }
 
 /*
@@ -1207,3 +1207,29 @@ h1#_top,
 	margin: 0.4rem 0 0;
 	padding-left: 1.4rem;
 }
+
+/* Linked lesson controls share term IDs and reserve hidden derivation terms. */
+.lab-field-cell { display: inline-block; padding: 6px; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; }
+.lab-field-cell.is-lg .lab-np-row { min-height: 48px; grid-template-columns: minmax(100px, auto) 64px; gap: 8px; }
+.lab-field-cell .lab-np-ro { min-height: 28px; }
+.lab-formula-stack { display:grid; grid-template-columns:minmax(0,1fr); }
+.lab-formula-stack > span { grid-area:1 / 1; min-width:0; }
+.lab-formula-reserve { visibility:hidden; pointer-events:none; overflow:hidden; }
+.lab-formula .is-hidden, .lab-num-table .is-hidden { visibility: hidden; pointer-events: none; }
+.lab-formula .is-struck, .lab-num-table .is-struck { text-decoration: line-through; text-decoration-thickness: 2px; }
+.lab-num-table { font-family: var(--lab-font-mono); font-variant-numeric: tabular-nums; border-collapse: collapse; width: 100%; }
+.lab-num-table td,.lab-num-table th { padding: .35rem .6rem; text-align: right; border-bottom: 1px solid var(--sl-color-gray-5); }
+.lab-num-table caption { text-align: left; padding-block: .4rem; }
+.lab-num-table .is-hot,.lab-code .is-hot { background: var(--viz-hot-bg); outline: 1px solid var(--viz-hot); }
+.lab-code { overflow-x: auto; font-family: var(--lab-font-mono); }
+.lab-code code>span { display: block; min-width: max-content; }
+.lab-timeline-controls { display:flex; align-items:center; gap:.6rem; }
+.lab-timeline input { flex:1; min-width:0; }
+.lab-timeline button { font:inherit; padding:.3rem .6rem; }
+.lab-timeline button[aria-disabled="true"] { opacity:.5; }
+.lab-timeline p { min-height: 3em; margin:.4rem 0; }
+.lab-glyph { display:inline-block; width:32px; height:20px; flex:none; vertical-align:middle; margin-right:4px; }
+.lab-glyph.is-lg { width:64px; height:40px; }
+.lab-np-label:has(.lab-glyph) { display:flex; align-items:center; }
+@media(min-width:720px) { .lab-np-row:has(.lab-glyph) { grid-template-columns: max(50px,var(--np-lw)) minmax(0,1fr); } }
+.lab-formula [data-t]:focus-visible,.lab-num-table td:focus-visible,.lab-code span:focus-visible { outline:2px solid var(--viz-hot); outline-offset:2px; }

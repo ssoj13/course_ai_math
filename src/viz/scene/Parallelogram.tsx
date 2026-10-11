@@ -7,12 +7,13 @@
  */
 import { lazy, Suspense, useContext, useLayoutEffect, useMemo, useRef } from 'react';
 import { Float32BufferAttribute, type Group } from 'three';
-import { add, cross, hatch, norm, scale, signedArea2, to3, worldPlaneBasis, dot, type V } from '../geom';
+import { add, cross, norm, scale, signedArea2, to3, worldPlaneBasis, dot, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useHoverable, useLabel, usePos } from './handles';
-import { SLine, Stroke, useDynGeo, useReveal, useWorldPx, writeGeo } from './view';
+import { Stroke, useDynGeo, useReveal, useWorldPx, writeGeo } from './view';
 
+import { Hatch } from './hatchMaterial';
 import { Point } from './Point';
 import { LookCtx, assertSubject } from './look';
 const Glass = lazy(()=>import('./Glass').then(m=>({default:m.Glass})));
@@ -51,7 +52,6 @@ export function Quad(p: QuadProps): React.JSX.Element {
 	const geo = useDynGeo(4, QUAD_INDEX);
 	useLayoutEffect(() => { writeGeo(geo, g.c); geo.setAttribute('uv', new Float32BufferAttribute([0,0,1,0,1,1,0,1],2)); const basis=worldPlaneBasis(u,v); geo.setAttribute('plane',new Float32BufferAttribute(g.c.flatMap(p=>basis.map(axis=>dot(p,axis))),2)); }, [geo, g]);
 	const step = useWorldPx(STYLE.hatchPx, g.center);
-	const lines = useMemo(() => (p.neg && step ? hatch(o, u, v, step).map(to3) : null), [p.neg, step, o, u, v]);
 	useLabel(p.text === undefined ? null : { lesson: p.lesson, text: p.text, role: p.role, hot: p.id, at: () => g.center });
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
 	const group = useRef<Group>(null);
@@ -66,9 +66,7 @@ export function Quad(p: QuadProps): React.JSX.Element {
 			</mesh>
 			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} innerAlpha={.30} halo order={1} />
 			{g.c.map((at,i)=><Point key={i} lesson={p.lesson} id={p.id} size={5} at={at} drag={false} role={p.role}/>)}
-			{lines && lines.length > 0 && (
-				<SLine points={lines} segments color={color} lineWidth={STYLE.hatchW} transparent depthWrite={false} renderOrder={1} />
-			)}
+			{p.neg && <Hatch geometry={geo} role={p.role}/>}
 		</group>
 	);
 }

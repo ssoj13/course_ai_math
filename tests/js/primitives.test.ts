@@ -199,7 +199,7 @@ test('moveLight keeps the light outside the sphere; moveP keeps P on it', () => 
 	expect(inside[0]).toBeGreaterThan(0);
 	const p = moveP(base, [1, 0, 0]).set.nl_pt as number[];
 	expect(norm(p)).toBeCloseTo(SPHERE_R, 12);
-	expect(moveP({ ...base, nl_pt: [1, 0, 0] }, [-1, 0, 0])).toEqual({ set: { nl_pt: [1, 0, 0] } });
+	expect(moveP({ ...base, nl_pt: [1, 0, 0] }, [-1, 0, 0])).toEqual({ set: { nl_pt: [SPHERE_R, 0, 0] } });
 });
 
 test('clampMove clamps keys with a range (vectors per component), rowRanges reads the editable rows', () => {

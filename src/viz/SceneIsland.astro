@@ -18,11 +18,14 @@ interface Props {
 	chipLines?: number;
 	hud?: boolean;
 	formula?: boolean;
+	/** Authored mobile formula slot height; shared by SSR skeleton and live plate through one CSS variable. */
+	formulaHeight?: number;
 }
-const { caption, rows = [], chipLines, hud = false, formula = false } = Astro.props;
+const { caption, rows = [], chipLines, hud = false, formula = false, formulaHeight = 76 } = Astro.props;
 const panel = rows.length > 0;
 const lines = panel ? (chipLines ?? linesOf(rows)) : 0;
-const style = `--lab-vp-chip-h: ${chipHeight(lines)}px`;
+if (!Number.isFinite(formulaHeight) || formulaHeight < 76) throw new Error('formulaHeight must be at least 76 CSS px');
+const style = `--lab-vp-chip-h: ${chipHeight(lines)}px; --lab-vp-formula-h: ${formulaHeight}px`;
 ---
 
 <figure

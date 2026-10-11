@@ -44,6 +44,8 @@ export const CHIP = {
 	roPad: 8,
 	/** A checkbox. */
 	box: 14,
+	glyph: 32,
+	glyphGap: 4,
 	/** Value budget of a read-only row without `chars`: "−123.45". */
 	roChars: 7,
 } as const;
@@ -59,6 +61,7 @@ export interface ChipRow {
 	dims?: number;
 	/** ro rows: value text budget in characters (default CHIP.roChars). */
 	chars?: number;
+	glyph?: 'rect' | 'disc' | 'sum';
 }
 
 /** Characters of a string as the reader sees them (code points, so "θ" or "²" count once). */
@@ -83,7 +86,7 @@ export interface ChipBox {
 
 /** Widths of one chip in CSS px. */
 export function chipBox(r: ChipRow): ChipBox {
-	const label = len(r.label) * CHIP.ch;
+	const label = len(r.label) * CHIP.ch + (r.glyph ? CHIP.glyph + CHIP.glyphGap : 0);
 	let field = 0;
 	let value: number;
 	switch (r.kind) {

@@ -37,6 +37,7 @@ const DISC = new CircleGeometry(1, 28);
 const RING = (STYLE.pointR + STYLE.rim + STYLE.hotPad) / STYLE.pointR;
 
 export function Point(p: PointProps): React.JSX.Element {
+ if(p.size!==undefined&&(!Number.isFinite(p.size)||p.size<=0))throw new Error('Point size must be positive CSS pixels');
  const locale = useLocale();
  assertSubject(useContext(LookCtx),true);
 	const reg = useStage();

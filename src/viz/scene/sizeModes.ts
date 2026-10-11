@@ -1,5 +1,6 @@
 /** One authority across Astro roots. Moving the host DOM never remounts its React root. */
 import { useLayoutEffect, useSyncExternalStore, type RefObject } from 'react';
+import { captureFormulaFocus } from '../formulaFocus';
 import { reducedMotion, springProgress } from './motion';
 
 export type SizeMode = 'normal' | 'wide' | 'full';
@@ -15,7 +16,7 @@ const listeners = new Set<() => void>();
 const cards = new Map<string, { el: HTMLElement; redraw: () => void }>();
 let hovered: string | null = null;
 let generation = 0;
-let releaseFull: (() => HTMLElement | null) | null = null;
+let releaseFull: (() => (()=>HTMLElement | null)) | null = null;
 let finishRestore = () => {};
 let restoreOwner: string | null = null;
 let releaseNavigation: (() => void) | null = null;
@@ -54,7 +55,7 @@ function exitBrowser() {
 }
 /** The fixed Starlight rails otherwise paint over a wide viewport's outer edges. */
 function hideNavigation(card: HTMLElement) {
- const focus = document.activeElement as HTMLElement | null;
+ const focus = captureFormulaFocus(document.activeElement as HTMLElement | null);
  const saved = [...document.querySelectorAll<HTMLElement>('.sidebar-pane, .right-sidebar')].map(el => ({
   el, visibility: el.style.getPropertyValue('visibility'), priority: el.style.getPropertyPriority('visibility'), inert: el.getAttribute('inert'),
  }));
@@ -65,7 +66,7 @@ function hideNavigation(card: HTMLElement) {
    if (visibility) el.style.setProperty('visibility', visibility, priority); else el.style.removeProperty('visibility');
    if (inert === null) el.removeAttribute('inert'); else el.setAttribute('inert', inert);
   }
-  if (focus?.isConnected) focus.focus({ preventScroll: true });
+  focus?.()?.focus({ preventScroll: true });
  };
 }
 function enterFull(el: HTMLElement) {
@@ -74,7 +75,7 @@ function enterFull(el: HTMLElement) {
  const overflow = body.style.overflow, htmlOverflow = html.style.overflow;
  const host = document.querySelector<HTMLElement>('.lab-scene-host');
  const parent = host?.parentNode, next = host?.nextSibling;
- const focus = document.activeElement as HTMLElement | null;
+ const focus = captureFormulaFocus(document.activeElement as HTMLElement | null);
  body.style.overflow = 'hidden';
  html.style.overflow = 'hidden';
  el.dataset.size = 'full';
@@ -123,7 +124,7 @@ function change(next: SizeState, request = false, settled = false, browserExit =
    if (browserExit && el) {
     if (visibility) el.style.setProperty('visibility', visibility, priority); else el.style.removeProperty('visibility');
    }
-   if (focus?.isConnected) focus.focus({ preventScroll: true });
+   focus?.()?.focus({ preventScroll: true });
    finishRestore = () => {};
    restoreOwner = null;
   };

@@ -1,0 +1,12 @@
+---
+import {pageLocale,t} from '../../i18n/ui';
+import UiStrings from '../../components/UiStrings.astro';
+import SceneIsland from '../SceneIsland.astro';
+import {LinkedControls,LinkedScene,LinkedSpace} from './linked';
+import {LINKED_ROWS} from './linked.rows';
+const locale=pageLocale(Astro);
+---
+<UiStrings ns={['linked','viewport','gizmo','hud','status']}/>
+<SceneIsland caption={t(locale,'linked.scene')} rows={LINKED_ROWS} formula formulaHeight={116}><LinkedScene locale={locale} client:only="react"/></SceneIsland>
+<LinkedControls locale={locale} client:load/>
+<SceneIsland caption={t(locale,'linked.scene')+' · 3D'}><LinkedSpace locale={locale} client:only="react"/></SceneIsland>

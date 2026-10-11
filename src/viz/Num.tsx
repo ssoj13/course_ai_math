@@ -19,7 +19,7 @@ export function Num(p: { lesson: string; k: string; spec: ScrubSpec; fmt?: (v: n
 			aria-valuenow={v}
 			onPointerDown={(e) => {
 				const v0 = cur();
-				startScrubDrag(e, e.currentTarget, { get: cur, set: (v) => store.getState().set(p.k, v) }, (dx) => scrubValue(v0, dx, p.spec));
+				startScrubDrag(e, e.currentTarget, { checkpoint: () => store.getState().checkpoint([p.k]), get: cur, set: (v) => store.getState().set(p.k, v) }, (dx) => scrubValue(v0, dx, p.spec));
 			}}
 			onKeyDown={(e) => {
 				const next = keyStep(cur(), e.key, p.spec);

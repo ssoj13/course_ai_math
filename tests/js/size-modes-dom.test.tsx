@@ -2,6 +2,7 @@ import './dom';
 import { afterEach, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { Formula } from '../../src/viz/Formula';
 import { SizeButtons } from '../../src/viz/scene/Header';
 import { registerSizeCard, toggleSize, useSizeState } from '../../src/viz/scene/sizeModes';
 import { LocaleContext } from '../../src/i18n/react';
@@ -137,4 +138,41 @@ test('system exit normalizes full mode; switching owners keeps single host',asyn
  act(()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:null});document.dispatchEvent(new Event('fullscreenchange'))});
  expect(b.buttons[1].getAttribute('aria-pressed')).toBe('false');
  expect(host.parentElement).toBe(document.body);
+});
+
+test('Formula replacement restores the same duplicate occurrence, never reserve clones or another root',()=>{
+ const a=fixture('semantic'),host=document.createElement('div');a.el.append(host);
+ const root=createRoot(host);roots.push(root);
+ document.documentElement.requestFullscreen=undefined as unknown as typeof originalRequest;
+ const render=(tex:string,hidden=false)=>act(()=>root.render(<Formula lesson="semantic-focus" label="formula" tex={tex} texNarrow={tex} marks={{x:{hidden}}}/>));
+ const wide=String.raw`\t{x}{x}+\t{x}{x}`,narrow=String.raw`\t{x}{x}-\t{x}{x}`;
+ const terms=()=>host.querySelectorAll<HTMLElement>('.lab-formula-stack > span:first-child [data-t=x]');
+ render(wide);act(()=>terms()[1].focus());const old=terms()[1];
+ act(()=>toggleSize('semantic','full'));render(narrow);
+ expect(old.isConnected).toBe(false);act(()=>a.el.focus());key(a.el,'Escape');
+ expect(document.activeElement===terms()[1]).toBe(true);
+ act(()=>terms()[1].focus());act(()=>toggleSize('semantic','full'));render(wide,true);act(()=>a.el.focus());key(a.el,'Escape');
+ expect(document.activeElement===a.el).toBe(true);
+ render(wide);act(()=>terms()[1].focus());act(()=>toggleSize('semantic','full'));
+ act(()=>root.render(null));act(()=>a.el.focus());key(a.el,'Escape');expect(document.activeElement===a.el).toBe(true);
+});
+
+test('pending native-exit semantic focus restoration yields to a new owner',async()=>{
+ const a=fixture('pending-formula'),b=fixture('pending-other'),host=document.createElement('div');a.el.append(host);
+ const root=createRoot(host);roots.push(root);
+ const render=(text:string)=>act(()=>root.render(<Formula lesson="pending-focus" label="formula" tex={String.raw`\t{x}{`+text+'}'}/>));
+ render('x');act(()=>host.querySelector<HTMLElement>('[data-t=x]')!.focus());
+ const oldRAF=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
+ const frames=new Map<number,FrameRequestCallback>();let id=0;
+ globalThis.requestAnimationFrame=fn=>{frames.set(++id,fn);return id};globalThis.cancelAnimationFrame=n=>{frames.delete(n)};
+ document.documentElement.requestFullscreen=async()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:document.documentElement})};
+ try{
+  await act(async()=>{toggleSize('pending-formula','full');await Promise.resolve()});
+  render('y');
+  act(()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:null});document.dispatchEvent(new Event('fullscreenchange'))});
+  expect(a.el.style.visibility).toBe('hidden');
+  render('z');act(()=>toggleSize('pending-other','wide'));
+  expect(frames.size).toBe(0);expect(b.el.contains(document.activeElement)).toBe(true);
+  expect(a.el.style.visibility).toBe('');
+ }finally{globalThis.requestAnimationFrame=oldRAF;globalThis.cancelAnimationFrame=oldCancel}
 });

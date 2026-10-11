@@ -1,127 +1,116 @@
-/**
- * A linked formula: hover/focus a term and it, plus every view showing the same term id, lights up;
- * drag or arrow-key a `\s{key}` value and the store updates so every view follows.
- * Re-rendering KaTeX on each value change is ~1 ms and updates are throttled to animation frames.
- * `scrub`/`fmt`/`derived` are read through a latest-value ref, so inline object literals in JSX are fine and
- * never re-render KaTeX; the markup depends only on `tex`, `block`, the stored values and the derived results.
- */
-import { useEffect, useMemo, useRef } from 'react';
+/** Linked KaTeX, with commit-time focus preservation across markup replacement. */
+import { Component, createRef, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from 'zustand';
-import { hotOn, lessonStore } from './store';
+import { hotOff, hotOn, lessonStore, type Val } from './store';
 import { renderLinked, showVal, texText, type Derived } from './tex';
 import { keyStep, scrubValue, type ScrubSpec } from './scrub';
 import { startScrubDrag } from './useScrub';
+import type { Marks } from './marks';
+import { useTip, type Tip } from './scene/NPanel';
 
 export interface FormulaProps {
-	lesson: string;
-	tex: string;
-	scrub?: Record<string, ScrubSpec>;
-	fmt?: Record<string, (v: number) => string>;
-	derived?: Derived;
-	block?: boolean;
-	label: string;
+ lesson: string; tex: string; texNarrow?: string;
+ scrub?: Record<string, ScrubSpec>;
+ fmt?: Record<string,(v:number)=>string>; derived?: Derived;
+ marks?: Marks; tips?: Record<string,Tip>;
+ block?: boolean; label: string;
 }
-
-export function Formula(p: FormulaProps): React.JSX.Element {
-	const store = lessonStore(p.lesson);
-	const vals = useStore(store, (s) => s.vals);
-	const hot = useStore(store, (s) => s.hot);
-	const props = useRef(p);
-	props.current = p;
-	// Derived values are the only prop-dependent input to the markup; a stable serialization stands in for the
-	// function identities so a parent re-render with fresh inline props does not re-render KaTeX.
-	const derivedKey = p.derived ? JSON.stringify(Object.values(p.derived).map((f) => f(vals))) : '';
-	const html = useMemo(
-		() => renderLinked(p.tex, vals, props.current.fmt, p.block, props.current.derived),
-		// fmt/derived are deliberately absent from the deps: they are read via the latest-value ref.
-		[p.tex, vals, p.block, derivedKey],
-	);
-	const root = useRef<HTMLDivElement>(null);
-	// Handle key that held focus when `html` last changed: replacing innerHTML destroys it, so focus is restored
-	// after the commit. Recorded during render (the old DOM is still in place) and only if focus was inside the root,
-	// so a stale request can never pull focus back after the user moved elsewhere.
-	const seen = useRef(html);
-	const refocus = useRef<string | null>(null);
-	if (seen.current !== html) {
-		seen.current = html;
-		const a = typeof document === 'undefined' ? null : document.activeElement;
-		refocus.current = a && root.current?.contains(a) ? ((a as HTMLElement).dataset.s ?? null) : null;
-	}
-
-	// KaTeX output is plain HTML, not React: reflect `hot` onto the term spans after every render.
-	useEffect(() => {
-		root.current?.querySelectorAll<HTMLElement>('[data-t]').forEach((t) => t.classList.toggle('is-hot', hot.has(t.dataset.t ?? '')));
-	}, [html, hot]);
-
-	// Slider semantics for scrubbable handles, re-applied whenever the markup is replaced; then restore focus.
-	useEffect(() => {
-		const el = root.current;
-		if (!el) return;
-		const { scrub, fmt } = props.current;
-		el.querySelectorAll<HTMLElement>('[data-s]').forEach((h) => {
-			const k = h.dataset.s ?? '';
-			const spec = scrub?.[k];
-			const v = lessonStore(props.current.lesson).getState().vals[k];
-			if (!spec || typeof v !== 'number') return;
-			h.tabIndex = 0;
-			h.setAttribute('role', 'slider');
-			h.setAttribute('aria-label', k);
-			h.setAttribute('aria-valuemin', String(spec.min));
-			h.setAttribute('aria-valuemax', String(spec.max));
-			h.setAttribute('aria-valuenow', String(v));
-			h.setAttribute('aria-valuetext', texText(showVal(k, v, fmt)));
-		});
-		if (refocus.current) el.querySelector<HTMLElement>(`[data-s="${refocus.current}"]`)?.focus({ preventScroll: true });
-		refocus.current = null;
-	}, [html]);
-
-	const term = (e: React.SyntheticEvent) => (e.target as HTMLElement).closest<HTMLElement>('[data-t]')?.dataset.t;
-	const handleKey = (e: React.SyntheticEvent) => (e.target as HTMLElement).closest<HTMLElement>('[data-s]')?.dataset.s;
-
-	const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-		// The pressed span is only read for its key: the first value change re-renders innerHTML and removes it,
-		// so capture and listeners live on the root div, which survives re-renders.
-		const k = handleKey(e);
-		const spec = k ? props.current.scrub?.[k] : undefined;
-		if (!k || !spec) return;
-		const v0 = store.getState().vals[k] as number;
-		startScrubDrag(e, e.currentTarget, { get: () => store.getState().vals[k] as number, set: (v) => store.getState().set(k, v) }, (dx) => scrubValue(v0, dx, spec));
-	};
-
-	const onKeyDown = (e: React.KeyboardEvent) => {
-		const k = handleKey(e);
-		const spec = k ? props.current.scrub?.[k] : undefined;
-		if (!k || !spec) return;
-		const v = keyStep(store.getState().vals[k] as number, e.key, spec);
-		if (v === null) return;
-		e.preventDefault();
-		// An indirect change (Ruling U): the scene eases to the new value, the number jumps.
-		store.getState().set(k, v, 'ease');
-	};
-
-	return (
-		<div
-			ref={root}
-			role="group"
-			className={`lab-formula not-content${p.block ? ' is-block' : ''}`}
-			aria-label={p.label}
-			onPointerOver={(e) => {
-				const t = term(e);
-				if (t) hotOn(p.lesson, t);
-			}}
-			onPointerOut={(e) => {
-				// Moving between nested KaTeX spans of the same term fires pointerout; clear only when leaving the
-				// term, and only write when something is lit (pointerout fires constantly over plain spans).
-				const next = (e.relatedTarget as HTMLElement | null)?.closest?.('[data-t]');
-				if (!next && store.getState().hot.size > 0) store.getState().setHot([]);
-			}}
-			onFocus={(e) => {
-				const t = term(e);
-				if (t) hotOn(p.lesson, t);
-			}}
-			onPointerDown={onPointerDown}
-			onKeyDown={onKeyDown}
-			dangerouslySetInnerHTML={{ __html: html }}
-		/>
-	);
+interface MarkupProps {
+ html:string; vals:Readonly<Record<string,Val>>; hot:ReadonlySet<string>; config:FormulaProps;
+}
+type Focus = {kind:'s'|'t';key:string;index:number}|null;
+/** Snapshot runs before the DOM changes, never during React render or after focus has been lost. */
+class Markup extends Component<MarkupProps,object,Focus> {
+ root=createRef<HTMLSpanElement>();
+ getSnapshotBeforeUpdate():Focus {
+  const el=this.root.current,a=document.activeElement as HTMLElement|null;
+  if(!a||!el?.contains(a))return null;
+  const kind=a.dataset.s?'s':'t',key=a.dataset[kind];
+  if(!key)return null;
+  const peers=[...el.querySelectorAll<HTMLElement>('[data-'+kind+']')].filter(n=>n.dataset[kind]===key);
+  return {kind,key,index:peers.indexOf(a)};
+ }
+ decorate() {
+  const el=this.root.current; if(!el)return;
+  const {config:p,vals,hot}=this.props;
+  el.querySelectorAll<HTMLElement>('[data-t]').forEach(h=>{
+   const k=h.dataset.t!,m=p.marks?.[k];
+   h.classList.toggle('is-hot',hot.has(k));h.classList.toggle('is-struck',Boolean(m?.struck));
+   h.classList.toggle('is-hidden',Boolean(m?.hidden));
+   h.setAttribute('aria-hidden',String(Boolean(m?.hidden)));
+   h.tabIndex=m?.hidden?-1:0;
+  });
+  el.querySelectorAll<HTMLElement>('[data-s]').forEach(h=>{
+   const k=h.dataset.s!,spec=p.scrub?.[k],v=vals[k];
+   const hidden=Boolean(h.closest('.is-hidden'));
+   if(!spec||typeof v!=='number'){
+    h.removeAttribute('role');h.removeAttribute('tabindex');
+    for(const name of ['min','max','now','text'])h.removeAttribute('aria-value'+name);
+    h.style.removeProperty('min-width');return;
+   }
+   h.tabIndex=hidden?-1:0;h.setAttribute('role','slider');h.setAttribute('aria-label',k);
+   h.setAttribute('aria-valuemin',String(spec.min));h.setAttribute('aria-valuemax',String(spec.max));
+   h.setAttribute('aria-valuenow',String(v));h.setAttribute('aria-valuetext',texText(showVal(k,v,p.fmt)));
+   const chars=Math.max(...[spec.min,spec.max,0].map(n=>p.fmt?.[k]?texText(showVal(k,n,p.fmt)).length:n.toFixed(2).length));
+   h.style.minWidth=(chars*.6)+'em';h.style.display='inline-block';h.style.textAlign='right';
+  });
+ }
+ componentDidMount(){this.decorate()}
+ componentDidUpdate(_prev:MarkupProps,_state:object,focus:Focus){
+  this.decorate();
+  if(focus){
+   const peers=[...this.root.current!.querySelectorAll<HTMLElement>('[data-'+focus.kind+']')].filter(n=>n.dataset[focus.kind]===focus.key);
+   const target=peers[focus.index]??peers[0];
+   if(target&&!target.closest('.is-hidden'))target.focus({preventScroll:true});
+  }
+ }
+ render(){
+  const {config:p,vals}=this.props;
+  const html=this.props.html.replace(/(<span class="katex-html") aria-hidden="true"/g,'$1').replace(/<span([^>]*data-s="([^"]+)"[^>]*)>/g,(tag,attrs,k)=>{
+   const spec=p.scrub?.[k];if(!spec||typeof vals[k]!=='number')return tag;
+   const chars=Math.max(...[spec.min,spec.max,0].map(n=>p.fmt?.[k]?texText(showVal(k,n,p.fmt)).length:n.toFixed(2).length));
+   return '<span'+attrs+' style="min-width:'+(chars*.6)+'em;display:inline-block;text-align:right">';
+  }).replace(/<span([^>]*data-t="([^"]+)"[^>]*)>/g,(_tag,attrs,k)=>{
+   const m=p.marks?.[k],classes=(m?.hidden?' is-hidden':'')+(m?.struck?' is-struck':'');
+   return '<span'+attrs.replace(/class="([^"]*)"/,(_s:string,c:string)=>'class="'+c+classes+'"')+'>';
+  });
+  return <span ref={this.root} dangerouslySetInnerHTML={{__html:html}}/>;
+ }
+}
+export function Formula(p:FormulaProps):React.JSX.Element {
+ const store=lessonStore(p.lesson),vals=useStore(store,s=>s.vals),hot=useStore(store,s=>s.hot);
+ const root=useRef<HTMLDivElement>(null),[narrow,setNarrow]=useState(false);
+ const tip=useTip();
+ useLayoutEffect(()=>{
+  if(!p.texNarrow||!root.current)return;
+  const el=root.current,update=()=>setNarrow(el.getBoundingClientRect().width<420);
+  update();const ro=new ResizeObserver(update);ro.observe(el);return ()=>ro.disconnect();
+ },[p.texNarrow]);
+ // Rendering uses current props: formatter/derived-only changes must not leave stale numbers.
+ const tex=narrow&&p.texNarrow?p.texNarrow:p.tex;
+ const derivedKey=JSON.stringify(Object.entries(p.derived??{}).map(([k,f])=>[k,f(vals)]));
+ const formatKey=JSON.stringify(Object.entries(p.fmt??{}).map(([k,f])=>[k,typeof (p.derived?.[k]?.(vals)??vals[k])==='number'?f((p.derived?.[k]?.(vals)??vals[k]) as number):null]));
+ const html=useMemo(()=>renderLinked(tex,vals,p.fmt,p.block,p.derived),[tex,vals,p.block,derivedKey,formatKey]);
+ const term=(e:React.SyntheticEvent)=>(e.target as HTMLElement).closest<HTMLElement>('[data-t]')?.dataset.t;
+ const key=(e:React.SyntheticEvent)=>(e.target as HTMLElement).closest<HTMLElement>('[data-s]')?.dataset.s;
+ return <div ref={root} role="group" className={'lab-formula not-content'+(p.block?' is-block':'')} aria-label={p.label}
+  onPointerOver={e=>{const id=term(e);if(id){hotOn(p.lesson,id);tip.bind(p.tips?.[id]).onPointerEnter?.(e)}}}
+  onPointerOut={e=>{const id=term(e);const to=(e.relatedTarget as HTMLElement|null)?.closest?.<HTMLElement>('[data-t]')?.dataset.t;if(id&&to!==id){hotOff(p.lesson,id);tip.bind(p.tips?.[id]).onPointerLeave?.(e)}}}
+  onFocus={e=>{const id=term(e);if(id)hotOn(p.lesson,id)}}
+  onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget as Node|null)){const id=term(e);if(id)hotOff(p.lesson,id)}}}
+  onPointerDown={e=>{
+   const k=key(e),spec=k?p.scrub?.[k]:undefined;if(!k||!spec)return;
+   const v0=store.getState().vals[k] as number;
+   startScrubDrag(e,e.currentTarget,{get:()=>store.getState().vals[k] as number,set:v=>store.getState().set(k,v),checkpoint:()=>store.getState().checkpoint([k])},dx=>scrubValue(v0,dx,spec));
+  }}
+  onKeyDown={e=>{
+   const k=key(e),spec=k?p.scrub?.[k]:undefined;if(!k||!spec)return;
+   const v=keyStep(store.getState().vals[k] as number,e.key,spec);if(v===null)return;
+   e.preventDefault();store.getState().set(k,v,'ease');
+  }}>
+  <span className="lab-formula-stack">
+   <Markup html={html} vals={vals} hot={hot} config={p}/>
+   {p.texNarrow&&<span className="lab-formula-reserve" aria-hidden="true" dangerouslySetInnerHTML={{__html:renderLinked(narrow?p.tex:p.texNarrow,vals,p.fmt,p.block,p.derived)}}/>}
+  </span>{tip.node}
+ </div>;
 }

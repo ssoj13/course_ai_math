@@ -1,6 +1,8 @@
 /** The value a scrub reads and writes (a store key in practice). */
 export interface ScrubTarget {
 	get(): number;
+	/** Capture transaction values/provenance before any frame is applied. */
+	checkpoint?(): () => void;
 	set(v: number): void;
 }
 
@@ -26,6 +28,7 @@ export function startScrubDrag(
 	captureEl.setPointerCapture(e.pointerId);
 	const x0 = e.clientX;
 	const v0 = target.get();
+	const restore = target.checkpoint?.();
 	let raf = 0;
 	let pending: PointerEvent | null = null;
 	let dx = 0;
@@ -54,7 +57,10 @@ export function startScrubDrag(
 		if (pending && !cancelled) apply(pending);
 		pending = null;
 		ctl.abort();
-		if (cancelled && target.get() !== v0) target.set(v0);
+		if (cancelled) {
+			if (restore) restore();
+			else if (target.get() !== v0) target.set(v0);
+		}
 		onEnd?.(dx, cancelled);
 	};
 	captureEl.addEventListener('pointerup', () => end(false), { signal: ctl.signal });

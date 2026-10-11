@@ -1,3 +1,4 @@
+import { radialLink } from '../scene/radialLink';
 import { t, type Locale } from '../../i18n/core';
 /**
  * Three-free model of the engine demo: N-panel rows (one array per card, passed to BOTH SceneIsland in MDX, which
@@ -165,23 +166,24 @@ export const ROWSSIGN = (locale: Locale): readonly Row[] => [
 // Lamp card (DP-4): lit sphere, point light kept outside, probe P kept on the surface.
 
 export const SPHERE_R = 1.5;
-const LIGHT_MIN = SPHERE_R + 0.3;
+export const LIGHT_INITIAL = [3, 1.5, -1.2] as const;
+export const PROBE_INITIAL = [1, .6, .8] as const;
+export const lightLink = radialLink('nl_light', SPHERE_R+.3, 'outside', LIGHT_INITIAL);
+export const probeLink = radialLink('nl_pt', SPHERE_R, 'surface', PROBE_INITIAL);
+
 
 /** The light moves on the grid but never closer than r + 0.3 to the center (inside, there would be no terminator). */
 export function moveLight(v: Vals, raw: readonly number[]): Move {
 	const l0 = vec(v, 'nl_light');
 	const l = l0.map((x, i) => snap(x + (raw[i] ?? 0)));
-	const n = norm(l);
-	if (n >= LIGHT_MIN) return { set: { nl_light: l } };
-	// Pushed out along its own direction; at the center there is none, so the light stays where it was.
-	return { set: { nl_light: n === 0 ? [...l0] : scale(l, LIGHT_MIN / n) } };
+	return { set: lightLink.resolve({nl_light:l}, v) };
 }
 
 /** P moves freely and is projected back onto the sphere (no grid: the surface is not on it). */
 export function moveP(v: Vals, raw: readonly number[]): Move {
 	const p0 = vec(v, 'nl_pt');
 	const q = p0.map((x, i) => x + (raw[i] ?? 0));
-	return { set: { nl_pt: norm(q) === 0 ? [...p0] : scale(normalize(q), SPHERE_R) } };
+	return { set: probeLink.resolve({nl_pt:q}, v) };
 }
 
 export interface Lamp {
@@ -191,7 +193,7 @@ export interface Lamp {
 	bright: number;
 	/**
 	 * Terminator circle: center, radius, normal (the horizon of the point light on the sphere). Null while the light is
-	 * not outside the sphere (a typed value can put it there; the drag mapping cannot): a light inside has no horizon.
+	 * not outside the sphere in arbitrary supplied data. Live fields and handles share the radial write constraint.
 	 */
 	term: { c: V; r: number; n: V } | null;
 }

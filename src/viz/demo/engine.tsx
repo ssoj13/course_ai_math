@@ -12,7 +12,7 @@ import { lazyIsland } from '../island';
 import { Challenge } from '../Challenge';
 import { Formula } from '../Formula';
 import { Ledger, type LedgerItem } from '../Ledger';
-import { SPHERE_R, tri, vec } from './engine.rows';
+import { SPHERE_R, tri, vec, LIGHT_INITIAL, PROBE_INITIAL, lightLink, probeLink } from './engine.rows';
 
 export { ROWS2, ROWS3, ROWSLAMP, ROWSLC, ROWSPOLAR, ROWSSIGN } from './engine.rows';
 
@@ -31,10 +31,10 @@ lessonStore('demo', {
 	lth: 60,
 	sa: [2, 1],
 	sb: [1, 2],
-	nl_light: [3, 1.5, -1.2],
-	nl_pt: scale(normalize([1, 0.6, 0.8]), SPHERE_R),
+	nl_light: LIGHT_INITIAL,
+	nl_pt: scale(normalize(PROBE_INITIAL), SPHERE_R),
 	nl_raw: 0,
-});
+}, {groups:[lightLink,probeLink]});
 
 export const Demo2D = localized(lazyIsland(() => import('./engine.impl').then((m) => m.Demo2D)));
 export const Demo3D = localized(lazyIsland(() => import('./engine.impl').then((m) => m.Demo3D)));
