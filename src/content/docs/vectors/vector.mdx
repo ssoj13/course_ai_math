@@ -3,4 +3,178 @@ title: "A vector: an arrow and a list of numbers"
 description: "Point vs direction, components, the vector between two points."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Distance and Pythagoras](lesson:pythagoras) · [Squares, roots and the plane](lesson:squares-and-plane)
+
+Every vertex of a flat floor in Maya carries the same normal, `(0, 1, 0)`. Move the floor ten units to the right and the normal is still `(0, 1, 0)`. The position of each vertex changed; the normal did not. Both are three numbers, both are drawn as something in the viewport, yet one of them ignores where the object is. This lesson is about that difference, and about the one object that makes it precise: the vector.
+
+**A note on notation.** From here on, arrows are written in bold: $\mathbf{v}$, $\mathbf{a}$, $\mathbf{b}$. Plain letters such as $x$, $s$ or $a_x$ are ordinary numbers. In [lesson 0.5](lesson:law-of-cosines) the letters $a$, $b$, $c$ were side *lengths*; from now on a length is written with bars, $\lvert \mathbf{v} \rvert$, and the bare bold letter is the arrow itself.
+
+## 1. An arrow is a list of numbers
+
+Take the arrow that goes 3 steps to the right and 2 steps up. We write it as
+
+$$
+\mathbf{v} = (3, 2)
+$$
+
+The two numbers are the **components** of $\mathbf{v}$. The first component says how far the arrow goes along the x axis, the second how far along the y axis. Nothing else is stored. No start point, no end point, no length: those are all computed from the components when we need them.
+
+Draw it and the two numbers become two dashed legs: a horizontal leg of length 3 and a vertical leg of length 2. The arrow is the hypotenuse of that right triangle, which is why [Pythagoras](lesson:pythagoras) will give its length in lesson 1.3.
+
+{/* scene: 1.1-1 — drag the arrow tip; the components (x, y) update in the formula and the table, and the dashed legs to the axes light up with the matching number */}
+
+In Houdini the same two (or three) numbers are what you read as `@v.x`, `@v.y` for a velocity; in a shader they are `v.x`, `v.y`. A vector is a small list of numbers with a picture attached.
+
+## 2. A vector has no address
+
+Here is the part that trips people up. Take the arrow $(3, 2)$ and slide it, without turning it, so that it starts at $(5, 5)$ instead of at the origin. It still goes 3 right and 2 up. Its components are still $(3, 2)$. It is the **same vector**.
+
+{/* scene: 1.1-2 — drag the whole arrow by its shaft: the numbers do not change; a toggle shows it as a position (anchored at the origin) or as a free direction */}
+
+So "the vector $(3, 2)$ starting at $(5, 5)$" and "the vector $(3, 2)$ starting at the origin" are one vector drawn in two places. A vector answers the question "which way, and how far?" and refuses the question "where?".
+
+A **point** answers "where?". The point $(3, 2)$ is a place on the plane. It has an address and no direction. You can turn a point into a vector by drawing the arrow from the origin to it, and that is the only sense in which the point $(3, 2)$ and the vector $(3, 2)$ are the same thing: the vector is the position *measured from the origin*.
+
+This is exactly the Maya `MPoint` versus `MVector` split, and Houdini's `@P` (a point) versus `@N` or `@v` (vectors). Translate an object and every `@P` changes; every `@N` stays. Homogeneous coordinates encode the same rule as the famous "w = 1 for points, w = 0 for directions" trick; we name it here and explain it when matrices arrive in Part 2.
+
+**Misconception to drop:** "a vector is an arrow at a particular spot". No. Two arrows with the same components are the same vector no matter where you draw them.
+
+## 3. Three components, and more
+
+Nothing changes in 3D except the count. The vector
+
+$$
+\mathbf{v} = (2, 1, 3)
+$$
+
+goes 2 along x, 1 along y and 3 along z. In the viewport it has three dashed legs instead of two.
+
+{/* scene: 1.1-3 — 3D arrow with an orbit camera; three colored legs and the formula (x, y, z) */}
+
+And nothing changes with four, or four thousand, components either. The vector $(1, 0, 0, 0)$ has four components, so we say it lives in **four dimensions**. You cannot draw it, and you do not have to. "Dimension" means the number of components, not how long or how big the arrow is. A 4096-dimensional word embedding (lesson 1.7) is just a list of 4096 numbers.
+
+**Misconception to drop:** "dimension is a kind of size". It is a count of slots.
+
+## 4. The vector between two points
+
+Points have addresses; vectors are the trips between them. If you stand at the point $A = (1, 2)$ and want to walk to $B = (4, 6)$, the trip is the vector
+
+$$
+\mathbf{v} = B - A = (4 - 1,\; 6 - 2) = (3, 4)
+$$
+
+Each component is subtracted on its own: x from x, y from y. Walk 3 right and 4 up from $A$ and you arrive at $B$. By [Pythagoras](lesson:pythagoras) the trip is $\sqrt{3^2 + 4^2} = 5$ long, which is the distance between the two points. Distance is the length of the vector between them.
+
+{/* scene: 1.1-4 — drag A and B; v = B − A with each component subtraction highlighted */}
+
+Order matters. $A - B = (1 - 4,\; 2 - 6) = (-3, -4)$ is the trip *back*, from $B$ to $A$: same length, opposite direction. A useful way to remember: **"B minus A" is the arrow that points at B.** The thing you subtract is where you start.
+
+**Misconception to drop:** "B − A and A − B are the same, it is just the distance". They are opposite arrows. The distance is the same because length forgets direction (and signs: $(-3)^2 = 3^2$, the seed planted in [lesson 0.G](lesson:squares-and-plane)).
+
+> **Say it simpler.** An arrow is "go this much right and this much up". Where you start does not matter. A point is a place; the arrow from one place to another is "destination minus start".
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "The vector (3, 2) is drawn once starting at the origin and once starting at (5, 5). Which is true?",
+      options: [
+        "They are the same vector: a vector stores components but no location, so where it is drawn is not part of it",
+        "They are two different vectors, because they are in different places",
+        "They are the same vector only if the second one is moved back to the origin",
+        "They are different vectors with the same length but different components"
+      ],
+      answer: 0,
+      explain: "A vector stores only its components (3, 2): which way and how far. Where you draw it is not part of the vector. Both arrows are the same vector."
+    },
+    {
+      q: "A = (1, 2) and B = (4, 6). What is A − B?",
+      options: [
+        "(3, 4), the arrow from A to B",
+        "5, the distance between them, since subtracting points gives a length",
+        "(5, 8), the sum of the coordinates",
+        "(−3, −4), from B to A"
+      ],
+      answer: 3,
+      explain: "A − B = (1 − 4, 2 − 6) = (−3, −4). The thing you subtract is where you start, so A − B starts at B and points at A. B − A = (3, 4) is the opposite trip. Distance is a length, not a vector."
+    },
+    {
+      q: "The vector (1, 0, 0, 0) is called four-dimensional because…",
+      options: [
+        "its length is 4",
+        "it has 4 components",
+        "it is 4 times longer than (1, 0, 0)",
+        "it points along the 4th axis"
+      ],
+      answer: 1,
+      explain: "Dimension counts the slots in the list, four here. Its length is 1 (it has one component equal to 1 and the rest 0), and it points along the first axis, not the fourth."
+    },
+    {
+      q: "When is the point P = (3, 2) the same thing as the vector v = (3, 2)?",
+      options: [
+        "Always; a point and a vector are two names for the same pair of numbers, whatever the origin is",
+        "Never; a point has no components",
+        "When v is the arrow from the origin to P: the position measured from the origin",
+        "When v is the arrow from P to the origin, since the origin is where every vector starts"
+      ],
+      answer: 2,
+      explain: "A point is a place; a vector is a trip. They coincide only when the trip starts at the origin: the position vector of P. Translate the scene and P moves while a free vector v does not, so they are not interchangeable in general."
+    }
+  ]}
+/>
+
+## Exercises
+
+Do these by hand before opening the answers.
+
+1. Write the vector from the point $(1, 2)$ to the point $(4, 6)$, and its length.
+2. A 3D arrow starts at $(2, 0, 1)$ and ends at $(5, 4, 1)$. What are its components?
+3. Is the vector $(2, 3)$ drawn from the origin the same vector as $(2, 3)$ drawn from $(5, 5)$?
+4. What is the dimension of the vector $(1, 0, 0, 0)$? What is its length?
+
+<details>
+<summary>Answers</summary>
+
+1. $(4 - 1,\; 6 - 2) = (3, 4)$; length $\sqrt{9 + 16} = 5$.
+2. $(5 - 2,\; 4 - 0,\; 1 - 1) = (3, 4, 0)$. The arrow lies flat in the plane $z = 1$, so its z component is 0.
+3. Yes. Same components, same vector. The drawing position is not stored.
+4. Dimension 4 (four components). Length 1: $\sqrt{1^2 + 0^2 + 0^2 + 0^2} = 1$.
+
+</details>
+
+## Python
+
+NumPy stores a vector as a one-dimensional array. Its `shape` is the count of components, and subtraction of two arrays is done component by component.
+
+```python
+import numpy as np
+
+v = np.array([3., 2.])
+print(v, v.shape)          # [3. 2.] (2,)   two components
+
+A = np.array([1., 2.])
+B = np.array([4., 6.])
+v = B - A
+print(v)                   # [3. 4.]        the trip from A to B
+print(A - B)               # [-3. -4.]      the trip back
+print(np.sqrt((v**2).sum()))   # 5.0        its length (Pythagoras)
+
+p = np.array([2., 1., 3.])
+print(p.shape)             # (3,)           three components, three dimensions
+e = np.zeros(4096); e[0] = 1.0
+print(e.shape)             # (4096,)        same idea, 4096 slots
+```
+
+<details>
+<summary>Machine layer: what a vector costs</summary>
+
+Three `float32` components are 12 bytes, stored one after another in memory. That is the whole vector. One thing to know early: GPU constant buffers (std140 in GLSL, HLSL cbuffers) pad a `float3` to 16 bytes, so an array of 3D vectors is often an array of 4-float slots. The numbers are the same; the layout is not. "Layout matters" returns in Part 3 when we look at tensor strides.
+
+</details>
+
+## What this opens
+
+We can write arrows down and read them back. The next question is what we can *do* with them: add two trips, stretch one, mix several. That is [Adding, scaling and linear combinations](lesson:vector-arithmetic).

@@ -3,4 +3,200 @@ title: "Cosine similarity and embeddings"
 description: "Meaning as direction: comparing embeddings."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [The dot product](lesson:dot-product) · [Length, Σ notation and normalization](lesson:length) · [Basis, span, independence and dimension](lesson:basis)
+
+Smooth shading has a crease angle: two faces share a soft edge when their normals are within 30°, a hard edge otherwise. The test is not an angle at all; for unit normals it is `dot(N1, N2) > cos(30°)`. An asset library that finds "similar" textures does the same test on much longer vectors. This lesson is that one test, named, and its use on the vectors that stand for words.
+
+## 1. Cosine similarity: direction only
+
+From [lesson 1.4](lesson:dot-product), $\mathbf{a} \cdot \mathbf{b} = \lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$. Divide the lengths away:
+
+$$
+\cos\theta = \frac{\mathbf{a} \cdot \mathbf{b}}{\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert} = \hat{\mathbf{a}} \cdot \hat{\mathbf{b}}
+$$
+
+This number is the **cosine similarity** of $\mathbf{a}$ and $\mathbf{b}$. It is the dot product of the two normalized vectors ([lesson 1.3](lesson:length)), so it only sees the directions. Its range is the range of cosine:
+
+- $1$: the arrows point the same way.
+- $0$: perpendicular; in embedding language, "unrelated".
+- $-1$: opposite directions.
+
+Example 1. $\mathbf{a} = (1, 1)$, $\mathbf{b} = (2, 2)$: $\mathbf{a} \cdot \mathbf{b} = 4$, $\lvert \mathbf{a} \rvert = \sqrt 2$, $\lvert \mathbf{b} \rvert = 2\sqrt 2$, so $\cos\theta = 4 / (\sqrt 2 \cdot 2 \sqrt 2) = 4/4 = 1$. Same direction, different length: similarity 1.
+
+Example 2. $(1, 0)$ and $(0, 1)$: $\mathbf{a} \cdot \mathbf{b} = 0$, similarity 0.
+
+Example 3. $(1, 2)$ and $(2, 1)$: $\mathbf{a} \cdot \mathbf{b} = 2 + 2 = 4$, both lengths $\sqrt 5$, so $\cos\theta = 4/5 = 0.8$. Similar but not identical ($\theta \approx 37^\circ$).
+
+{/* scene: 1.7-1 — toy semantic space: 2D/3D arrows labelled cat, dog, car; drag them, the cosine readout and the angle arc update */}
+
+A toy picture, hand-made, not a real embedding: give every word two made-up features, "furry" and "has wheels". cat $= (0.9, 0.1)$, dog $= (0.8, 0.2)$, car $= (0.1, 0.9)$. Then
+
+$$
+\cos(\text{cat}, \text{dog}) = \frac{0.72 + 0.02}{0.906 \cdot 0.825} \approx 0.99, \qquad \cos(\text{cat}, \text{car}) = \frac{0.09 + 0.09}{0.906 \cdot 0.906} \approx 0.22
+$$
+
+Cat and dog point almost the same way; cat and car do not. Real embeddings do the same with hundreds of features that nobody labelled by hand.
+
+## 2. What cosine ignores: length
+
+Scale one vector and the similarity does not move. $(3, 4)$ and $(6, 8)$: $\mathbf{a} \cdot \mathbf{b} = 18 + 32 = 50$, lengths $5$ and $10$, similarity $50/50 = 1$. Compare with $(3, 4)$ and $(4, 3)$: $\mathbf{a} \cdot \mathbf{b} = 12 + 12 = 24$, both lengths $5$, similarity $24/25 = 0.96$.
+
+Euclidean distance ([lesson 0.3](lesson:pythagoras)) sees the opposite picture. $(3, 4)$ to $(6, 8)$ is $\lvert (-3, -4) \rvert = 5$ apart; $(3, 4)$ to $(4, 3)$ is $\lvert (-1, 1) \rvert = \sqrt 2 \approx 1.41$ apart. By distance, $(4, 3)$ is the closer one; by cosine, $(6, 8)$ is the perfect match. Neither is wrong; they measure different things. Cosine asks "same direction?", distance asks "same place?".
+
+{/* scene: 1.7-3 — scrub a scale on one vector: the cosine readout stays put while the Euclidean distance changes */}
+
+**Misconception to drop:** "cosine similarity is a distance." It is not: it grows when things get *closer* in direction, it ignores length entirely, and it can be negative. People sometimes use $1 - \cos\theta$ as a "cosine distance", which at least points the right way.
+
+**Misconception to drop:** "scaling an embedding changes its similarities." Multiply a vector by any positive number and every cosine similarity with it is unchanged.
+
+## 3. Embeddings: meaning as an arrow
+
+An **embedding** is a vector that stands for something that is not a number: a word, a token, an image, an audio clip. A model learns the components so that things used in similar ways end up pointing in similar directions. The vector for "cat" in a text model might have 768 or 4096 components ([lesson 1.1](lesson:vector): dimension is a count of slots), and no component has a name like "furry". Only the geometry means something, and the geometry is read with cosine similarity.
+
+{/* scene: 1.7-2 — a real small table of ~60 words × 16 dims (precomputed JSON, provenance recorded) shown as a heatmap of cosine similarities; hover a cell → the two word vectors as component bars with the products aᵢbᵢ, and the two arrows in a 3-PC display projection */}
+
+Two cautions that matter in practice:
+
+- A negative similarity does not reliably mean "opposite meaning". In a high-dimensional space most directions are nearly perpendicular to each other, and the learned geometry is not organized as neat antonym pairs. Treat negative values as "far", not "anti".
+- Random vectors in high dimension are almost always nearly perpendicular. With 4096 components each drawn at random, the cosine between two of them is typically a few hundredths. A similarity of 0.3 is therefore far above the random baseline of about 0 in 4096-D, while in 2D two random directions show 0.3 all the time. The baseline also depends on the model: many trained embedding spaces have all cosines shifted positive, so compare against typical values for that model, not against 0. Part 10 uses the random-vector fact to explain the $\sqrt d$ in attention.
+
+{/* scene: 1.7-4 — nearest-neighbours list recomputed live when the reader edits one coordinate of a word vector */}
+
+## 4. All pairs at once
+
+With $n$ embeddings you often want the similarity of every pair. First normalize every vector; then each similarity is a plain dot product, no divisions left. The explicit loop, on the toy table of section 1:
+
+```python
+import numpy as np
+
+E = np.array([[0.9, 0.1], [0.8, 0.2], [0.1, 0.9]])   # cat, dog, car (toy)
+E_hat = E / np.linalg.norm(E, axis=1, keepdims=True)  # normalize every row
+n = len(E_hat)
+S = np.empty((n, n))
+for i in range(n):
+    for j in range(n):
+        S[i, j] = E_hat[i] @ E_hat[j]
+print(np.round(S, 2))
+# [[1.   0.99 0.22]
+#  [0.99 1.   0.35]
+#  [0.22 0.35 1.  ]]
+```
+
+NumPy writes the same loop as `S = E_hat @ E_hat.T`. **This `@` between two matrices is Part 2 material.** For now read it as exactly the double loop above: every row of the first dotted with every row of the second, all at once. It is shown here only so the Python cell matches what you will see in real code.
+
+> **Say it simpler.** Cosine similarity ignores length and keeps only direction: 1 = same direction, 0 = unrelated, −1 = opposite. An embedding is an arrow that stands for a word; similar words point the same way.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "Cosine similarity is…",
+      options: [
+        "a distance: smaller means more similar, and it is zero only when the two vectors coincide exactly",
+        "the dot product of the two normalized vectors: larger means more aligned, length ignored",
+        "the length of the difference of the two vectors",
+        "the angle between the vectors, in degrees"
+      ],
+      answer: 1,
+      explain: "cos θ = â·b̂. It increases with alignment (1 = same direction), so it is not a distance, and it is the cosine of the angle, not the angle itself. Length plays no role."
+    },
+    {
+      q: "You multiply an embedding by 3. Its cosine similarity with every other embedding…",
+      options: [
+        "triples",
+        "is divided by 3",
+        "becomes 1",
+        "unchanged"
+      ],
+      answer: 3,
+      explain: "Both the dot product and the length are multiplied by 3; the ratio is the same. Cosine sees direction only. Euclidean distances to the other vectors do change."
+    },
+    {
+      q: "Two word embeddings have cosine similarity −0.1. The safest reading is…",
+      options: [
+        "the words are far apart in the learned geometry; nothing more specific",
+        "the words are antonyms",
+        "one of the two embeddings is corrupted",
+        "the words are nearly synonyms, since 0.1 is close to zero"
+      ],
+      answer: 0,
+      explain: "Learned spaces are not organized as antonym pairs, and most directions in high dimension are nearly perpendicular. A small negative value means dissimilar, not opposite in meaning."
+    },
+    {
+      q: "In a 4096-dimensional space, two vectors with random components are typically…",
+      options: [
+        "nearly parallel, because there are so many components to agree on",
+        "exactly opposite",
+        "nearly perpendicular: their cosine similarity is close to zero",
+        "at 45 degrees, like the diagonal of a square, whatever the dimension"
+      ],
+      answer: 2,
+      explain: "Positive and negative products aᵢbᵢ cancel across thousands of components, so the dot product of random vectors is tiny compared with the product of the lengths. This is the seed of the √d scaling in attention (Part 10)."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. Cosine similarity of $(1, 1)$ and $(2, 2)$.
+2. Of $(1, 0)$ and $(0, 1)$.
+3. Of $(1, 2)$ and $(2, 1)$.
+4. Which pair is more similar by cosine: $(3, 4), (4, 3)$ or $(3, 4), (6, 8)$? And which pair is closer by Euclidean distance?
+
+<details>
+<summary>Answers</summary>
+
+1. $1$ (same direction).
+2. $0$ (perpendicular).
+3. $4 / (\sqrt 5 \cdot \sqrt 5) = 0.8$.
+4. By cosine: $(3, 4), (6, 8)$ with similarity $1$ beats $0.96$. By distance: $(3, 4), (4, 3)$ at $\sqrt 2$ beats $5$.
+
+</details>
+
+## Python
+
+The rounded prints hide the `0.9999999999999998` that [lesson 1.3](lesson:length) warned about; remove the `round` to see it.
+
+```python
+import numpy as np
+
+def cosine(a, b):
+    return (a @ b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+print(round(cosine(np.array([1., 1.]), np.array([2., 2.])), 6))   # 1.0
+print(round(cosine(np.array([1., 0.]), np.array([0., 1.])), 6))   # 0.0
+print(round(cosine(np.array([1., 2.]), np.array([2., 1.])), 6))   # 0.8
+
+a = np.array([3., 4.])
+print(round(cosine(a, np.array([6., 8.])), 6), round(cosine(a, np.array([4., 3.])), 6))   # 1.0 0.96
+print(np.linalg.norm(a - [6., 8.]), round(np.linalg.norm(a - [4., 3.]), 6))              # 5.0 1.414214
+
+# all pairs: normalize rows, then every similarity is one dot product
+E = np.array([[0.9, 0.1], [0.8, 0.2], [0.1, 0.9]])   # cat, dog, car (toy)
+E_hat = E / np.linalg.norm(E, axis=1, keepdims=True)
+S = np.empty((3, 3))
+for i in range(3):
+    for j in range(3):
+        S[i, j] = E_hat[i] @ E_hat[j]
+print(np.round(S, 2))
+print(np.allclose(S, E_hat @ E_hat.T))   # True: the matrix product is the same double loop (Part 2)
+
+# random high-dimensional vectors are nearly perpendicular
+rng = np.random.default_rng(0)
+x, y = rng.standard_normal(4096), rng.standard_normal(4096)
+print(round(cosine(x, y), 3))            # close to 0: a few hundredths at most
+```
+
+<details>
+<summary>Machine layer: where embeddings live</summary>
+
+An embedding table is a matrix with one row per token; looking a token up is picking a row by index, no arithmetic. Search systems store the rows already normalized, so a similarity query is one dot product per row, and they often quantize the components to `int8` or `fp16` to fit more rows in memory, accepting a small error in each cosine. That trade is the subject of the number-formats branch at the end of the course.
+
+</details>
+
+## What this opens
+
+Every tool in Part 1 acts on one arrow, or compares two. A model acts on *all* arrows at once, turning every vector in a space by the same rule. That rule is a matrix, and it is where Part 2 begins. (The side branch [The cross product](lesson:cross-product) can be read before or after.)

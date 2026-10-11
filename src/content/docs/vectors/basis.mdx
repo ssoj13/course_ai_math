@@ -3,4 +3,187 @@ title: "Basis, span, independence and dimension"
 description: "Rulers for space; orthonormal change of basis."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Projection: shadows on an axis](lesson:projection)
+
+Every object in a scene has its own axes. A vertex has one set of numbers in object space and another in world space, and it is the same vertex. A normal map stores its vectors in tangent space, three axes $(\mathbf{T}, \mathbf{B}, \mathbf{N})$ glued to the surface, and the shader converts them to world space before lighting. A set of axes that you can measure everything against is called a **basis**. This lesson says exactly which sets of arrows qualify, and shows the one kind of basis change that needs nothing but dot products.
+
+## 1. Span: everything you can reach
+
+Take two arrows $\mathbf{u}_1$ and $\mathbf{u}_2$. The **span** of $\mathbf{u}_1, \mathbf{u}_2$ is the set of every linear combination $s\,\mathbf{u}_1 + t\,\mathbf{u}_2$ ([lesson 1.2](lesson:vector-arithmetic)): every point you can reach by walking some amount of $\mathbf{u}_1$ and some amount of $\mathbf{u}_2$.
+
+Draw all the points with whole-number $s$ and $t$ and you get a grid. With $\mathbf{u}_1 = (1, 0)$, $\mathbf{u}_2 = (0, 1)$ it is the usual square grid. With $\mathbf{u}_1 = (1, 0)$, $\mathbf{u}_2 = (1, 1)$ it is a sheared grid, but it still covers the whole plane: to reach any point $(x, y)$,
+
+$$
+(x, y) = (x - y)\,\mathbf{u}_1 + y\,\mathbf{u}_2
+$$
+
+Check with $(3, 4)$: $(3 - 4)(1, 0) + 4\,(1, 1) = (-1, 0) + (4, 4) = (3, 4)$. Any point is reachable, so the span of these two arrows is the whole plane.
+
+{/* scene: 1.6-1 — two draggable basis arrows u₁, u₂; the grid of all s·u₁ + t·u₂ for integer s, t is drawn; drag and the grid shears (preview of Part 2) */}
+
+## 2. Dependence: when a ruler is useless
+
+Now drag $\mathbf{u}_2$ until it lies on the line of $\mathbf{u}_1$, say $\mathbf{u}_1 = (1, 2)$ and $\mathbf{u}_2 = (2, 4)$. Every combination $s\,\mathbf{u}_1 + t\,\mathbf{u}_2 = (s + 2t)\,(1, 2)$ is a multiple of $(1, 2)$. The grid collapses onto one line; the span is a line, not the plane. The two arrows are **linearly dependent**: one of them is a combination of the others ($\mathbf{u}_2 = 2\,\mathbf{u}_1$) and adds no new direction.
+
+Arrows are **linearly independent** when none of them can be built from the rest. $(1, 0)$ and $(1, 1)$ are independent: no multiple of $(1, 0)$ has a non-zero y component. $(1, 2)$ and $(2, 4)$ are not.
+
+{/* scene: 1.6-2 — drag u₂ onto the line of u₁: the grid flattens to a line; a "dependence meter" (the parallelogram area) goes to zero */}
+
+A quick test in 2D: two arrows are dependent exactly when the parallelogram they span has zero area. The scene shows that area as a meter; [lesson 1.8](lesson:cross-product) gives it a formula.
+
+## 3. Basis and dimension
+
+A **basis** of a space is a set of arrows that is independent *and* spans the space: enough rulers to reach everything, none of them redundant. For the plane, any two independent arrows are a basis. $(1, 0), (0, 1)$ is the **standard basis**; $(1, 0), (1, 1)$ is another basis; $(1, 2), (2, 4)$ is not a basis at all: the pair is dependent and spans only a line (a basis of that line is $(1, 2)$ by itself).
+
+Three arrows in the plane are always dependent: once two of them span the plane, the third is reachable from them (and if no two of them span the plane, they all lie on one line and are dependent already). Try $(1, 0), (0, 1), (3, 4)$: the third is $3\,(1, 0) + 4\,(0, 1)$.
+
+The **dimension** of a space is the number of arrows in any basis of it. Every basis of the plane has exactly two; every basis of 3D space has exactly three. That is the real meaning of "2D" and "3D", and of the "4096-dimensional" embeddings in the next lesson.
+
+{/* scene: 1.6-3 — 3D: three draggable arrows; when they are coplanar the span is a translucent plane, otherwise all of space */}
+
+Example. What is the dimension of the span of $(1, 0, 0)$, $(0, 1, 0)$, $(1, 1, 0)$? The third is the sum of the first two, so it adds nothing. The first two are independent. The span is the plane $z = 0$, dimension 2, even though three vectors were written down.
+
+**Misconception to drop:** "dimension = how many vectors I listed". It is how many *independent* ones there are. Dependent vectors do not count.
+
+**Misconception to drop:** "a basis must be perpendicular". No. $(1, 0), (1, 1)$ is a perfectly good basis. Perpendicular bases are just the convenient ones, as the next section shows.
+
+## 4. Coordinates in a basis
+
+Given a basis $\mathbf{u}_1, \mathbf{u}_2$, every vector $\mathbf{v}$ is one specific combination $c_1\,\mathbf{u}_1 + c_2\,\mathbf{u}_2$, and the pair $(c_1, c_2)$ are the **coordinates of $\mathbf{v}$ in that basis**. In the standard basis the coordinates are the components you already know: $(3, 4) = 3\,\mathbf{e}_1 + 4\,\mathbf{e}_2$.
+
+Order matters. In the basis $(0, 1), (1, 0)$, the vector $(2, 3)$ has coordinates $(3, 2)$: three of the first ruler $(0, 1)$ and two of the second $(1, 0)$. Same arrow, a different description.
+
+That is the core idea of a basis change: **the arrow does not move; its numbers change.** A vertex does not jump when you read it in object space instead of world space.
+
+## 5. Changing basis with perpendicular unit rulers
+
+Finding the coordinates in a general basis means solving for $c_1, c_2$, which needs the matrix inverse of Part 2. There is one case that needs nothing new. If the basis arrows are unit vectors and mutually perpendicular, an **orthonormal basis**, then the coordinates are simply the shadows of [lesson 1.5](lesson:projection):
+
+$$
+c_1 = \mathbf{v} \cdot \mathbf{u}_1, \qquad c_2 = \mathbf{v} \cdot \mathbf{u}_2
+$$
+
+Why: project $\mathbf{v} = c_1 \mathbf{u}_1 + c_2 \mathbf{u}_2$ onto $\mathbf{u}_1$. The dot product distributes over a sum, $(\mathbf{p} + \mathbf{q}) \cdot \mathbf{u} = \mathbf{p} \cdot \mathbf{u} + \mathbf{q} \cdot \mathbf{u}$, because each component product is distributed separately; check: $(3, 1) \cdot \bigl((1, 0) + (0, 2)\bigr) = (3, 1) \cdot (1, 2) = 5$ and $(3, 1) \cdot (1, 0) + (3, 1) \cdot (0, 2) = 3 + 2 = 5$. So $\mathbf{v} \cdot \mathbf{u}_1 = c_1 (\mathbf{u}_1 \cdot \mathbf{u}_1) + c_2 (\mathbf{u}_2 \cdot \mathbf{u}_1)$. The first bracket is 1 (unit), the second is 0 (perpendicular), so $\mathbf{v} \cdot \mathbf{u}_1 = c_1$. The other ruler cannot leak into the reading.
+
+Example. Rotate the axes by 45°: $\mathbf{u}_1 = (1, 1)/\sqrt 2 \approx (0.707, 0.707)$ and $\mathbf{u}_2 = (1, -1)/\sqrt 2 \approx (0.707, -0.707)$. Both have length 1 and $\mathbf{u}_1 \cdot \mathbf{u}_2 = 0.5 - 0.5 = 0$. The coordinates of $\mathbf{v} = (3, 1)$ in this basis:
+
+$$
+c_1 = 3 \cdot 0.707 + 1 \cdot 0.707 = 2.828, \qquad c_2 = 3 \cdot 0.707 - 1 \cdot 0.707 = 1.414
+$$
+
+Rebuild to check: $2.828\,(0.707, 0.707) = (2, 2)$ and $1.414\,(0.707, -0.707) = (1, -1)$; the sum is $(3, 1)$. The length also survives: $2.828^2 + 1.414^2 = 8 + 2 = 10 = 3^2 + 1^2$. Pythagoras does not care which perpendicular rulers you use.
+
+{/* scene: 1.6-4 — rotate a pair of perpendicular unit axes; a fixed point's new coordinates are its shadows on the new axes; standard and new coordinate tables side by side */}
+
+This is exactly what a tangent-space normal map does. The shader has three unit, mutually perpendicular arrows $\mathbf{T}, \mathbf{B}, \mathbf{N}$ in world space (when the frame is orthonormal, which renderers enforce or approximate by re-normalizing; baked and interpolated frames drift from it). A stored normal $(n_t, n_b, n_n)$ is rebuilt as $n_t\,\mathbf{T} + n_b\,\mathbf{B} + n_n\,\mathbf{N}$, and going the other way, from world to tangent space, is three dot products.
+
+For a basis that is not orthonormal, $\mathbf{v} \cdot \mathbf{u}_1$ picks up contributions from the other rulers and the shadows are no longer the coordinates. That general case needs "undoing a matrix", which arrives in Part 2.
+
+> **Say it simpler.** A basis is a set of rulers. Coordinates are the readings. Rulers that point the same way are useless (dependent). With perpendicular unit rulers, the readings are shadows.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "Must the vectors of a basis be perpendicular to each other?",
+      options: [
+        "No: any independent, spanning set is a basis; perpendicular bases are just convenient",
+        "Yes, otherwise the coordinates are not unique and the shadows of lesson 1.5 would not add up to the vector",
+        "Yes, and they must also be unit vectors",
+        "Only in 3D; in 2D any two vectors work"
+      ],
+      answer: 0,
+      explain: "(1, 0), (1, 1) is a basis of the plane and the two are not perpendicular. Perpendicular unit vectors (orthonormal) make the coordinates easy to compute as shadows, but they are not required."
+    },
+    {
+      q: "Can three vectors in the plane be linearly independent?",
+      options: [
+        "Yes, if they point in three different directions",
+        "Yes, as long as none of the three is a scalar multiple of another one",
+        "Only if one of them is the zero vector",
+        "No: two independent ones already reach every point of the plane, so the third is a combination of them"
+      ],
+      answer: 3,
+      explain: "The plane has dimension 2: every basis has two vectors. (1, 0), (0, 1), (3, 4) point in three directions, but (3, 4) = 3(1, 0) + 4(0, 1)."
+    },
+    {
+      q: "The dimension of the span of (1, 0, 0), (0, 1, 0), (1, 1, 0) is…",
+      options: [
+        "3, because three vectors were written down and none of them is the zero vector",
+        "2, because the third is the sum of the first two",
+        "3, because they live in 3D space",
+        "1, because they are all in the same plane"
+      ],
+      answer: 1,
+      explain: "Dimension counts independent vectors. (1, 1, 0) adds nothing to the first two, so the span is the plane z = 0, which has dimension 2."
+    },
+    {
+      q: "You re-describe the vertex v in a rotated orthonormal basis. What changes?",
+      options: [
+        "The vertex moves to a new position in the scene",
+        "The vertex is rotated by the same angle as the basis, so it ends up at a new position in world space",
+        "Only its coordinates: the arrow stays put, the numbers change",
+        "Its length changes by the cosine of the rotation angle, as in a projection"
+      ],
+      answer: 2,
+      explain: "A change of basis is a change of description, not of the thing described. Object-space and world-space numbers describe the same vertex. For an orthonormal basis the new coordinates are v·u₁, v·u₂ and the length is unchanged."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. Express $(3, 1)$ in the basis $\mathbf{u}_1 = (1, 1)/\sqrt 2$, $\mathbf{u}_2 = (1, -1)/\sqrt 2$.
+2. Are $(1, 2)$ and $(2, 4)$ independent?
+3. The dimension of the span of $(1, 0, 0), (0, 1, 0), (1, 1, 0)$.
+4. The coordinates of $(2, 3)$ in the basis $(0, 1), (1, 0)$.
+5. Write $(3, 4)$ as a combination of $\mathbf{u}_1 = (1, 0)$ and $\mathbf{u}_2 = (1, 1)$.
+
+<details>
+<summary>Answers</summary>
+
+1. Shadows: $c_1 = 4/\sqrt 2 = 2\sqrt 2 \approx 2.83$, $c_2 = 2/\sqrt 2 = \sqrt 2 \approx 1.41$.
+2. No. $(2, 4) = 2 \cdot (1, 2)$; the span is a line.
+3. 2. The third vector is the sum of the first two.
+4. $(3, 2)$: three of $(0, 1)$ plus two of $(1, 0)$.
+5. $(3, 4) = -1 \cdot (1, 0) + 4 \cdot (1, 1)$, using $(x, y) = (x - y)\,\mathbf{u}_1 + y\,\mathbf{u}_2$.
+
+</details>
+
+## Python
+
+Stacking the basis vectors as rows and writing `B @ v` computes all the shadows at once. That `@` between a matrix and a vector is Part 2 material; for now read it as "one dot product per row". The printed `0.9999999999999998` is lesson 1.3's rounding again: $1/\sqrt 2$ is not stored exactly.
+
+```python
+import numpy as np
+
+v = np.array([3., 1.])
+u1 = np.array([1., 1.]) / np.sqrt(2)
+u2 = np.array([1., -1.]) / np.sqrt(2)
+print(u1 @ u1, u2 @ u2, u1 @ u2)     # 0.9999999999999998 0.9999999999999998 0.0   orthonormal, up to rounding
+
+c1, c2 = v @ u1, v @ u2              # coordinates = shadows
+print(round(c1, 4), round(c2, 4))    # 2.8284 1.4142
+print(c1 * u1 + c2 * u2)             # [3. 1.]   rebuilt
+
+B = np.stack([u1, u2])               # rows = basis vectors
+print(np.round(B @ v, 4))            # [2.8284 1.4142]  the same two dot products at once
+
+# dependence: the rank counts independent directions (named here, explained in Part 2)
+print(np.linalg.matrix_rank(np.array([[1., 2.], [2., 4.]])))            # 1
+print(np.linalg.matrix_rank(np.array([[1., 0., 0.], [0., 1., 0.], [1., 1., 0.]])))   # 2
+```
+
+<details>
+<summary>Machine layer: why engines love orthonormal frames</summary>
+
+For an orthonormal basis, converting *into* the basis is dot products with the rows, and converting *back* is the same numbers used as columns: the inverse of the matrix is its transpose, free of charge. That is why rotation matrices are cheap to undo. The price: after thousands of accumulated float32 rotations the three axes drift from unit length and from perpendicularity, and the frame must be re-orthonormalized (Gram–Schmidt, in the advanced track).
+
+</details>
+
+## What this opens
+
+We have rulers, and we know which sets of rulers are honest. Now a stranger question: can *meaning* be an arrow, measured by the same rulers? [Cosine similarity and embeddings](lesson:cosine-similarity).
