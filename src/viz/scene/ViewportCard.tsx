@@ -15,7 +15,7 @@ import { useLocale } from '../../i18n/react';
  * and the chevron toggle the sidebar; while it is open the scene is centered in the free part (Stage `inset`).
  * Imports Stage (three/drei): lives in a lesson's .impl chunk.
  */
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { V } from '../geom';
 import { createStage, type OverlayDef } from './handles';
 import { Icon, Overlays, SizeButtons } from './Header';
@@ -23,7 +23,6 @@ import { useCardSize } from './sizeModes';
 import { frameMismatch, frameOf } from './chips';
 import { NPanel, rowRanges, useTip, type Row } from './NPanel';
 import { Stage, type FramePad } from './Stage';
-import { Instruments } from './Instruments';
 import { FormulaPlate } from './FormulaPlate';
 import { hudLayout } from './hud';
 import { StatusBar, type StatusSpec } from './StatusBar';
@@ -53,6 +52,10 @@ export interface ViewportCardProps {
 }
 
 const NARROW = '(max-width: 719.98px)';
+
+// Holographic HUD (SVG instruments, galaxy thumbnails): its own lazy chunk, outside the renderer chunk. It is an
+// absolutely positioned overlay, so arriving a moment later shifts nothing.
+const Instruments = lazy(() => import('./Instruments').then((m) => ({ default: m.Instruments })));
 
 /**
  * Keeps the scene name in the header whole (EN and RU names differ a lot in length): when it does not fit, the
@@ -270,7 +273,13 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 					inset={inset}
 					drawIn={p.drawIn}
 					pad={pad}
-					overlay={p.instruments && <Instruments reg={reg} lesson={p.lesson} look={p.look} angleKey={p.angleKey} rows={rows} />}
+					overlay={
+						p.instruments && (
+							<Suspense fallback={null}>
+								<Instruments reg={reg} lesson={p.lesson} look={p.look} angleKey={p.angleKey} rows={rows} />
+							</Suspense>
+						)
+					}
 				>
 					{p.children}
 				</Stage>
