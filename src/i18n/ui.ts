@@ -398,4 +398,3 @@ export function slice(locale: Locale, ns: readonly string[]): Record<string, str
 	}
 	return out;
 }
-
