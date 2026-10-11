@@ -4,6 +4,7 @@ description: "Point vs direction, components, the vector between two points."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [Distance and Pythagoras](lesson:pythagoras) · [Squares, roots and the plane](lesson:squares-and-plane)
 
@@ -149,6 +150,8 @@ Do these by hand before opening the answers.
 
 NumPy stores a vector as a one-dimensional array. Its `shape` is the count of components, and subtraction of two arrays is done component by component.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -167,6 +170,8 @@ print(p.shape)             # (3,)           three components, three dimensions
 e = np.zeros(4096); e[0] = 1.0
 print(e.shape)             # (4096,)        same idea, 4096 slots
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: what a vector costs</summary>

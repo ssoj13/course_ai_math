@@ -4,6 +4,7 @@ description: "Rulers for space; orthonormal change of basis."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Projection: shadows on an axis](lesson:projection)
 
@@ -157,6 +158,8 @@ For a basis that is not orthonormal, $\mathbf{v} \cdot \mathbf{u}_1$ picks up co
 
 Stacking the basis vectors as rows and writing `B @ v` computes all the shadows at once. That `@` between a matrix and a vector is Part 2 material; for now read it as "one dot product per row". The printed `0.9999999999999998` is lesson 1.3's rounding again: $1/\sqrt 2$ is not stored exactly.
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -176,6 +179,8 @@ print(np.round(B @ v, 4))            # [2.8284 1.4142]  the same two dot product
 print(np.linalg.matrix_rank(np.array([[1., 2.], [2., 4.]])))            # 1
 print(np.linalg.matrix_rank(np.array([[1., 0., 0.], [0., 1., 0.], [1., 1., 0.]])))   # 2
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: why engines love orthonormal frames</summary>

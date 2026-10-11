@@ -4,6 +4,7 @@ description: "Distance between points in 2D, 3D and any number of dimensions."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [Squares, roots and the plane](lesson:squares-and-plane) (a square is an area, a root undoes it,
 a point is two readings on two rulers) · [Powers](lesson:powers) (the root is the power $1/2$).
@@ -241,6 +242,8 @@ need to see the room; you need to square, add and root. Numbers do not care how 
 
 ## In NumPy
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -261,6 +264,8 @@ print(np.linalg.norm(q3 - p3))        # 3.0
 p4, q4 = np.zeros(4), np.array([1.0, 0.0, 2.0, 2.0])
 print(np.linalg.norm(q4 - p4))        # 3.0
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: hypot, overflow and squared comparisons</summary>

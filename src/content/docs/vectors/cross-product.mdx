@@ -4,6 +4,7 @@ description: "Normals, parallelogram area and orientation in 3D."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
 
 **Built on:** [The dot product](lesson:dot-product) · [A vector: an arrow and a list of numbers](lesson:vector)
 
@@ -176,6 +177,8 @@ The same logic builds tangent frames: given a normal $\mathbf{N}$ and a tangent 
 
 ## Python
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -202,6 +205,8 @@ print(n / np.linalg.norm(n))           # [0. 0. 1.]
 n = np.cross(P2 - P0, P1 - P0)         # vertices listed the other way round
 print(n / np.linalg.norm(n))           # [ 0.  0. -1.]
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: six multiplies, and a volume</summary>

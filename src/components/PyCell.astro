@@ -1,0 +1,113 @@
+---
+/**
+ * PyCell - a runnable Python cell around an ordinary fenced block:
+ *
+ *     <PyCell>
+ *
+ *     ```python
+ *     import numpy as np
+ *     print(np.dot([1, 2], [3, 4]))   # 11
+ *     ```
+ *
+ *     </PyCell>
+ *
+ * The fence stays the single source of the code (Expressive Code highlights it; `fenceCode` recovers its exact text
+ * for the runner; Task 10's notebook generator reads the same fences), so wrapping a block never changes its text.
+ * Everything visible before a click is server-rendered with reserved sizes (no layout shift when output arrives);
+ * the `<lab-py>` script (src/viz/py/cell.ts) is tiny and Pyodide is fetched by a worker only on the first Run.
+ * Without JavaScript the reader still has the highlighted code and disabled buttons.
+ */
+import UiStrings from './UiStrings.astro';
+import { pageLocale, t } from '../i18n/ui';
+import { colabUrl } from '../lib/colab';
+import { fenceCode, outputRows } from '../viz/py/fence';
+import { DOWNLOAD_MB } from '../viz/py/protocol';
+
+interface Props {
+	/** Notebook (bare file name, see ColabBadge) offered as the alternative when Python cannot run in the browser. */
+	colab?: string;
+}
+
+const locale = pageLocale(Astro);
+// Rendered once and reused below: the same HTML is shown and parsed, so what runs is what the reader sees.
+const slot = await Astro.slots.render('default');
+const code = fenceCode(slot);
+const href = Astro.props.colab ? colabUrl(Astro.props.colab) : undefined;
+---
+
+<lab-py class="lab-card not-content lab-py" data-code={code}>
+	<p class="lab-eyebrow">{t(locale, 'py.eyebrow')}</p>
+	<div class="py-src" data-ref="src"><Fragment set:html={slot} /></div>
+	<textarea
+		class="py-edit"
+		data-ref="edit"
+		hidden
+		spellcheck="false"
+		autocapitalize="off"
+		autocomplete="off"
+		aria-label={t(locale, 'py.code')}></textarea>
+	<div class="lab-row py-bar">
+		<button type="button" class="lab-button is-primary" data-ref="run" disabled>{t(locale, 'py.run')}</button>
+		<button type="button" class="lab-button" data-ref="edit-btn" aria-pressed="false" disabled>{t(locale, 'py.edit')}</button>
+		<button type="button" class="lab-button" data-ref="reset" disabled>{t(locale, 'py.reset')}</button>
+		<a data-ref="colab" href={href} target="_blank" rel="noopener noreferrer" hidden>{t(locale, 'py.colab')}</a>
+	</div>
+	<p class="lab-msg py-status" data-ref="status" role="status">{t(locale, 'py.first', { mb: DOWNLOAD_MB })}</p>
+	<pre
+		class="lab-output py-out is-empty"
+		data-ref="out"
+		tabindex="0"
+		aria-label={t(locale, 'py.output')}
+		style={`--py-rows: ${outputRows(code)}`}>{t(locale, 'py.placeholder')}</pre>
+</lab-py>
+<UiStrings ns={['py']} />
+
+<script>
+	import '../viz/py/cell';
+</script>
+
+<style>
+	.py-src :global(.expressive-code) {
+		margin: 0.5rem 0 0;
+	}
+	.py-edit {
+		display: block;
+		margin: 0.5rem 0 0;
+		font-size: var(--sl-text-xs);
+		line-height: 1.65;
+		white-space: pre;
+		overflow: auto;
+		tab-size: 4;
+	}
+	.py-bar {
+		margin-top: 0.75rem;
+	}
+	/*
+	 * Always present with room for the longest message (Russian failures wrap to 3 lines at 320 px, 2 on wider
+	 * columns): a status that grew when the result arrives, seconds after the click, would move the page.
+	 */
+	.py-status {
+		min-height: 3lh;
+	}
+	@media (min-width: 40rem) {
+		.py-status {
+			min-height: 2lh;
+		}
+	}
+	/* Fixed height from the server's estimate (lab-output's max-height lifted); longer output scrolls inside. */
+	.py-out {
+		--py-line: 1.5em;
+		line-height: var(--py-line);
+		height: calc(var(--py-rows) * var(--py-line) + 1.2rem + 2px);
+		max-height: none;
+		white-space: pre;
+		overflow: auto;
+		box-sizing: border-box;
+	}
+	.py-out.is-empty {
+		color: var(--lab-text-muted);
+	}
+	.py-out[aria-busy='true'] {
+		opacity: 0.6;
+	}
+</style>
