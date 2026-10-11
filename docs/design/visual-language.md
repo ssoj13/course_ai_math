@@ -29,7 +29,8 @@ literal shadows; the lit sphere computes brightness as exactly `max(0, N·L)`. T
 └──────────────────────────────────────────────────────────────────────┘
 ```
 - **Header** (28 px): view toggles, Overlays popover (grid, legs, labels, shadows, angles — each scene declares which
-  exist), Reset view, scene name right-aligned in muted mono.
+  exist), Reset view, size buttons **Enlarge 2×** (Ctrl+Space, like Blender's Toggle Maximize Area) and **Full screen**
+  (Ctrl+Alt+Space / F; Esc exits), scene name right-aligned in muted mono.
 - **Navigation gizmo** top-right (Blender position): drei `GizmoHelper` + `GizmoViewport`, circles with X/Y/Z letters,
   negative axes as hollow circles; click to align (3D); hidden in 2D scenes (2D shows a tiny static XY corner instead).
 - **N-panel** (right, 200 px, collapsible with `N` key and a chevron): Blender-style property rows — label left, value

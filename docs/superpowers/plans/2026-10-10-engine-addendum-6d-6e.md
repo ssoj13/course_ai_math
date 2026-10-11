@@ -53,7 +53,34 @@ Arrow leg ids `${id}:x|y|z`; Toggle (role switch, writes 0/1). Pure helpers unit
 LitSphere verified by CDP pixel sampling (brightness at the probe = max(0, N·L) within 1/255).
 Gates as above. Commit: `feat(viz): lesson primitives — custom drag mapping, magnet, half-plane, lit sphere, ledger, challenge, circle, toggle`.
 
-Execution order (ledger Ruling N/P): 6c → 6d → 6e → 7 → lessons law-of-cosines + dot-product → merge to main + deploy → 8 → 9 → 10 → 11.
+### Task 6f: Viewport size modes — enlarge 2× and full screen
+
+User requirement (task.md): every scene window can be enlarged two times and expanded to the whole screen, immediately.
+Blender analogue: Ctrl+Space "Toggle Maximize Area" and Ctrl+Alt+Space "Toggle Fullscreen Area".
+
+**Files:** ViewportCard.tsx (header buttons), Stage.tsx / SceneHost.tsx (fit + invalidation), lab.css, hints, tests, demo.
+
+1. **Modes:** `normal` → `wide` (2×) → `full`, per card, shown as two header buttons right of Reset view (icons with
+   tooltips "Enlarge 2×" / "Full screen", pressed state, `aria-pressed`). Shortcuts while the card has focus or hover:
+   Ctrl+Space = wide, Ctrl+Alt+Space or F = full; Esc returns to normal. Only one card can be `wide`/`full` at a time.
+2. **Wide (2×):** the card leaves the 632 px article column: width `min(2 × column, 100vw − 32 px)`, centred on the page,
+   same aspect ratio (so ~2× linear size), the page reflows below it (user-initiated, so not CLS); the N-panel docks inside
+   on the right as in Blender. On screens where 2× does not fit, wide = full width minus gutters.
+3. **Full:** the card covers the window (fixed, inset 0, chrome on top, N-panel docked, status bar at the bottom), page
+   scroll is locked, and the browser goes full screen via the Fullscreen API on `document.documentElement` — NOT on the
+   card element: the shared WebGL canvas lives at the end of `<body>`, outside the card, and element fullscreen would hide
+   it. Where the Fullscreen API is missing (iPhone Safari) the fixed overlay alone is used. Leaving browser full screen
+   (Esc / system gesture, `fullscreenchange`) returns the card to normal.
+4. **Rendering:** the View follows the card rect in every mode (FitView ResizeObserver refits; ortho zoom keeps the same
+   world extent, so the scene gets bigger, not wider); the canvas stays above the overlay background and below the chrome
+   (z-index order recorded in AGENTS.md); `invalidate()` on every mode change; camera, orbit and store state survive the
+   switch; focus stays on the card; reduced motion = cut, otherwise a ~200 ms size transition via motion.ts.
+5. **Tests:** pure mode reducer (one active card, Esc, fullscreenchange); DOM test of the header buttons and shortcuts;
+   CDP in the production build: in wide and full the stage pixel rect equals the card viewport rect (±1 px), the scene is
+   drawn at the new size (pixel sample), returning to normal restores the layout with 0 layout-shift entries, 360 px works.
+Gates as above. Commit: `feat(viz): viewport size modes — enlarge 2x and full screen`.
+
+Execution order (ledger Ruling N/P): 6c → 6d → 6e → 6f → 7 → lessons law-of-cosines + dot-product → merge to main + deploy → 8 → 9 → 10 → 11.
 
 ## Illustration roadmap (user requirements, task.md) — scheduled with the sections that use them
 
