@@ -1,6 +1,8 @@
 # Superpowers / oh-my-harness working state.
 .superpowers/
 .omh/
+.claude/
+.gitnexus/
 
 # Astro / Node tooling.
 node_modules/
