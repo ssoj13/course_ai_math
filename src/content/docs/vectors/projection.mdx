@@ -4,7 +4,15 @@ description: "Shadows on a line; for perpendicular unit axes, coordinates are do
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { ProjScene, ProjControls } from '../../../viz/lessons/projection';
+import { rowsFor } from '../../../viz/lessons/projection.rows';
 import PyCell from '../../../components/PyCell.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'pj']} />
 
 **Built on:** [The dot product](lesson:dot-product) · [Length, Σ notation and normalization](lesson:length)
 
@@ -31,12 +39,27 @@ Example 1. $\mathbf{a} = (3, 4)$, $\mathbf{b} = (1, 0)$. Here $\hat{\mathbf{b}} 
 Example 2. $\mathbf{a} = (3, 4)$, $\mathbf{b} = (1, 1)$. $\lvert \mathbf{b} \rvert = \sqrt 2$, $\hat{\mathbf{b}} = (0.707, 0.707)$, and
 
 $$
-\mathbf{a} \cdot \hat{\mathbf{b}} = 3 \cdot 0.707 + 4 \cdot 0.707 = 7 \cdot 0.707 \approx 4.95
+\begin{aligned}
+\mathbf{a} \cdot \hat{\mathbf{b}} &= 3 \cdot 0.707 + 4 \cdot 0.707 \\
+&= 7 \cdot 0.707 \approx 4.95
+\end{aligned}
 $$
 
 The shadow is signed. If $\mathbf{a}$ leans backwards relative to $\mathbf{b}$ (angle past 90°) the cosine is negative and the shadow length is negative: it lies behind the start of $\mathbf{b}$.
 
-{/* scene: 1.5-1 — light from above the line of b; drag a, the shadow slides along b's line, goes negative past 90°; the term a·b̂ and the shadow segment share a color */}
+Drag the tip of $\mathbf{a}$ around $\mathbf{b}$. The light falls straight onto the dashed line of $\mathbf{b}$; the band
+from the origin to the foot of the light ray is the shadow, and its signed length is $\mathbf{a} \cdot \hat{\mathbf{b}}$.
+Past 90° the foot moves behind the origin and the number turns negative; at exactly 90° there is no shadow at all.
+Hover the shadow, its formula term or its panel row: all three light up together.
+
+<SceneIsland caption="PJ-1 · The signed shadow of a on the line of b: positive, zero at 90°, negative past it." rows={rowsFor(1, locale)}>
+  <ProjScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<ProjControls scene={1} locale={locale} client:load />
+
+**The one axis that fails.** If $\mathbf{b}$ is the zero vector, there is no line to cast a shadow on: $\lvert \mathbf{b} \rvert = 0$
+and $\mathbf{a} \cdot \mathbf{b} / \lvert \mathbf{b} \rvert$ divides by zero. Drag $\mathbf{b}$ onto the origin to see it. The
+dot product $\mathbf{a} \cdot \mathbf{b} = 0$ is still defined; the shadow is not.
 
 **Misconception to drop:** "the shadow depends on how long $\mathbf{b}$ is." It does not. Scaling $\mathbf{b}$ by 10 changes $\mathbf{a} \cdot \mathbf{b}$ by 10 and $\lvert \mathbf{b} \rvert$ by 10; the ratio, the shadow, is unchanged. Only the *direction* of $\mathbf{b}$ matters, which is why the formula uses $\hat{\mathbf{b}}$.
 
@@ -66,7 +89,15 @@ $$
 
 With the diagonal example: $3.5^2 + 3.5^2 = 24.5$, plus $0.5^2 + 0.5^2 = 0.5$, total $25 = \lvert (3, 4) \rvert^2$.
 
-{/* scene: 1.5-2 — the vector projection (a·b̂) b̂ and the leftover a − proj with the right angle marked; Pythagoras tiles |a|² = |proj|² + |perp|² */}
+Below, the same $\mathbf{a}$ and $\mathbf{b}$ (the two scenes share them) split into the shadow arrow $\mathbf{proj}$ and the
+remainder $\mathbf{perp}$. The right angle at the foot is always there, and so are the three squares: the two small
+ones always add up to the big one. The formula computes $\mathbf{proj}$ both ways, with $\hat{\mathbf{b}}$ and without,
+and the two results agree.
+
+<SceneIsland caption="PJ-2 · Along plus across: proj and perp meet at a right angle, so |a|² = |proj|² + |perp|²." rows={rowsFor(2, locale)}>
+  <ProjScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<ProjControls scene={2} locale={locale} client:load />
 
 Because $\lvert \cos\theta \rvert \le 1$, the shadow is never longer than the arrow: $\lvert \mathbf{proj} \rvert \le \lvert \mathbf{a} \rvert$, with equality only when $\mathbf{a}$ already lies on the line of $\mathbf{b}$ (in either direction).
 
@@ -85,7 +116,10 @@ Same vector: one $\lvert \mathbf{b} \rvert$ cancels the length of $\mathbf{b}$ i
 Now the small discovery this lesson is really about. Project $\mathbf{a} = (3, 4)$ onto the two axis arrows $\mathbf{e}_1 = (1, 0)$ and $\mathbf{e}_2 = (0, 1)$. Both are already unit vectors, so the shadows are plain dot products:
 
 $$
-\mathbf{a} \cdot \mathbf{e}_1 = 3 \cdot 1 + 4 \cdot 0 = 3, \qquad \mathbf{a} \cdot \mathbf{e}_2 = 3 \cdot 0 + 4 \cdot 1 = 4
+\begin{aligned}
+\mathbf{a} \cdot \mathbf{e}_1 &= 3 \cdot 1 + 4 \cdot 0 = 3 \\
+\mathbf{a} \cdot \mathbf{e}_2 &= 3 \cdot 0 + 4 \cdot 1 = 4
+\end{aligned}
 $$
 
 The shadows are $3$ and $4$: the components of $\mathbf{a}$. The x coordinate of a vector *is* its shadow on the x axis. The dashed legs we drew in [lesson 1.1](lesson:vector) were projections all along, and the "coefficients along the axes" of [lesson 1.2](lesson:vector-arithmetic) are the same numbers once more:
@@ -94,13 +128,26 @@ $$
 \mathbf{a} = (\mathbf{a} \cdot \mathbf{e}_1)\, \mathbf{e}_1 + (\mathbf{a} \cdot \mathbf{e}_2)\, \mathbf{e}_2
 $$
 
-{/* scene: 1.5-3 — project a onto e₁ and e₂: the shadows are exactly aₓ and a_y; the table reads a·e₁ = aₓ */}
+In the scene the two axes start as $\mathbf{e}_1$ and $\mathbf{e}_2$ (named $\mathbf{u}_1$, $\mathbf{u}_2$ because you can move
+them). The table puts each shadow next to the coordinate along the same axis: $3 = 3$ and $4 = 4$. Turn the pair by
+dragging the tip of $\mathbf{u}_1$: both shadows change, both still equal the coordinates, and adding them back still
+lands exactly on $\mathbf{a}$.
 
-This is the sentence to remember from Part 1: **when the axes are perpendicular unit arrows, a coordinate is a dot product with an axis.** The next lesson asks which axes are allowed, and shows that this shortcut works exactly for perpendicular unit axes.
+<SceneIsland caption="PJ-3 · Coordinates are shadows on perpendicular unit axes; tilt one axis and they stop being coordinates." rows={rowsFor(3, locale)}>
+  <ProjScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<ProjControls scene={3} locale={locale} client:load />
+
+Now drag the tip of $\mathbf{u}_2$ so the axes are no longer perpendicular. The shadows are still dot products, but they
+are no longer the coordinates: the true coordinates (the solid path along $\mathbf{u}_1$, then parallel to
+$\mathbf{u}_2$) are different numbers, and the arrow rebuilt from the shadows misses $\mathbf{a}$.
+
+This is the sentence to remember from Part 1: **when the axes are perpendicular unit arrows, a coordinate is a dot
+product with an axis. Only then.** Unit length matters too: with an axis of length 2 the dot product doubles, but the
+coordinate along it halves. The next lesson asks which axes are allowed at all, and the general case (axes at any
+angle, of any length) needs a tool from Part 2: undoing a matrix.
 
 ## 4. 3D: a shadow on a plane is two shadows
-
-{/* scene: 1.5-4 — 3D: the shadow of a onto a plane is two projections (onto two perpendicular unit directions in the plane) plus the leftover along the normal */}
 
 In 3D, "project onto the ground plane" means: remove the part along the plane's normal $\mathbf{n}$ (a unit vector) and keep the rest.
 
@@ -117,6 +164,18 @@ $$
 $$
 
 Incoming $\mathbf{d} = (1, -1, 0)$, mirror normal $\mathbf{n} = (0, 1, 0)$: $\mathbf{d} \cdot \mathbf{n} = -1$, so $\mathbf{r} = (1, -1, 0) - 2 \cdot (-1) \cdot (0, 1, 0) = (1, 1, 0)$. Down-and-right became up-and-right. Both formulas need $\mathbf{n}$ to be a unit vector; otherwise the "$\mathbf{n} \cdot \mathbf{n}$" denominator from section 2 must come back.
+
+The scene starts with exactly this velocity and the floor. Drag the tip of $\mathbf{n}$ to tilt the plane (it stays a
+unit vector), or drag $\mathbf{a}$ (PageUp/PageDown move it up and down). The shadow on the plane is the arrow
+$\mathbf{a} - (\mathbf{a} \cdot \mathbf{n})\,\mathbf{n}$, and the dashed path along the two in-plane axes $\mathbf{e}_1$,
+$\mathbf{e}_2$ shows the title of this section: it is also two shadows added up,
+$(\mathbf{a} \cdot \mathbf{e}_1)\,\mathbf{e}_1 + (\mathbf{a} \cdot \mathbf{e}_2)\,\mathbf{e}_2$, because $\mathbf{e}_1$,
+$\mathbf{e}_2$ and $\mathbf{n}$ are three perpendicular unit arrows. Turn on **Reflection** in Overlays to see the bounce.
+
+<SceneIsland caption="PJ-4 · The shadow of a on a plane: remove the part along the normal, or add two in-plane shadows." rows={rowsFor(4, locale)}>
+  <ProjScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<ProjControls scene={4} locale={locale} client:load />
 
 > **Say it simpler.** The dot product with a unit arrow is the length of the shadow on it. Coordinates are shadows on perpendicular unit axes. "Along" plus "across" rebuilds the original arrow.
 
