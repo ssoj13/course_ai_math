@@ -40,11 +40,11 @@ Pythagoras promised $25$. Twelve units of area are missing. Where did they go?
 <SceneIsland caption="LC-0 · Missing rectangles: shear, rigid turn and signed area balance." rows={rowsFor(0, locale)}>
   <LawScene scene={0} locale={locale} client:only="react" />
 </SceneIsland>
-<LawDetailControls locale={locale} client:load />
-<SceneIsland caption="LC-0 · Selected piece in detail; the same timeline and geometry.">
+<LawControls scene={0} locale={locale} client:load />
+<SceneIsland caption="LC-0 · Selected piece in detail. No timeline of its own: it follows the LC-0 steps above; pick the piece below.">
   <LawDetail locale={locale} client:only="react" />
 </SceneIsland>
-<LawControls scene={0} locale={locale} client:load />
+<LawDetailControls locale={locale} client:load />
 
 Build the three squares on the sides, as in the Pythagoras lesson: $a^2 = 9$ on side $a$, $b^2 = 16$ on side
 $b$, $c^2 = 13$ on side $c$. The two small ones are too big by 12 in total. Here is where the 12 is hiding.
@@ -166,11 +166,11 @@ past $90^\circ$ sits on the left half of the circle.
 <SceneIsland caption="LC-2 · A step-by-step proof using Pythagoras." rows={rowsFor(2, locale)}>
   <LawScene scene={2} locale={locale} client:only="react" />
 </SceneIsland>
-<LawDetailControls proof locale={locale} client:load />
-<SceneIsland caption="LC-2 · Selected proof tile in detail; the same geometry and fade.">
+<LawControls scene={2} locale={locale} client:load />
+<SceneIsland caption="LC-2 · Selected proof tile in detail. No timeline of its own: it follows the LC-2 steps above; pick the tile below.">
   <LawDetail proof locale={locale} client:only="react" />
 </SceneIsland>
-<LawControls scene={2} locale={locale} client:load />
+<LawDetailControls proof locale={locale} client:load />
 
 If scissors feel like a trick, here is the formula coming out of symbols. The triangle has corner $C$ where
 $a$ and $b$ meet at angle $\theta$; side $a$ runs from $C$ to $B$, side $b$ from $C$ to $A$, and $c$ is $AB$.
@@ -275,7 +275,7 @@ $$
 $$
 
 No angle has a cosine of $-1.625$: the cosine of any angle lies between $-1$ and $1$. Ask NumPy anyway and
-`np.arccos(-1.625)` answers `nan`, "not a number", with a warning; Python's `math.acos` refuses with a `ValueError`.
+`np.arccos(-1.625)` answers `nan`, "not a number" (desktop NumPy adds a warning, the browser does not); Python's `math.acos` refuses with a `ValueError`.
 A NaN elbow angle would make the bone vanish from the screen. So before calling `arccos`, the solver *clamps* the
 cosine: anything below $-1$ becomes $-1$, anything above $1$ becomes $1$. Here $-1.625$ becomes $-1$, and
 $\arccos(-1) = 180^\circ$: the arm points straight at the target and stops short of it. That is one reasonable
@@ -445,8 +445,12 @@ def elbow_deg(L1, L2, d):
 
 print(elbow_deg(2, 1.5, 2.5))     # 90.0
 print(elbow_deg(2, 1.5, 4.0))     # 180.0 (out of reach, clamped)
-print(np.arccos(-1.625))          # nan (and a RuntimeWarning: invalid value encountered in arccos)
+print(np.arccos(-1.625))          # nan
 ```
+
+Desktop NumPy also prints `RuntimeWarning: invalid value encountered in arccos`; the browser runtime (Pyodide,
+WebAssembly) has no floating-point exception flags, so it stays silent. Never rely on the warning: test for `nan`, or
+clamp before `arccos` as the solver does.
 
 <details>
 <summary>Machine layer: acos, rounding and the clamp</summary>

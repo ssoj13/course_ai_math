@@ -342,7 +342,7 @@ The dashed circle where $\mathbf{N} \cdot \mathbf{L} = 0$ is the terminator: the
 
 ## Python
 
-Three spellings of the same sum, the angle recovered from it (with the clip that every real codebase needs), the derivation checked numerically, Lambert, and one machine-layer surprise at the end. The comments show the output of Python 3.13 with NumPy 2.4 on a desktop x86-64 CPU; the last digits of the float32 line depend on the CPU and the BLAS build.
+Three spellings of the same sum, the angle recovered from it (with the clip that every real codebase needs), the derivation checked numerically, Lambert, and one machine-layer surprise at the end. The comments show the output of Python 3.13 with NumPy 2.4 on a desktop x86-64 CPU. The two float32 sums of the last line differ between runtimes already in the third decimal place (the desktop and browser rows of its comment): the difference itself shows that summation order matters. The float64 value is the same everywhere.
 
 ```python
 import numpy as np
@@ -376,7 +376,9 @@ rng = np.random.default_rng(0)
 x = rng.standard_normal(1_000_000).astype(np.float32)
 y = rng.standard_normal(1_000_000).astype(np.float32)
 print(np.dot(x, y), np.dot(x[::-1], y[::-1]), float(np.sum((x * y).astype(np.float64))))
-# -204.34094 -204.35278 -204.34922361053668  (fp32 results differ already in the 2nd decimal)
+# desktop x86-64 (OpenBLAS): -204.34094 -204.35278
+# browser (Pyodide, wasm): -204.33473 -204.33762
+# float64 agrees everywhere: -204.34922361053668
 ```
 
 <details>

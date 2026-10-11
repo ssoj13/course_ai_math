@@ -15,6 +15,15 @@ type Derived = ReturnType<typeof derive>;
 
 const deg = (x: number) => fmtAngle(x) + '°';
 
+/** What each read-only row measures (its tooltip), as literal dictionary keys (the usage test scans for them). */
+const TIPS = {
+	c: 'lc.tipC', a2: 'lc.tipA2', b2: 'lc.tipB2', c2: 'lc.tipC2', strip_a: 'lc.tipStripA', strip_b: 'lc.tipStripB',
+	R1: 'lc.tipR1', R2: 'lc.tipR2', R1c: 'lc.tipR1c', R2c: 'lc.tipR2c', ab: 'lc.tipAb', cos: 'lc.tipCos', corr: 'lc.tipCorr',
+	p: 'lc.tipP', rise: 'lc.tipRise', rest: 'lc.tipRest', rest2: 'lc.tipRest2', rise2: 'lc.tipRise2',
+	d: 'lc.tipD', cosraw: 'lc.tipCosRaw', cosc: 'lc.tipCosC', phi: 'lc.tipPhi',
+} as const;
+type TipId = keyof typeof TIPS & keyof Derived;
+
 /** @param cut current cut step: from step 8 the `c·FB` row reads "= R1" (spec step 8). */
 export function rowsFor(scene: 0 | 1 | 2 | 3, locale: Locale, cut = 0): readonly Row[] {
 	const inputs: Row[] = (['a', 'b', 'th'] as const).map((id) => ({
@@ -25,11 +34,11 @@ export function rowsFor(scene: 0 | 1 | 2 | 3, locale: Locale, cut = 0): readonly
 		tip: { text: t(locale, id === 'th' ? 'lc.angleTip' : 'lc.sideTip') },
 	}));
 	/** Read-only derived row, revealed by the step `start` of `timeline` (same reveal as the formula lines). */
-	const ro = (id: keyof Derived, label: string, start = 0, timeline = 'cut', group = t(locale, 'lc.areas')): Row => ({
+	const ro = (id: TipId, label: string, start = 0, timeline = 'cut', group = t(locale, 'lc.areas')): Row => ({
 		id, label, kind: 'ro', chars: 7, group, fmt,
 		value: (v) => derive(v)[id] as number,
 		visible: (_v, s) => (s[timeline] ?? 0) >= start,
-		tip: { text: label },
+		tip: { text: t(locale, TIPS[id]) },
 	});
 	if (scene === 0) {
 		return [
@@ -55,7 +64,7 @@ export function rowsFor(scene: 0 | 1 | 2 | 3, locale: Locale, cut = 0): readonly
 		id, label, kind: 'ro', chars: 8, group: solveGroup,
 		value: (v) => solveIK(v)[id],
 		fmt: id.startsWith('cos') ? fmtCos : id === 'phi' ? deg : fmt,
-		tip: { text: label },
+		tip: { text: t(locale, TIPS[id]) },
 	});
 	return [
 		{ id: 'ik_hand', label: t(locale, 'lc.target'), kind: 'vec', key: 'ik_hand', dims: 2, spec: { min: -6.5, max: 6.5, step: .1 } },

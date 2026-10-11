@@ -1,7 +1,7 @@
 ---
 title: "Теорема косинусов"
 description: "Пифагор плюс поправка для непрямого угла; IK для двух костей."
-translatedFrom: 90ed7bf297e2d1fc3d85339bbd76c59a428bf80b
+translatedFrom: e2b16f5429e31655b1cd4ac1c737c90b0d9e088f
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
@@ -33,11 +33,11 @@ export const locale = 'ru';
 <SceneIsland caption="LC-0 · Пропавшие прямоугольники: наклон, поворот и баланс площадей." rows={rowsFor(0, locale)}>
   <LawScene scene={0} locale={locale} client:only="react" />
 </SceneIsland>
-<LawDetailControls locale={locale} client:load />
-<SceneIsland caption="LC-0 · Крупный план выбранного фрагмента; тот же шаг и геометрия.">
+<LawControls scene={0} locale={locale} client:load />
+<SceneIsland caption="LC-0 · Выбранный фрагмент крупно. Своей шкалы шагов нет: он следует шагам LC-0 выше; фрагмент выбирается ниже.">
   <LawDetail locale={locale} client:only="react" />
 </SceneIsland>
-<LawControls scene={0} locale={locale} client:load />
+<LawDetailControls locale={locale} client:load />
 
 Постройте три квадрата на сторонах, как в уроке Пифагора: $a^2 = 9$ на стороне $a$, $b^2 = 16$ на стороне $b$, $c^2 = 13$ на стороне $c$. Два маленьких вместе слишком велики на 12. Вот где прячутся эти 12.
 
@@ -120,11 +120,11 @@ $$
 <SceneIsland caption="LC-2 · Пошаговый вывод по теореме Пифагора." rows={rowsFor(2, locale)}>
   <LawScene scene={2} locale={locale} client:only="react" />
 </SceneIsland>
-<LawDetailControls proof locale={locale} client:load />
-<SceneIsland caption="LC-2 · Плитка доказательства крупно: та же геометрия и прозрачность.">
+<LawControls scene={2} locale={locale} client:load />
+<SceneIsland caption="LC-2 · Выбранная плитка доказательства крупно. Своей шкалы шагов нет: она следует шагам LC-2 выше; плитка выбирается ниже.">
   <LawDetail proof locale={locale} client:only="react" />
 </SceneIsland>
-<LawControls scene={2} locale={locale} client:load />
+<LawDetailControls proof locale={locale} client:load />
 
 Если ножницы кажутся уловкой, получим формулу из символов. У треугольника есть вершина $C$, где $a$ и $b$ встречаются под углом $\theta$; сторона $a$ идёт от $C$ до $B$, сторона $b$ — от $C$ до $A$, а $c$ — это $AB$.
 
@@ -209,7 +209,7 @@ $$
 \cos\varphi = \frac{6.25 - 16}{6} = -1.625
 $$
 
-Ни у одного угла нет косинуса $-1.625$: косинус любого угла лежит между $-1$ и $1$. Если всё же спросить NumPy, `np.arccos(-1.625)` ответит `nan`, «не число», и выдаст предупреждение; `math.acos` в Python откажется с ошибкой `ValueError`. Если угол локтя окажется NaN, кость пропадёт с экрана. Поэтому перед вызовом `arccos` солвер *ограничивает* косинус: всё, что меньше $-1$, становится $-1$, всё, что больше $1$, становится $1$. Здесь $-1.625$ превращается в $-1$, а $\arccos(-1) = 180^\circ$: рука смотрит прямо на цель и останавливается, не дотянувшись. Это один из разумных вариантов, самый простой; риг может также растянуть кости или мягко подойти к пределу (soft IK).
+Ни у одного угла нет косинуса $-1.625$: косинус любого угла лежит между $-1$ и $1$. Если всё же спросить NumPy, `np.arccos(-1.625)` ответит `nan`, «не число» (настольный NumPy добавит предупреждение, браузерный — нет); `math.acos` в Python откажется с ошибкой `ValueError`. Если угол локтя окажется NaN, кость пропадёт с экрана. Поэтому перед вызовом `arccos` солвер *ограничивает* косинус: всё, что меньше $-1$, становится $-1$, всё, что больше $1$, становится $1$. Здесь $-1.625$ превращается в $-1$, а $\arccos(-1) = 180^\circ$: рука смотрит прямо на цель и останавливается, не дотянувшись. Это один из разумных вариантов, самый простой; риг может также растянуть кости или мягко подойти к пределу (soft IK).
 
 Другой конец: цель ближе, чем $|L_1 - L_2| = 0.5$, например $d = 0.3$, даёт $\cos\varphi = (6.25 - 0.09) / 6 \approx 1.027$; ограничение до $1$, $\varphi = 0^\circ$ — рука полностью сложена.
 
@@ -367,8 +367,12 @@ def elbow_deg(L1, L2, d):
 
 print(elbow_deg(2, 1.5, 2.5))     # 90.0
 print(elbow_deg(2, 1.5, 4.0))     # 180.0 (out of reach, clamped)
-print(np.arccos(-1.625))          # nan (and a RuntimeWarning: invalid value encountered in arccos)
+print(np.arccos(-1.625))          # nan
 ```
+
+Настольный NumPy вдобавок печатает `RuntimeWarning: invalid value encountered in arccos`; в браузере (Pyodide,
+WebAssembly) нет флагов исключений плавающей точки, и там он молчит. Не полагайтесь на предупреждение: проверяйте
+результат на `nan` или ограничивайте косинус перед `arccos`, как это делает солвер.
 
 <details>
 <summary>Машинный уровень: acos, округление и ограничение</summary>

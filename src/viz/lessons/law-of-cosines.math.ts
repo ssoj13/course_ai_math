@@ -173,3 +173,63 @@ export function cutMoves(from: number, to: number, step: number) {
 	if (step >= 4 && (placement(from, 1) !== placement(to, 1) || placement(from, 2) !== placement(to, 2))) return true;
 	return (step >= 2 && clamp(from - 1, 0, 1) !== clamp(to - 1, 0, 1)) || (step >= 3 && clamp(from - 2, 0, 1) !== clamp(to - 2, 0, 1));
 }
+
+/** Derived numbers a detail piece can report (signed areas and the two shadow lengths). */
+type PieceKey = 'c' | 'c2' | 'a2' | 'b2' | 'strip_a' | 'strip_b' | 'R1' | 'R2' | 'R1c' | 'R2c' | 'p' | 'q' | 'rest2' | 'rise2' | 'bcos2';
+
+/**
+ * One piece a detail view (LC-0 / LC-2) can frame: its scene object id, the `derive()` key of its signed value, the
+ * math label shown in the selector, card name and scene label, its colour role and the first step at which the
+ * overview draws it. One table for the entry's selector and readout and for the impl's detail scene.
+ */
+export interface DetailPiece { id: string; key: PieceKey; label: string; role: 'vecA' | 'vecB' | 'vecC' | 'muted'; from: number }
+
+export const CUT_PIECES: readonly DetailPiece[] = [
+	{ id: 'sq_c', key: 'c2', label: 'c²', role: 'vecC', from: 0 },
+	{ id: 'sq_a', key: 'a2', label: 'a²', role: 'vecA', from: 0 },
+	{ id: 'sq_b', key: 'b2', label: 'b²', role: 'vecB', from: 0 },
+	{ id: 'strip_a', key: 'strip_a', label: 'a·p', role: 'vecA', from: 2 },
+	{ id: 'strip_b', key: 'strip_b', label: 'b·q', role: 'vecB', from: 3 },
+	{ id: 'R1', key: 'R1', label: 'a·DB', role: 'vecA', from: 4 },
+	{ id: 'R2', key: 'R2', label: 'b·EA', role: 'vecB', from: 4 },
+	{ id: 'R1c', key: 'R1c', label: 'c·FB', role: 'vecC', from: 5 },
+	{ id: 'R2c', key: 'R2c', label: 'c·AF', role: 'vecC', from: 5 },
+	{ id: 'p', key: 'p', label: 'b cos θ', role: 'muted', from: 1 },
+	{ id: 'q', key: 'q', label: 'a cos θ', role: 'muted', from: 3 },
+];
+/** Indices of CUT_PIECES from here on are shadow lengths, not areas (the readout says "length"). */
+export const CUT_LENGTHS = 9;
+
+/**
+ * LC-2 pieces. The proof draws no tile before its Pythagoras step (5 / 10), so the first piece is the triangle the
+ * proof works in (with D, the height and the rest of a as the steps add them): the detail is never an empty grid.
+ */
+export const PROOF_PIECES: readonly DetailPiece[] = [
+	{ id: 'tri', key: 'c', label: '△ABC', role: 'vecC', from: 0 },
+	{ id: 'c2', key: 'c2', label: 'c²', role: 'vecC', from: 4 },
+	{ id: 'rest2', key: 'rest2', label: '(a − b cos θ)²', role: 'vecA', from: 4 },
+	{ id: 'rise2', key: 'rise2', label: '(b sin θ)²', role: 'vecB', from: 4 },
+	{ id: 'a2', key: 'a2', label: 'a²', role: 'vecA', from: 6 },
+	{ id: 'bcos2', key: 'bcos2', label: 'b² cos² θ', role: 'vecB', from: 7 },
+	{ id: 'bsin2', key: 'rise2', label: 'b² sin² θ', role: 'vecB', from: 7 },
+	{ id: 'b2', key: 'b2', label: 'b²', role: 'vecB', from: 7 },
+];
+
+/**
+ * Whether the overview draws piece `i` at this step (and fade position of the proof's b² merge): the proof's leg
+ * tiles leave when they are renamed (rest at step 8, rise at 7), b² exists once the fade started and its two pieces
+ * until it finished. A detail view shows the selected piece only while it exists, else piece 0 (always drawn).
+ */
+export function pieceShown(proof: boolean, i: number, step: number, fade: number): boolean {
+	const piece = (proof ? PROOF_PIECES : CUT_PIECES)[i];
+	if (!piece || step < piece.from) return false;
+	if (!proof) return true;
+	if (piece.id === 'b2') return fade > 0;
+	if (piece.id === 'bcos2' || piece.id === 'bsin2') return fade < 1;
+	return (piece.id !== 'rest2' || step < 8) && (piece.id !== 'rise2' || step < 7);
+}
+
+/** The piece a detail view shows: the reader's selection while the overview draws it, otherwise piece 0. */
+export function shownPiece(proof: boolean, selected: number, step: number, fade: number): number {
+	return pieceShown(proof, selected, step, fade) ? selected : 0;
+}

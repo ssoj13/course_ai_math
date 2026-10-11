@@ -27,7 +27,8 @@ async function mount(locale: 'en' | 'ru') {
 		<NPanel lesson={LESSON} rows={rowsFor(1, locale)} />
 	</>));
 	const step = async (i: number) => act(async () => store.getState().setStep('derive', i));
-	const hidden = (m: string) => host.querySelector(`[data-dp-controls="1"] [data-m="${m}"]`)!.classList.contains('is-hidden');
+	// A hidden line is left out of the TeX (alignedRows); a hidden term inside a shown line keeps its box (.is-hidden).
+	const hidden = (m: string) => { const el = host.querySelector(`[data-dp-controls="1"] [data-m="${m}"]`); return !el || el.classList.contains('is-hidden'); };
 	const struck = (m: string) => host.querySelector(`[data-dp-controls="1"] [data-m="${m}"]`)!.classList.contains('is-struck');
 	const cols = () => [...host.querySelectorAll('[data-dp-controls="1"] .lab-num-grid thead th[data-col]')].map((th) => (th as HTMLElement).dataset.col);
 	const cell = (id: string) => host.querySelector<HTMLElement>(`[data-dp-controls="1"] .lab-num-grid td[data-t="${id}"]`);

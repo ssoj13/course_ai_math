@@ -35,7 +35,7 @@ test('proof current reveal is independent of max history; only current expansion
  expect(host.querySelector('.lab-challenge')!.classList.contains('is-done')).toBe(true);
  await act(async()=>store.getState().setStep('proof',0));
  expect(store.getState().step['proof:max']).toBe(9);
- expect(host.querySelector('[data-m="proof-3"]')!.classList.contains('is-hidden')).toBe(true);
+ expect(host.querySelector('[data-m="proof-3"]')).toBeNull();
  expect(host.querySelector('.lab-challenge')!.classList.contains('is-done')).toBe(true);
  await act(async()=>root.unmount());host.remove();
 });
@@ -66,12 +66,20 @@ test('reader pause cancels the single clock; resume and unmount preserve and cle
   expect(store.getState().vals.cut_play).toBe(0);expect(pending.size).toBe(0);
  }finally{host.remove();globalThis.requestAnimationFrame=originalRaf;globalThis.cancelAnimationFrame=originalCancel}
 });
-test('every actual formula renders both layouts and stage marks',()=>{
- lessonStore(LESSON).getState().setMany(INITIAL);
- for(const scene of [0,1,2,3] as const){
-  const html=renderToString(<LawFormula scene={scene}/>);
-  expect(html).toContain('katex');expect(html).not.toContain('NaN');
- }
+test('every actual formula renders both layouts and stage marks',async()=>{
+ const st=lessonStore(LESSON).getState();st.setMany(INITIAL);
+ const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
+ const html=async(scene:0|1|2|3)=>{await act(async()=>root.render(<LawFormula scene={scene}/>));return host.innerHTML};
+ try{
+  // Unrevealed derivation lines are left out of the TeX (alignedRows): at step 1 the cut and proof show no math at all.
+  await act(async()=>{st.setStep('cut',0);st.setStep('proof',0)});
+  expect(await html(0)).not.toContain('katex');expect(await html(2)).not.toContain('katex');
+  await act(async()=>{st.setStep('cut',11);st.setStep('proof',9)});
+  for(const scene of [0,1,2,3] as const){
+   const out=await html(scene);
+   expect(out).toContain('katex');expect(out).not.toContain('NaN');expect(out).toContain('lab-formula-narrow');
+  }
+ }finally{await act(async()=>root.unmount());host.remove();st.setStep('cut',0);st.setStep('proof',0)}
  expect(marksFor(2,4,60)['leg-rest'].dim).toBe(true);
  expect(marksFor(2,8,60).ident.struck).toBe(true);
  expect(marksFor(0,10,90).corr.dim).toBe(true);

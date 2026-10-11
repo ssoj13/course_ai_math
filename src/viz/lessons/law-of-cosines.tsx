@@ -10,7 +10,8 @@ import { CodeView } from '../CodeView';
 import { Ledger } from '../Ledger';
 import { reducedMotion } from '../scene/motion';
 import type { Marks } from '../marks';
-import { LESSON, INITIAL, derive, solveIK, fmt, fmtCos, fmtAngle, cutProgress, cutElapsed, cutMoves } from './law-of-cosines.math';
+import { alignedRows, type AlignedRow } from '../tex';
+import { LESSON, INITIAL, derive, solveIK, fmt, fmtCos, fmtAngle, cutProgress, cutElapsed, cutMoves, CUT_PIECES, CUT_LENGTHS, PROOF_PIECES, pieceShown, shownPiece } from './law-of-cosines.math';
 import { SCRUB } from './law-of-cosines.rows';
 
 /**
@@ -35,9 +36,9 @@ const KEYS = ['a', 'b', 'th', 'cos', 'c', 'a2', 'b2', 'c2', 'corr', 'strip_a', '
 const derived = Object.fromEntries(KEYS.map((k) => [k, (v: Vals) => derive(v)[k]]));
 const formats = Object.fromEntries(KEYS.map((k) => [k, k === 'cos' ? fmtCos : k === 'th' ? deg : fmt]));
 
-/** A formula row carrying a mark id (`data-m`), so it can be hidden / dimmed by step. */
-const row = (key: string, body: string) => tex`\htmlData{m=${key}}{${body}}`;
-const aligned = (rows: string[]) => tex`\begin{aligned}${rows.map((x) => '&' + x).join(tex`\\ `)}\end{aligned}`;
+/** A formula row carrying a mark id (`data-m`): dimmed by step, or left out of the TeX while hidden (alignedRows). */
+const row = (key: string, body: string): AlignedRow => [key, body];
+const aligned = (rows: readonly AlignedRow[], marks?: Marks) => alignedRows(rows, marks);
 
 /** Formula marks per scene and step (spec step tables): line reveals, `dim` at 90°, the struck identity. */
 export function marksFor(scene: Scene, step: number, th: number): Marks {
@@ -112,10 +113,11 @@ export function LawFormula({ scene, compact = false }: { scene: Scene; compact?:
 		tex`\t{c}{c=\s{c}},\quad\t{th}{\theta=\s{th}},\;\cos\theta=\s{cos}`,
 	];
 	const ledgerNarrow = [ledger[0], tex`\s{c2}=\s{a2}+\s{b2}`, tex`\t{corr}{-2\cdot\s{a}\cdot\s{b}\cdot${signed('cos')}}`, tex`\t{c}{c=\s{c}},\quad\t{th}{\theta=\s{th}}`, tex`\cos\theta=\s{cos}`];
+	const marks = marksFor(scene, step, z.th);
 	return <Formula lesson={LESSON} block label={t(locale, 'lc.derivation')}
-		tex={aligned(scene === 0 ? cut : scene === 2 ? proof : ledger)}
-		texNarrow={aligned(scene === 1 ? ledgerNarrow : narrow)}
-		marks={marksFor(scene, step, z.th)} derived={derived} fmt={formats} scrub={SCRUB}
+		tex={aligned(scene === 0 ? cut : scene === 2 ? proof : ledger, marks)}
+		texNarrow={aligned(scene === 1 ? ledgerNarrow : narrow, marks)}
+		marks={marks} derived={derived} fmt={formats} scrub={SCRUB}
 		tips={{
 			corr: { text: t(locale, 'lc.corrTip'), tex: '-2ab\\cos\\theta' },
 			p: { text: t(locale, 'lc.pTip') },
@@ -334,9 +336,9 @@ function Controls({ scene }: { scene: Scene }) {
 		{scene === 2 && <MotionTransport kind="proof_fade" />}
 		{scene === 0 && <Timeline lesson={LESSON} id="cut" steps={cutTexts(locale, z).map((text, i) => ({ id: String(i), text, phases: i === 9 ? 3 : 1, focus: CUT_FOCUS[i] }))} />}
 		{scene === 2 && <Timeline lesson={LESSON} id="proof" steps={proofTexts(locale, z).map((text, i) => ({ id: String(i), text, focus: PROOF_FOCUS[i] }))} />}
-		<div style={scene === 1 ? { display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' } : undefined}>
+		<div style={scene === 1 ? { display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start' } : undefined}>
 			<div style={{ minWidth: 0, flex: '1 1 260px' }}><LawFormula scene={scene} /></div>
-			{scene === 1 && <Ledger lesson={LESSON} label={t(locale, 'lc.ledger')} scale={3.4} max={64} fmt={fmt} zeroLabel={t(locale, 'lc.pythagoras')}
+			{scene === 1 && <Ledger lesson={LESSON} label={t(locale, 'lc.ledger')} scale={4.5} max={64} fmt={fmt} zeroLabel={t(locale, 'lc.pythagoras')}
 				items={[
 					{ id: 'a2', label: 'a²', role: 'vecA', value: (x) => derive(x).a2 },
 					{ id: 'b2', label: 'b²', role: 'vecB', value: (x) => derive(x).b2 },
@@ -354,42 +356,28 @@ function Controls({ scene }: { scene: Scene }) {
 }
 export const LawControls = localized(Controls);
 
-/** Pieces the LC-0 detail view can frame, with the step that introduces each (label, first step). */
-const CUT_PARTS = [['c²', 0], ['a²', 0], ['b²', 0], ['a·p', 2], ['b·q', 3], ['R₁', 4], ['R₂', 4], ['c·FB', 5], ['c·AF', 5], ['b cos θ', 1], ['a cos θ', 3]] as const;
-/** Proof tiles the LC-2 detail view can frame. */
-const PROOF_PARTS = [['c²', 4], ['(a − b cos θ)²', 4], ['(b sin θ)²', 4], ['a²', 6], ['b² cos² θ', 7], ['b² sin² θ', 7], ['b²', 8]] as const;
-/** Indices of CUT_PARTS that are shadow lengths, not areas (the readout says "length"). */
-const LENGTH_PARTS = 9;
-
-/** Selector and Fit button of a detail view; the readout repeats the selected value in words. */
+/**
+ * Selector and Fit button of a detail view; the readout repeats the shown piece's value in words. The selector shows
+ * the piece the view draws: the reader's choice while the overview draws it, otherwise piece 0 (`shownPiece`), so
+ * going back a step never leaves an empty detail; the stored choice returns when its step comes back.
+ */
 function DetailControls({ proof = false }: { proof?: boolean }) {
 	const locale = useLocale(), v = useVals(LESSON), step = useStep(LESSON, proof ? 'proof' : 'cut'), store = lessonStore(LESSON), z = derive(v);
-	const key = proof ? 'proof_detail' : 'detail';
-	const options = proof ? PROOF_PARTS : CUT_PARTS;
-	const selected = (v[key + '_part'] as number) ?? 0;
-	const values = proof ? [z.c2, z.rest2, z.rise2, z.a2, z.bcos2, z.rise2, z.b2] : [z.c2, z.a2, z.b2, z.strip_a, z.strip_b, z.R1, z.R2, z.R1c, z.R2c, z.p, z.q];
-	const fade = v.proof_fade_position as number;
-	// Proof tiles come and go with the fade: b² exists once the fade started, the two pieces until it finished.
-	const available = (i: number) => {
-		if (!proof) return step >= options[i][1];
-		if (i === 6) return step >= 7 && fade > 0;
-		if (i === 4 || i === 5) return step >= 7 && fade < 1;
-		return step >= options[i][1] && (i !== 1 || step < 8) && (i !== 2 || step < 7);
-	};
-	const value = values[selected];
-	const sentence = !available(selected) ? 'lc.hiddenPart'
-		: !proof && selected >= LENGTH_PARTS ? (value === 0 ? 'lc.zeroLength' : 'lc.sameLength')
-		: value === 0 ? 'lc.zeroArea' : 'lc.sameArea';
+	const key = proof ? 'proof_detail' : 'detail', pieces = proof ? PROOF_PIECES : CUT_PIECES, fade = v.proof_fade_position as number;
+	const shown = shownPiece(proof, (v[key + '_part'] as number) ?? 0, step, fade), piece = pieces[shown];
+	const value = z[piece.key];
+	const sentence = !proof && shown >= CUT_LENGTHS ? (value === 0 ? 'lc.zeroLength' : 'lc.sameLength') : value === 0 ? 'lc.zeroArea' : 'lc.sameArea';
 	return <section className="not-content" data-lc-detail-controls={proof ? undefined : ''} data-lc-proof-detail-controls={proof ? '' : undefined}>
 		<p>{t(locale, 'lc.detailIntro')}</p>
-		<label>{t(locale, 'lc.inspect')}<select value={selected} onChange={(e) => store.getState().set(key + '_part', Number(e.currentTarget.value))}>
-			{options.map(([label], i) => <option key={label} value={i} disabled={!available(i)}>{label}</option>)}
+		<label>{t(locale, 'lc.inspect')}<select value={shown} onChange={(e) => store.getState().set(key + '_part', Number(e.currentTarget.value))}>
+			{pieces.map(({ label }, i) => <option key={label} value={i} disabled={!pieceShown(proof, i, step, fade)}>{label}</option>)}
 		</select></label>{' '}
 		<button type="button" onClick={() => store.getState().set(key + '_fit', ((store.getState().vals[key + '_fit'] as number) ?? 0) + 1)}>{t(locale, 'lc.fit')}</button>
 		<p aria-live="polite">
 			{proof && step < 4 ? t(locale, 'lc.tilesLater') : ''}
-			{t(locale, 'lc.partValue', { label: options[selected][0], value: fmt(value) })}
-			{t(locale, sentence)}
+			{piece.id === 'tri'
+				? t(locale, 'lc.triDetail', { a: fmt(z.a), b: fmt(z.b), c: fmt(z.c), th: fmtAngle(z.th) })
+				: t(locale, 'lc.partValue', { label: piece.label, value: fmt(value) }) + t(locale, sentence)}
 		</p>
 	</section>;
 }

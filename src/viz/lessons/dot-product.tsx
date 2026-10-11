@@ -10,8 +10,10 @@ import { CodeView } from '../CodeView';
 import { NumGrid, type GridRow } from '../NumTable';
 import { Glyph } from '../Glyph';
 import type { Row } from '../scene/NPanel';
+import { roleVar, type Role } from '../palette';
 import { reducedMotion } from '../scene/motion';
 import type { Marks } from '../marks';
+import { alignedRows, type AlignedRow } from '../tex';
 import { COMP_COLS, INITIAL, LESSON, LINKS, STRIKE_GAP_MS, derive, derive3, lamp, fmt, fmtCos, fmtDeg, newestColumn, strikeTarget, tex as texFmt } from './dot-product.math';
 import { facesFor, type Scene } from './dot-product.rows';
 
@@ -28,9 +30,9 @@ export const DotScene = localized(lazyIsland(() => import('./dot-product.impl').
 type Vals = Parameters<typeof derive>[0];
 
 const tex = String.raw;
-/** A formula row carrying a mark id (`data-m`), so it can be hidden / dimmed by step. */
-const row = (key: string, body: string) => tex`\htmlData{m=${key}}{${body}}`;
-const aligned = (rows: string[]) => tex`\begin{aligned}${rows.map((x) => '&' + x).join(tex`\\ `)}\end{aligned}`;
+/** A formula row carrying a mark id (`data-m`): dimmed by step, or left out of the TeX while hidden (alignedRows). */
+const row = (key: string, body: string): AlignedRow => [key, body];
+const aligned = (rows: readonly AlignedRow[], marks?: Marks) => alignedRows(rows, marks);
 const A = tex`\mathbf{a}`, B = tex`\mathbf{b}`;
 const abs = (x: string) => tex`\lvert ${x}\rvert`;
 
@@ -81,7 +83,7 @@ export function marksFor(step: number, strike: number): Marks {
 }
 
 /** The DP-1 derivation, five lines (spec DP-1 "Formula"); `narrow` splits the long lines for < 420 px. */
-function deriveTex(narrow: boolean): string {
+function deriveTex(narrow: boolean, marks: Marks): string {
 	const l1 = [tex`\t{namb2}{${abs(A + '-' + B)}^2}=\t{na2_r}{${abs(A)}^2}+\t{nb2_r}{${abs(B)}^2}-\t{corr}{2\,${abs(A)}\,${abs(B)}\cos\theta}`];
 	const l2 = narrow
 		? [tex`\t{namb2}{${abs(A + '-' + B)}^2}=\t{expand}{\sum_i (a_i-b_i)^2}`, tex`\quad=\t{na2_l}{\sum_i a_i^2}-\t{cross}{2\sum_i a_i b_i}+\t{nb2_l}{\sum_i b_i^2}`]
@@ -94,7 +96,7 @@ function deriveTex(narrow: boolean): string {
 	const rhs = tex`\t{rhs}{${abs(A)}\,${abs(B)}\cos\theta}=\s{rhs}`;
 	const rect = tex`\htmlData{m=l5-rect}{\t{rect}{${abs(A)}\cdot(${abs(B)}\cos\theta)}=\s{rect}}`;
 	const l5 = narrow ? [dot, rhs, rect] : [tex`${dot}\qquad ${rhs}\qquad ${rect}`];
-	return aligned([...l1.map((x) => row('l1', x)), ...l2.map((x) => row('l2', x)), ...l3.map((x) => row('l3', x)), ...l4.map((x) => row('l4', x)), ...l5.map((x) => row('l5', x))]);
+	return aligned([...l1.map((x) => row('l1', x)), ...l2.map((x) => row('l2', x)), ...l3.map((x) => row('l3', x)), ...l4.map((x) => row('l4', x)), ...l5.map((x) => row('l5', x))], marks);
 }
 
 /**
@@ -109,8 +111,9 @@ export function DotFormula({ scene, compact = false }: { scene: Scene; compact?:
 			return <Formula {...common} label={t(locale, 'dp.sidesFormula')}
 				tex={aligned([tex`\t{namb2}{${abs(A + '-' + B)}^2}=\s{namb2},\;\t{th}{\theta=\s{th}}`, tex`\t{na2}{${abs(A)}^2}=\s{na2},\;\t{nb2}{${abs(B)}^2}=\s{nb2}`])} />;
 		}
-		return <Formula {...common} block label={t(locale, 'dp.derivationFormula')} tex={deriveTex(false)} texNarrow={deriveTex(true)}
-			marks={marksFor(step, v.strike as number)}
+		const marks = marksFor(step, v.strike as number);
+		return <Formula {...common} block label={t(locale, 'dp.derivationFormula')} tex={deriveTex(false, marks)} texNarrow={deriveTex(true, marks)}
+			marks={marks}
 			tips={{
 				corr: { text: t(locale, 'dp.corrTip'), tex: tex`2\,${abs(A)}\,${abs(B)}\cos\theta` },
 				cross: { text: t(locale, 'dp.crossTip'), tex: tex`2\sum_i a_i b_i` },
@@ -277,55 +280,59 @@ function Comp3Table() {
 // ---------------------------------------------------------------------------------------------------------------
 // DP-2 three-faces strip and the sign words.
 
-/** One sign word; hovering it lights its half-plane or the boundary (spec DP-2 hover map). */
+/** Colour role of each face's glyph: the rectangle is a's area (vecA), the disc the lamp's sphere (vecC). */
+const FACE_ROLE: Record<string, Role> = { sum: 'ink', rect: 'vecA', bright: 'vecC' };
+/** Tint of each sign word when it is the current sign: the half-plane it names (spec DP-2 hover map). */
+const SIGN_ROLE: Record<string, Role> = { sgn_pos: 'vecA', sgn_zero: 'hot', sgn_neg: 'muted' };
+
+/** One segment of the sign control; hovering it lights its half-plane or the boundary (spec DP-2 hover map). */
 function SignWord({ id, text, active }: { id: string; text: string; active: boolean }) {
 	const hot = useHot(LESSON, id);
-	return <span data-t={id} data-active={active ? '' : undefined} tabIndex={0}
-		// The strip is drawn in the viewport's dark chrome in both site themes, so the word uses the viz tokens too.
-		style={{ padding: '.15rem .5rem', borderRadius: 4, border: '1px solid var(--viz-chrome-2)', fontFamily: 'var(--lab-font-mono)', fontWeight: active ? 700 : 400,
-			background: active ? 'var(--viz-field-hover)' : 'transparent', color: 'var(--viz-ink)', outline: hot ? '1px solid var(--viz-hot)' : undefined }}
+	return <span data-t={id} data-active={active ? '' : undefined} data-hot={hot ? '' : undefined} tabIndex={0}
+		style={{ '--lab-seg-c': roleVar(SIGN_ROLE[id]) } as React.CSSProperties}
 		onPointerEnter={() => hotOn(LESSON, id)} onPointerLeave={() => hotOff(LESSON, id)} onFocus={() => hotOn(LESSON, id)} onBlur={() => hotOff(LESSON, id)}>{text}</span>;
 }
 
 /**
- * One face of the strip: glyph, math label and live value in a wrapping flex row. Not the N-panel FieldCell: its
- * value is placed at a computed label width, which at 360 px put the value over the label (review I4); here the
- * value simply follows the label and wraps under it when the cell is narrow. Hover/focus link like any row.
+ * One face of the number: glyph, math label, live value and what the face is, in a fixed grid (lab.css .lab-face),
+ * so the value never overlaps the label at any width. Hover/focus link like an N-panel row.
  */
-function FaceCell({ row }: { row: Row }) {
+function FaceCell({ row, caption }: { row: Row; caption: string }) {
 	const v = useVals(LESSON), hot = useHot(LESSON, row.id);
 	const value = row.value!(v) as number, glyph = row.glyphValue!(v);
-	return <div data-t={row.id} tabIndex={0}
-		style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.3rem .6rem', padding: '.3rem .5rem', borderRadius: 6,
-			border: '1px solid var(--viz-chrome-2)', outline: hot ? '2px solid var(--viz-hot)' : undefined }}
+	return <div className="lab-face" data-t={row.id} data-hot={hot ? '' : undefined} tabIndex={0}
+		style={{ '--lab-face-c': roleVar(FACE_ROLE[row.id] ?? 'ink') } as React.CSSProperties}
 		onPointerEnter={() => hotOn(LESSON, row.id)} onPointerLeave={() => hotOff(LESSON, row.id)}
 		onFocus={() => hotOn(LESSON, row.id)} onBlur={() => hotOff(LESSON, row.id)}>
 		<Glyph kind={row.glyph!} value={glyph} size="lg" />
-		<span style={{ fontFamily: 'var(--lab-font-mono)' }}>{row.label}</span>
-		<output style={{ fontFamily: 'var(--lab-font-mono)', fontVariantNumeric: 'tabular-nums', marginLeft: 'auto' }}>{row.fmt!(value)}</output>
+		<span className="lab-face-label">{row.label}</span>
+		<output className="lab-face-value">{row.fmt!(value)}</output>
+		<span className="lab-face-caption">{caption}</span>
 	</div>;
 }
 
+/**
+ * DP-2's "one number, three faces" strip under the card (spec DP-2): a property panel in the viewport chrome with a
+ * group heading, the three faces, the sign as a three-way segmented control and the bridge to the last scene.
+ */
 function FacesStrip() {
 	const locale = useLocale(), z = derive(useVals(LESSON));
 	const sign = z.dot > 1e-9 ? 'pos' : z.dot < -1e-9 ? 'neg' : 'zero';
-	// The cells are N-panel fields, drawn in the viewport's dark chrome (their colours are calibrated for it).
-	return <div className="not-content" data-dp-faces="" style={{ background: 'var(--viz-chrome)', color: 'var(--viz-ink)', padding: '.4rem', borderRadius: 6 }}>
-		<div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
-			{/* Each cell: glyph, math label and value; the words go under it, so at 360 px no value chip covers a label. */}
-			{facesFor(locale).map(({ row, caption }) => <figure key={row.id} style={{ margin: 0, display: 'grid', gap: '.2rem' }}>
-				<FaceCell row={row} />
-				<figcaption style={{ fontSize: '.85em', color: 'var(--viz-muted)' }}>{caption}</figcaption>
-			</figure>)}
+	return <section className="lab-faces not-content" data-dp-faces="" aria-label={t(locale, 'dp.facesHead')}>
+		<p className="lab-faces-head">{t(locale, 'dp.facesHead')}</p>
+		<div className="lab-faces-grid">
+			{facesFor(locale).map(({ row, caption }) => <FaceCell key={row.id} row={row} caption={caption} />)}
 		</div>
-		<p style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'center' }} aria-live="polite">
+		<div className="lab-faces-sign" aria-live="polite">
 			<span>{t(locale, 'dp.signLabel')}</span>
-			<SignWord id="sgn_pos" text={t(locale, 'dp.sgnPos')} active={sign === 'pos'} />
-			<SignWord id="sgn_zero" text={t(locale, z.zeroA || z.zeroB ? 'dp.sgnZero' : 'dp.sgnPerp')} active={sign === 'zero'} />
-			<SignWord id="sgn_neg" text={t(locale, 'dp.sgnNeg')} active={sign === 'neg'} />
-		</p>
-		<p>{t(locale, 'dp.facesNote')}</p>
-	</div>;
+			<span className="lab-seg">
+				<SignWord id="sgn_pos" text={t(locale, 'dp.sgnPos')} active={sign === 'pos'} />
+				<SignWord id="sgn_zero" text={t(locale, z.zeroA || z.zeroB ? 'dp.sgnZero' : 'dp.sgnPerp')} active={sign === 'zero'} />
+				<SignWord id="sgn_neg" text={t(locale, 'dp.sgnNeg')} active={sign === 'neg'} />
+			</span>
+		</div>
+		<p className="lab-faces-note">{t(locale, 'dp.facesNote')}</p>
+	</section>;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -433,14 +440,9 @@ function Controls({ scene }: { scene: Scene }) {
 		{/* Links and the strike clock are lesson-wide; they mount once, with the lead scene's controls. */}
 		{scene === 1 && <><SemanticLinks /><StrikeClock /></>}
 		{scene === 1 && <Timeline lesson={LESSON} id="derive" steps={STEP_KEYS.map((key, i) => ({ id: String(i), text: t(locale, key), focus: STEP_FOCUS[i] }))} />}
-		{scene === 1
-			? <div style={{ position: 'relative' }}>
-				{/* The hidden lines keep their space (no layout shift when they appear); until the first one does, the
-				    empty box says what will fill it instead of looking broken. */}
-				{step < 2 && <p data-dp-later="" style={{ position: 'absolute', inset: '0 0 auto 0', margin: 0, color: 'var(--sl-color-gray-3)' }}>{t(locale, 'dp.formulaLater')}</p>}
-				<DotFormula scene={1} />
-			</div>
-			: <DotFormula scene={scene} />}
+		{/* Unrevealed lines take no space; until the first one appears, one line says what will come here. */}
+		{scene === 1 && step < 2 && <p data-dp-later="" style={{ color: 'var(--sl-color-gray-3)' }}>{t(locale, 'dp.formulaLater')}</p>}
+		<DotFormula scene={scene} />
 		{scene === 1 && <CompTable />}
 		{scene === 2 && <FacesStrip />}
 		{scene === 3 && <><Comp3Table /><CodeTabs /></>}

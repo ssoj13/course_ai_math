@@ -22,7 +22,7 @@ import { reducedMotion } from '../scene/motion';
 import { Show, useOverlay, useHoverable, useLabel, useStage, HOVER_RANK, type StageReg } from '../scene/handles';
 import type { StatusSpec } from '../scene/StatusBar';
 import { rowsFor } from './law-of-cosines.rows';
-import { LESSON, derive, solveIK, square, strip, pieceAt, moveA, moveB, MAGNETS, fmt, fmtAngle } from './law-of-cosines.math';
+import { LESSON, derive, solveIK, square, strip, pieceAt, moveA, moveB, MAGNETS, fmt, fmtAngle, CUT_PIECES, PROOF_PIECES, shownPiece, type DetailPiece } from './law-of-cosines.math';
 
 /**
  * Lesson 0.5 scenes (three): LC-0 missing rectangles, LC-1 ledger triangle, LC-2 proof tiles, LC-3 two-bone IK,
@@ -62,29 +62,6 @@ function meshPoints(mesh: Mesh): V[] {
 	});
 }
 
-const DETAILS = [
-	{ id: 'sq_c', role: 'vecC', key: 'c2', label: 'c²' },
-	{ id: 'sq_a', role: 'vecA', key: 'a2', label: 'a²' },
-	{ id: 'sq_b', role: 'vecB', key: 'b2', label: 'b²' },
-	{ id: 'strip_a', role: 'vecA', key: 'strip_a', label: 'a·p' },
-	{ id: 'strip_b', role: 'vecB', key: 'strip_b', label: 'b·q' },
-	{ id: 'R1', role: 'vecA', key: 'R1', label: 'a·DB' },
-	{ id: 'R2', role: 'vecB', key: 'R2', label: 'b·EA' },
-	{ id: 'R1c', role: 'vecC', key: 'R1c', label: 'c·FB' },
-	{ id: 'R2c', role: 'vecC', key: 'R2c', label: 'c·AF' },
-	{ id: 'p', role: 'muted', key: 'p', label: 'b cos θ' },
-	{ id: 'q', role: 'muted', key: 'q', label: 'a cos θ' },
-] as const;
-const PROOF_DETAILS = [
-	{ id: 'c2', role: 'vecC', key: 'c2', label: 'c²' },
-	{ id: 'rest2', role: 'vecA', key: 'rest2', label: '(a − b cos θ)²' },
-	{ id: 'rise2', role: 'vecB', key: 'rise2', label: '(b sin θ)²' },
-	{ id: 'a2', role: 'vecA', key: 'a2', label: 'a²' },
-	{ id: 'bcos2', role: 'vecB', key: 'bcos2', label: 'b² cos² θ' },
-	{ id: 'bsin2', role: 'vecB', key: 'rise2', label: 'b² sin² θ' },
-	{ id: 'b2', role: 'vecB', key: 'b2', label: 'b²' },
-] as const;
-type DetailPart = typeof DETAILS[number] | typeof PROOF_DETAILS[number];
 
 /**
  * Screen position of a label lane (controller ruling: LC-0/LC-2 labels sit in lanes with leaders, because at
@@ -95,7 +72,8 @@ function laneXY(reg: StageReg, lane: Lane): { x: number; y: number; width: numbe
 	const el = reg.el!;
 	const width = el.clientWidth - parseFloat(el.style.getPropertyValue('--lab-vp-inset') || '0');
 	const x = width * (lane[0] === 2 ? .5 : lane[0] === 0 ? .23 : .77);
-	const y = lane[0] === 2 ? el.clientHeight - 14 - lane[1] * 22 : 18 + lane[1] * 27;
+	// Bottom lane 0 sits 20 px up, so a label's lower edge clears the stage edge (at 14 px it touched the status bar).
+	const y = lane[0] === 2 ? el.clientHeight - 20 - lane[1] * 22 : 18 + lane[1] * 27;
 	return { x, y, width };
 }
 
@@ -385,6 +363,25 @@ function LedgerScene() {
 	return <><Triangle />{(shadow || p || corr) && <Shadow />}</>;
 }
 
+/**
+ * LC-2's construction on the triangle, revealed by step: the foot D with the shadow CD and height AD (step 2), their
+ * names (3) and the rest DB of side a (4). The overview puts the labels in lanes; the detail view (readable scale)
+ * next to their segments. Overlay flags of the overview only exist on its card.
+ */
+function ProofLegs({ lanes = false }: { lanes?: boolean }) {
+	const z = derive(useVals(LESSON)), step = useStep(LESSON, 'proof');
+	const legs = <>
+		{step >= 1 && <Shadow solid names={step >= 2} lanes={lanes} />}
+		{step >= 2 && <Text lane={lanes ? [1, 1] : undefined} id="rise" at={midpoint(z.D, z.A)} text={'b sin θ = ' + fmt(z.h)} offset={[-48, 0]} />}
+	</>;
+	// From step 6 the leg tile's label names a − b cos θ itself, so the length label leaves the crowded bottom lanes.
+	const rest = step >= 3 && <>
+		<Segment lesson={LESSON} id="rest" a={add(z.D, [0, -.25])} b={add(z.B, [0, -.25])} role="vecA" />
+		{step < 5 && <Text lane={lanes ? [2, 3] : undefined} id="rest" at={add(midpoint(z.D, z.B), [0, -.25])} text={'a − b cos θ = ' + fmt(z.DB)} offset={[0, 14]} />}
+	</>;
+	return lanes ? <><Show ov="shadows">{legs}</Show><Show ov="rest">{rest}</Show></> : <>{legs}{rest}</>;
+}
+
 /** LC-2: shadow and height, the remainder DB, and the tiles of the proof revealed by step. */
 function Proof() {
 	const vals = useVals(LESSON), fade = vals.proof_fade_position as number;
@@ -392,14 +389,7 @@ function Proof() {
 	const sq = (a: 'C' | 'A' | 'B' | 'D', b: 'C' | 'A' | 'B' | 'D') => (v: Vals) => { const d = derive(v); return square(d[a], d[b]); };
 	// Spec steps 4 / 5 / 7: the leg tile is named DB², then (b sin θ)², then b² sin² θ when it joins the b² pieces.
 	const riseName = step >= 7 ? 'b² sin² θ = ' : step === 4 ? 'AD² = ' : '(b sin θ)² = ';
-	return <><Triangle />
-		<Show ov="shadows">{step >= 1 && <Shadow solid names={step >= 2} lanes />}
-			{step >= 2 && <Text lane={[1, 1]} id="rise" at={midpoint(z.D, z.A)} text={'b sin θ = ' + fmt(z.h)} offset={[-34, 0]} />}
-		</Show>
-		<Show ov="rest">{step >= 3 && <>
-			<Segment lesson={LESSON} id="rest" a={add(z.D, [0, -.25])} b={add(z.B, [0, -.25])} role="vecA" />
-			<Text lane={[2, 3]} id="rest" at={add(midpoint(z.D, z.B), [0, -.25])} text={'a − b cos θ = ' + fmt(z.DB)} offset={[0, 14]} />
-		</>}</Show>
+	return <><Triangle /><ProofLegs lanes />
 		<Show ov="tiles">{step >= 4 && <>
 			{step < 8 && <LanePoly lane={[2, 1]} lesson={LESSON} id="rest2" timeline="proof" pts={sq('D', 'B')} role="vecA" fill={step >= 6 ? 0 : .16}
 				label={labels ? (v) => (step === 4 ? 'DB² = ' : '(a − b cos θ)² = ') + fmt(derive(v).rest2) : undefined} />}
@@ -427,7 +417,9 @@ function IK() {
 		<Show ov="reach">
 			<Circle lesson={LESSON} id={hot.has('clamp') ? 'clamp' : hot.has('reach') ? 'reach' : 'reach_max'} center={z.S} r={z.reachMax} role="muted" dashPx={[7, 5]} />
 			<Circle lesson={LESSON} id={hot.has('reach') ? 'reach' : 'reach_min'} center={z.S} r={z.reachMin} role="muted" dashPx={[7, 5]} />
-			<Text id="reach_max" at={[0, -z.reachMax]} text={t(locale, 'lc.maxReach')} offset={[0, 14]} />
+			{/* Inside the ring: the home view frames the drawn rings, so a label outside the bottom of the outer one fell
+			    under the status bar (live check). */}
+			<Text id="reach_max" at={[0, -z.reachMax]} text={t(locale, 'lc.maxReach')} offset={[0, -12]} />
 			{z.reachMin > 1e-9 && <Text id="reach_min" at={[0, -z.reachMin]} text={t(locale, 'lc.minReach')} offset={[0, 14]} />}
 		</Show>
 		<Bone id="l1" a={z.S} b={z.E} role="vecA" /><Bone id="l2" a={z.E} b={z.W} role="vecB" />
@@ -477,7 +469,7 @@ function statusFor(scene: Scene, locale: Locale): StatusSpec {
 	}
 	if (scene === 1) return { hints: { ...vertex, p: t(locale, 'lc.hintShadow'), drop_a: t(locale, 'lc.hintShadow'), corr: t(locale, 'lc.hintCorr') } };
 	if (scene === 2) {
-		const tiles = Object.fromEntries(PROOF_DETAILS.map((part) => [part.id, (v: Vals) => t(locale, 'lc.hintTile', { label: part.label, value: fmt(derive(v)[part.key]) })]));
+		const tiles = Object.fromEntries(PROOF_PIECES.filter((part) => part.id !== 'tri').map((part) => [part.id, (v: Vals) => t(locale, 'lc.hintTile', { label: part.label, value: fmt(derive(v)[part.key]) })]));
 		return { hints: { ...vertex, ...tiles, rest: t(locale, 'lc.hintRest'), p: t(locale, 'lc.hintShadow'), drop_a: t(locale, 'lc.hintShadow') } };
 	}
 	const ring = (v: Vals) => { const ik = solveIK(v); return t(locale, 'lc.hintRing', { min: fmt(ik.reachMin), max: fmt(ik.reachMax) }); };
@@ -519,8 +511,13 @@ export function LawScene({ scene }: { scene: Scene }) {
  * each frame (no second placement animation) and draws it with its own Stroke, so pixel widths are right for this
  * View's resolution. Shadows (p, q) are redrawn from the geometry instead.
  */
-function DetailGeometry({ part, proof = false }: { part: DetailPart; proof?: boolean }) {
-	const vals = useVals(LESSON), step = useStep(LESSON, proof ? 'proof' : 'cut'), z = derive(vals), palette = usePalette(), hot = useHot(LESSON, part.id);
+function DetailGeometry({ part, proof = false }: { part: DetailPiece; proof?: boolean }) {
+	if (part.id === 'tri') return <><Triangle /><ProofLegs /></>;
+	return <DetailPieceView part={part} proof={proof} />;
+}
+
+function DetailPieceView({ part, proof }: { part: DetailPiece; proof: boolean }) {
+	const vals = useVals(LESSON), z = derive(vals), palette = usePalette(), hot = useHot(LESSON, part.id);
 	const [sample, setSample] = useState<{ geometry: BufferGeometry; points: V[]; matrix: Matrix4; opacity: number } | null>(null);
 	const invalidate = useThree((s) => s.invalidate), labels = useOverlay('labels'), signature = useRef('');
 	const material = useMemo(() => new MeshBasicMaterial({ color: palette[part.role], side: DoubleSide, transparent: true, opacity: STYLE.fillA, depthWrite: false, polygonOffset: true, polygonOffsetFactor: 1 }), [palette, part.role]);
@@ -555,9 +552,6 @@ function DetailGeometry({ part, proof = false }: { part: DetailPart; proof?: boo
 		});
 	});
 	useFrame(() => { for (const s of reg.labels.list()) if (s.hot === part.id) { const el = reg.labelEls.get(s.id); if (el) el.style.opacity = String(alpha); } }, 3);
-	// First step at which each piece exists (same reveals as the overview).
-	const required: Record<string, number> = proof ? { c2: 4, rest2: 4, rise2: 4, a2: 6, bcos2: 7, bsin2: 7, b2: 7 } : { strip_a: 2, strip_b: 3, R1: 4, R2: 4, R1c: 5, R2c: 5, p: 1, q: 3 };
-	if (step < (required[part.id] ?? 0) || (proof && ((part.id === 'rest2' && step >= 8) || (part.id === 'rise2' && step >= 7)))) return null;
 	if (part.id === 'p' || part.id === 'q') return <Shadow side={part.id === 'p' ? 1 : 2} />;
 	if (!sample || alpha <= 0) return null;
 	material.opacity = sample.opacity;
@@ -570,6 +564,9 @@ function DetailGeometry({ part, proof = false }: { part: DetailPart; proof?: boo
 	</group>;
 }
 
+/** The triangle piece's frame: its vertices and D (behind C when θ > 90°). */
+const triangle = (z: ReturnType<typeof derive>): V[] => [z.C, z.A, z.B, z.D];
+
 /** Bounds of a point set as a detail frame: centre and an extent with margin. */
 function frameOf(pts: V[], serial: number) {
 	const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
@@ -579,24 +576,25 @@ function frameOf(pts: V[], serial: number) {
 
 /** The detail ViewportCard: one selected piece, framed on selection and on explicit Fit (never under a drag). */
 export function LawDetail({ proof = false }: { proof?: boolean }) {
-	const locale = useLocale(), v = useVals(LESSON), step = useStep(LESSON, 'proof'), parts = proof ? PROOF_DETAILS : DETAILS, key = proof ? 'proof_detail' : 'detail';
-	const part = parts[(v[key + '_part'] as number) ?? 0] ?? parts[0], fit = (v[key + '_fit'] as number) ?? 0;
+	const locale = useLocale(), v = useVals(LESSON), step = useStep(LESSON, proof ? 'proof' : 'cut'), key = proof ? 'proof_detail' : 'detail';
+	// The piece the view draws: the selection while the overview draws it, otherwise piece 0 (shared with the selector).
+	const part = (proof ? PROOF_PIECES : CUT_PIECES)[shownPiece(proof, (v[key + '_part'] as number) ?? 0, step, v.proof_fade_position as number)];
+	const fit = (v[key + '_fit'] as number) ?? 0;
 	// Selection and explicit Fit capture framing. Ordinary value writes and animation frames cannot move the camera
 	// under a reader's pointer; the ViewportCard is keyed by the frame serial so a new frame is a fresh home.
-	const [frame, setFrame] = useState(() => { const z = derive(v); return frameOf(square(z.B, z.A), 0); });
+	const [frame, setFrame] = useState(() => { const z = derive(v); return frameOf(proof ? triangle(z) : square(z.B, z.A), 0); });
 	useEffect(() => {
-		if (proof && step < 4) return;
 		const request = requestAnimationFrame(() => {
 			const mesh = sourceMesh(part.id), z = derive(v);
-			const pts = part.id === 'p' ? [z.C, z.A, z.D] : part.id === 'q' ? [z.C, z.B, z.E] : mesh ? meshPoints(mesh) : null;
+			const pts = part.id === 'tri' ? triangle(z) : part.id === 'p' ? [z.C, z.A, z.D] : part.id === 'q' ? [z.C, z.B, z.E] : mesh ? meshPoints(mesh) : null;
 			if (!pts) return;
 			setFrame((old) => frameOf(pts, old.serial + 1));
 		});
 		return () => cancelAnimationFrame(request);
-	}, [part.id, fit, proof && step >= 4]);
+	}, [part.id, fit]);
 	return <ViewportCard key={frame.serial} lesson={LESSON} id={proof ? 'LC-2-detail' : 'LC-0-detail'} name={t(locale, 'lc.detailName', { scene: proof ? 'LC-2' : 'LC-0', part: part.label })}
 		mode="2d" extent={frame.extent} center={frame.center}
-		overlays={[{ id: 'labels', label: t(locale, 'lc.ovLabels'), on: true }]}
+		overlays={[{ id: 'labels', label: t(locale, 'lc.ovLabels'), on: true }, ...(proof ? [{ id: 'angle', label: t(locale, 'lc.ovAngle'), on: true }, { id: 'right', label: t(locale, 'lc.ovRight'), on: true }] : [])]}
 		status={{ idle: t(locale, 'lc.detailIdle') }}>
 		<DetailGeometry part={part} proof={proof} />
 	</ViewportCard>;

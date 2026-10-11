@@ -50,13 +50,13 @@ function Names({ aKey, bKey }: { aKey: string; bKey: string }) {
 
 /**
  * A rectangle's value label at its far corner (the corner opposite O / P), not its centroid: the centroid sits on the
- * shadow band's label (DP-2) and on P's arrows (DP-4). Follows the `labels` overlay.
+ * shadow band's label (DP-2) and on P's arrows (DP-4). The label is pushed out of the rectangle away from its centre
+ * by its own size in px (a world-unit nudge was zoom-dependent: on the DP-4 sphere the text sat on the terminator
+ * ring), and keeps moving that way if another label or tick number is there. Follows the `labels` overlay.
  */
 function RectLabel({ id, pts, at, text, role = 'vecA' }: { id: string; pts: readonly V[]; at?: V; text: string; role?: SceneRole }) {
-	// Just beyond the far corner, along the diagonal from the centre, so the text clears the rectangle's glowing edges.
-	const corner = pts[2], centre = scale(pts.reduce<V>((s, p) => add(s, p), pts[0].map(() => 0)), 1 / pts.length);
-	const where = at ?? add(corner, scale(sub(corner, centre), 0.2));
-	return <Show ov="labels"><Label lesson={LESSON} id={id} at={where} role={role} offset={[0, 0]}>{text}</Label></Show>;
+	const centre = scale(pts.reduce<V>((s, p) => add(s, p), pts[0].map(() => 0)), 1 / pts.length);
+	return <Show ov="labels"><Label lesson={LESSON} id={id} at={at ?? pts[2]} away={centre} gap={4} role={role}>{text}</Label></Show>;
 }
 
 /**
@@ -129,10 +129,6 @@ function Sign() {
 			<Show ov="halfplanes">
 				<HalfPlane lesson={LESSON} id="hp_pos" normal="a" side="pos" role="vecA" />
 				<HalfPlane lesson={LESSON} id="hp_neg" normal="a" side="neg" role="muted" />
-				<Show ov="labels">
-					<Label lesson={LESSON} id="hp_pos" at={corner(z, 1)} role="vecA">{'a·v > 0'}</Label>
-					<Label lesson={LESSON} id="hp_neg" at={corner(z, -1)} role="muted">{'a·v < 0'}</Label>
-				</Show>
 			</Show>
 			<Show ov="perp">
 				{/* The boundary a·v = 0: every direction perpendicular to a. Lit while b lies on it. */}
@@ -140,7 +136,17 @@ function Sign() {
 				<Show ov="labels"><Label lesson={LESSON} id="perp" at={scale([-z.ahat[1], z.ahat[0]], 0.85 * ext)} role="muted" offset={[0, -10]}>a·v = 0</Label></Show>
 			</Show>
 			<Show ov="shadow"><Shadow id="shadow" foot={z.foot!} tipKey="b" zero={ORIGIN2} />
-				<Show ov="labels"><Label lesson={LESSON} id="shadow" at={mid(ORIGIN2, z.foot!)} role="muted" offset={[0, 14]}>{'|b| cos θ = ' + fmt(z.shadow)}</Label></Show>
+				{/* The shadow label sits beside the band on the rectangle's side of a (away from b), square to the line of a
+				    whatever its direction; label separation then keeps it off the axis numbers. */}
+				<Show ov="labels"><Label lesson={LESSON} id="shadow" at={mid(ORIGIN2, z.foot!)} away={sub(mid(ORIGIN2, z.foot!), z.h!)} gap={4} role="muted">{'|b| cos θ = ' + fmt(z.shadow)}</Label></Show>
+			</Show>
+			{/* Region names register after the shadow value: label separation settles in registration order, so on a phone
+			    the name of a whole half-plane gives way, not the number tied to the band. */}
+			<Show ov="halfplanes">
+				<Show ov="labels">
+					<Label lesson={LESSON} id="hp_pos" at={corner(z, 1)} role="vecA">{'a·v > 0'}</Label>
+					<Label lesson={LESSON} id="hp_neg" at={corner(z, -1)} role="muted">{'a·v < 0'}</Label>
+				</Show>
 			</Show>
 			<Show ov="rect">
 				<Poly lesson={LESSON} id="rect" step={0} role="vecA" fill={0.28} pts={(vals) => derive(vals).rectPts!} hatched={(vals) => derive(vals).shadow < 0} />
@@ -295,10 +301,14 @@ function overlaysFor(scene: Scene, locale: Locale) {
 
 const NAME_KEYS = { 1: 'dp.name1', 2: 'dp.name2', 3: 'dp.name3', 4: 'dp.name4' } as const;
 
-/** Floor/plane grid with the `axes` overlay deciding whether the Blender-coloured axes are drawn. */
+/**
+ * Floor/plane grid with the `axes` overlay deciding whether the Blender-coloured axes are drawn. The 2D scenes add
+ * half-unit minor lines (as the engine's 2D demo): DP-1 frames a small figure at a large zoom, where whole units alone
+ * left two or three faint lines and read as "no grid" next to DP-2.
+ */
 function Floor({ scene }: { scene: Scene }) {
 	const axes = useOverlay('axes');
-	return <Show ov="grid"><Grid lesson={LESSON} extent={EXTENT[scene]} step={1} axes={axes} ticks={scene !== 3 && axes} /></Show>;
+	return <Show ov="grid"><Grid lesson={LESSON} extent={EXTENT[scene]} step={1} minor={scene < 3 ? 0.5 : undefined} axes={axes} ticks={scene !== 3 && axes} /></Show>;
 }
 
 export function DotScene({ scene }: { scene: Scene }) {
