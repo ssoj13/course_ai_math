@@ -19,7 +19,7 @@ import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, 
 import { ensureSceneHost } from './SceneHost';
 import { useSizeState, viewVisible } from './sizeModes';
 import { contentBox, DragLayer, DrawIn, GizmoSync, LabelLayer } from './view';
-import { fit2d, fit3d, MARGIN_2D, stepRefitDelay, type Bounds } from './framing';
+import { fit2d, fit3d, MARGIN_2D, stepRefitDelay, type Bounds, type Part } from './framing';
 
 export interface StageProps {
 	lesson: string;
@@ -130,6 +130,16 @@ interface NavProps {
 	content: RefObject<Group | null>;
 }
 
+/**
+ * The 3D gizmo's corner square in px (its top offset + size + a 4 px gap), read from the rendered element so the fit
+ * follows lab.css (84 px, 66 px on phones). 0 before the overlay is laid out.
+ */
+const gizmoCorner = (stage: HTMLElement | null): number => {
+	const g = stage?.querySelector<HTMLElement>('.lab-gizmo');
+	return g && g.offsetHeight ? g.offsetTop + g.offsetHeight + 4 : 0;
+};
+/** The objects inside a measured figure box (per-object box + bounding sphere), for the 3D fit. */
+const partsOf = new WeakMap<Box3, Part[]>();
 /** Plain bounds of a three Box3 for the pure framing math. */
 const boundsOf = (b: Box3): Bounds => ({ min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] });
 /** Unit direction from the target to the default 3D camera. */
@@ -175,12 +185,14 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 		return Math.min(base * HOME_2D[1], Math.max(base * HOME_2D[0], z));
 	};
 	/** 3D fit in the view left free by the N-panel. */
-	const fit3dFor = (box: Box3, width: number, height: number) => fit3d(boundsOf(box), HOME_DIR, width - inset, height, TAN);
+	const fit3dFor = (box: Box3, width: number, height: number) => fit3d(boundsOf(box), HOME_DIR, width - inset, height, TAN, partsOf.get(box), gizmoCorner(reg.el));
 	/** Measures the figure (View All) without applying it; null when nothing is drawn yet. */
 	const figure = (): Box3 | null => {
-		const root = content.current;
-		const box = root ? contentBox(root, new Box3()) : null;
-		return box && !box.isEmpty() ? box : null;
+		const root = content.current, parts: Part[] = [];
+		const box = root ? contentBox(root, new Box3(), parts) : null;
+		if (!box || box.isEmpty()) return null;
+		partsOf.set(box, parts);
+		return box;
 	};
 	/** Re-measures the figure (the home view frames it). */
 	const measure = (b: Box3 | null = figure()) => {

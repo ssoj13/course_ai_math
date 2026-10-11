@@ -1,5 +1,5 @@
 /** Linked KaTeX, with commit-time focus preservation across markup replacement. */
-import { Component, createRef, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Component, createRef, useMemo } from 'react';
 import { useStore } from 'zustand';
 import { hotOff, hotOn, lessonStore, type Val } from './store';
 import { renderLinked, showVal, texText, type Derived } from './tex';
@@ -16,7 +16,7 @@ export interface FormulaProps {
  block?: boolean; label: string;
 }
 interface MarkupProps {
- html:string; vals:Readonly<Record<string,Val>>; hot:ReadonlySet<string>; config:FormulaProps;
+ html:string; vals:Readonly<Record<string,Val>>; hot:ReadonlySet<string>; config:FormulaProps; variant?:'wide'|'narrow';
 }
 type Focus = {kind:'s'|'t';key:string;index:number}|null;
 /** Snapshot runs before the DOM changes, never during React render or after focus has been lost. */
@@ -80,26 +80,23 @@ class Markup extends Component<MarkupProps,object,Focus> {
    const classes=markClass(p.marks?.[k]);
    return '<span'+attrs.replace(/class="([^"]*)"/,(_s:string,c:string)=>'class="'+c+classes+'"')+'>';
   });
-  return <span ref={this.root} dangerouslySetInnerHTML={{__html:html}}/>;
+  const v=this.props.variant;
+  return <span ref={this.root} className={v&&'lab-formula-'+v} data-variant={v} dangerouslySetInnerHTML={{__html:html}}/>;
  }
 }
 export function Formula(p:FormulaProps):React.JSX.Element {
  const store=lessonStore(p.lesson),vals=useStore(store,s=>s.vals),hot=useStore(store,s=>s.hot);
- const root=useRef<HTMLDivElement>(null),[narrow,setNarrow]=useState(false);
  const tip=useTip();
- useLayoutEffect(()=>{
-  if(!p.texNarrow||!root.current)return;
-  const el=root.current,update=()=>setNarrow(el.getBoundingClientRect().width<420);
-  update();const ro=new ResizeObserver(update);ro.observe(el);return ()=>ro.disconnect();
- },[p.texNarrow]);
  // Rendering uses current props: formatter/derived-only changes must not leave stale numbers.
- const tex=narrow&&p.texNarrow?p.texNarrow:p.tex;
  const derivedKey=JSON.stringify(Object.entries(p.derived??{}).map(([k,f])=>[k,f(vals)]));
  const formatKey=JSON.stringify(Object.entries(p.fmt??{}).map(([k,f])=>[k,typeof (p.derived?.[k]?.(vals)??vals[k])==='number'?f((p.derived?.[k]?.(vals)??vals[k]) as number):null]));
- const html=useMemo(()=>renderLinked(tex,vals,p.fmt,p.block,p.derived),[tex,vals,p.block,derivedKey,formatKey]);
+ // An empty source (every alignedRows line hidden) renders no math, so it takes no height.
+ const render=(tex:string)=>tex?renderLinked(tex,vals,p.fmt,p.block,p.derived):'';
+ const html=useMemo(()=>render(p.tex),[p.tex,vals,p.block,derivedKey,formatKey]);
+ const narrowHtml=useMemo(()=>p.texNarrow===undefined?null:render(p.texNarrow),[p.texNarrow,vals,p.block,derivedKey,formatKey]);
  const term=(e:React.SyntheticEvent)=>(e.target as HTMLElement).closest<HTMLElement>('[data-t]')?.dataset.t;
  const key=(e:React.SyntheticEvent)=>(e.target as HTMLElement).closest<HTMLElement>('[data-s]')?.dataset.s;
- return <div ref={root} role="group" className={'lab-formula not-content'+(p.block?' is-block':'')} aria-label={p.label}
+ return <div role="group" className={'lab-formula not-content'+(p.block?' is-block':'')+(narrowHtml===null?'':' has-narrow')} aria-label={p.label}
   onPointerOver={e=>{const id=term(e);if(id){hotOn(p.lesson,id);tip.bind(p.tips?.[id]).onPointerEnter?.(e)}}}
   onPointerOut={e=>{const id=term(e);const to=(e.relatedTarget as HTMLElement|null)?.closest?.<HTMLElement>('[data-t]')?.dataset.t;if(id&&to!==id){hotOff(p.lesson,id);tip.bind(p.tips?.[id]).onPointerLeave?.(e)}}}
   onFocus={e=>{const id=term(e);if(id)hotOn(p.lesson,id)}}
@@ -115,8 +112,10 @@ export function Formula(p:FormulaProps):React.JSX.Element {
    e.preventDefault();store.getState().set(k,v,'ease');
   }}>
   <span className="lab-formula-stack">
-   <Markup html={html} vals={vals} hot={hot} config={p}/>
-   {p.texNarrow&&<span className="lab-formula-reserve" aria-hidden="true" dangerouslySetInnerHTML={{__html:renderLinked(narrow?p.tex:p.texNarrow,vals,p.fmt,p.block,p.derived)}}/>}
+   {/* Both layouts are server-rendered and a container query on the formula's own width shows one (lab.css):
+       no hydration-time switch (a layout shift on phones) and no height reserved for the hidden layout. */}
+   <Markup html={html} vals={vals} hot={hot} config={p} variant={narrowHtml===null?undefined:'wide'}/>
+   {narrowHtml!==null&&<Markup html={narrowHtml} vals={vals} hot={hot} config={p} variant="narrow"/>}
   </span>{tip.node}
  </div>;
 }

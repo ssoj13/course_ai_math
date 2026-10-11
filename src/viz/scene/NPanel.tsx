@@ -133,7 +133,8 @@ export function useTip(): { bind: (tip: Tip | undefined) => React.HTMLAttributes
 	const node = shown && (
 		<div className="lab-tip" role="tooltip" style={shown.style}>
 			{shown.tip.title && <b>{shown.tip.title}</b>}
-			<p>{shown.tip.text}</p>
+			{/* A row whose tip text only repeats its label (the title) shows the title once. */}
+			{shown.tip.text !== shown.tip.title && <p>{shown.tip.text}</p>}
 			{html && <span dangerouslySetInnerHTML={{ __html: html }} />}
 		</div>
 	);
@@ -523,7 +524,7 @@ export function NPanel({ lesson, rows, reg, open = true, id }: NPanelProps): Rea
 	);
 }
 
-/** Placeholder of a not-yet-revealed row in the phone chip row (hidden on desktop); exactly the chip's model width. */
+/** Invisible slot of a not-yet-revealed row in the phone chip row (absent on desktop); exactly the chip's model width. */
 function PendingChip({ row }: { row: Row }): React.JSX.Element {
 	return (
 		<div className="lab-np-row is-pending" aria-hidden="true" data-id={row.id} style={{ width: `${chipBox(row).w}px` }}>

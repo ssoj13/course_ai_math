@@ -824,9 +824,11 @@ h1#_top,
 		height: var(--np-h);
 		padding: 0;
 	}
+	/* A row revealed by a later step keeps its slot (the chip reservation, no shift when it appears) but shows nothing:
+	   a dimmed label over a dash read as a broken readout (live check). */
 	.lab-np-row.is-pending {
 		display: flex;
-		opacity: 0.32;
+		visibility: hidden;
 	}
 	.lab-np-pending {
 		flex: 1;
@@ -911,14 +913,15 @@ h1#_top,
 	color: var(--viz-ink);
 	font: 600 9.5px/1.3 var(--lab-font-ui);
 }
-/* A hint wider than the bar: two smaller lines in the same 22 px (StatusBar fit). */
+/* A hint wider than the bar: two smaller lines in the same 22 px (StatusBar fit). The bar's content box is 21 px
+   (1 px top border): two 10.5 px lines fill it exactly; 9 px glyphs (ascent + descent ~ 10.9 px) are not clipped. */
 .lab-vp-status[data-fit='wrap'] > span {
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
 	white-space: normal;
-	font-size: 9.5px;
-	line-height: 10px;
+	font-size: 9px;
+	line-height: 10.5px;
 }
 .lab-vp-status[data-fit='wrap'] kbd {
 	padding: 0 3px;
@@ -1244,11 +1247,19 @@ h1#_top,
 .lab-field-cell { display: inline-block; padding: 6px; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; }
 .lab-field-cell.is-lg .lab-np-row { min-height: 48px; grid-template-columns: minmax(100px, auto) 64px; gap: 8px; }
 .lab-field-cell .lab-np-ro { min-height: 28px; }
-/* LC SSR uses wide TeX until its measured narrow layout hydrates. Keep every term scrollable. */
+/* Long derivations scroll inside their own box instead of widening the page. */
 [data-lc-controls] .lab-formula { max-width:100%; overflow-x:auto; }
 .lab-formula-stack { display:grid; grid-template-columns:minmax(0,1fr); }
-.lab-formula-stack > span { grid-area:1 / 1; min-width:0; }
-.lab-formula-reserve { visibility:hidden; pointer-events:none; overflow:hidden; }
+.lab-formula-stack > span { min-width:0; }
+/* A Formula with `texNarrow` renders both layouts; its own width picks one (the old JS switch at 420 px, now a
+   container query: the server HTML is already right, so phones get no hydration shift and no reserved height).
+   container-type only applies to these formulas: inline-size containment would collapse a shrink-to-fit one. */
+.lab-formula.has-narrow { container-type: inline-size; }
+.lab-formula-narrow { display: none; }
+@container (width < 420px) {
+	.lab-formula-wide { display: none; }
+	.lab-formula-narrow { display: block; }
+}
 .lab-formula .is-hidden, .lab-num-table .is-hidden { visibility: hidden; pointer-events: none; }
 .lab-formula [data-t], .lab-formula [data-m] { transition: opacity 180ms; }
 .lab-formula .is-dim { opacity: .35; }
@@ -1270,3 +1281,25 @@ h1#_top,
 .lab-np-label:has(.lab-glyph) { display:flex; align-items:center; }
 @media(min-width:720px) { .lab-np-row:has(.lab-glyph) { grid-template-columns: max(50px,var(--np-lw)) minmax(0,1fr); } }
 .lab-formula [data-t]:focus-visible,.lab-num-table td:focus-visible,.lab-code span:focus-visible { outline:2px solid var(--viz-hot); outline-offset:2px; }
+
+/* DP-2 "one number, three faces" strip: a property panel in the viewport chrome under the card (N-panel look:
+   uppercase group heading, dark field cells, mono tabular numbers, hot outline when linked). */
+.lab-faces { margin: 1rem 0; padding: 10px 12px 12px; border: 1px solid var(--viz-chrome-2); border-radius: 8px; background: var(--viz-chrome); color: var(--viz-ink); font: 400 13px/1.4 var(--lab-font-ui); }
+.lab-faces p { margin: 0; }
+.lab-faces-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px !important; color: var(--viz-muted); font: 600 10px/1 var(--lab-font-ui); letter-spacing: .08em; text-transform: uppercase; }
+.lab-faces-head::after { content: ''; flex: 1; border-top: 1px solid var(--viz-field); opacity: .6; }
+.lab-faces-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 8px; }
+.lab-face { display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: 'glyph label' 'glyph value' 'cap cap'; column-gap: 10px; row-gap: 2px; padding: 8px 10px; border-radius: 6px; background: var(--viz-chrome-2); color: var(--lab-face-c); outline: 1px solid transparent; }
+.lab-face .lab-glyph { grid-area: glyph; align-self: center; margin: 0; }
+.lab-face-label { grid-area: label; align-self: end; color: var(--viz-muted); font: 400 12px/1.2 var(--lab-font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lab-face-value { grid-area: value; color: var(--viz-ink); font: 600 18px/1.15 var(--lab-font-mono); font-variant-numeric: tabular-nums; }
+.lab-face-caption { grid-area: cap; margin-top: 4px; color: var(--viz-muted); font-size: 12px; line-height: 1.3; }
+.lab-face[data-hot], .lab-faces-sign [data-hot] { outline: 2px solid var(--viz-hot); outline-offset: -1px; }
+.lab-face:focus-visible, .lab-seg > span:focus-visible { outline: 2px solid var(--viz-hot); outline-offset: 1px; }
+.lab-faces-sign { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; color: var(--viz-muted); font-size: 12px; }
+.lab-seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--viz-chrome-2); border-radius: 4px; background: var(--viz-chrome-2); gap: 1px; }
+.lab-seg > span { padding: 3px 10px; background: var(--viz-chrome); color: var(--viz-muted); font: 400 12px/1.4 var(--lab-font-mono); cursor: default; }
+.lab-seg > span:first-child { border-radius: 3px 0 0 3px; }
+.lab-seg > span:last-child { border-radius: 0 3px 3px 0; }
+.lab-seg > span[data-active] { background: color-mix(in srgb, var(--lab-seg-c) 32%, var(--viz-chrome)); color: var(--viz-ink); font-weight: 700; }
+.lab-faces-note { margin-top: 8px !important; color: var(--viz-muted); font-size: 12px; }

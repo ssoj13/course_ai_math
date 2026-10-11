@@ -502,20 +502,25 @@ export function placeLabels(reg: StageReg): void {
 			continue;
 		}
 		// Pooled boxes: reused across frames, so placement allocates nothing per label per frame.
-		const b = (pool[placed.length] ??= { el, x: 0, y: 0, w: 0, h: 0, small: false });
+		const b = (pool[placed.length] ??= { el, x: 0, y: 0, w: 0, h: 0, small: false, hide: false, ux: 0, uy: 0 });
 		b.el = el;
 		b.x = p[0];
 		b.y = p[1];
 		b.w = el.offsetWidth;
 		b.h = el.offsetHeight;
 		b.small = Boolean(s.small);
+		b.hide = false;
+		b.ux = pushDir[0];
+		b.uy = pushDir[1];
 		placed.push(b);
 	}
-	separate(placed);
-	for (const { el, x, y } of placed) {
+	// The free stage: the desktop N-panel covers its right edge (`--lab-vp-inset`, as the camera's view offset).
+	const inset = reg.el ? parseFloat(reg.el.style.getPropertyValue('--lab-vp-inset') || '0') : 0;
+	separate(placed, widgetBox(reg.el), reg.el ? [reg.el.clientWidth - inset, reg.el.clientHeight] : undefined);
+	for (const { el, x, y, hide } of placed) {
 		const t = `translate(${+x.toFixed(1)}px, ${+y.toFixed(1)}px)`;
 		if (el.style.transform !== t) el.style.transform = t;
-		el.style.visibility = 'visible';
+		el.style.visibility = hide ? 'hidden' : 'visible';
 		// Draw-in: labels fade in over the second half of the reveal, after the beams they name.
 		const o = reg.reveal >= 1 ? '' : String(Math.max(0, reg.reveal * 2 - 1));
 		if (el.style.opacity !== o) el.style.opacity = o;
@@ -530,6 +535,11 @@ export interface Placed {
 	w: number;
 	h: number;
 	small: boolean;
+	/** Set by `separate`: a tick number printed over another one (near the origin when zoomed out) is not shown. */
+	hide: boolean;
+	/** Unit screen direction a label with `away` was pushed in (0, 0: none): `separate` keeps pushing that way first. */
+	ux?: number;
+	uy?: number;
 }
 // Reused every frame (placement runs per rendered frame).
 const placed: Placed[] = [];
@@ -537,27 +547,72 @@ const pool: Placed[] = [];
 /** Free space kept between two labels, CSS px. */
 const LABEL_GAP = 2;
 
-const overlaps = (a: Placed, b: Placed, dx: number, dy: number) =>
+const overlaps = (a: Obstacle, b: Obstacle, dx: number, dy: number) =>
 	Math.abs(a.x + dx - b.x) * 2 < a.w + b.w + 2 * LABEL_GAP && Math.abs(a.y + dy - b.y) * 2 < a.h + b.h + 2 * LABEL_GAP;
 
 /**
- * Keeps object labels from printing over each other (e.g. "shoulder" and "min reach" at one point on a phone):
- * labels are settled in registration order; one that overlaps an already settled label moves by the smallest of a
- * few candidate offsets (down, up, right, left, by its own size) that frees it. Tick numbers (`small`) are laid out
- * by their axis and neither move nor push. Deterministic, so a label does not jitter between frames.
+ * Keeps object labels from printing over each other (e.g. "shoulder" and "min reach" at one point on a phone) and
+ * over the axis tick numbers (DP-2's "|b| cos θ" lay on the x-axis numbers, "a·v = 0" on the y-axis "4"): labels are
+ * settled in registration order; one that overlaps an already settled label or ANY tick number moves by the first of a
+ * few candidate offsets (down, up, right, left, by its own size) that frees it. Tick numbers (`small`) are laid out by
+ * their axis and never move: they are fixed obstacles (one printed over another tick number is hidden). Deterministic,
+ * so a label does not jitter between frames.
  */
-export function separate(list: Placed[]): void {
+/** A fixed screen box (centre and size, CSS px in stage coordinates) that labels keep clear of. */
+export interface Obstacle { x: number; y: number; w: number; h: number }
+
+// Reused every frame: the corner widget's box.
+const widget: Obstacle = { x: 0, y: 0, w: 0, h: 0 };
+const noObstacles: readonly Obstacle[] = [];
+const widgets: Obstacle[] = [widget];
+
+/**
+ * The navigation widget of the stage (3D gizmo top-right, 2D XY corner bottom-left) as a label obstacle: the framing
+ * keeps the figure clear of it, but a label set off a point near the edge (DEMO-LAMP's "light" at 360 px) still
+ * printed over it.
+ */
+function widgetBox(stage: HTMLElement | null): readonly Obstacle[] {
+	const g = stage?.querySelector<HTMLElement>('.lab-gizmo, .lab-xy');
+	if (!stage || !g) return noObstacles;
+	const a = stage.getBoundingClientRect(), b = g.getBoundingClientRect();
+	if (!b.width) return noObstacles;
+	widget.x = b.left - a.left + b.width / 2;
+	widget.y = b.top - a.top + b.height / 2;
+	widget.w = b.width;
+	widget.h = b.height;
+	return widgets;
+}
+
+export function separate(list: Placed[], obstacles: readonly Obstacle[] = noObstacles, stage?: readonly [number, number]): void {
+	// Tick numbers first: two axes' numbers meet only around the origin (x "−1" under the axis, y "−1" left of it);
+	// the later one is dropped rather than moved off its tick.
+	for (let i = 0; i < list.length; i++) {
+		const a = list[i];
+		if (a.small) for (let j = 0; j < i && !a.hide; j++) if (list[j].small && !list[j].hide && overlaps(a, list[j], 0, 0)) a.hide = true;
+	}
 	for (let i = 0; i < list.length; i++) {
 		const a = list[i];
 		if (a.small) continue;
 		const clash = (dx: number, dy: number) => {
-			for (let j = 0; j < i; j++) if (!list[j].small && overlaps(a, list[j], dx, dy)) return true;
+			for (let j = 0; j < list.length; j++) if (j !== i && !list[j].hide && (list[j].small || j < i) && overlaps(a, list[j], dx, dy)) return true;
+			for (const o of obstacles) if (overlaps(a, o, dx, dy)) return true;
+			// A slot that cuts the label at the stage edge is not free (DP-4's N·L label at 360 px was pushed out of the view).
+			if (stage && (a.x + dx - a.w / 2 < 0 || a.x + dx + a.w / 2 > stage[0] || a.y + dy - a.h / 2 < 0 || a.y + dy + a.h / 2 > stage[1])) return true;
 			return false;
 		};
 		if (!clash(0, 0)) continue;
 		const sy = a.h + LABEL_GAP;
 		const sx = a.w * 0.6 + LABEL_GAP;
-		const tries: readonly (readonly [number, number])[] = [[0, sy], [0, -sy], [sx, 0], [-sx, 0], [0, 2 * sy], [0, -2 * sy], [sx, sy], [-sx, sy], [sx, -sy], [-sx, -sy]];
+		// A label set off its anchor in a direction (`away`: off a band, out of an angle) moves further that way first,
+		// so it stays on its own side (DP-2's shadow label went over the arrows when "up" was the first free slot).
+		const ux = a.ux ?? 0, uy = a.uy ?? 0, along = (Math.abs(ux) * a.w + Math.abs(uy) * a.h) / 2 + LABEL_GAP;
+		const out: (readonly [number, number])[] = ux || uy ? [1, 2, 3, 4].map((k) => [ux * along * k, uy * along * k] as const) : [];
+		// A widget is larger than a label step: the last resort puts the label just beside it (left, below, right, above).
+		const escape = obstacles.flatMap((o): (readonly [number, number])[] => {
+			const gx = (o.w + a.w) / 2 + LABEL_GAP + 1, gy = (o.h + a.h) / 2 + LABEL_GAP + 1;
+			return [[o.x - gx - a.x, 0], [0, o.y + gy - a.y], [o.x + gx - a.x, 0], [0, o.y - gy - a.y]];
+		});
+		const tries: readonly (readonly [number, number])[] = [...out, [0, sy], [0, -sy], [sx, 0], [-sx, 0], [0, 2 * sy], [0, -2 * sy], [sx, sy], [-sx, sy], [sx, -sy], [-sx, -sy], ...escape];
 		for (const [dx, dy] of tries) {
 			if (clash(dx, dy)) continue;
 			a.x += dx;
@@ -567,7 +622,11 @@ export function separate(list: Placed[]): void {
 	}
 }
 
+/** Push direction of the last `labelPx` call (module scratch: placement allocates nothing per label per frame). */
+const pushDir: [number, number] = [0, 0];
+
 function labelPx(s: LabelSpec, vals: Vals, project: NonNullable<StageReg['project']>, el: HTMLElement): [number, number] | null {
+	pushDir[0] = pushDir[1] = 0;
 	const at = s.at(vals);
 	let p = at && project(at);
 	if (!p) return null;
@@ -581,6 +640,8 @@ function labelPx(s: LabelSpec, vals: Vals, project: NonNullable<StageReg['projec
 		if (w) p = w.at;
 		p = pushAway(p, q, s.gap ?? 0, box);
 		if (w) p = fitWedge(p, q, w.angle, box);
+		const dx = p[0] - q[0], dy = p[1] - q[1], l = Math.hypot(dx, dy);
+		if (l > 0) { pushDir[0] = dx / l; pushDir[1] = dy / l; }
 	}
 	const o = s.offset;
 	return o ? [p[0] + o[0], p[1] + o[1]] : p;

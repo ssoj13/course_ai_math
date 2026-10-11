@@ -65,6 +65,23 @@ export function expand(tex: string, vals: Record<string, Val>, fmt: Record<strin
 		});
 }
 
+/** One line of an `aligned` block: plain TeX, or `[markId, tex]` for a line that a step can hide, dim or strike. */
+export type AlignedRow = string | readonly [mark: string, tex: string];
+
+/**
+ * Builds a left-aligned multi-line formula. A marked line is wrapped in `\htmlData{m=id}` (dim/struck by `marks`);
+ * a line whose mark is `hidden` is left out of the TeX entirely. KaTeX positions aligned lines absolutely inside
+ * its vlist, so a line hidden by CSS would keep its height: a timeline at step 1 of 10 showed a 200-400 px hole
+ * where the unrevealed derivation was reserved. Revealing a line is a reader action (timeline step), so the
+ * layout change it causes carries hadRecentInput and is not counted as a layout shift.
+ * Returns '' when no line is visible (Formula then renders no math at all).
+ */
+export function alignedRows(rows: readonly AlignedRow[], marks?: Readonly<Record<string, { hidden?: boolean }>>): string {
+	const shown = rows.filter((r) => typeof r === 'string' || !marks?.[r[0]]?.hidden)
+		.map((r) => (typeof r === 'string' ? r : `\\htmlData{m=${r[0]}}{${r[1]}}`));
+	return shown.length ? `\\begin{aligned}${shown.map((x) => '&' + x).join('\\\\ ')}\\end{aligned}` : '';
+}
+
 /** Derived read-only values (e.g. a dot product), computed from the stored values and shown with `\s{key}`. */
 export type Derived = Record<string, (vals: Record<string, Val>) => number>;
 

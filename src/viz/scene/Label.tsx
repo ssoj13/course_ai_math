@@ -18,6 +18,9 @@ export interface LabelProps {
 	id?: string;
 	/** Screen offset in CSS px, y down, e.g. [10, -12] for up-right of an arrow tip. */
 	offset?: readonly [number, number];
+	/** Point the label keeps clear of: it moves from `at` directly away from it until its near edge is `gap` px off. */
+	away?: V;
+	gap?: number;
 }
 
 export function Label(p: LabelProps): null {
@@ -31,6 +34,8 @@ export function Label(p: LabelProps): null {
 		hot: p.id,
 		offset: p.offset,
 		at: (v) => (typeof key === 'string' ? (v[key] as V) : key),
+		away: p.away && (() => p.away!),
+		gap: p.gap,
 	});
 	return null;
 }

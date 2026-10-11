@@ -42,12 +42,12 @@ export interface LedgerProps {
 
 /** Below this the signed item counts as zero (the derive functions already make 90 degrees exact). */
 const ZERO = 1e-9;
-const COL = 56;
+const COL = 72;
 const PAD = 8;
 const LABEL_X = COL + 14;
-const W = 230;
+const W = 270;
 /** Minimum vertical distance between two label baselines. */
-const LINE = 15;
+const LINE = 16;
 
 export const fmt2 = (v: number): string => (Number.isFinite(v) ? (v + 0).toFixed(2).replace(/^-(0\.00)$/, '$1').replace('-', '−') : '–');
 

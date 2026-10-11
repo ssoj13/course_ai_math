@@ -6,13 +6,14 @@
 import { Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { Box3, BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Mesh, type Object3D } from 'three';
+import { Box3, BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Sphere, Vector2, Vector3, type Mesh, type Object3D } from 'three';
 import { sub, to3, type V } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitRadius, ndcToPx, rayPlane, worldPerPx } from './drag';
 import { gateWheel, placeLabels, useStage, type Draggable } from './handles';
 import { DRAW_MS, reducedMotion, springProgress } from './motion';
+import type { Part } from './framing';
 
 // Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
 // with dozens of pixel-sized objects must not allocate vectors and arrays for each of them.
@@ -42,6 +43,7 @@ export function wppAt(camera: Camera, p: V, hPx: number): number {
 }
 
 const part = new Box3();
+const sphere = new Sphere();
 
 /**
  * World bounds of the figure under `root` (the Stage's content group) into `out`; empty when nothing is drawn yet.
@@ -49,12 +51,14 @@ const part = new Box3();
  * (`usePxScale`: points, arrow heads) count as their anchor point only. Bounding boxes are recomputed: shapes rewrite their buffers in place
  * (`writeGeo`), so a cached box can be stale. Called only when the home view is computed, not per frame.
  */
-export function contentBox(root: Object3D, out: Box3): Box3 {
+export function contentBox(root: Object3D, out: Box3, parts?: Part[]): Box3 {
 	out.makeEmpty();
+	const vec = (v: Vector3): [number, number, number] => [v.x, v.y, v.z];
 	root.updateWorldMatrix(true, true);
 	const visit = (o: Object3D) => {
 		if (o.userData.pxSized) {
 			out.expandByPoint(o.getWorldPosition(pt));
+			parts?.push({ box: { min: vec(pt), max: vec(pt) } });
 			return;
 		}
 		if (o.userData.aux) return;
@@ -62,7 +66,14 @@ export function contentBox(root: Object3D, out: Box3): Box3 {
 		if (geo) {
 			geo.computeBoundingBox();
 			const b = geo.boundingBox;
-			if (b && !b.isEmpty() && Number.isFinite(b.min.x) && Number.isFinite(b.max.x)) out.union(part.copy(b).applyMatrix4(o.matrixWorld));
+			if (b && !b.isEmpty() && Number.isFinite(b.min.x) && Number.isFinite(b.max.x)) {
+				out.union(part.copy(b).applyMatrix4(o.matrixWorld));
+				if (parts) {
+					geo.computeBoundingSphere();
+					const s = geo.boundingSphere && Number.isFinite(geo.boundingSphere.radius) ? sphere.copy(geo.boundingSphere).applyMatrix4(o.matrixWorld) : null;
+					parts.push({ box: { min: vec(part.min), max: vec(part.max) }, sphere: s ? { c: vec(s.center), r: s.radius } : undefined });
+				}
+			}
 		}
 		for (const c of o.children) visit(c);
 	};
