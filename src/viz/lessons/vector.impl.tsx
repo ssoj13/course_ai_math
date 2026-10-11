@@ -148,7 +148,6 @@ function TranslateScene() {
 	// normal labels sit beyond the last vertex's normals, away from the strip.
 	const p0 = z.before[0], q0 = z.after[0], p2 = z.before[2], q2 = z.after[2];
 	const moved = norm(z.T) > 1e-9;
-	const centre = scale(add(z.before[1], z.after[1]), 0.5);
 	return <>
 		<Reach lo={[STRIP_LO[0] - 0.5, STRIP_LO[1] - 0.5]} hi={[STRIP_HI[0] + RANGE_T.max + 1, STRIP_HI[1] + RANGE_T.max + 1]} />
 		{before && moved && <Strip pts={z.before} n={z.N} role="muted" nRole="muted" ghost />}
@@ -156,7 +155,8 @@ function TranslateScene() {
 		{moved && <Arrow lesson={LESSON} id="T" from={p0} to={q0} role="vecA" drag="none" />}
 		<Point lesson={LESSON} id="obj" at={(vals) => add(translate(vals).before[1], translate(vals).T)} keys={['T']} move={moveT} role="ink" label={t(locale, 've.handleObject')} />
 		<Show ov="labels">
-			{moved && <Label lesson={LESSON} id="T" at={scale(add(p0, q0), 0.5)} role="vecA" away={centre} gap={6}>{'T = ' + fmtV(z.T)}</Label>}
+			{/* At the arrow's tail, pushed back along it: beside the shaft a wide label always crossed the diagonal. */}
+			{moved && <Label lesson={LESSON} id="T" at={p0} role="vecA" away={q0} gap={8}>{'T = ' + fmtV(z.T)}</Label>}
 			<Label lesson={LESSON} id="N2" at={add(q2, z.N2)} role="vecB" away={q2} gap={4}>{"N' = " + fmtV(z.N2, fmt2)}</Label>
 			{before && moved && <Label lesson={LESSON} id="N" at={add(p2, z.N)} role="muted" away={p2} gap={4}>N</Label>}
 		</Show>
@@ -174,6 +174,8 @@ function Arrow3() {
 	const p = v.v3 as number[];
 	const zero = norm(p) < 1e-9;
 	return <>
+		{/* A small reach keeps the origin and the default arrow framed (the axes alone are not measured). */}
+		<Reach lo={[-2, -1, -2]} hi={[3, 2.5, 2]} />
 		{legs && <Legs id="v3" from={[0, 0, 0]} to={p} labels={labels} />}
 		<Arrow lesson={LESSON} id="v3" to="v3" role="vecA" label="v" />
 		{labels && <Label lesson={LESSON} id="v3" at="v3" role="vecA" offset={TIP}>{zero ? t(locale, 've.zeroLabel') : 'v = ' + fmtV(p)}</Label>}
@@ -203,8 +205,8 @@ function Between({ three }: { three: boolean }) {
 	// Point names are pushed directly away from the other point, so they never cover the arrow between them.
 	const away = (p: V, q: V): V => (zero ? add(p, three ? [-1, -1, 0] : [-1, -1]) : q);
 	return <>
-		{/* 2D: the reach of the board keeps the view still. 3D: the axes frame the view (a reach cube looked tiny). */}
-		{!three && <Reach lo={[board.min, board.min]} hi={[board.max, board.max]} />}
+		{/* 2D: the reach of the board keeps the view still. 3D: a box around the default points (the full board cube looked tiny). */}
+		{three ? <Reach lo={[-2, -1, -2]} hi={[2.5, 2.5, 2]} /> : <Reach lo={[board.min, board.min]} hi={[board.max, board.max]} />}
 		{ghost && !zero && <Arrow lesson={LESSON} id="dghost" to={z.d} role="muted" />}
 		{legs && !zero && <Legs id={id} from={z.start} to={z.end} labels={labels} />}
 		{!zero && <Arrow lesson={LESSON} id={id} from={z.start} to={z.end} role="vecA" drag="none" />}
@@ -212,8 +214,9 @@ function Between({ three }: { three: boolean }) {
 		<Point lesson={LESSON} id="A" at={aKey} role="ink" label="A" />
 		<Point lesson={LESSON} id="B" at={bKey} role="ink" label="B" />
 		<Show ov="labels">
-			<Label lesson={LESSON} id="A" at={aKey} role="ink" away={away(z.A, z.B)} gap={8}>{'A ' + fmtV(z.A)}</Label>
-			<Label lesson={LESSON} id="B" at={bKey} role="ink" away={away(z.B, z.A)} gap={8}>{'B ' + fmtV(z.B)}</Label>
+			{/* 3D names stay short: a three-number label pushed outward left the stage on a phone; the panel has them. */}
+			<Label lesson={LESSON} id="A" at={aKey} role="ink" away={away(z.A, z.B)} gap={8}>{three ? 'A' : 'A ' + fmtV(z.A)}</Label>
+			<Label lesson={LESSON} id="B" at={bKey} role="ink" away={away(z.B, z.A)} gap={8}>{three ? 'B' : 'B ' + fmtV(z.B)}</Label>
 		</Show>
 	</>;
 }

@@ -11,7 +11,5 @@
   "vectors/cosine-similarity",
   "vectors/cross-product",
   "vectors/length",
-  "vectors/projection",
-  "vectors/vector",
-  "vectors/vector-arithmetic"
+  "vectors/projection"
 ]

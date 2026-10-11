@@ -82,7 +82,8 @@ function Sum() {
 		<Point lesson={LESSON} id="o" at={O2} role="muted" size={6} />
 		<Name id="a" at={z.a} role="vecA" text="a" />
 		<Name id="b" at={z.b} role="vecB" text="b" />
-		<Name id="sum" at={z.ab} role="vecC" text={'a + b = ' + fmtV(z.ab)} />
+		{/* Pushed outward along the sum, past its tip: beside the tip it sat on the two walks that meet there. */}
+		<Show ov="labels">{!isZero(z.ab) && <Label lesson={LESSON} id="sum" at={z.ab} role="vecC" away={O2} gap={6}>{'a + b = ' + fmtV(z.ab)}</Label>}</Show>
 	</>;
 }
 
@@ -102,7 +103,7 @@ function Scale() {
 		<Name id="c" at={z.c} role="vecA" text="a" />
 		<Show ov="labels">
 			{z.sense === 0
-				? <Label lesson={LESSON} id="sc" at={O2} role="vecC" offset={[14, 16]}>{t(locale, 'va.zeroLabel')}</Label>
+				? <Label lesson={LESSON} id="sc" at={O2} role="vecC" away={isZero(z.c) ? [1, 1] : z.c} gap={10}>{t(locale, 'va.zeroLabel')}</Label>
 				: <Label lesson={LESSON} id="sc" at={z.sc} role="vecC" offset={[12, 14]}>{fmt1(z.s).replace('-', '−') + '·a = ' + fmtV(z.sc)}</Label>}
 		</Show>
 	</>;
@@ -187,9 +188,12 @@ function Combo() {
 function Combo3() {
 	const v = useVals(LESSON), z = combo3(v);
 	return <>
+		{/* The default chain from the origin to r: the home view frames it (the plane patch is aux). */}
+		<Reach lo={[-0.5, -0.5, -0.5]} hi={[2.5, 2, 3]} />
 		{/* The plane of a and b: every s·a + t·b (u = 0) lies on it. Drawn over the scrub range of s and t. */}
-		<Show ov="plane">{norm(z.a) > 1e-9 && norm(z.b) > 1e-9 && <Parallelogram lesson={LESSON} id="plane" at={add(scale(z.a, RANGE_ST.min), scale(z.b, RANGE_ST.min))}
-			a={scale(z.a, RANGE_ST.max - RANGE_ST.min)} b={scale(z.b, RANGE_ST.max - RANGE_ST.min)} role="muted" />}</Show>
+		{/* `aux`: the home view frames the arrows, not this patch of an infinite plane. */}
+		<group userData={{ aux: true }}><Show ov="plane">{norm(z.a) > 1e-9 && norm(z.b) > 1e-9 && <Parallelogram lesson={LESSON} id="plane" at={add(scale(z.a, RANGE_ST.min), scale(z.b, RANGE_ST.min))}
+			a={scale(z.a, RANGE_ST.max - RANGE_ST.min)} b={scale(z.b, RANGE_ST.max - RANGE_ST.min)} role="muted" />}</Show></group>
 		{!isZero(z.sa) && <Arrow lesson={LESSON} id="sa3" to={z.sa} role="vecA" />}
 		{!isZero(z.tb) && <Arrow lesson={LESSON} id="tb3" from={z.sa} to={z.ab} role="vecB" />}
 		{!isZero(z.uc) && <Arrow lesson={LESSON} id="uc3" from={z.ab} to={z.r} role="vecC" />}
@@ -219,7 +223,9 @@ function Face() {
 			{!isZero(z.d2[i]) && <Segment lesson={LESSON} id={i === CORNER ? 'd2' : 'd2v'} a={z.mid[i]} b={z.out[i]} role="vecC" />}
 		</group>)}
 		{z.out.map((p, i) => <Point key={i} lesson={LESSON} id={i === CORNER ? 'corner' : 'vtx'} at={p} role="ink" size={i === CORNER ? 8 : 5} />)}
-		{labels && <Label lesson={LESSON} id="corner" at={z.corner} role="ink" offset={[16, 0]}>{"P' = " + fmtV(z.corner, fmt2)}</Label>}
+		{/* The value sits in the free forehead, not at the corner: on a phone the face is too small for a label beside the
+		    mouth. It shares the corner's id, so hovering either lights both. */}
+		{labels && <Label lesson={LESSON} id="corner" at={[0, 2.6]} role="ink">{"P' = " + fmtV(z.corner, fmt2)}</Label>}
 	</>;
 }
 

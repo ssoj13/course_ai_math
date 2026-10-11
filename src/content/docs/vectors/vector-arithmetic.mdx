@@ -107,7 +107,10 @@ $\mathbf{b}$ on one line and paint once more.
 A special case you already use every day. Take the two axis arrows $(1, 0)$ and $(0, 1)$. Which $s$ and $t$ give $(3, 4)$?
 
 $$
-s \cdot (1, 0) + t \cdot (0, 1) = (s, t) = (3, 4) \quad\Rightarrow\quad s = 3,\; t = 4
+\begin{aligned}
+&s \cdot (1, 0) + t \cdot (0, 1) = (s, t) = (3, 4) \\
+&\Rightarrow\quad s = 3,\; t = 4
+\end{aligned}
 $$
 
 The components of a vector are exactly its coefficients along the axis arrows. We will see this again as "coordinates are shadows" in [lesson 1.5](lesson:projection).
@@ -131,10 +134,15 @@ $$
 P' = P_0 + w_1\,\boldsymbol{\Delta}_1 + w_2\,\boldsymbol{\Delta}_2 + \cdots
 $$
 
-where $P_0$ is the base position of the vertex. That is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P = (1.0, 0.5)$, smile delta $\boldsymbol{\Delta}_1 = (0.2, 0.3)$, jaw delta $\boldsymbol{\Delta}_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
+where $P_0$ is the base position of the vertex. That is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P_0 = (1.0, 0.5)$, smile delta $\boldsymbol{\Delta}_1 = (0.2, 0.3)$, jaw delta $\boldsymbol{\Delta}_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
 
 $$
-P' = (1.0, 0.5) + 0.5\,(0.2, 0.3) + 0.25\,(0.0, -0.4) = (1.0 + 0.1 + 0.0,\; 0.5 + 0.15 - 0.1) = (1.1, 0.55)
+\begin{aligned}
+P' &= (1.0, 0.5) \\
+&\quad + 0.5\,(0.2, 0.3) + 0.25\,(0.0, -0.4) \\
+&= (1.0 + 0.1 + 0.0,\; 0.5 + 0.15 - 0.1) \\
+&= (1.1, 0.55)
+\end{aligned}
 $$
 
 Every vertex of the face does this with its own deltas and the same weights. The sliders you drag in the Shape Editor are the $w_i$.
