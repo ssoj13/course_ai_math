@@ -5,27 +5,162 @@
       "title": "Ground: distance and angle",
       "summary": "Squares, Pythagoras, the unit circle and the law of cosines — everything the dot product is built from.",
       "lessons": [
-        { "slug": "squares-and-plane", "title": "Squares, roots and the plane", "short": "Squares and the plane", "summary": "A square is an area, a root undoes it, a point is two readings on two rulers." },
-        { "slug": "powers", "title": "Powers: whole, zero, negative and fractional", "short": "Powers", "summary": "x³ is a volume, x⁰ = 1, x⁻¹ undoes x, x^½ is the side of a square." },
-        { "slug": "pythagoras", "title": "Distance and Pythagoras", "summary": "Distance between points in 2D, 3D and any number of dimensions." },
-        { "slug": "unit-circle", "title": "Angles, radians and the unit circle", "short": "The unit circle", "summary": "cos and sin are the shadows of a point on the unit circle." },
-        { "slug": "law-of-cosines", "title": "The law of cosines", "summary": "Pythagoras plus a correction term for a corner that is not square; two-bone IK." }
-      ]
+        {
+          "slug": "squares-and-plane",
+          "title": "Squares, roots and the plane",
+          "short": "Squares and the plane",
+          "summary": "A square is an area, a root undoes it, a point is two readings on two rulers.",
+          "ru": {
+            "title": "Квадраты, корни и плоскость",
+            "short": "Квадраты и плоскость",
+            "summary": "Квадрат — это площадь, корень обращает возведение в квадрат, точка задаётся двумя показаниями двух линеек."
+          }
+        },
+        {
+          "slug": "powers",
+          "title": "Powers: whole, zero, negative and fractional",
+          "short": "Powers",
+          "summary": "x³ is a volume, x⁰ = 1, x⁻¹ undoes x, x^½ is the side of a square.",
+          "ru": {
+            "title": "Степени: целые, нулевые, отрицательные и дробные",
+            "short": "Степени",
+            "summary": "x³ — объём, x⁰ = 1, x⁻¹ обращает умножение на x, x^½ — сторона квадрата."
+          }
+        },
+        {
+          "slug": "pythagoras",
+          "title": "Distance and Pythagoras",
+          "summary": "Distance between points in 2D, 3D and any number of dimensions.",
+          "ru": {
+            "title": "Расстояние и теорема Пифагора",
+            "summary": "Расстояние между точками в двух, трёх и любом числе измерений."
+          }
+        },
+        {
+          "slug": "unit-circle",
+          "title": "Angles, radians and the unit circle",
+          "short": "The unit circle",
+          "summary": "cos and sin are the shadows of a point on the unit circle.",
+          "ru": {
+            "title": "Углы, радианы и единичная окружность",
+            "short": "Единичная окружность",
+            "summary": "cos и sin — проекции точки единичной окружности."
+          }
+        },
+        {
+          "slug": "law-of-cosines",
+          "title": "The law of cosines",
+          "summary": "Pythagoras plus a correction term for a corner that is not square; two-bone IK.",
+          "ru": {
+            "title": "Теорема косинусов",
+            "summary": "Теорема Пифагора с поправкой для непрямого угла; обратная кинематика двух костей."
+          }
+        }
+      ],
+      "ru": {
+        "title": "Основа: расстояние и угол",
+        "summary": "Квадраты, теорема Пифагора, единичная окружность и теорема косинусов — всё, на чём строится скалярное произведение."
+      }
     },
     {
       "slug": "vectors",
       "title": "Vectors",
       "summary": "Arrows as lists of numbers: length, the dot product, projection, bases and embeddings.",
       "lessons": [
-        { "slug": "vector", "title": "A vector: an arrow and a list of numbers", "short": "What a vector is", "summary": "Point vs direction, components, the vector between two points." },
-        { "slug": "vector-arithmetic", "title": "Adding, scaling and linear combinations", "short": "Linear combinations", "summary": "Head-to-tail addition, scaling, blend shapes as linear combinations." },
-        { "slug": "length", "title": "Length, Σ notation and normalization", "short": "Length and normalization", "summary": "Pythagoras over all components; unit vectors." },
-        { "slug": "dot-product", "title": "The dot product, derived from the law of cosines", "short": "The dot product", "summary": "Multiply matching components and add them up: a·b = |a||b| cos θ, and what its sign means." },
-        { "slug": "projection", "title": "Projection: shadows on an axis", "short": "Projection", "summary": "Shadows on a line; for perpendicular unit axes, coordinates are dot products with the axes." },
-        { "slug": "basis", "title": "Basis, span, independence and dimension", "short": "Basis and span", "summary": "Rulers for space; orthonormal change of basis." },
-        { "slug": "cosine-similarity", "title": "Cosine similarity and embeddings", "short": "Cosine similarity", "summary": "Meaning as direction: comparing embeddings." },
-        { "slug": "cross-product", "title": "The cross product (side branch)", "short": "Cross product", "summary": "Normals, parallelogram area and orientation in 3D.", "branch": true }
-      ]
+        {
+          "slug": "vector",
+          "title": "A vector: an arrow and a list of numbers",
+          "short": "What a vector is",
+          "summary": "Point vs direction, components, the vector between two points.",
+          "ru": {
+            "title": "Вектор: стрелка и список чисел",
+            "short": "Что такое вектор",
+            "summary": "Точка и направление, компоненты, вектор между двумя точками."
+          }
+        },
+        {
+          "slug": "vector-arithmetic",
+          "title": "Adding, scaling and linear combinations",
+          "short": "Linear combinations",
+          "summary": "Head-to-tail addition, scaling, blend shapes as linear combinations.",
+          "ru": {
+            "title": "Сложение, масштабирование и линейные комбинации",
+            "short": "Линейные комбинации",
+            "summary": "Сложение стрелок, масштабирование, blend shapes как линейные комбинации."
+          }
+        },
+        {
+          "slug": "length",
+          "title": "Length, Σ notation and normalization",
+          "short": "Length and normalization",
+          "summary": "Pythagoras over all components; unit vectors.",
+          "ru": {
+            "title": "Длина, запись через Σ и нормализация",
+            "short": "Длина и нормализация",
+            "summary": "Теорема Пифагора для всех компонент; единичные векторы."
+          }
+        },
+        {
+          "slug": "dot-product",
+          "title": "The dot product, derived from the law of cosines",
+          "short": "The dot product",
+          "summary": "Multiply matching components and add them up: a·b = |a||b| cos θ, and what its sign means.",
+          "ru": {
+            "title": "Скалярное произведение из теоремы косинусов",
+            "short": "Скалярное произведение",
+            "summary": "Перемножаем соответствующие компоненты и складываем: a·b = |a||b| cos θ; что означает знак результата."
+          }
+        },
+        {
+          "slug": "projection",
+          "title": "Projection: shadows on an axis",
+          "short": "Projection",
+          "summary": "Shadows on a line; for perpendicular unit axes, coordinates are dot products with the axes.",
+          "ru": {
+            "title": "Проекция: тени на оси",
+            "short": "Проекция",
+            "summary": "Тени на прямой; для перпендикулярных единичных осей координаты равны скалярным произведениям с осями."
+          }
+        },
+        {
+          "slug": "basis",
+          "title": "Basis, span, independence and dimension",
+          "short": "Basis and span",
+          "summary": "Rulers for space; orthonormal change of basis.",
+          "ru": {
+            "title": "Базис, линейная оболочка, независимость и размерность",
+            "short": "Базис и линейная оболочка",
+            "summary": "Линейки для пространства; смена ортонормированного базиса."
+          }
+        },
+        {
+          "slug": "cosine-similarity",
+          "title": "Cosine similarity and embeddings",
+          "short": "Cosine similarity",
+          "summary": "Meaning as direction: comparing embeddings.",
+          "ru": {
+            "title": "Косинусное сходство и эмбеддинги",
+            "short": "Косинусное сходство",
+            "summary": "Смысл как направление: сравниваем эмбеддинги."
+          }
+        },
+        {
+          "slug": "cross-product",
+          "title": "The cross product (side branch)",
+          "short": "Cross product",
+          "summary": "Normals, parallelogram area and orientation in 3D.",
+          "branch": true,
+          "ru": {
+            "title": "Векторное произведение (ответвление)",
+            "short": "Векторное произведение",
+            "summary": "Нормали, площадь параллелограмма и ориентация в 3D."
+          }
+        }
+      ],
+      "ru": {
+        "title": "Векторы",
+        "summary": "Стрелки как списки чисел: длина, скалярное произведение, проекция, базисы и эмбеддинги."
+      }
     }
   ]
 }

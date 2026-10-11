@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 import {Component,useState,type ReactNode} from 'react';
 import {useFrame} from '@react-three/fiber';
 import {Vector3,type Mesh} from 'three';
@@ -34,11 +36,12 @@ function Inspect(){
  },3);return null;
 }
 export default function FixProbe({kind}:{kind:string}){
+ const locale=useLocale();
  const [error,setError]=useState(''),invalid=kind.startsWith('reject-'),name=kind.slice(7);
  const p={lesson,id:'subject',role:'vecA' as const};
  const subjects:Record<string,ReactNode>={Quad:<Quad {...p} o={[0,0]} u={[1,0]} v={[0,1]} neg={false}/>,AreaTile:<AreaTile {...p} a={[0,0]} b={[1,0]}/>,Parallelogram:<Parallelogram {...p} a={[1,0]} b={[0,1]}/>,Arrow:<Arrow {...p} to={[1,1]}/>,Segment:<Segment {...p} a={[0,0]} b={[1,1]}/>,Point:<Point {...p} at={[1,1]}/>};
  const clay=invalid||kind==='clay',mode=kind==='grid'?'2d':'3d';
- return <><output data-probe-error style={{position:"absolute"}}>{error}</output><ViewportCard lesson={lesson} id="fix" name={kind} mode={mode} extent={4} look={clay?'clay':'holo'} overlays={[{id:'floor',label:'Reflective floor',on:mode==='3d'}]}>
+ return <><output data-probe-error style={{position:"absolute"}}>{error}</output><ViewportCard lesson={lesson} id="fix" name={kind} mode={mode} extent={4} look={clay?'clay':'holo'} overlays={[{id:'floor',label:t(locale, 'probe.floor'),on:mode==='3d'}]}>
  <Boundary report={setError}>{invalid?subjects[name]:kind==='grid'?<>
  <Parallelogram {...p} at={[-3.5,.5]} a={[2,0]} b={[0,2]}/><Parallelogram {...p} id="skew" at={[.5,.5]} a={[2,0]} b={[.8,2]}/>
  </>:clay?<><ClayCube lesson={lesson} id="cube" at={[-1,1,0]} size={[1,1,1]}/><ClayTile lesson={lesson} id="negative" at={[1,1,0]} size={[1,.2,1]} negative/><Grid lesson={lesson} step={1} extent={4}/><Ruler lesson={lesson} a={[-2,0,0]} b={[2,0,0]} normal={[0,1,0]}/></>:<>

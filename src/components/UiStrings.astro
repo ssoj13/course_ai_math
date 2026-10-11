@@ -1,0 +1,38 @@
+---
+/**
+ * UiStrings - ships the UI strings a widget's client script renders: the dictionary namespaces `ns` (src/i18n/ui.ts),
+ * in the page locale only, as one `<script type="application/json" data-i18n="<locale>">` block that client `t()` /
+ * `th()` / `tm()` (src/i18n/core.ts) read. Why per page instead of a bundled dictionary: core.ts header.
+ *
+ * Every widget with a client script renders `<UiStrings ns={[…]} />` next to its card root (after it, so card markup,
+ * `:first-child` rules and `data-ref` lookups are untouched). `ns` lists the namespaces of every key its script, the
+ * lib modules that script imports and the workers it starts can render; tests/js/i18n-keys.test.ts derives that set
+ * from the code and requires the list to equal it. Several instances or widgets on one page share namespaces: each
+ * namespace is emitted once per page; renders nothing when all of them are already on the page. The record of what
+ * a page already has lives on `Astro.locals` (one object per page render, shared by all its components) under a
+ * `Symbol.for` key: frontmatter statements run once per component render (only imports are module-level), so a map
+ * declared here would start empty for every widget.
+ */
+import { SLICE_ATTR } from '../i18n/core';
+import { pageLocale, slice } from '../i18n/ui';
+
+interface Props {
+	ns: readonly string[];
+}
+
+/** Key of the per-page set of namespaces already emitted. */
+const SENT = Symbol.for('math-course.ui-strings.sent');
+
+const locale = pageLocale(Astro);
+// App.Locals declares only the integrations' own fields; this private symbol slot is not part of it.
+const locals = Astro.locals as unknown as Record<symbol, Set<string> | undefined>;
+const sent = (locals[SENT] ??= new Set<string>());
+const ns = Astro.props.ns.filter((n) => !sent.has(n));
+for (const n of ns) sent.add(n);
+
+// `<` is escaped so that a string containing "</script>" cannot end the block (same as DiagnosisTrainer's payload).
+const json = ns.length ? JSON.stringify(slice(locale, ns)).replace(/</g, '\\u003c') : '';
+const attrs = { [SLICE_ATTR]: locale, 'data-ns': ns.join(' ') };
+---
+
+{ns.length > 0 && <script type="application/json" is:inline {...attrs} set:html={json} />}

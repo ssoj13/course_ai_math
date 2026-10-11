@@ -1,6 +1,9 @@
 ---
+import UiStrings from './UiStrings.astro';
+import { pageLocale, t } from '../i18n/ui';
+const locale = pageLocale(Astro);
 /**
- * "Mark lesson complete" toggle + overall progress bar, rendered by the Footer override on every lesson
+ * {t(locale, 'done.mark')} toggle + overall progress bar, rendered by the Footer override on every lesson
  * page. State lives in KEYS.progress (Record<lesson slug, boolean>), read by the sidebar override. The
  * lesson is the current route's; the optional `lesson` slug prop exists for tests. When browser storage
  * is blocked, store.ts keeps the record in memory for this page view, so the toggle still works.
@@ -19,14 +22,14 @@ if (!lesson) {
 ---
 
 <lab-lesson-done class="lab-card not-content" data-lesson={lesson.slug}>
-	<p class="lab-eyebrow">Progress</p>
+	<p class="lab-eyebrow">{t(locale, 'done.title')}</p>
 	<div class="lab-row">
-		<button type="button" class="lab-button" data-ref="toggle" aria-pressed="false">Mark lesson complete</button>
+		<button type="button" class="lab-button" data-ref="toggle" aria-pressed="false">{t(locale, 'done.mark')}</button>
 		<span class="lab-muted" data-ref="label"></span>
 	</div>
-	<progress class="done-bar" data-ref="bar" max="1" value="0" aria-label="Core course progress"></progress>
+	<progress class="done-bar" data-ref="bar" max="1" value="0" aria-label={t(locale, 'done.bar')}></progress>
 	<p class="lab-msg is-warn" data-ref="warn" hidden>
-		Browser storage is blocked, so progress will not be remembered after you leave this page.
+		{t(locale, 'done.blocked')}
 	</p>
 </lab-lesson-done>
 
@@ -47,7 +50,10 @@ if (!lesson) {
 	}
 </style>
 
+<UiStrings ns={["done","progress"]} />
 <script>
+ import { t, docLocale } from '../i18n/core';
+ const locale = docLocale();
 	import { LabElement, define } from '../lib/element';
 	import { KEYS, save } from '../lib/store';
 	import { counts, describe, markSidebar, readProgress } from '../lib/progress';
@@ -72,9 +78,9 @@ if (!lesson) {
 			const done = progress[this.dataset.lesson ?? ''] === true;
 			const c = counts(progress);
 			const btn = this.ref<HTMLButtonElement>('toggle');
-			btn.textContent = done ? '✓ Completed' : 'Mark lesson complete';
+			btn.textContent = t(locale, done ? 'done.completed' : 'done.mark');
 			btn.setAttribute('aria-pressed', String(done));
-			this.ref('label').textContent = `Completed: ${describe(progress)}`;
+			this.ref('label').textContent = t(locale, 'done.count', { count: describe(progress, locale) });
 			const bar = this.ref<HTMLProgressElement>('bar');
 			bar.max = c.coreTotal;
 			bar.value = c.core;

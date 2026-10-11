@@ -127,7 +127,7 @@ test('invalid text is flagged and not written; Escape reverts; Enter on a focuse
 	});
 	key(input, 'Enter');
 	expect(input.getAttribute('aria-invalid')).toBe('true');
-	expect(host.querySelector('.lab-np-err')!.textContent).toContain('not a number');
+	expect(host.querySelector('.lab-np-err')!.textContent).toContain('Enter a finite number.');
 	expect(vals('np5').a).toBe(3);
 	key(input, 'Escape');
 	expect(host.querySelector('input')).toBeNull();

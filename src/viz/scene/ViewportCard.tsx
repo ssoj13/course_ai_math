@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * ViewportCard: every scene is a small, real DCC viewport (docs/design/visual-language.md, Blender's 3D view):
  *
@@ -51,6 +53,7 @@ export interface ViewportCardProps {
 const NARROW = '(max-width: 719.98px)';
 
 export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
+ const locale = useLocale();
 	const overlays = p.overlays ?? [];
 	const rows = p.rows ?? [];
 	const hasPanel = rows.length > 0;
@@ -82,46 +85,28 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 		if (err) throw new Error(`ViewportCard "${p.id}": ${err}`);
 	}, [hasPanel, rows]);
 
-	// Sidebar inset: the open desktop sidebar covers the viewport's right edge (region overlap); chips do not.
-	useLayoutEffect(() => {
-		const panel = document.getElementById(panelId);
-		const mq = matchMedia(NARROW);
-		const upd = () => setInset(!panel || !open || mq.matches ? 0 : panel.offsetWidth);
-		upd();
-		mq.addEventListener('change', upd);
-		const ro = panel ? new ResizeObserver(upd) : null;
-		if (panel) ro?.observe(panel);
-		return () => {
-			mq.removeEventListener('change', upd);
-			ro?.disconnect();
-		};
-	}, [open, hasPanel, panelId]);
-
-	// Wrapped chips (< 720 px, Ruling V): the frame reserved the chip model's height at the 320 px basis. A safety net
-	// only: if the chips ever need more (a read-only value longer than its `chars` budget), grow the row to fit (a
-	// shift); never shrink below the reservation, so a wider phone keeps a little spare room instead of a jump.
-	useLayoutEffect(() => {
-		const panel = document.getElementById(panelId);
-		const fig = root.current?.closest<HTMLElement>('.lab-vp');
-		const reserve = fig?.querySelector<HTMLElement>('.lab-vp-skel > :nth-child(3)');
-		if (!panel || !fig || !reserve) return;
-		const mq = matchMedia(NARROW);
-		const upd = () => {
-			fig.style.removeProperty('--lab-vp-chips');
-			if (!mq.matches) return;
-			const need = panel.scrollHeight;
-			if (need > reserve.offsetHeight) fig.style.setProperty('--lab-vp-chips', `${need}px`);
-		};
-		upd();
-		mq.addEventListener('change', upd);
-		const ro = new ResizeObserver(upd);
-		ro.observe(panel);
-		return () => {
-			mq.removeEventListener('change', upd);
-			ro.disconnect();
-			fig.style.removeProperty('--lab-vp-chips');
-		};
-	}, [hasPanel, panelId]);
+	// One observer maintains desktop overlap and the mobile chip safety net. Never shrink below the server reservation.
+ useLayoutEffect(() => {
+  const panel = document.getElementById(panelId);
+  const fig = root.current?.closest<HTMLElement>('.lab-vp');
+  const reserve = fig?.querySelector<HTMLElement>('.lab-vp-skel > :nth-child(3)');
+  const mq = matchMedia(NARROW);
+  const upd = () => {
+   setInset(!panel || !open || mq.matches ? 0 : panel.offsetWidth);
+   fig?.style.removeProperty('--lab-vp-chips');
+   if (mq.matches && panel && reserve && panel.scrollHeight > reserve.offsetHeight)
+    fig?.style.setProperty('--lab-vp-chips', `${panel.scrollHeight}px`);
+  };
+  upd();
+  mq.addEventListener('change', upd);
+  const ro = panel ? new ResizeObserver(upd) : null;
+  if (panel) ro?.observe(panel);
+  return () => {
+   mq.removeEventListener('change', upd);
+   ro?.disconnect();
+   fig?.style.removeProperty('--lab-vp-chips');
+  };
+ }, [open, hasPanel, panelId]);
 
 	// `N` toggles the sidebar of the card under the pointer (or holding focus), like Blender's region toggle.
 	useEffect(() => {
@@ -152,33 +137,33 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 		<div className="lab-vp-card" data-hud={p.instruments ? "" : undefined} data-formula={p.formula ? "" : undefined} style={{"--lab-vp-inset":`${inset}px`} as React.CSSProperties} ref={root}>
 			<header className="lab-vp-head">
 				{/* Indicators, not controls: the view type and a 2D view's projection are fixed by the scene. */}
-				<span className="lab-vp-seg" role="img" aria-label={is3d ? '3D view' : '2D view'}>
+				<span className="lab-vp-seg" role="img" aria-label={is3d ? t(locale, 'viewport.view3d') : t(locale, 'viewport.view2d')}>
 					<span className={is3d ? 'lab-vp-tag' : 'lab-vp-tag is-on'}>2D</span>
 					<span className={is3d ? 'lab-vp-tag is-on' : 'lab-vp-tag'}>3D</span>
 				</span>
 				{is3d ? (
-					<span className="lab-vp-seg" role="group" aria-label="Projection">
+					<span className="lab-vp-seg" role="group" aria-label={t(locale, 'viewport.projection')}>
 						{(['persp', 'ortho'] as const).map((k) => (
 							<button key={k} type="button" className="lab-vp-btn" aria-pressed={proj === k} onClick={() => setProj(k)}>
-								{k === 'persp' ? 'Persp' : 'Ortho'}
+								{k === 'persp' ? t(locale, 'viewport.persp') : t(locale, 'viewport.ortho')}
 							</button>
 						))}
 					</span>
 				) : (
-					<span className="lab-vp-seg" role="img" aria-label="Orthographic">
-						<span className="lab-vp-tag is-on">Ortho</span>
+					<span className="lab-vp-seg" role="img" aria-label={t(locale, 'viewport.orthographic')}>
+						<span className="lab-vp-tag is-on">{t(locale, 'viewport.ortho')}</span>
 					</span>
 				)}
 				{overlays.length > 0 && <Overlays lesson={p.lesson} card={p.id} overlays={overlays} />}
 				<button
 					type="button"
 					className="lab-vp-btn"
-					aria-label="Reset view"
+					aria-label={t(locale, 'viewport.reset')}
 					onClick={() => reg.nav?.reset()}
-					{...tip.bind({ title: 'Reset view', text: 'Back to the starting camera.' })}
+					{...tip.bind({ title: t(locale, 'viewport.reset'), text: t(locale, 'viewport.resetTip') })}
 				>
 					{Icon.reset}
-					<span className="lab-vp-label">Reset view</span>
+					<span className="lab-vp-label">{t(locale, 'viewport.reset')}</span>
 				</button>
 				<span className="lab-vp-name">{p.name}</span>
 				{hasPanel && (
@@ -187,11 +172,11 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 						className="lab-vp-btn lab-vp-chev"
 						aria-expanded={open}
 						aria-controls={panelId}
-						aria-label="Sidebar"
+						aria-label={t(locale, 'viewport.sidebar')}
 						aria-keyshortcuts="N"
 						ref={chev}
 						onClick={toggle}
-						{...tip.bind({ title: 'Sidebar', text: 'Show or hide the property panel (N).' })}
+						{...tip.bind({ title: t(locale, 'viewport.sidebar'), text: t(locale, 'viewport.sidebarTip') })}
 					>
 						{Icon.chev(open)}
 					</button>

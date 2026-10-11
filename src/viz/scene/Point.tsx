@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * A point at `at` (literal, store key, or a function of the lesson values for a derived point such as a triangle
  * vertex), drawn like a Blender vertex: a pixel-sized disc with a dark rim, facing the camera in 3D, the same size at
@@ -35,6 +37,7 @@ const DISC = new CircleGeometry(1, 28);
 const RING = (STYLE.pointR + STYLE.rim + STYLE.hotPad) / STYLE.pointR;
 
 export function Point(p: PointProps): React.JSX.Element {
+ const locale = useLocale();
  assertSubject(useContext(LookCtx),true);
 	const reg = useStage();
 	const pal = usePalette();
@@ -51,7 +54,7 @@ export function Point(p: PointProps): React.JSX.Element {
 	const keys = p.keys ?? (typeof src === 'string' ? [src] : null);
 	if (drag && !keys) throw new Error(`Point "${p.id}": a derived draggable point needs \`keys\` (what its move writes)`);
 	const atFn = (v: LessonState['vals']): V => (fn ? fn(v) : typeof src === 'string' ? (v[src] as V) : (src as V));
-	useDraggable(drag && keys ? { id: `${p.id}:pt`, owner: p.id, label: `Move point ${p.label ?? p.id}`, lesson: p.lesson, keys, at: atFn, move: p.move } : null);
+	useDraggable(drag && keys ? { id: `${p.id}:pt`, owner: p.id, label: t(locale, 'viewport.movePoint', { name: p.label ?? p.id }), lesson: p.lesson, keys, at: atFn, move: p.move } : null);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.point);
 	const dot = useRef<Group>(null);
 	// Draw-in: points pop in over the second half of the reveal.

@@ -1,3 +1,4 @@
+import '../../src/i18n/ui';
 import { expect, test } from 'bun:test';
 import course from '../../src/data/course.json';
 

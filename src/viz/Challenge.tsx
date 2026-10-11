@@ -1,3 +1,5 @@
+import { t } from '../i18n/core';
+import { useLocale } from '../i18n/react';
 /**
  * A Challenge box (lessons spec §0.6): the task, a live status and hints behind a disclosure. `check(vals, step)` is a
  * pure predicate on the lesson store, evaluated on every store change; step-based tasks read the highest step a
@@ -24,6 +26,7 @@ export interface ChallengeProps {
 }
 
 export function Challenge(p: ChallengeProps): React.JSX.Element {
+ const locale = useLocale();
 	if (!Number.isInteger(p.n) || p.n < 1) throw new Error(`Challenge: n must be a positive integer, got ${p.n}`);
 	const key = challengeKey(p.lesson, p.n);
 	const ok = useStore(lessonStore(p.lesson), (s) => p.check(s.vals, s.step));
@@ -47,17 +50,17 @@ export function Challenge(p: ChallengeProps): React.JSX.Element {
 		<section className={done ? 'lab-challenge not-content is-done' : 'lab-challenge not-content'} aria-labelledby={id}>
 			<header className="lab-ch-head">
 				<span id={id} className="lab-ch-title">
-					Challenge {p.n}
+					{t(locale, 'challenge.title', { n: p.n })}
 				</span>
 				<span className="lab-ch-status" role="status">
-					<span>{done ? '✓ done' : 'not yet'}</span>
+					<span>{t(locale, done ? 'challenge.done' : 'challenge.notYet')}</span>
 				</span>
 			</header>
 			<p className="lab-ch-text">{p.text}</p>
 			{done && p.success && <p className="lab-ch-success">{p.success}</p>}
 			{p.hint && p.hint.length > 0 && (
 				<details className="lab-ch-hint">
-					<summary>{p.hint.length > 1 ? 'Hints' : 'Hint'}</summary>
+					<summary>{t(locale, p.hint.length > 1 ? 'challenge.hints' : 'challenge.hint')}</summary>
 					<ol>
 						{p.hint.map((h) => (
 							<li key={h}>{h}</li>

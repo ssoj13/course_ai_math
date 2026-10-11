@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { localized, useLocale } from '../../i18n/react';
 /**
  * Island entry for dev/engine.mdx. The server evaluates this module (see ../island.tsx), so it holds only what
  * is cheap and SSR-safe: the lesson store init, the N-panel rows (MDX passes them to SceneIsland, which reserves the
@@ -34,19 +36,20 @@ lessonStore('demo', {
 	nl_raw: 0,
 });
 
-export const Demo2D = lazyIsland(() => import('./engine.impl').then((m) => m.Demo2D));
-export const Demo3D = lazyIsland(() => import('./engine.impl').then((m) => m.Demo3D));
-export const DemoCosines = lazyIsland(() => import('./engine.impl').then((m) => m.DemoCosines));
-export const DemoPolar = lazyIsland(() => import('./engine.impl').then((m) => m.DemoPolar));
-export const DemoSign = lazyIsland(() => import('./engine.impl').then((m) => m.DemoSign));
-export const DemoLamp = lazyIsland(() => import('./engine.impl').then((m) => m.DemoLamp));
+export const Demo2D = localized(lazyIsland(() => import('./engine.impl').then((m) => m.Demo2D)));
+export const Demo3D = localized(lazyIsland(() => import('./engine.impl').then((m) => m.Demo3D)));
+export const DemoCosines = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoCosines)));
+export const DemoPolar = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoPolar)));
+export const DemoSign = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoSign)));
+export const DemoLamp = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoLamp)));
 
 // Hoisted: Formula memoizes on these identities. A derived value computed from the live a and b (Task 3 `Derived`).
 const DOT = { dot: (v: Record<string, unknown>) => dot(v.a as V, v.b as V) };
 
 /** a.b as a live read-only value with linked terms: hover `a` here and the arrow and its N-panel row light up. */
-export function DemoDotFormula(): React.JSX.Element {
-	return <Formula lesson="demo" tex={String.raw`\t{a}{a}\cdot\t{b}{b} = \t{dot}{\s{dot}}`} derived={DOT} block label="Dot product of a and b" />;
+function DemoDotFormulaContent(): React.JSX.Element {
+ const locale = useLocale();
+	return <Formula lesson="demo" tex={String.raw`\t{a}{a}\cdot\t{b}{b} = \t{dot}{\s{dot}}`} derived={DOT} block label={t(locale, 'demo.dotLabel')} />;
 }
 
 const fmtV = (v: readonly number[]) => `(${v.map((x) => x.toFixed(1)).join(', ')})`;
@@ -75,22 +78,30 @@ const LEDGER: readonly LedgerItem[] = [
 const C2 = { id: 'c2', label: 'c²', value: (v: LessonState['vals']) => tri(v).c2 };
 
 /** LC-1's ledger on the polar triangle: a² and b² stacked, the signed correction, the rule at c². */
-export function DemoLedger(): React.JSX.Element {
-	return <Ledger lesson="demo" items={LEDGER} total={C2} scale={3.4} max={64} zeroLabel="= Pythagoras" label="Law of cosines as areas" />;
+function DemoLedgerContent(): React.JSX.Element {
+ const locale = useLocale();
+	return <Ledger lesson="demo" items={LEDGER} total={C2} scale={3.4} max={64} zeroLabel={t(locale, 'demo.pythagoras')} label={t(locale, 'demo.ledger')} />;
 }
 
 /** Two Challenge boxes: one on a value (LC-1), one on the sign card (DP-2). */
-export function DemoChallenges(): React.JSX.Element {
+function DemoChallengesContent(): React.JSX.Element {
+ const locale = useLocale();
 	return (
 		<>
-			<Challenge lesson="demo" n={1} text="Make the correction disappear without touching a or b." hint={['Drag A until the angle reads 90°.']} check={(v) => v.lth === 90} />
+			<Challenge lesson="demo" n={1} text={t(locale, 'demo.challenge1')} hint={[t(locale, 'demo.hint1')]} check={(v) => v.lth === 90} />
 			<Challenge
 				lesson="demo"
 				n={2}
-				text="In the sign scene, make a·b = 0 without making either vector zero."
-				hint={['Drag b toward the boundary between the two tints.', 'Integer solution: a = (2, 1), b = (−1, 2).']}
+				text={t(locale, 'demo.challenge2')}
+				hint={[t(locale, 'demo.hint2a'), t(locale, 'demo.hint2b')]}
 				check={(v) => Math.abs(dot(vec(v, 'sa'), vec(v, 'sb'))) < 1e-9 && dot(vec(v, 'sa'), vec(v, 'sa')) > 0 && dot(vec(v, 'sb'), vec(v, 'sb')) > 0}
 			/>
 		</>
 	);
 }
+
+export const DemoDotFormula = localized(DemoDotFormulaContent);
+
+export const DemoLedger = localized(DemoLedgerContent);
+
+export const DemoChallenges = localized(DemoChallengesContent);

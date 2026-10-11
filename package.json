@@ -10,7 +10,8 @@
     "preview": "astro preview",
     "test": "bun test tests/js",
     "size": "bun scripts/size-report.ts",
-    "check": "astro check"
+    "check": "astro check",
+    "i18n:stamp": "bun scripts/i18n-stamp.ts"
   },
   "dependencies": {
     "@astrojs/markdown-satteri": "0.4.3",

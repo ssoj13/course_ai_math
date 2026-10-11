@@ -3,7 +3,8 @@
  * override (which marks completed lessons on every page). The lesson list comes from course.json;
  * the record is keyed by lesson slug.
  */
-import { href, lessons } from './course';
+import { href, lessons, LOCALES, type Locale } from './course';
+import { t } from '../i18n/core';
 import { KEYS, load, watch } from './store';
 
 export const LESSONS = lessons;
@@ -50,14 +51,14 @@ export function counts(progress: Progress): Counts {
 }
 
 /** "12/15 core" (+ " · 1/3 optional" when the course has optional modules) */
-export function describe(progress: Progress): string {
+export function describe(progress: Progress, locale: Locale = 'en'): string {
 	const c = counts(progress);
-	const core = `${c.core}/${c.coreTotal} core`;
-	return c.optionalTotal ? `${core} · ${c.optional}/${c.optionalTotal} optional` : core;
+	const core = t(locale, 'progress.core', { done: c.core, total: c.coreTotal });
+	return c.optionalTotal ? `${core} · ${t(locale, 'progress.optional', { done: c.optional, total: c.optionalTotal })}` : core;
 }
 
 /** Sidebar link path (base-prefixed, trailing slash) -> lesson slug. */
-const SLUG_BY_PATH = new Map(lessons.map((l) => [href(l.slug), l.slug]));
+const SLUG_BY_PATH = new Map(LOCALES.flatMap(locale => lessons.map((l) => [href(l.slug, undefined, locale), l.slug])));
 
 /**
  * Adds `.lab-nav-complete` to the Starlight sidebar links of completed lessons. Matching is by the

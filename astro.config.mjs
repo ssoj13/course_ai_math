@@ -7,6 +7,7 @@ import { satteri } from '@astrojs/markdown-satteri';
 import courseLinks from './src/lib/remark-lesson-links.mjs';
 import katexMath from './src/lib/satteri-math.mjs';
 import { compactThreeShaders } from './src/lib/compact-glsl.mjs';
+import { STARLIGHT_LOCALES, courseText } from './src/lib/course-rules.mjs';
 import { fontsource } from './src/lib/fonts.mjs';
 
 const BASE = '/math-course';
@@ -23,8 +24,10 @@ let lessonNum = 0;
  */
 const moduleGroups = course.modules.map((m, i) => ({
 	label: `${i + 1}. ${m.title}${m.optional ? ' (optional)' : ''}`,
+	translations: { ru: `${i + 1}. ${courseText(m, 'ru').title}${m.optional ? ' (необязательно)' : ''}` },
 	items: m.lessons.map((l) => ({
 		label: `${l.branch ? '↳ ' : ''}${++lessonNum}. ${l.short ?? l.title}`,
+		translations: { ru: `${l.branch ? '↳ ' : ''}${lessonNum}. ${courseText(l, 'ru').label}` },
 		slug: `${m.slug}/${l.slug}`,
 	})),
 }));
@@ -86,7 +89,9 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
-			title: 'Math for AI',
+			title: { en: 'Math for AI', ru: 'Математика для ИИ' },
+			locales: STARLIGHT_LOCALES,
+			defaultLocale: 'root',
 			description:
 				'An interactive, visualization-first course: from the law of cosines and the dot product to tensors, calculus, statistics and attention.',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/ssoj13/math-course' }],
@@ -102,10 +107,10 @@ export default defineConfig({
 			routeMiddleware: './src/lib/route-links.ts',
 			lastUpdated: true,
 			sidebar: [
-				{ label: 'Home', link: '/' },
-				{ label: 'Course roadmap', slug: 'course/roadmap' },
+				{ label: 'Home', translations: { ru: 'Главная' }, link: '/' },
+				{ label: 'Course roadmap', translations: { ru: 'План курса' }, slug: 'course/roadmap' },
 				...moduleGroups,
-				{ label: 'Reference', items: [{ label: 'Glossary', slug: 'glossary' }] },
+				{ label: 'Reference', translations: { ru: 'Справочник' }, items: [{ label: 'Glossary', translations: { ru: 'Словарь' }, slug: 'glossary' }] },
 			],
 		}),
 		react(),

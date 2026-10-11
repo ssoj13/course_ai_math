@@ -1,3 +1,5 @@
+import { t, type Locale } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * A vector drawn as a beam of light from `from` (default: the origin) to `to`: a 2.5 px core with a soft halo and a
  * sharp head with a slightly concave base (visual-language.md). Either end is a literal or a store key; with keys
@@ -50,18 +52,18 @@ const TRI = new BufferGeometry().setAttribute(
 const CONE = new ConeGeometry(0.32, 1, 20).translate(0, -0.5, 0);
 
 /** Drag spec for the arrow, or null; asking to drag a literal end is an authoring error. */
-function dragSpec(p: ArrowProps, mode: 'tip' | 'whole' | 'none'): Draggable | null {
+function dragSpec(p: ArrowProps, mode: 'tip' | 'whole' | 'none', locale: Locale): Draggable | null {
 	if (mode === 'none') return null;
 	const name = p.label ?? p.id;
 	const { to, from } = p;
 	if (typeof to !== 'string') throw new Error(`Arrow "${p.id}": drag="${mode}" needs \`to\` to be a store key`);
-	if (mode === 'tip') return { id: `${p.id}:tip`, owner: p.id, label: `Move tip of ${name}`, lesson: p.lesson, keys: [to], at: (v) => v[to] as V, move: p.move };
+	if (mode === 'tip') return { id: `${p.id}:tip`, owner: p.id, label: t(locale, 'viewport.moveTip', { name }), lesson: p.lesson, keys: [to], at: (v) => v[to] as V, move: p.move };
 	if (typeof from !== 'string') throw new Error(`Arrow "${p.id}": drag="whole" needs \`from\` to be a store key`);
 	// The handle sits mid-shaft so it never competes with another arrow's tip; `from` is the anchor that snaps.
 	return {
 		id: `${p.id}:whole`,
 		owner: p.id,
-		label: `Move ${name}`,
+		label: t(locale, 'viewport.move', { name }),
 		lesson: p.lesson,
 		keys: [from, to],
 		at: (v) => (v[from] as V).map((x, i) => (x + (v[to] as V)[i]) / 2),
@@ -122,7 +124,7 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 	const to = usePos(p.lesson, p.to);
 	const from = usePos(p.lesson, p.from ?? (to.length === 3 ? O3 : O2));
 	const mode = p.drag ?? (typeof p.to === 'string' ? 'tip' : 'none');
-	useDraggable(dragSpec(p, mode));
+	useDraggable(dragSpec(p, mode, useLocale()));
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.beam);
 
 	const g = useMemo(() => {

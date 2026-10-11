@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * The N-panel (Blender's sidebar): the linked "numbers view" of a scene. Each row is label | value: editable rows
  * are Blender number fields (drag horizontally to scrub, Ctrl snaps, Shift is fine, click or Enter to type, arrows and
@@ -151,6 +153,7 @@ interface FieldProps {
 
 /** A Blender number field: drag to scrub, click/Enter to type, arrows to step. */
 function NumField(p: FieldProps): React.JSX.Element {
+ const locale = useLocale();
 	const [edit, setEdit] = useState<{ text: string; err: string | null } | null>(null);
 	const errId = useId();
 	const input = useRef<HTMLInputElement>(null);
@@ -171,7 +174,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 	const commit = (text: string) => {
 		const r = parseField(text, p.spec);
 		if (!r.ok) {
-			setEdit({ text, err: r.err });
+			setEdit({ text, err: t(locale, 'viewport.numberError') });
 			return false;
 		}
 		p.set(r.v, 'ease');
@@ -430,6 +433,7 @@ export interface NPanelProps {
 }
 
 export function NPanel({ lesson, rows, reg, open = true, id }: NPanelProps): React.JSX.Element {
+ const locale = useLocale();
 	rows.forEach(checkRow);
 	const store = lessonStore(lesson);
 	const vals = useStore(store, (s) => s.vals);
@@ -440,7 +444,7 @@ export function NPanel({ lesson, rows, reg, open = true, id }: NPanelProps): Rea
 	const panel = useRef<HTMLElement>(null);
 	useOverflowCheck(panel);
 	return (
-		<aside ref={panel} id={id} className={open ? 'lab-vp-panel' : 'lab-vp-panel is-closed'} aria-label="Properties" style={CHIP_VARS}>
+		<aside ref={panel} id={id} className={open ? 'lab-vp-panel' : 'lab-vp-panel is-closed'} aria-label={t(locale, 'viewport.properties')} style={CHIP_VARS}>
 			{shown.map((r, i) => (
 				<RowGroup key={r.id} sep={r.group && r.group !== shown[i - 1]?.group ? r.group : null}>
 					<RowView lesson={lesson} row={r} vals={vals} hot={hot.has(r.id)} reg={reg} tip={tip.bind} />

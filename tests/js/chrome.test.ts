@@ -1,3 +1,4 @@
+import { t } from '../../src/i18n/ui';
 /** Pure parts of the viewport chrome: gizmo layout, status-bar hint resolution and key caps, grid ticks. */
 import { expect, test } from 'bun:test';
 import { alignSign, gizmoLayout, GIZMO_ID } from '../../src/viz/scene/Gizmo';
@@ -39,18 +40,18 @@ test('hintFor: state first, then field, handle (lesson or built-in), gizmo, obje
 	const spec = { hints: { 'a:tip': 'drag a', a: (v: Record<string, unknown>) => `a = ${v.a}` }, idle: 'idle text' };
 	const vals = { a: 3 };
 	expect(hintFor(H({}), vals, spec, '2d')).toBe('idle text');
-	expect(hintFor(H({}), vals, {}, '3d')).toBe(DEFAULT_HINTS.idle3d);
+	expect(hintFor(H({}), vals, {}, '3d')).toBe(t('en', DEFAULT_HINTS.idle3d));
 	expect(hintFor(H({ object: 'a' }), vals, spec, '2d')).toBe('a = 3');
 	expect(hintFor(H({ object: 'zzz' }), vals, spec, '2d')).toBe('idle text');
 	expect(hintFor(H({ object: 'a', handle: 'a:tip' }), vals, spec, '2d')).toBe('drag a');
-	expect(hintFor(H({ handle: 'b:tip' }), vals, spec, '3d')).toBe(DEFAULT_HINTS.handle3d);
-	expect(hintFor(H({ object: GIZMO_ID }), vals, spec, '3d')).toBe(DEFAULT_HINTS.gizmo);
-	expect(hintFor(H({ field: 'a', handle: 'a:tip' }), vals, spec, '2d')).toBe(DEFAULT_HINTS.field);
+	expect(hintFor(H({ handle: 'b:tip' }), vals, spec, '3d')).toBe(t('en', DEFAULT_HINTS.handle3d));
+	expect(hintFor(H({ object: GIZMO_ID }), vals, spec, '3d')).toBe(t('en', DEFAULT_HINTS.gizmo));
+	expect(hintFor(H({ field: 'a', handle: 'a:tip' }), vals, spec, '2d')).toBe(t('en', DEFAULT_HINTS.field));
 	expect(hintFor(H({ field: 'a' }), vals, { ...spec, state: (v) => ((v.a as number) > 2 ? 'too far' : null) }, '2d')).toBe('too far');
 });
 
-test('hintTokens: mouse and key words become key caps; N only before "panel"', () => {
-	expect(hintTokens('LMB/MMB orbit · Shift+MMB pan · N panel · N·L')).toEqual([
+test('hintTokens: mouse and key words become key caps; explicit [N] token preserves the normal N·L symbol', () => {
+	expect(hintTokens('LMB/MMB orbit · Shift+MMB pan · [N] panel · N·L')).toEqual([
 		{ text: 'LMB/MMB', key: true },
 		{ text: ' orbit · ', key: false },
 		{ text: 'Shift+MMB', key: true },
@@ -63,8 +64,8 @@ test('hintTokens: mouse and key words become key caps; N only before "panel"', (
 });
 
 test('wheel hint: a plain wheel scrolls the page (Ruling T), so idle hints advertise Ctrl+Wheel', () => {
-	expect(DEFAULT_HINTS.idle2d).toContain('Ctrl+Wheel zoom');
-	expect(DEFAULT_HINTS.idle3d).toContain('Ctrl+Wheel zoom');
+	expect(t('en', DEFAULT_HINTS.idle2d)).toContain('Ctrl+Wheel zoom');
+	expect(t('en', DEFAULT_HINTS.idle3d)).toContain('Ctrl+Wheel zoom');
 });
 
 test('touch: built-in touch wording; lesson hints switch only when they declare a touch alternative', () => {
@@ -76,14 +77,14 @@ test('touch: built-in touch wording; lesson hints switch only when they declare 
 	expect(hintFor(H({}), {}, spec, '2d', false)).toBe('Ctrl+Wheel zoom');
 	expect(hintFor(H({ handle: 'a:tip' }), {}, spec, '2d', true)).toBe('Drag a');
 	expect(hintFor(H({ handle: 'a:tip' }), {}, spec, '2d', false)).toBe('LMB drag a · Shift 1.0');
-	expect(hintFor(H({ handle: 'b:tip' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.handle2d);
+	expect(hintFor(H({ handle: 'b:tip' }), {}, spec, '2d', true)).toBe(t('en', TOUCH_HINTS.handle2d));
 	// Plain text is device-neutral, even when it contains a word like "Shift".
 	expect(hintFor(H({ object: 'm' }), {}, spec, '2d', true)).toBe('Shift of the mean');
 	expect(hintFor(H({ object: 'a' }), {}, spec, '3d', true)).toBe('Vector a = (3, 1)');
-	expect(hintFor(H({ field: 'a' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.field);
-	expect(hintFor(H({ object: GIZMO_ID }), {}, spec, '3d', true)).toBe(TOUCH_HINTS.gizmo);
-	expect(hintFor(H({}), {}, {}, '3d', true)).toBe(TOUCH_HINTS.idle3d);
-	for (const t of Object.values(TOUCH_HINTS)) expect(hintTokens(t).some((x) => x.key)).toBe(false);
+	expect(hintFor(H({ field: 'a' }), {}, spec, '2d', true)).toBe(t('en', TOUCH_HINTS.field));
+	expect(hintFor(H({ object: GIZMO_ID }), {}, spec, '3d', true)).toBe(t('en', TOUCH_HINTS.gizmo));
+	expect(hintFor(H({}), {}, {}, '3d', true)).toBe(t('en', TOUCH_HINTS.idle3d));
+	for (const key of Object.values(TOUCH_HINTS)) expect(hintTokens(t('en', key)).some((x) => x.key)).toBe(false);
 });
 
 test('grid ticks: multiples of the step within extent, without 0; integer text or one decimal with a true minus', () => {

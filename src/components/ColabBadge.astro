@@ -1,4 +1,6 @@
 ---
+import { pageLocale, t } from '../i18n/ui';
+const locale = pageLocale(Astro);
 /**
  * "Open in Colab" badge for a notebook in `notebooks/` of the course repo.
  * Pure markup; the badge is inline SVG so no external image is hotlinked.
@@ -9,7 +11,7 @@ interface Props {
 	label?: string;
 }
 
-const { notebook, label = 'Open in Colab' } = Astro.props;
+const { notebook, label = t(locale, 'colab.open') } = Astro.props;
 if (!/^[\w.-]+$/.test(notebook)) {
 	throw new Error(`<ColabBadge>: \`notebook\` must be a bare file name, got ${JSON.stringify(notebook)}.`);
 }
@@ -30,10 +32,10 @@ const github = `https://github.com/${path}`;
 			</svg>
 			<span>{label}</span>
 		</a>
-		<a href={github} target="_blank" rel="noopener noreferrer">View on GitHub</a>
+		<a href={github} target="_blank" rel="noopener noreferrer">{t(locale, 'colab.github')}</a>
 	</div>
 	<p class="lab-muted colab-note">
-		The free CPU runtime is enough for this course. <code>{notebook}.ipynb</code>
+		{t(locale, 'colab.note')} <code>{notebook}.ipynb</code>
 	</p>
 </div>
 

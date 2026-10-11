@@ -7,21 +7,19 @@ head:
     attrs: { name: robots, content: noindex }
 ---
 
-import SceneIsland from '../../../viz/SceneIsland.astro';
-import { Demo2D, Demo3D, DemoChallenges, DemoCosines, DemoDotFormula, DemoLamp, DemoLedger, DemoPolar, DemoSign, DemoVecReadout, ROWS2, ROWS3, ROWSLAMP, ROWSLC, ROWSPOLAR, ROWSSIGN } from '../../../viz/demo/engine';
+
+import EngineDemo from '../../../viz/demo/EngineDemo.astro';
 
 Every scene is a small DCC viewport: a header (view type, projection, Overlays, Reset view), the dark viewport with
 the navigation gizmo (3D) or the XY corner (2D), the N-panel of draggable number fields (press `N` over the card or
 use the chevron; on a phone it is the row of chips under the viewport) and a status bar that says what the pointer
 does. Hover anything: the scene object, its N-panel row and its formula term light up together.
 
-<SceneIsland caption="2D: vectors a and b, the angle between them, the shadow of b on a with its right angle, the square on a and a point P" rows={ROWS2}>
-	<Demo2D client:only="react" />
-</SceneIsland>
+<EngineDemo kind="Demo2D" />
 
-<DemoDotFormula client:load />
+<EngineDemo kind="DemoDotFormula" />
 
-<DemoVecReadout client:load />
+<EngineDemo kind="DemoVecReadout" />
 
 Drag b to point exactly opposite a: the angle arc becomes a semicircle and the label reads 180 degrees. Drag b onto
 the origin: the arc and its label disappear (a zero vector has no angle) and nothing else breaks. Turn on the
@@ -31,9 +29,7 @@ The same a and b on the law-of-cosines layout: squares on the three sides and th
 bar. At the starting values the angle is acute, so the correction is negative: the bar grows inward and is hatched.
 Drag b past 90 degrees and it turns positive and plain.
 
-<SceneIsland caption="Law of cosines: squares on the sides of the triangle 0, a, b and the signed correction -2 a.b (hatched when negative)" rows={ROWSLC}>
-	<DemoCosines client:only="react" />
-</SceneIsland>
+<EngineDemo kind="DemoCosines" />
 
 ## Scroll filler
 
@@ -53,9 +49,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra.
 
-<SceneIsland caption="3D: vectors u and v with component legs, their angle and parallelogram (drag a tip to move it, drag elsewhere to orbit, click the gizmo to align the view)" rows={ROWS3}>
-	<Demo3D client:only="react" />
-</SceneIsland>
+<EngineDemo kind="Demo3D" />
 
 Tail paragraph so the last card can be scrolled to the middle of a phone screen. In 3D, PageUp and PageDown move a
 focused tip along z.
@@ -63,17 +57,16 @@ focused tip along z.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna
 aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
-import { DemoHolo, DemoFloor, DemoClay, ROWSHOLO } from "../../../viz/demo/holo";
 
 ## Holographic measurements
 
 Drag A to change the angle. The squares, measured side lengths, dial and equation all read the same triangle.
 
-<SceneIsland caption="Holographic law of cosines with glass area squares, measured sides and linked equation" rows={ROWSHOLO} hud formula><DemoHolo client:only="react" /></SceneIsland>
+<EngineDemo kind="DemoHolo" />
 
-<SceneIsland caption="Reflection across y = 0, with real view instruments" hud><DemoFloor client:only="react" /></SceneIsland>
+<EngineDemo kind="DemoFloor" />
 
-<SceneIsland caption="Nine unit tiles and eight cubes, counted in a clay studio" hud><DemoClay client:only="react" /></SceneIsland>
+<EngineDemo kind="DemoClay" />
 
 ## Lesson primitives
 
@@ -82,25 +75,19 @@ and the angle, which sticks to 30, 45, 60, 90 degrees and the other ticks on the
 step it and the vertex glides to the new value while the numbers jump. The ledger under the card is the same equation
 as an area balance: at 90 degrees the correction vanishes and only a thin line remains.
 
-<SceneIsland caption="Triangle C, B, A with B dragged along the x axis and A in polar terms; the angle snaps to the ticks; the dashed circle is every place A can be for this b" rows={ROWSPOLAR}>
-	<DemoPolar client:only="react" />
-</SceneIsland>
+<EngineDemo kind="DemoPolar" />
 
-<DemoLedger client:load />
+<EngineDemo kind="DemoLedger" />
 
 The sign of a·v colours the plane: the tinted half is where a·v is positive. b snaps exactly perpendicular to a when
 it comes within 3 degrees. Hover a₁ or a₂ in the panel to light the matching leg of a.
 
-<SceneIsland caption="Half-planes a·v > 0 and a·v < 0; b snaps to the perpendicular of a; the legs of a are separate objects" rows={ROWSSIGN}>
-	<DemoSign client:only="react" />
-</SceneIsland>
+<EngineDemo kind="DemoSign" />
 
-<DemoChallenges client:load />
+<EngineDemo kind="DemoChallenges" />
 
 The sphere's brightness is computed per pixel as max(0, N·L) for a point light. Drag the light (it stays outside the
 sphere) or P (it stays on the surface); the dashed circle is the terminator, where N·L = 0. The checkbox shows the raw
 N·L, painting the negative light that max() throws away.
 
-<SceneIsland caption="A sphere lit by a point light with brightness max(0, N·L), the probe P with its normal N and light direction L, and the terminator circle" rows={ROWSLAMP}>
-	<DemoLamp client:only="react" />
-</SceneIsland>
+<EngineDemo kind="DemoLamp" />

@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { useLocale, LocaleContext } from '../../i18n/react';
 /**
  * A scene slot: one drei <View> of the shared canvas plus its DOM overlay (labels, keyboard handles, navigation
  * gizmo). 2D = orthographic camera (pixel-stable lines), wheel zoom and MMB/RMB pan; 3D = orbit (LMB or MMB, Shift
@@ -249,6 +251,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 }
 
 export function Stage(p: StageProps): React.JSX.Element {
+ const locale = useLocale();
 	useEffect(ensureSceneHost, []);
 	const ref = useRef<HTMLDivElement>(null);
 	const { w, h } = useBoxSize(ref);
@@ -273,7 +276,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 		<div className="lab-stage" data-look={p.look ?? "holo"} ref={ref} style={{ '--lab-vp-inset': `${inset}px` } as React.CSSProperties}>
 			<View className="lab-stage-view">
 				{/* The provider sits inside the View: context does not cross drei's tunnel into the shared Canvas. */}
-				<StageCtx.Provider value={reg}>
+				<LocaleContext.Provider value={locale}><StageCtx.Provider value={reg}>
 					<InvalidateOnStore lesson={p.lesson} />
 					<InvalidateOnTheme />
 					{p.mode === '2d' ? (
@@ -314,7 +317,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 						<Suspense fallback={null}><HoloLayer look={p.look ?? 'holo'}>{p.children}</HoloLayer></Suspense>
 						{p.children}
 					</LookCtx.Provider></ShownCtx.Provider>
-				</StageCtx.Provider>
+				</StageCtx.Provider></LocaleContext.Provider>
 			</View>
 			{/* Sibling of the View div (see interface note): DOM here never blocks scene raycasts outside its own boxes. */}
 			<div className="lab-stage-overlay">
@@ -323,7 +326,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 				{p.mode === '3d' ? <Gizmo reg={reg} /> : <XYCorner />}
 				{p.overlay}
 			</div>
-			<p className="lab-stage-nogl">This scene needs WebGL, which is unavailable here. The formula and the panel next to it show the same values.</p>
+			<p className="lab-stage-nogl">{t(locale, 'viewport.nogl')}</p>
 		</div>
 	);
 }

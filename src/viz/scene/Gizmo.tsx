@@ -1,3 +1,5 @@
+import { t, type TextKey } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * Navigation gizmo (Blender's, top right of a 3D viewport): X/Y/Z bubbles in Blender's axis colors with letters,
  * negative axes as hollow bubbles, sorted by depth; click a bubble to align the view along that axis with the smooth
@@ -69,12 +71,13 @@ const R = 28;
 const BUBBLE = 8.5;
 const LETTER = ['X', 'Y', 'Z'] as const;
 const ROLE = ['axisX', 'axisY', 'axisZ'] as const;
-const VIEW_NAME: Record<string, string> = { '0,1': 'Right', '0,-1': 'Left', '1,1': 'Top', '1,-1': 'Bottom', '2,1': 'Front', '2,-1': 'Back' };
+const VIEW_NAME: Record<string, TextKey> = { '0,1': 'gizmo.right', '0,-1': 'gizmo.left', '1,1': 'gizmo.top', '1,-1': 'gizmo.bottom', '2,1': 'gizmo.front', '2,-1': 'gizmo.back' };
 
 /** Status-bar hover id of the gizmo (see StatusBar). */
 export const GIZMO_ID = '@gizmo';
 
 export function Gizmo({ reg }: { reg: StageReg }): React.JSX.Element {
+ const locale = useLocale();
 	const heads = useRef<Map<string, SVGGElement>>(new Map());
 	const lines = useRef<(SVGLineElement | null)[]>([]);
 	const layer = useRef<SVGGElement>(null);
@@ -118,13 +121,13 @@ export function Gizmo({ reg }: { reg: StageReg }): React.JSX.Element {
 	// re-stacked by depth while the view turns, and moving a focused node in the DOM drops its focus (and would make
 	// the Tab order change with the orbit). The focused button's bubble draws the focus ring.
 	const [focus, setFocus] = useState<string | null>(null);
-	const label = (axis: number, sign: number) => `${VIEW_NAME[`${axis},${sign}`]} view (${sign < 0 ? '−' : '+'}${LETTER[axis]})`;
+	const label = (axis: number, sign: number) => t(locale, 'gizmo.view', { side: t(locale, VIEW_NAME[`${axis},${sign}`]), axis: `${sign < 0 ? '−' : '+'}${LETTER[axis]}` });
 
 	return (
 		<div
 			className="lab-gizmo"
 			role="group"
-			aria-label="View navigation"
+			aria-label={t(locale, 'gizmo.navigation')}
 			onPointerEnter={() => reg.hover.set({ object: GIZMO_ID })}
 			onPointerLeave={() => reg.hover.clear('object', GIZMO_ID)}
 		>

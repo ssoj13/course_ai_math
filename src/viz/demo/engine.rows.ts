@@ -1,3 +1,4 @@
+import { t, type Locale } from '../../i18n/core';
 /**
  * Three-free model of the engine demo: N-panel rows (one array per card, passed to BOTH SceneIsland in MDX, which
  * reserves the phone chip row from them, and the ViewportCard), the pure derived values and the custom drag mappings
@@ -23,32 +24,32 @@ const rad = (deg: number) => (deg * Math.PI) / 180;
 // Cards that existed before Task 6e (2D vectors, 3D vectors, law-of-cosines tiles).
 
 const XY = { min: -4, max: 4, step: 0.1 };
-export const ROWS2: readonly Row[] = [
-	{ id: 'a', label: 'a', kind: 'vec', key: 'a', dims: 2, spec: XY, tip: { text: 'Vector a: drag its tip in the viewport or scrub here.', tex: String.raw`a = (a_x, a_y)` } },
-	{ id: 'b', label: 'b', kind: 'vec', key: 'b', dims: 2, spec: XY, tip: { text: 'Vector b.', tex: String.raw`b = (b_x, b_y)` } },
+export const ROWS2 = (locale: Locale): readonly Row[] => [
+	{ id: 'a', label: 'a', kind: 'vec', key: 'a', dims: 2, spec: XY, tip: { text: t(locale, 'rows.aTip'), tex: String.raw`a = (a_x, a_y)` } },
+	{ id: 'b', label: 'b', kind: 'vec', key: 'b', dims: 2, spec: XY, tip: { text: t(locale, 'rows.bTip'), tex: String.raw`b = (b_x, b_y)` } },
 	{ id: 'p', label: 'P', kind: 'vec', key: 'p', dims: 2, spec: XY },
-	{ id: 'th', label: 'θ', kind: 'ro', value: (v) => angleOf(vec(v, 'a'), vec(v, 'b')), fmt: (x) => `${x.toFixed(1)}°`, chars: 6, tip: { text: 'Angle between a and b.', tex: String.raw`\theta = \arccos\frac{a\cdot b}{\lvert a\rvert\,\lvert b\rvert}` } },
-	{ id: 'r', label: 'arc r', kind: 'num', key: 'r', spec: { min: 0.3, max: 2, step: 0.1 }, snap: 0.5, tip: { text: 'Radius of the angle arc (a plain number field).' } },
-	{ id: 'dot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'b')), group: 'Numbers', tip: { title: 'Dot product', text: 'Sum of products of matching components.', tex: String.raw`a\cdot b = a_x b_x + a_y b_y` } },
+	{ id: 'th', label: 'θ', kind: 'ro', value: (v) => angleOf(vec(v, 'a'), vec(v, 'b')), fmt: (x) => `${x.toFixed(1)}°`, chars: 6, tip: { text: t(locale, 'rows.angleTip'), tex: String.raw`\theta = \arccos\frac{a\cdot b}{\lvert a\rvert\,\lvert b\rvert}` } },
+	{ id: 'r', label: t(locale, 'rows.arc'), kind: 'num', key: 'r', spec: { min: 0.3, max: 2, step: 0.1 }, snap: 0.5, tip: { text: t(locale, 'rows.radiusTip') } },
+	{ id: 'dot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'b')), group: t(locale, 'rows.numbers'), tip: { title: t(locale, 'rows.dot'), text: t(locale, 'rows.dotTip'), tex: String.raw`a\cdot b = a_x b_x + a_y b_y` } },
 	{ id: 'sqa', label: '|a|²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')) },
-	{ id: 'par', label: 'b×a', kind: 'ro', value: (v) => signedArea2(vec(v, 'b'), vec(v, 'a')), tip: { title: 'Signed area', text: 'Negative (hatched) when the second vector is clockwise from the first.', tex: String.raw`b_x a_y - b_y a_x` } },
+	{ id: 'par', label: 'b×a', kind: 'ro', value: (v) => signedArea2(vec(v, 'b'), vec(v, 'a')), tip: { title: t(locale, 'rows.signed'), text: t(locale, 'rows.signedTip'), tex: String.raw`b_x a_y - b_y a_x` } },
 ];
 
 const XYZ = { min: -3, max: 3, step: 0.1 };
-export const ROWS3: readonly Row[] = [
+export const ROWS3 = (locale: Locale): readonly Row[] => [
 	{ id: 'u', label: 'u', kind: 'vec', key: 'u', dims: 3, spec: XYZ },
 	{ id: 'v', label: 'v', kind: 'vec', key: 'v', dims: 3, spec: XYZ },
 	{ id: 'phi', label: 'φ', kind: 'ro', value: (v) => angleOf(vec(v, 'u'), vec(v, 'v')), fmt: (x) => `${x.toFixed(1)}°`, chars: 6 },
-	{ id: 'dot3', label: 'u·v', kind: 'ro', value: (v) => dot(vec(v, 'u'), vec(v, 'v')), group: 'Numbers' },
-	{ id: 'par3', label: '|u×v|', kind: 'ro', value: (v) => norm(cross(vec(v, 'u'), vec(v, 'v'))), tip: { title: 'Area', text: 'Area of the parallelogram of u and v.', tex: String.raw`\lvert u\times v\rvert` } },
+	{ id: 'dot3', label: 'u·v', kind: 'ro', value: (v) => dot(vec(v, 'u'), vec(v, 'v')), group: t(locale, 'rows.numbers') },
+	{ id: 'par3', label: '|u×v|', kind: 'ro', value: (v) => norm(cross(vec(v, 'u'), vec(v, 'v'))), tip: { title: t(locale, 'rows.area'), text: t(locale, 'rows.areaTip'), tex: String.raw`\lvert u\times v\rvert` } },
 ];
 
-export const ROWSLC: readonly Row[] = [
+export const ROWSLC = (locale: Locale): readonly Row[] => [
 	{ id: 'a', label: 'a', kind: 'vec', key: 'a', dims: 2, spec: XY },
 	{ id: 'b', label: 'b', kind: 'vec', key: 'b', dims: 2, spec: XY },
-	{ id: 'sqa', label: 'a²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')), group: 'Areas' },
+	{ id: 'sqa', label: 'a²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')), group: t(locale, 'rows.areas') },
 	{ id: 'sqb', label: 'b²', kind: 'ro', value: (v) => dot(vec(v, 'b'), vec(v, 'b')) },
-	{ id: 'corr', label: '−2a·b', kind: 'ro', value: (v) => -2 * dot(vec(v, 'a'), vec(v, 'b')), tip: { title: 'Correction', text: 'Hatched when negative (angle below 90°).', tex: String.raw`-2\,a\cdot b` } },
+	{ id: 'corr', label: '−2a·b', kind: 'ro', value: (v) => -2 * dot(vec(v, 'a'), vec(v, 'b')), tip: { title: t(locale, 'rows.correction'), text: t(locale, 'rows.correctionTip'), tex: String.raw`-2\,a\cdot b` } },
 	{
 		id: 'sqc',
 		label: 'c²',
@@ -115,12 +116,12 @@ export function moveA(v: Vals, raw: readonly number[], src: 'drag' | 'key'): Mov
 	return { set: out, ease: m !== deg ? ['lth'] : [] };
 }
 
-export const ROWSPOLAR: readonly Row[] = [
+export const ROWSPOLAR = (locale: Locale): readonly Row[] => [
 	{ id: 'la', label: 'a', kind: 'num', key: 'la', spec: { ...LEN, step: 0.1 }, snap: 0.5 },
 	{ id: 'lb', label: 'b', kind: 'num', key: 'lb', spec: { ...LEN, step: 0.1 }, snap: 0.5 },
 	{ id: 'lth', label: 'θ', kind: 'num', key: 'lth', spec: { min: 0, max: 180, step: 1 }, snap: MAGNET, fmt: (x) => `${x}°` },
 	{ id: 'lc', label: 'c', kind: 'ro', value: (v) => tri(v).c },
-	{ id: 'a2', label: 'a²', kind: 'ro', value: (v) => tri(v).a2, group: 'Areas' },
+	{ id: 'a2', label: 'a²', kind: 'ro', value: (v) => tri(v).a2, group: t(locale, 'rows.areas') },
 	{ id: 'b2', label: 'b²', kind: 'ro', value: (v) => tri(v).b2 },
 	{ id: 'corr', label: '−2ab cos θ', kind: 'ro', value: (v) => tri(v).corr },
 	{ id: 'c2', label: 'c²', kind: 'ro', value: (v) => tri(v).c2 },
@@ -152,12 +153,12 @@ export function moveSb(v: Vals, raw: readonly number[], src: 'drag' | 'key'): Mo
 	return { set: { sb: scale([-a[1] / na, a[0] / na], s * nb) }, ease: ['sb'] };
 }
 
-export const ROWSSIGN: readonly Row[] = [
+export const ROWSSIGN = (locale: Locale): readonly Row[] => [
 	{ id: 'sa', label: 'a', kind: 'vec', key: 'sa', dims: 2, spec: XY },
 	{ id: 'sb', label: 'b', kind: 'vec', key: 'sb', dims: 2, spec: XY },
-	{ id: 'sa:x', label: 'a₁', kind: 'ro', value: (v) => vec(v, 'sa')[0], group: 'Legs', tip: { text: 'x component of a: hover to light its leg.' } },
+	{ id: 'sa:x', label: 'a₁', kind: 'ro', value: (v) => vec(v, 'sa')[0], group: t(locale, 'rows.legs'), tip: { text: t(locale, 'rows.legTip') } },
 	{ id: 'sa:y', label: 'a₂', kind: 'ro', value: (v) => vec(v, 'sa')[1] },
-	{ id: 'sdot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'sa'), vec(v, 'sb')), group: 'Sign' },
+	{ id: 'sdot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'sa'), vec(v, 'sb')), group: t(locale, 'rows.sign') },
 ];
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -211,12 +212,12 @@ export function lamp(v: Vals): Lamp {
 
 const LXYZ = { min: -4, max: 4, step: 0.1 };
 const fmt1 = (x: number) => (Math.round(x * 10) / 10 + 0).toFixed(1).replace('-', '−');
-export const ROWSLAMP: readonly Row[] = [
-	{ id: 'light', label: 'light', kind: 'vec', key: 'nl_light', dims: 3, spec: LXYZ },
-	{ id: 'nl_raw', label: 'raw N·L', kind: 'bool', key: 'nl_raw', tip: { text: 'Show raw N·L (no max): negative light is tinted blue.' } },
+export const ROWSLAMP = (locale: Locale): readonly Row[] => [
+	{ id: 'light', label: t(locale, 'rows.light'), kind: 'vec', key: 'nl_light', dims: 3, spec: LXYZ },
+	{ id: 'nl_raw', label: t(locale, 'rows.raw'), kind: 'bool', key: 'nl_raw', tip: { text: t(locale, 'rows.rawTip') } },
 	// Unit vectors at one decimal: "(−0.7, −0.3, −0.7)" is the widest text, 18 characters, which fits the 200 px sidebar.
-	{ id: 'N', label: 'N', kind: 'ro', value: (v) => lamp(v).N, fmt: fmt1, chars: 18, group: 'Probe' },
+	{ id: 'N', label: 'N', kind: 'ro', value: (v) => lamp(v).N, fmt: fmt1, chars: 18, group: t(locale, 'rows.probe') },
 	{ id: 'L', label: 'L', kind: 'ro', value: (v) => lamp(v).L, fmt: fmt1, chars: 18 },
 	{ id: 'NdotL', label: 'N·L', kind: 'ro', value: (v) => lamp(v).ndotl, fmt: (x) => (x + 0).toFixed(3).replace('-', '−') },
-	{ id: 'bright', label: 'bright', kind: 'ro', value: (v) => (num(v, 'nl_raw') ? lamp(v).ndotl : lamp(v).bright), fmt: (x) => (x + 0).toFixed(3).replace('-', '−') },
+	{ id: 'bright', label: t(locale, 'rows.bright'), kind: 'ro', value: (v) => (num(v, 'nl_raw') ? lamp(v).ndotl : lamp(v).bright), fmt: (x) => (x + 0).toFixed(3).replace('-', '−') },
 ];

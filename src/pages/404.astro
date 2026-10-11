@@ -11,7 +11,7 @@ import { href, pageHref } from '../lib/course';
 
 <StarlightPage
 	frontmatter={{
-		title: 'Page not found',
+		title: 'Page not found / Страница не найдена',
 		template: 'splash',
 		editUrl: false,
 		pagefind: false,
@@ -24,4 +24,6 @@ import { href, pageHref } from '../lib/course';
 			],
 		},
 	}}
-/>
+>
+ <p lang="ru">Этой страницы нет. Адреса уроков имеют вид модуль/урок/. <a href={href('squares-and-plane', undefined, 'ru')}>Начать курс на русском</a> · <a href={pageHref('course/roadmap', 'ru')}>Карта курса</a></p>
+</StarlightPage>

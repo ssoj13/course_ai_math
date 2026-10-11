@@ -4,15 +4,17 @@
  * eyebrow derived from course.json (frontmatter titles carry no numbers).
  */
 import Default from '@astrojs/starlight/components/PageTitle.astro';
-import { lessonByPath } from '../../lib/course';
+import { lessonByPath, moduleOf, loc } from '../../lib/course';
 
+import { pageLocale, t } from '../../i18n/ui';
+const locale = pageLocale(Astro);
 const lesson = lessonByPath(Astro.locals.starlightRoute.id);
 ---
 
 {
 	lesson && (
 		<p class="lesson-eyebrow">
-			Lesson {lesson.num} · Module {lesson.moduleNum} — {lesson.moduleTitle}{lesson.optional && ' (optional)'}
+			{t(locale, 'course.lesson', { num: lesson.num })} · {t(locale, 'course.module', { num: lesson.moduleNum })} — {loc(moduleOf(lesson.slug), locale).title}{lesson.optional && t(locale, 'course.optional')}
 		</p>
 	)
 }

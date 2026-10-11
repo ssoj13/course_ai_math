@@ -1,3 +1,4 @@
+import '../../src/i18n/ui';
 // Pure parts of the Task 6e lesson primitives: magnet, circle/tick/half-plane geometry, the chip model, the ledger
 // layout, the screen-space wedge and the demo's custom drag mappings. No DOM, no three.
 import { expect, test } from 'bun:test';
@@ -102,7 +103,7 @@ test('chip model: widths from the row declaration only, greedy wrapping, height 
 });
 
 test('chip model: wider phones never need more lines than the 320 px basis (the reservation is an upper bound)', () => {
-	for (const rows of [ROWS2, ROWS3, ROWSLC, ROWSPOLAR, ROWSSIGN, ROWSLAMP]) {
+	for (const rows of [ROWS2('en'), ROWS3('en'), ROWSLC('en'), ROWSPOLAR('en'), ROWSSIGN('en'), ROWSLAMP('en')]) {
 		const at320 = chipLines(rows, 320);
 		for (let w = 320; w < 720; w += 7) expect(chipLines(rows, w)).toBeLessThanOrEqual(at320);
 	}
@@ -236,7 +237,7 @@ test('a caught vector is clamped by uniform scaling, so the caught direction sur
 });
 
 test('frameMismatch: panel presence and line count must match the server frame unless overridden', () => {
-	const rows = ROWS2;
+	const rows = ROWS2('en');
 	const lines = chipLines(rows);
 	expect(frameMismatch({ panel: true, lines, override: false }, rows)).toBeNull();
 	expect(frameMismatch({ panel: true, lines: lines - 1, override: false }, rows)).toMatch(/reserved/);

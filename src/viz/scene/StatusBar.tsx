@@ -1,3 +1,5 @@
+import { t, type Locale } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * Status bar (Blender's): one line saying what the pointer does where it is. The lesson gives hints per handle id,
  * object id or N-panel row id (a string, or a function of the store values returning text or null), an `idle` text,
@@ -35,25 +37,25 @@ export interface StatusSpec {
 
 /** Built-in mouse hints: what any handle, field and the gizmo do, and the default navigation per mode. */
 export const DEFAULT_HINTS = {
-	idle2d: 'Ctrl+Wheel zoom · MMB pan · N panel',
-	idle3d: 'LMB/MMB orbit · Shift+MMB pan · Ctrl+Wheel zoom · N panel',
-	handle2d: 'LMB drag · arrows 0.1 · Shift 1.0',
-	handle3d: 'LMB drag · arrows 0.1 · Shift 1.0 · PageUp/PageDown z',
-	field: 'LMB drag scrub · Ctrl snap · Shift fine · click to type · arrows step',
-	gizmo: 'LMB click an axis: align the view · again: the opposite side',
+	idle2d: 'status.idle2d',
+	idle3d: 'status.idle3d',
+	handle2d: 'status.handle2d',
+	handle3d: 'status.handle3d',
+	field: 'status.field',
+	gizmo: 'status.gizmo',
 } as const;
 
 /** Built-in touch hints (visual-language.md: touch devices never see mouse buttons, wheel or keys). */
 export const TOUCH_HINTS = {
-	idle2d: 'Drag a tip · pinch to zoom',
-	idle3d: 'Drag a tip · swipe sideways to orbit · pinch to zoom',
-	handle2d: 'Drag to move',
-	handle3d: 'Drag to move',
-	field: 'Swipe sideways to scrub · tap to type',
-	gizmo: 'Tap an axis to align the view',
+	idle2d: 'status.touchIdle2d',
+	idle3d: 'status.touchIdle3d',
+	handle2d: 'status.touchHandle',
+	handle3d: 'status.touchHandle',
+	field: 'status.touchField',
+	gizmo: 'status.touchGizmo',
 } as const;
 
-const KEYS = /(LMB\/MMB|LMB|MMB|RMB|Ctrl\+Wheel|Wheel|Shift\+MMB|Shift|Ctrl|PageUp\/PageDown|PageUp|PageDown|\bN(?= panel))/g;
+const KEYS = /(LMB\/MMB|LMB|MMB|RMB|Ctrl\+Wheel|Wheel|Shift\+MMB|Shift|Ctrl|PageUp\/PageDown|PageUp|PageDown|\[N\])/g;
 
 const text = (h: HintText | null, vals: Vals): string | null => (h === null ? null : typeof h === 'string' ? h : h(vals));
 
@@ -68,17 +70,18 @@ const run = (h: Hint | undefined, vals: Vals, touch: boolean): string | null => 
  * handle (lesson hint or the built-in one), the gizmo, the object (lesson hint; read-only N-panel rows count as
  * their object); finally idle. `touch` picks the touch wording of the built-ins and of `{ mouse, touch }` hints.
  */
-export function hintFor(h: HoverState, vals: Vals, spec: StatusSpec, mode: '2d' | '3d', touch = false): string {
+export function hintFor(h: HoverState, vals: Vals, spec: StatusSpec, mode: '2d' | '3d', touch = false, locale: Locale = 'en'): string {
 	const hints = spec.hints ?? {};
-	const D = touch ? TOUCH_HINTS : DEFAULT_HINTS;
+	const keys = touch ? TOUCH_HINTS : DEFAULT_HINTS;
+ const D = (key: keyof typeof keys) => t(locale, keys[key]);
 	return (
 		run(spec.state, vals, touch) ??
-		(h.field !== null ? D.field : null) ??
-		(h.handle !== null ? (run(hints[h.handle], vals, touch) ?? D[mode === '3d' ? 'handle3d' : 'handle2d']) : null) ??
-		(h.object === GIZMO_ID ? D.gizmo : null) ??
+		(h.field !== null ? D('field') : null) ??
+		(h.handle !== null ? (run(hints[h.handle], vals, touch) ?? D(mode === '3d' ? 'handle3d' : 'handle2d')) : null) ??
+		(h.object === GIZMO_ID ? D('gizmo') : null) ??
 		(h.object !== null ? run(hints[h.object], vals, touch) : null) ??
 		run(spec.idle, vals, touch) ??
-		D[mode === '3d' ? 'idle3d' : 'idle2d']
+		D(mode === '3d' ? 'idle3d' : 'idle2d')
 	);
 }
 
@@ -88,7 +91,7 @@ export function hintTokens(s: string): { text: string; key: boolean }[] {
 	let i = 0;
 	for (const m of s.matchAll(KEYS)) {
 		if (m.index > i) out.push({ text: s.slice(i, m.index), key: false });
-		out.push({ text: m[0], key: true });
+		out.push({ text: m[0] === '[N]' ? 'N' : m[0], key: true });
 		i = m.index + m[0].length;
 	}
 	if (i < s.length) out.push({ text: s.slice(i), key: false });
@@ -121,10 +124,11 @@ function touchSubscribe(cb: () => void): () => void {
 const touchSnap = () => touchNow;
 
 export function StatusBar({ reg, lesson, spec }: { reg: StageReg; lesson: string; spec: StatusSpec }): React.JSX.Element {
+ const locale = useLocale();
 	const hover = useSyncExternalStore(reg.hover.subscribe, reg.hover.get, reg.hover.get);
 	const touch = useSyncExternalStore(touchSubscribe, touchSnap, () => false);
 	// Only the hint text re-renders the bar, not every store write.
-	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode, touch));
+	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode, touch, locale));
 	return (
 		<div className="lab-vp-status">
 			{/* Keyed by the text: a new hint is new nodes, so token spans reused by index never "move" (each such move was

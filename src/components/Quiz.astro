@@ -1,4 +1,7 @@
 ---
+import UiStrings from './UiStrings.astro';
+import { pageLocale, t } from '../i18n/ui';
+const locale = pageLocale(Astro);
 /**
  * Self-check multiple choice. Markup is rendered at build time (so the page is readable
  * without JS); the `lab-quiz` element only grades answers and keeps the score.
@@ -28,8 +31,8 @@ const gid = `quiz-${seed.toString(36)}`;
 ---
 
 <lab-quiz class="lab-card not-content" data-total={questions.length}>
-	<p class="lab-eyebrow">Self-check</p>
-	<p class="lab-card-title">Check your understanding</p>
+	<p class="lab-eyebrow">{t(locale, 'quiz.eyebrow')}</p>
+	<p class="lab-card-title">{t(locale, 'quiz.title')}</p>
 
 	{
 		questions.map((item, qi) => (
@@ -45,7 +48,7 @@ const gid = `quiz-${seed.toString(36)}`;
 				))}
 				<div class="lab-row quiz-actions">
 					<button type="button" class="lab-button" data-check>
-						Check
+						{t(locale, 'quiz.check')}
 					</button>
 				</div>
 				<p class="lab-msg quiz-result" data-result role="status" hidden />
@@ -57,8 +60,8 @@ const gid = `quiz-${seed.toString(36)}`;
 	}
 
 	<div class="lab-row quiz-foot">
-		<strong class="quiz-score" data-score aria-live="polite">Score: 0/{questions.length}</strong>
-		<button type="button" class="lab-button" data-reset>Reset</button>
+		<strong class="quiz-score" data-score aria-live="polite">{t(locale, 'quiz.score', { right: 0, total: questions.length })}</strong>
+		<button type="button" class="lab-button" data-reset>{t(locale, 'quiz.reset')}</button>
 	</div>
 </lab-quiz>
 
@@ -128,7 +131,10 @@ const gid = `quiz-${seed.toString(36)}`;
 	}
 </style>
 
+<UiStrings ns={["quiz"]} />
 <script>
+ import { t, docLocale } from '../i18n/core';
+ const locale = docLocale();
 	import { LabElement, define } from '../lib/element';
 
 	/** Grades each fieldset against its `data-answer` and aggregates the score (state lives in the DOM). */
@@ -148,7 +154,7 @@ const gid = `quiz-${seed.toString(36)}`;
 			result.hidden = false;
 			if (!picked) {
 				result.className = 'lab-msg quiz-result is-warn';
-				result.textContent = 'Choose an option first.';
+				result.textContent = t(locale, 'quiz.choose');
 				return;
 			}
 			const answer = Number(q.dataset.answer);
@@ -162,7 +168,7 @@ const gid = `quiz-${seed.toString(36)}`;
 			});
 			q.dataset.state = ok ? 'correct' : 'wrong';
 			result.className = `lab-msg quiz-result ${ok ? 'is-ok' : 'is-err'}`;
-			result.textContent = ok ? 'Correct.' : 'Not quite. The correct answer is marked.';
+			result.textContent = t(locale, ok ? 'quiz.correct' : 'quiz.wrong');
 			q.querySelector<HTMLElement>('[data-explain]')!.hidden = false;
 			q.querySelector<HTMLButtonElement>('[data-check]')!.disabled = true;
 			this.updateScore();
@@ -173,7 +179,7 @@ const gid = `quiz-${seed.toString(36)}`;
 			const right = this.querySelectorAll('fieldset[data-state=correct]').length;
 			const done = this.querySelectorAll('fieldset[data-state]').length;
 			this.querySelector('[data-score]')!.textContent =
-				`Score: ${right}/${total}` + (done < total ? ` (${done} answered)` : '');
+				t(locale, 'quiz.score', { right, total }) + (done < total ? t(locale, 'quiz.answered', { done }) : '');
 		}
 
 		private reset(): void {

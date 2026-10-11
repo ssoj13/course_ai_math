@@ -1,3 +1,5 @@
+import { t } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * DOM pieces of the ViewportCard header that need no three/drei (so they are tested without loading three): the
  * icon set and Blender's Overlays popover. ViewportCard.tsx composes them with the Stage.
@@ -37,6 +39,7 @@ export const Icon = {
  * focus leaving it closes it; Escape returns focus to the button.
  */
 export function Overlays({ lesson, card, overlays }: { lesson: string; card: string; overlays: readonly OverlayDef[] }): React.JSX.Element {
+ const locale = useLocale();
 	const [open, setOpen] = useState(false);
 	const wrap = useRef<HTMLDivElement>(null);
 	const btn = useRef<HTMLButtonElement>(null);
@@ -73,13 +76,13 @@ export function Overlays({ lesson, card, overlays }: { lesson: string; card: str
 		>
 			<button ref={btn} type="button" className="lab-vp-btn" aria-expanded={open} aria-controls={popId} onClick={() => setOpen((o) => !o)}>
 				{Icon.overlays}
-				<span className="lab-vp-label">Overlays</span>
+				<span className="lab-vp-label">{t(locale, 'viewport.overlays')}</span>
 				{Icon.caret}
 			</button>
 			{open && (
-				<div id={popId} className="lab-vp-pop" role="group" aria-label="Viewport overlays">
+				<div id={popId} className="lab-vp-pop" role="group" aria-label={t(locale, 'viewport.overlayTitle')}>
 					<div className="lab-vp-pop-title" aria-hidden="true">
-						Viewport overlays
+						{t(locale, 'viewport.overlayTitle')}
 					</div>
 					{overlays.map((o, i) => (
 						<label key={o.id} className="lab-vp-check">

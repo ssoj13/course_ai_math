@@ -1,3 +1,4 @@
+import '../../src/i18n/ui';
 /**
  * Opt-in DOM for component tests. Import it first in a test file that mounts React (react-dom/client, act).
  * It is deliberately not preloaded, so pure tests stay DOM-free. bun runs test files in one process, so once any

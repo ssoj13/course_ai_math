@@ -1,3 +1,5 @@
+import { t, type Locale } from '../../i18n/core';
+import { useLocale } from '../../i18n/react';
 /**
  * Engine demo scenes (loaded lazily via engine.tsx): ViewportCards on the shared `demo` store showing every element of
  * the visual language: header (2D/3D, Persp/Ortho, Overlays, Reset view), gizmo or XY corner, shader grid with ticks,
@@ -71,35 +73,37 @@ function Arc2D(): React.JSX.Element {
 	return <AngleArc lesson="demo" id="th" at={O2} from="a" to="b" r={r} label={deg} />;
 }
 
-const OV2: readonly OverlayDef[] = [
-	{ id: 'grid', label: 'Grid', on: true },
-	{ id: 'labels', label: 'Labels', on: true },
-	{ id: 'angle', label: 'Angle', on: true },
-	{ id: 'shadow', label: 'Shadow', on: true },
-	{ id: 'square', label: 'Square on a', on: true },
-	{ id: 'par', label: 'Parallelogram b×a', on: false },
+const OV2 = (locale: Locale): readonly OverlayDef[] => [
+	{ id: 'grid', label: t(locale, 'demo.grid'), on: true },
+	{ id: 'labels', label: t(locale, 'demo.labels'), on: true },
+	{ id: 'angle', label: t(locale, 'demo.angle'), on: true },
+	{ id: 'shadow', label: t(locale, 'demo.shadow'), on: true },
+	{ id: 'square', label: t(locale, 'demo.squareA'), on: true },
+	{ id: 'par', label: t(locale, 'demo.parBA'), on: false },
 ];
 
-const STATUS2: StatusSpec = {
+const STATUS2 = (locale: Locale): StatusSpec => ({
 	hints: {
-		'a:tip': { mouse: 'LMB drag the tip of a · arrows 0.1 · Shift 1.0', touch: 'Drag the tip of a' },
-		'b:tip': { mouse: 'LMB drag the tip of b · arrows 0.1 · Shift 1.0', touch: 'Drag the tip of b' },
-		'p:pt': { mouse: 'LMB drag P · arrows 0.1', touch: 'Drag P' },
-		a: (v) => `Vector a = (${vec(v, 'a').map(num).join(', ')})`,
-		b: (v) => `Vector b = (${vec(v, 'b').map(num).join(', ')})`,
-		th: (v) => `Angle θ = ${angleOf(vec(v, 'a'), vec(v, 'b')).toFixed(1)}°`,
-		proj: 'Shadow of b on a · its length × |a| = a·b',
-		drop: 'Drop line from the tip of b · meets a at a right angle',
+		'a:tip': { mouse: t(locale, 'demo.aMouse'), touch: t(locale, 'demo.aTouch') },
+		'b:tip': { mouse: t(locale, 'demo.bMouse'), touch: t(locale, 'demo.bTouch') },
+		'p:pt': { mouse: t(locale, 'demo.pMouse'), touch: t(locale, 'demo.pTouch') },
+		a: (v) => t(locale, 'demo.vector', { name: 'a', value: vec(v, 'a').map(num).join(', ') }),
+		b: (v) => t(locale, 'demo.vector', { name: 'b', value: vec(v, 'b').map(num).join(', ') }),
+		th: (v) => t(locale, 'demo.angleValue', { name: 'θ', value: angleOf(vec(v, 'a'), vec(v, 'b')).toFixed(1) }),
+		proj: t(locale, 'demo.shadowHint'),
+		drop: t(locale, 'demo.dropHint'),
 		sqa: (v) => `|a|² = ${num(dot(vec(v, 'a'), vec(v, 'a')))}`,
-		par: (v) => `b×a = ${num(signedArea2(vec(v, 'b'), vec(v, 'a')))} · hatched = negative`,
+		par: (v) => t(locale, 'demo.hatched', { value: `b×a = ${num(signedArea2(vec(v, 'b'), vec(v, 'a')))}` }),
 	},
 	// isRight: dragged grid values are perpendicular only up to rounding (a = (3, 1), b = (-0.3, 0.9): a·b = 1e-16).
 	state: (v) => (isRight(vec(v, 'a'), vec(v, 'b')) ? 'a ⊥ b · a·b = 0' : null),
-};
+});
 
 /** 2D: grid, draggable a and b, their angle, b's shadow on a, the square on a, the signed parallelogram, a point. */
-export const Demo2D = () => (
-	<ViewportCard lesson="demo" id="d2" name="DEMO-2D · Vectors" mode="2d" extent={4} overlays={OV2} rows={ROWS2} status={STATUS2} drawIn>
+export const Demo2D = () => {
+ const locale = useLocale();
+ return (
+	<ViewportCard lesson="demo" id="d2" name={t(locale, 'demo.name2')} mode="2d" extent={4} overlays={OV2(locale)} rows={ROWS2(locale)} status={STATUS2(locale)} drawIn>
 		<Show ov="grid">
 			<Grid lesson="demo" extent={4} step={1} minor={0.5} />
 		</Show>
@@ -124,28 +128,30 @@ export const Demo2D = () => (
 		</Show>
 		<Point lesson="demo" id="p" at="p" label="P" role="light" />
 	</ViewportCard>
-);
+);};
 
-const OV3: readonly OverlayDef[] = [
-	{ id: 'grid', label: 'Floor grid', on: true },
-	{ id: 'labels', label: 'Labels', on: true },
-	{ id: 'angle', label: 'Angle', on: true },
-	{ id: 'par', label: 'Parallelogram', on: true },
-	{ id: 'disc', label: 'u·x = 0 disc', on: true },
+const OV3 = (locale: Locale): readonly OverlayDef[] => [
+	{ id: 'grid', label: t(locale, 'demo.floorGrid'), on: true },
+	{ id: 'labels', label: t(locale, 'demo.labels'), on: true },
+	{ id: 'angle', label: t(locale, 'demo.angle'), on: true },
+	{ id: 'par', label: t(locale, 'demo.par'), on: true },
+	{ id: 'disc', label: t(locale, 'demo.disc'), on: true },
 ];
 
-const STATUS3: StatusSpec = {
+const STATUS3 = (locale: Locale): StatusSpec => ({
 	hints: {
-		u: (v) => `Vector u = (${vec(v, 'u').map(num).join(', ')})`,
-		v: (v) => `Vector v = (${vec(v, 'v').map(num).join(', ')})`,
-		phi: (v) => `Angle φ = ${angleOf(vec(v, 'u'), vec(v, 'v')).toFixed(1)}°`,
+		u: (v) => t(locale, 'demo.vector', { name: 'u', value: vec(v, 'u').map(num).join(', ') }),
+		v: (v) => t(locale, 'demo.vector', { name: 'v', value: vec(v, 'v').map(num).join(', ') }),
+		phi: (v) => t(locale, 'demo.angleValue', { name: 'φ', value: angleOf(vec(v, 'u'), vec(v, 'v')).toFixed(1) }),
 		par3: (v) => `|u×v| = ${num(norm(cross(vec(v, 'u'), vec(v, 'v'))))}`,
 	},
-};
+});
 
 /** 3D: two arrows with legs, their angle (normal = up picks the plane at 180 degrees), their parallelogram, labels. */
-export const Demo3D = () => (
-	<ViewportCard lesson="demo" id="d3" name="DEMO-3D · Vectors" mode="3d" extent={3} overlays={OV3} rows={ROWS3} status={STATUS3}>
+export const Demo3D = () => {
+ const locale = useLocale();
+ return (
+	<ViewportCard lesson="demo" id="d3" name={t(locale, 'demo.name3')} mode="3d" extent={3} overlays={OV3(locale)} rows={ROWS3(locale)} status={STATUS3(locale)}>
 		<Show ov="grid">
 			<Grid lesson="demo" extent={3} step={1} />
 		</Show>
@@ -167,23 +173,23 @@ export const Demo3D = () => (
 			<Label lesson="demo" id="v" at="v" role="vecB" offset={TIP}>v</Label>
 		</Show>
 	</ViewportCard>
-);
+);};
 
-const OVLC: readonly OverlayDef[] = [
-	{ id: 'grid', label: 'Grid', on: true },
-	{ id: 'squares', label: 'Squares on the sides', on: true },
-	{ id: 'corr', label: 'Correction −2a·b', on: true },
-	{ id: 'labels', label: 'Labels', on: true },
+const OVLC = (locale: Locale): readonly OverlayDef[] => [
+	{ id: 'grid', label: t(locale, 'demo.grid'), on: true },
+	{ id: 'squares', label: t(locale, 'demo.squares'), on: true },
+	{ id: 'corr', label: t(locale, 'demo.corr'), on: true },
+	{ id: 'labels', label: t(locale, 'demo.labels'), on: true },
 ];
 
-const STATUSLC: StatusSpec = {
+const STATUSLC = (locale: Locale): StatusSpec => ({
 	hints: {
 		sqa: (v) => `a² = ${num(dot(vec(v, 'a'), vec(v, 'a')))}`,
 		sqb: (v) => `b² = ${num(dot(vec(v, 'b'), vec(v, 'b')))}`,
 		sqc: 'c² = a² + b² − 2a·b',
-		corr: (v) => `−2a·b = ${num(-2 * dot(vec(v, 'a'), vec(v, 'b')))} · hatched = negative`,
+		corr: (v) => t(locale, 'demo.hatched', { value: `−2a·b = ${num(-2 * dot(vec(v, 'a'), vec(v, 'b')))}` }),
 	},
-};
+});
 
 const corr = (v: Record<string, unknown>) => -2 * dot(v.a as V, v.b as V);
 
@@ -203,8 +209,10 @@ function CosineTiles(): React.JSX.Element {
  * Law of cosines layout: squares on the three sides and the correction −2 a·b as a signed bar on a fixed 10-unit base
  * (height = area / 10). At the default a, b the angle is acute, so the bar is negative: it grows inward and is hatched.
  */
-export const DemoCosines = () => (
-	<ViewportCard lesson="demo" id="lc" name="DEMO-LC · Law of cosines" mode="2d" extent={6} overlays={OVLC} rows={ROWSLC} status={STATUSLC}>
+export const DemoCosines = () => {
+ const locale = useLocale();
+ return (
+	<ViewportCard lesson="demo" id="lc" name={t(locale, 'demo.nameLC')} mode="2d" extent={6} overlays={OVLC(locale)} rows={ROWSLC(locale)} status={STATUSLC(locale)}>
 		<Show ov="grid">
 			<Grid lesson="demo" extent={6} step={1} />
 		</Show>
@@ -221,24 +229,24 @@ export const DemoCosines = () => (
 			<Label lesson="demo" id="b" at="b" role="vecB" offset={TIP}>b</Label>
 		</Show>
 	</ViewportCard>
-);
+);};
 
 // ---------------------------------------------------------------------------------------------------------------
 // Task 6e lesson primitives.
 
-const OVPOLAR: readonly OverlayDef[] = [
-	{ id: 'grid', label: 'Grid', on: true },
-	{ id: 'labels', label: 'Labels', on: true },
-	{ id: 'locus', label: 'Circle |CA| = b', on: true },
+const OVPOLAR = (locale: Locale): readonly OverlayDef[] => [
+	{ id: 'grid', label: t(locale, 'demo.grid'), on: true },
+	{ id: 'labels', label: t(locale, 'demo.labels'), on: true },
+	{ id: 'locus', label: t(locale, 'demo.locus'), on: true },
 ];
 
-const STATUSPOLAR: StatusSpec = {
+const STATUSPOLAR = (locale: Locale): StatusSpec => ({
 	hints: {
-		'A:pt': { mouse: 'LMB drag A · b and θ follow · θ sticks at 30°, 45°, 60°, 90° …', touch: 'Drag A · θ sticks at the ticks' },
-		'B:pt': { mouse: 'LMB drag B along a · sets a', touch: 'Drag B along a' },
-		locus: 'Every place A can be with this b: a circle around C',
+		'A:pt': { mouse: t(locale, 'demo.polarMouse'), touch: t(locale, 'demo.polarTouch') },
+		'B:pt': { mouse: t(locale, 'demo.baseMouse'), touch: t(locale, 'demo.baseTouch') },
+		locus: t(locale, 'demo.locusHint'),
 	},
-};
+});
 
 /** The triangle of the polar card: C fixed, B on the x axis (moveB), A in polar terms with the magnet (moveA). */
 function PolarTriangle(): React.JSX.Element {
@@ -264,8 +272,10 @@ function PolarTriangle(): React.JSX.Element {
 }
 
 /** Polar drag (LC-0 vertices), magnet ticks on the arc, a 2D circle (the locus of A); the Ledger sits under the card. */
-export const DemoPolar = () => (
-	<ViewportCard lesson="demo" id="pol" name="DEMO-POLAR · Vertex drags" mode="2d" extent={5} center={[1, 1.5]} overlays={OVPOLAR} rows={ROWSPOLAR} status={STATUSPOLAR}>
+export const DemoPolar = () => {
+ const locale = useLocale();
+ return (
+	<ViewportCard lesson="demo" id="pol" name={t(locale, 'demo.namePolar')} mode="2d" extent={5} center={[1, 1.5]} overlays={OVPOLAR(locale)} rows={ROWSPOLAR(locale)} status={STATUSPOLAR(locale)}>
 		<Show ov="grid">
 			<Grid lesson="demo" extent={5} step={1} />
 		</Show>
@@ -274,25 +284,25 @@ export const DemoPolar = () => (
 		</Show>
 		<PolarTriangle />
 	</ViewportCard>
-);
+);};
 
-const OVSIGN: readonly OverlayDef[] = [
-	{ id: 'grid', label: 'Grid', on: true },
-	{ id: 'half', label: 'Half-planes', on: true },
-	{ id: 'legs', label: 'Legs', on: true },
+const OVSIGN = (locale: Locale): readonly OverlayDef[] => [
+	{ id: 'grid', label: t(locale, 'demo.grid'), on: true },
+	{ id: 'half', label: t(locale, 'demo.half'), on: true },
+	{ id: 'legs', label: t(locale, 'demo.legs'), on: true },
 ];
 
-const STATUSSIGN: StatusSpec = {
+const STATUSSIGN = (locale: Locale): StatusSpec => ({
 	hints: {
-		'sb:tip': { mouse: 'LMB drag tip of b · snaps to ⊥ near 90°', touch: 'Drag b · snaps to ⊥ near 90°' },
-		'sa:tip': { mouse: 'LMB drag tip of a · the half-planes turn with it', touch: 'Drag a' },
-		hp_pos: 'a·v > 0 here',
-		hp_neg: 'a·v < 0 here',
+		'sb:tip': { mouse: t(locale, 'demo.sbMouse'), touch: t(locale, 'demo.sbTouch') },
+		'sa:tip': { mouse: t(locale, 'demo.saMouse'), touch: t(locale, 'demo.saTouch') },
+		hp_pos: t(locale, 'demo.positive'),
+		hp_neg: t(locale, 'demo.negative'),
 		'sa:x': (v) => `a₁ = ${num(vec(v, 'sa')[0])}`,
 		'sa:y': (v) => `a₂ = ${num(vec(v, 'sa')[1])}`,
 	},
 	state: (v) => (Math.abs(dot(vec(v, 'sa'), vec(v, 'sb'))) < 1e-9 ? 'a ⊥ b · a·b = 0' : null),
-};
+});
 
 function SignRight(): React.JSX.Element | null {
 	const a = use2('sa');
@@ -301,8 +311,10 @@ function SignRight(): React.JSX.Element | null {
 }
 
 /** DP-2: the plane pre-coloured by the sign of a·v, b's magnet to the perpendicular, per-axis leg ids of a. */
-export const DemoSign = () => (
-	<ViewportCard lesson="demo" id="sign" name="DEMO-SIGN · Half-planes" mode="2d" extent={4} overlays={OVSIGN} rows={ROWSSIGN} status={STATUSSIGN}>
+export const DemoSign = () => {
+ const locale = useLocale();
+ return (
+	<ViewportCard lesson="demo" id="sign" name={t(locale, 'demo.nameSign')} mode="2d" extent={4} overlays={OVSIGN(locale)} rows={ROWSSIGN(locale)} status={STATUSSIGN(locale)}>
 		<Show ov="grid">
 			<Grid lesson="demo" extent={4} step={1} />
 		</Show>
@@ -316,23 +328,23 @@ export const DemoSign = () => (
 		<Label lesson="demo" id="sa" at="sa" role="vecA" offset={TIP}>a</Label>
 		<Label lesson="demo" id="sb" at="sb" role="vecB" offset={TIP}>b</Label>
 	</ViewportCard>
-);
+);};
 
-const OVLAMP: readonly OverlayDef[] = [
-	{ id: 'term', label: 'Terminator', on: true },
-	{ id: 'vecs', label: 'N and L', on: true },
-	{ id: 'labels', label: 'Labels', on: true },
+const OVLAMP = (locale: Locale): readonly OverlayDef[] => [
+	{ id: 'term', label: t(locale, 'demo.term'), on: true },
+	{ id: 'vecs', label: t(locale, 'demo.vecs'), on: true },
+	{ id: 'labels', label: t(locale, 'demo.labels'), on: true },
 ];
 
-const STATUSLAMP: StatusSpec = {
+const STATUSLAMP = (locale: Locale): StatusSpec => ({
 	hints: {
-		'light:pt': { mouse: 'LMB drag light · stays outside the sphere', touch: 'Drag the light' },
-		'P:pt': { mouse: 'LMB drag P on the surface', touch: 'Drag P on the surface' },
-		term: 'N·L = 0 here · the ⊥ line of the sign scene, wrapped around a sphere',
-		N: 'Surface normal at P',
-		L: 'Direction from P to the light',
+		'light:pt': { mouse: t(locale, 'demo.lightMouse'), touch: t(locale, 'demo.lightTouch') },
+		'P:pt': { mouse: t(locale, 'demo.surfaceMouse'), touch: t(locale, 'demo.surfaceTouch') },
+		term: t(locale, 'demo.termHint'),
+		N: t(locale, 'demo.normalHint'),
+		L: t(locale, 'demo.lightHint'),
 	},
-};
+});
 
 /** N and L at the probe, and the terminator circle (all derived from the store). */
 function LampGuides(): React.JSX.Element {
@@ -360,15 +372,17 @@ function LampSphere(): React.JSX.Element {
 }
 
 /** DP-4: Lambert's max(0, N·L) as a picture; the checkbox row shows the raw (negative) N·L. */
-export const DemoLamp = () => (
-	<ViewportCard lesson="demo" id="lamp" name="DEMO-LAMP · N·L" mode="3d" extent={3} overlays={OVLAMP} rows={ROWSLAMP} status={STATUSLAMP}>
+export const DemoLamp = () => {
+ const locale = useLocale();
+ return (
+	<ViewportCard lesson="demo" id="lamp" name={t(locale, 'demo.nameLamp')} mode="3d" extent={3} overlays={OVLAMP(locale)} rows={ROWSLAMP(locale)} status={STATUSLAMP(locale)}>
 		<LampSphere />
 		<LampGuides />
-		<Point lesson="demo" id="light" at="nl_light" move={moveLight} role="light" label="light" />
+		<Point lesson="demo" id="light" at="nl_light" move={moveLight} role="light" label={t(locale, 'rows.light')} />
 		<Point lesson="demo" id="P" at="nl_pt" move={moveP} label="P" />
 		<Show ov="labels">
-			<Label lesson="demo" id="light" at="nl_light" role="light" offset={TIP}>light</Label>
+			<Label lesson="demo" id="light" at="nl_light" role="light" offset={TIP}>{t(locale, 'rows.light')}</Label>
 			<Label lesson="demo" id="P" at="nl_pt" offset={TIP}>P</Label>
 		</Show>
 	</ViewportCard>
-);
+);};
