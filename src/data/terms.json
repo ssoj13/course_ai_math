@@ -1,0 +1,605 @@
+{
+  "terms": [
+    {
+      "id": "number",
+      "label": "Number",
+      "def": "A number is a reading on a ruler: one position on the number line.",
+      "depth": "ground",
+      "lessons": ["squares-and-plane"],
+      "edges": [],
+      "ru": { "label": "Число", "def": "Число — это показание линейки: одно положение на числовой прямой." }
+    },
+    {
+      "id": "square",
+      "label": "Square",
+      "def": "The square of x is the area of a square with side x.",
+      "depth": "ground",
+      "lessons": ["squares-and-plane"],
+      "edges": [{ "type": "built-on", "to": "number" }],
+      "ru": { "label": "Квадрат", "def": "Квадрат числа x — это площадь квадрата со стороной x." }
+    },
+    {
+      "id": "sqrt",
+      "label": "Square root",
+      "def": "The square root undoes squaring: the side of a square with a given area.",
+      "depth": "ground",
+      "lessons": ["squares-and-plane"],
+      "edges": [{ "type": "built-on", "to": "square" }],
+      "ru": { "label": "Квадратный корень", "def": "Квадратный корень обращает возведение в квадрат: это сторона квадрата с заданной площадью." }
+    },
+    {
+      "id": "coordinate",
+      "label": "Coordinate",
+      "def": "A coordinate is a reading of a point on one ruler (axis).",
+      "depth": "ground",
+      "lessons": ["squares-and-plane"],
+      "edges": [{ "type": "built-on", "to": "number" }],
+      "ru": { "label": "Координата", "def": "Координата — это показание точки на одной линейке (оси)." }
+    },
+    {
+      "id": "point",
+      "label": "Point",
+      "def": "A point is a place described by its coordinates.",
+      "depth": "ground",
+      "lessons": ["squares-and-plane"],
+      "edges": [{ "type": "built-on", "to": "coordinate" }],
+      "ru": { "label": "Точка", "def": "Точка — это место, заданное своими координатами." }
+    },
+    {
+      "id": "squared-distance",
+      "label": "Squared distance",
+      "def": "Squared distance compares sizes without a square root, which costs several multiplies (dist² < r²).",
+      "depth": "machine",
+      "lessons": ["squares-and-plane"],
+      "edges": [{ "type": "built-on", "to": "square" }, { "type": "built-on", "to": "point" }],
+      "ru": { "label": "Квадрат расстояния", "def": "Квадрат расстояния сравнивает размеры без квадратного корня, который стоит нескольких умножений (dist² < r²)." }
+    },
+    {
+      "id": "power",
+      "label": "Power",
+      "def": "x to the power n is n copies of x multiplied together: x² is an area, x³ a volume.",
+      "depth": "ground",
+      "lessons": ["powers"],
+      "edges": [{ "type": "built-on", "to": "square" }],
+      "ru": { "label": "Степень", "def": "x в степени n — это n сомножителей x: x² — площадь, x³ — объём." }
+    },
+    {
+      "id": "power-rule",
+      "label": "Power rule",
+      "def": "The power rule says that multiplying powers of one base adds their exponents: xᵐ·xⁿ = xᵐ⁺ⁿ.",
+      "depth": "ground",
+      "lessons": ["powers"],
+      "edges": [{ "type": "built-on", "to": "power" }],
+      "ru": { "label": "Правило степеней", "def": "Правило степеней: при умножении степеней одного основания показатели складываются, xᵐ·xⁿ = xᵐ⁺ⁿ." }
+    },
+    {
+      "id": "negative-power",
+      "label": "Zero and negative powers",
+      "def": "x⁰ = 1 and x⁻ⁿ = 1/xⁿ: each step down the power ladder divides by x, as the power rule demands.",
+      "depth": "ground",
+      "lessons": ["powers"],
+      "edges": [{ "type": "built-on", "to": "power-rule" }],
+      "ru": { "label": "Нулевая и отрицательные степени", "def": "x⁰ = 1 и x⁻ⁿ = 1/xⁿ: каждый шаг вниз по лестнице степеней делит на x, как требует правило степеней." }
+    },
+    {
+      "id": "fractional-power",
+      "label": "Fractional power",
+      "def": "A fractional power is a root: the power rule forces (x^½)² = x, so x^½ = √x.",
+      "depth": "ground",
+      "lessons": ["powers"],
+      "edges": [{ "type": "built-on", "to": "power-rule" }, { "type": "built-on", "to": "sqrt" }],
+      "ru": { "label": "Дробная степень", "def": "Дробная степень — это корень: правило степеней требует (x^½)² = x, поэтому x^½ = √x." }
+    },
+    {
+      "id": "gamma",
+      "label": "Gamma",
+      "def": "Gamma encodes light as c^(1/2.2) and decodes it with c^2.2; the power rule makes the round trip exact.",
+      "depth": "ground",
+      "lessons": ["powers"],
+      "edges": [{ "type": "built-on", "to": "fractional-power" }],
+      "ru": { "label": "Гамма", "def": "Гамма кодирует свет как c^(1/2.2) и декодирует как c^2.2; правило степеней делает обратный путь точным." }
+    },
+    {
+      "id": "pythagoras",
+      "label": "Pythagorean theorem",
+      "def": "Pythagoras: the squared hypotenuse is the sum of the squared legs.",
+      "depth": "ground",
+      "lessons": ["pythagoras"],
+      "edges": [{ "type": "built-on", "to": "square" }, { "type": "special-case-of", "to": "law-of-cosines" }],
+      "ru": { "label": "Теорема Пифагора", "def": "Теорема Пифагора: квадрат гипотенузы равен сумме квадратов катетов." }
+    },
+    {
+      "id": "distance",
+      "label": "Distance",
+      "def": "Distance is the straight-line length between two points, computed by Pythagoras.",
+      "depth": "ground",
+      "lessons": ["pythagoras"],
+      "edges": [{ "type": "built-on", "to": "pythagoras" }, { "type": "built-on", "to": "point" }],
+      "ru": { "label": "Расстояние", "def": "Расстояние — это длина прямого отрезка между двумя точками, вычисленная по теореме Пифагора." }
+    },
+    {
+      "id": "hypot",
+      "label": "hypot",
+      "def": "hypot(x, y) computes √(x² + y²) without letting the squares overflow or underflow.",
+      "depth": "machine",
+      "lessons": ["pythagoras"],
+      "edges": [{ "type": "built-on", "to": "pythagoras" }, { "type": "used-in", "to": "distance" }],
+      "ru": { "label": "hypot", "def": "hypot(x, y) вычисляет √(x² + y²), не давая квадратам переполниться или исчезнуть." }
+    },
+    {
+      "id": "angle",
+      "label": "Angle",
+      "def": "An angle is the amount of turn between two directions.",
+      "depth": "ground",
+      "lessons": ["unit-circle"],
+      "edges": [{ "type": "built-on", "to": "point" }],
+      "ru": { "label": "Угол", "def": "Угол — это величина поворота между двумя направлениями." }
+    },
+    {
+      "id": "unit-circle",
+      "label": "Unit circle",
+      "def": "The unit circle is the set of points at distance 1 from the origin.",
+      "depth": "ground",
+      "lessons": ["unit-circle"],
+      "edges": [{ "type": "built-on", "to": "distance" }],
+      "ru": { "label": "Единичная окружность", "def": "Единичная окружность — это множество точек на расстоянии 1 от начала координат." }
+    },
+    {
+      "id": "radian",
+      "label": "Radian",
+      "def": "A radian is an angle measured as arc length on a circle of radius 1.",
+      "depth": "ground",
+      "lessons": ["unit-circle"],
+      "edges": [{ "type": "built-on", "to": "angle" }, { "type": "built-on", "to": "unit-circle" }],
+      "ru": { "label": "Радиан", "def": "Радиан — это угол, измеренный длиной дуги на окружности радиуса 1." }
+    },
+    {
+      "id": "cosine",
+      "label": "Cosine",
+      "def": "cos θ is the x-coordinate of the unit-circle point at angle θ (its shadow on x).",
+      "depth": "ground",
+      "lessons": ["unit-circle"],
+      "edges": [
+        { "type": "built-on", "to": "unit-circle" },
+        { "type": "built-on", "to": "coordinate" },
+        { "type": "built-on", "to": "angle" },
+        { "type": "used-in", "to": "dot-product" },
+        { "type": "used-in", "to": "cosine-similarity" }
+      ],
+      "ru": { "label": "Косинус", "def": "cos θ — это x-координата точки единичной окружности под углом θ (её тень на оси x)." }
+    },
+    {
+      "id": "sine",
+      "label": "Sine",
+      "def": "sin θ is the y-coordinate of the unit-circle point at angle θ.",
+      "depth": "ground",
+      "lessons": ["unit-circle"],
+      "edges": [
+        { "type": "built-on", "to": "unit-circle" },
+        { "type": "built-on", "to": "coordinate" },
+        { "type": "built-on", "to": "angle" },
+        { "type": "used-in", "to": "cross-product" }
+      ],
+      "ru": { "label": "Синус", "def": "sin θ — это y-координата точки единичной окружности под углом θ." }
+    },
+    {
+      "id": "atan2",
+      "label": "atan2",
+      "def": "atan2(y, x) turns a point back into its angle, in the correct quarter of the circle.",
+      "depth": "ground",
+      "lessons": ["unit-circle"],
+      "edges": [{ "type": "built-on", "to": "cosine" }, { "type": "built-on", "to": "sine" }],
+      "ru": { "label": "atan2", "def": "atan2(y, x) превращает точку обратно в её угол, в правильной четверти окружности." }
+    },
+    {
+      "id": "law-of-cosines",
+      "label": "Law of cosines",
+      "def": "The law of cosines is Pythagoras plus a correction −2ab cos θ for a non-right corner.",
+      "depth": "ground",
+      "lessons": ["law-of-cosines"],
+      "edges": [{ "type": "built-on", "to": "pythagoras" }, { "type": "built-on", "to": "cosine" }],
+      "ru": { "label": "Теорема косинусов", "def": "Теорема косинусов — это теорема Пифагора с поправкой −2ab cos θ для непрямого угла." }
+    },
+    {
+      "id": "arccos",
+      "label": "Arccosine",
+      "def": "arccos turns a cosine back into an angle between 0° and 180°.",
+      "depth": "ground",
+      "lessons": ["law-of-cosines"],
+      "edges": [{ "type": "built-on", "to": "cosine" }],
+      "ru": { "label": "Арккосинус", "def": "arccos превращает косинус обратно в угол от 0° до 180°." }
+    },
+    {
+      "id": "two-bone-ik",
+      "label": "Two-bone IK",
+      "def": "Two-bone IK finds the elbow angle from the two bone lengths and the reach, using the law of cosines.",
+      "depth": "ground",
+      "lessons": ["law-of-cosines"],
+      "edges": [{ "type": "built-on", "to": "law-of-cosines" }, { "type": "built-on", "to": "arccos" }],
+      "ru": { "label": "IK для двух костей", "def": "IK для двух костей находит угол в локте по длинам двух костей и расстоянию до цели, по теореме косинусов." }
+    },
+    {
+      "id": "acos-clamp",
+      "label": "acos clamp",
+      "def": "Rounding can push a cosine just outside [−1, 1], where acos returns NaN, so solvers clamp it first.",
+      "depth": "machine",
+      "lessons": ["law-of-cosines"],
+      "edges": [{ "type": "built-on", "to": "arccos" }, { "type": "built-on", "to": "rounding" }, { "type": "used-in", "to": "two-bone-ik" }],
+      "ru": { "label": "Ограничение для acos", "def": "Округление может вытолкнуть косинус чуть за [−1, 1], где acos возвращает NaN, поэтому солверы сначала ограничивают его." }
+    },
+    {
+      "id": "vector",
+      "label": "Vector",
+      "def": "A vector is an arrow with no fixed location, written as a list of components.",
+      "depth": "vectors",
+      "lessons": ["vector"],
+      "edges": [{ "type": "built-on", "to": "coordinate" }, { "type": "built-on", "to": "point" }],
+      "ru": { "label": "Вектор", "def": "Вектор — это стрелка без закреплённого места, записанная списком компонент." }
+    },
+    {
+      "id": "component",
+      "label": "Component",
+      "def": "A component is a vector's shadow on one axis.",
+      "depth": "vectors",
+      "lessons": ["vector"],
+      "edges": [{ "type": "built-on", "to": "vector" }, { "type": "equivalent-to", "to": "coordinate" }, { "type": "special-case-of", "to": "coordinates-in-basis" }],
+      "ru": { "label": "Компонента", "def": "Компонента — это тень вектора на одну ось." }
+    },
+    {
+      "id": "dimension",
+      "label": "Dimension",
+      "def": "Dimension is the number of components of a vector, which is also the number of vectors in any basis.",
+      "depth": "vectors",
+      "lessons": ["vector", "basis"],
+      "edges": [{ "type": "built-on", "to": "component" }],
+      "ru": { "label": "Размерность", "def": "Размерность — это число компонент вектора, оно же число векторов в любом базисе." }
+    },
+    {
+      "id": "scalar",
+      "label": "Scalar",
+      "def": "A scalar is a plain number (it scales vectors).",
+      "depth": "vectors",
+      "lessons": ["vector-arithmetic"],
+      "edges": [{ "type": "is-a", "to": "number" }],
+      "ru": { "label": "Скаляр", "def": "Скаляр — это обычное число (оно масштабирует векторы)." }
+    },
+    {
+      "id": "vector-add",
+      "label": "Vector addition",
+      "def": "Vector addition chains arrows head to tail, adding components.",
+      "depth": "vectors",
+      "lessons": ["vector-arithmetic"],
+      "edges": [{ "type": "built-on", "to": "component" }],
+      "ru": { "label": "Сложение векторов", "def": "Сложение векторов ставит стрелки одна за другой и складывает компоненты." }
+    },
+    {
+      "id": "scalar-mul",
+      "label": "Scalar multiplication",
+      "def": "Scalar multiplication stretches an arrow, multiplying every component.",
+      "depth": "vectors",
+      "lessons": ["vector-arithmetic"],
+      "edges": [{ "type": "built-on", "to": "component" }, { "type": "built-on", "to": "scalar" }],
+      "ru": { "label": "Умножение на скаляр", "def": "Умножение на скаляр растягивает стрелку, умножая каждую компоненту." }
+    },
+    {
+      "id": "linear-combination",
+      "label": "Linear combination",
+      "def": "A linear combination is a sum of scaled vectors Σ sᵢvᵢ.",
+      "depth": "vectors",
+      "lessons": ["vector-arithmetic"],
+      "edges": [{ "type": "built-on", "to": "vector-add" }, { "type": "built-on", "to": "scalar-mul" }],
+      "ru": { "label": "Линейная комбинация", "def": "Линейная комбинация — это сумма векторов с коэффициентами Σ sᵢvᵢ." }
+    },
+    {
+      "id": "blend-shape",
+      "label": "Blend shape",
+      "def": "A blend shape adds weighted offsets to a base mesh: a linear combination of vertex deltas.",
+      "depth": "vectors",
+      "lessons": ["vector-arithmetic"],
+      "edges": [{ "type": "built-on", "to": "linear-combination" }],
+      "ru": { "label": "Blend shape", "def": "Blend shape добавляет к базовому мешу смещения с весами: линейная комбинация смещений вершин." }
+    },
+    {
+      "id": "simd-lane",
+      "label": "SIMD lane",
+      "def": "A SIMD lane is one of several numbers processed by a single instruction.",
+      "depth": "machine",
+      "lessons": ["vector-arithmetic"],
+      "edges": [{ "type": "used-in", "to": "vector-add" }, { "type": "used-in", "to": "dot-product" }],
+      "ru": { "label": "SIMD-канал", "def": "SIMD-канал — это одно из нескольких чисел, которые обрабатывает одна инструкция." }
+    },
+    {
+      "id": "sigma-notation",
+      "label": "Σ notation",
+      "def": "Σ notation is a compact way to write \"add these up for i = 1..n\".",
+      "depth": "vectors",
+      "lessons": ["length"],
+      "edges": [{ "type": "built-on", "to": "vector-add" }],
+      "ru": { "label": "Запись через Σ", "def": "Запись через Σ — это короткий способ сказать «сложить всё это для i = 1..n»." }
+    },
+    {
+      "id": "norm",
+      "label": "Norm (length)",
+      "def": "The norm (length) of a vector is Pythagoras over all its components.",
+      "depth": "vectors",
+      "lessons": ["length"],
+      "edges": [
+        { "type": "built-on", "to": "pythagoras" },
+        { "type": "built-on", "to": "sigma-notation" },
+        { "type": "equivalent-to", "to": "distance" }
+      ],
+      "ru": { "label": "Норма (длина)", "def": "Норма (длина) вектора — это теорема Пифагора по всем его компонентам." }
+    },
+    {
+      "id": "unit-vector",
+      "label": "Unit vector",
+      "def": "A unit vector is a vector whose norm is 1.",
+      "depth": "vectors",
+      "lessons": ["length"],
+      "edges": [{ "type": "built-on", "to": "norm" }],
+      "ru": { "label": "Единичный вектор", "def": "Единичный вектор — это вектор, норма которого равна 1." }
+    },
+    {
+      "id": "normalize",
+      "label": "Normalization",
+      "def": "Normalizing divides a vector by its length to get a unit vector.",
+      "depth": "vectors",
+      "lessons": ["length"],
+      "edges": [
+        { "type": "built-on", "to": "unit-vector" },
+        { "type": "built-on", "to": "scalar-mul" },
+        { "type": "used-in", "to": "projection" }
+      ],
+      "ru": { "label": "Нормализация", "def": "Нормализация делит вектор на его длину и даёт единичный вектор." }
+    },
+    {
+      "id": "fp16-overflow",
+      "label": "fp16 overflow",
+      "def": "fp16 overflows above 65504, so sums of squares are accumulated in fp32.",
+      "depth": "machine",
+      "lessons": ["length"],
+      "edges": [{ "type": "built-on", "to": "float" }, { "type": "used-in", "to": "norm" }],
+      "ru": { "label": "Переполнение fp16", "def": "fp16 переполняется выше 65504, поэтому суммы квадратов накапливают в fp32." }
+    },
+    {
+      "id": "dot-product",
+      "label": "Dot product",
+      "def": "The dot product Σ aᵢbᵢ equals |a||b| cos θ; it measures how much two arrows agree.",
+      "depth": "vectors",
+      "lessons": ["dot-product"],
+      "edges": [
+        { "type": "built-on", "to": "law-of-cosines" },
+        { "type": "built-on", "to": "norm" },
+        { "type": "built-on", "to": "sigma-notation" }
+      ],
+      "ru": { "label": "Скалярное произведение", "def": "Скалярное произведение Σ aᵢbᵢ равно |a||b| cos θ; оно измеряет, насколько две стрелки смотрят в одну сторону." }
+    },
+    {
+      "id": "angle-between",
+      "label": "Angle between vectors",
+      "def": "The angle between vectors is the arccos of the dot product of their unit vectors.",
+      "depth": "vectors",
+      "lessons": ["dot-product"],
+      "edges": [
+        { "type": "built-on", "to": "dot-product" },
+        { "type": "built-on", "to": "normalize" },
+        { "type": "built-on", "to": "arccos" }
+      ],
+      "ru": { "label": "Угол между векторами", "def": "Угол между векторами — это арккосинус скалярного произведения их единичных векторов." }
+    },
+    {
+      "id": "orthogonal",
+      "label": "Orthogonal",
+      "def": "Two vectors are orthogonal when their dot product is 0.",
+      "depth": "vectors",
+      "lessons": ["dot-product"],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "special-case-of", "to": "angle-between" }],
+      "ru": { "label": "Ортогональность", "def": "Два вектора ортогональны, когда их скалярное произведение равно 0." }
+    },
+    {
+      "id": "lambert",
+      "label": "Lambert shading",
+      "def": "Lambert shading sets brightness to max(0, N·L): the dot product of the unit normal and the light direction.",
+      "depth": "vectors",
+      "lessons": ["dot-product"],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "unit-vector" }],
+      "ru": { "label": "Освещение по Ламберту", "def": "Освещение по Ламберту даёт яркость max(0, N·L): скалярное произведение единичной нормали и направления на свет." }
+    },
+    {
+      "id": "fma",
+      "label": "FMA",
+      "def": "FMA computes a·b + c with one rounding.",
+      "depth": "machine",
+      "lessons": ["dot-product"],
+      "edges": [{ "type": "built-on", "to": "rounding" }, { "type": "used-in", "to": "dot-product" }],
+      "ru": { "label": "FMA", "def": "FMA вычисляет a·b + c с одним округлением." }
+    },
+    {
+      "id": "rounding",
+      "label": "Rounding",
+      "def": "Rounding is the error from storing a real number in finite bits.",
+      "depth": "machine",
+      "lessons": ["law-of-cosines", "dot-product"],
+      "edges": [{ "type": "built-on", "to": "float" }],
+      "ru": { "label": "Округление", "def": "Округление — это ошибка от хранения вещественного числа в конечном числе битов." }
+    },
+    {
+      "id": "summation-order",
+      "label": "Summation order",
+      "def": "Summation order changes a floating-point sum because rounding is not associative.",
+      "depth": "machine",
+      "lessons": ["dot-product"],
+      "edges": [{ "type": "built-on", "to": "rounding" }, { "type": "used-in", "to": "dot-product" }],
+      "ru": { "label": "Порядок суммирования", "def": "Порядок суммирования меняет сумму чисел с плавающей точкой, потому что округление не ассоциативно." }
+    },
+    {
+      "id": "projection",
+      "label": "Projection",
+      "def": "The projection of a onto b is the shadow of a on b's line: (a·b̂) b̂.",
+      "depth": "vectors",
+      "lessons": ["projection"],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "unit-vector" }],
+      "ru": { "label": "Проекция", "def": "Проекция a на b — это тень a на прямой b: (a·b̂) b̂." }
+    },
+    {
+      "id": "span",
+      "label": "Span",
+      "def": "The span of vectors is everything their linear combinations reach.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [{ "type": "built-on", "to": "linear-combination" }],
+      "ru": { "label": "Линейная оболочка", "def": "Линейная оболочка векторов — это всё, куда дотягиваются их линейные комбинации." }
+    },
+    {
+      "id": "linear-independence",
+      "label": "Linear independence",
+      "def": "Vectors are independent when none is a linear combination of the others.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [{ "type": "built-on", "to": "span" }],
+      "ru": { "label": "Линейная независимость", "def": "Векторы независимы, когда ни один из них не является линейной комбинацией остальных." }
+    },
+    {
+      "id": "basis",
+      "label": "Basis",
+      "def": "A basis is an independent set of vectors that spans the space.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [{ "type": "built-on", "to": "span" }, { "type": "built-on", "to": "linear-independence" }],
+      "ru": { "label": "Базис", "def": "Базис — это независимый набор векторов, линейная оболочка которого — всё пространство." }
+    },
+    {
+      "id": "coordinates-in-basis",
+      "label": "Coordinates in a basis",
+      "def": "Coordinates in a basis are the coefficients that rebuild a vector from that basis.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [{ "type": "built-on", "to": "basis" }],
+      "ru": { "label": "Координаты в базисе", "def": "Координаты в базисе — это коэффициенты, которые собирают вектор обратно из этого базиса." }
+    },
+    {
+      "id": "orthonormal-basis",
+      "label": "Orthonormal basis",
+      "def": "An orthonormal basis is a basis of mutually orthogonal unit vectors.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [
+        { "type": "is-a", "to": "basis" },
+        { "type": "built-on", "to": "orthogonal" },
+        { "type": "built-on", "to": "unit-vector" }
+      ],
+      "ru": { "label": "Ортонормированный базис", "def": "Ортонормированный базис — это базис из попарно ортогональных единичных векторов." }
+    },
+    {
+      "id": "standard-basis",
+      "label": "Standard basis",
+      "def": "The standard basis is the unit arrows along the axes.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [{ "type": "is-a", "to": "orthonormal-basis" }],
+      "ru": { "label": "Стандартный базис", "def": "Стандартный базис — это единичные стрелки вдоль осей." }
+    },
+    {
+      "id": "change-of-basis",
+      "label": "Change of basis",
+      "def": "Changing basis re-describes the same arrow with different rulers; for an orthonormal basis the new coordinates are projections.",
+      "depth": "vectors",
+      "lessons": ["basis"],
+      "edges": [
+        { "type": "built-on", "to": "coordinates-in-basis" },
+        { "type": "built-on", "to": "projection" },
+        { "type": "built-on", "to": "orthonormal-basis" }
+      ],
+      "ru": { "label": "Смена базиса", "def": "Смена базиса описывает ту же стрелку другими линейками; для ортонормированного базиса новые координаты — это проекции." }
+    },
+    {
+      "id": "cosine-similarity",
+      "label": "Cosine similarity",
+      "def": "Cosine similarity is the dot product of two normalized vectors: direction agreement, length ignored.",
+      "depth": "vectors",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "normalize" }],
+      "ru": { "label": "Косинусное сходство", "def": "Косинусное сходство — это скалярное произведение двух нормализованных векторов: согласие направлений без учёта длины." }
+    },
+    {
+      "id": "embedding",
+      "label": "Embedding",
+      "def": "An embedding is a vector that stands for a word, image or token so that similar things point the same way.",
+      "depth": "vectors",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "vector" }, { "type": "used-in", "to": "cosine-similarity" }],
+      "ru": { "label": "Эмбеддинг", "def": "Эмбеддинг — это вектор, который представляет слово, картинку или токен так, чтобы похожие вещи смотрели в одну сторону." }
+    },
+    {
+      "id": "cross-product",
+      "label": "Cross product",
+      "def": "The cross product of two 3D vectors is the perpendicular arrow whose length is the area they span.",
+      "depth": "vectors",
+      "lessons": ["cross-product"],
+      "edges": [{ "type": "built-on", "to": "component" }, { "type": "built-on", "to": "orthogonal" }],
+      "ru": { "label": "Векторное произведение", "def": "Векторное произведение двух трёхмерных векторов — это перпендикулярная им стрелка, длина которой равна площади, которую они натягивают." }
+    },
+    {
+      "id": "signed-area",
+      "label": "Signed area",
+      "def": "Signed area is the 2D cross product; its sign is the orientation (winding).",
+      "depth": "vectors",
+      "lessons": ["cross-product"],
+      "edges": [{ "type": "built-on", "to": "cross-product" }],
+      "ru": { "label": "Ориентированная площадь", "def": "Ориентированная площадь — это двумерное векторное произведение; её знак — ориентация (порядок обхода)." }
+    },
+    {
+      "id": "normal",
+      "label": "Normal",
+      "def": "A normal is a unit vector perpendicular to a surface, made from the cross product of two edges.",
+      "depth": "vectors",
+      "lessons": ["cross-product"],
+      "edges": [
+        { "type": "built-on", "to": "cross-product" },
+        { "type": "built-on", "to": "normalize" },
+        { "type": "used-in", "to": "lambert" }
+      ],
+      "ru": { "label": "Нормаль", "def": "Нормаль — это единичный вектор, перпендикулярный поверхности, полученный векторным произведением двух рёбер." }
+    },
+    {
+      "id": "float",
+      "label": "Floating point",
+      "def": "A floating-point number stores a real number as a sign, a power of two and a fixed count of significant bits.",
+      "depth": "machine",
+      "lessons": [],
+      "edges": [{ "type": "built-on", "to": "number" }, { "type": "built-on", "to": "power" }],
+      "ru": { "label": "Число с плавающей точкой", "def": "Число с плавающей точкой хранит вещественное число как знак, степень двойки и фиксированное число значащих битов." }
+    },
+    {
+      "id": "matrix",
+      "label": "Matrix",
+      "def": "A matrix is a grid of numbers that moves every vector at once: each output is a linear combination of its columns.",
+      "depth": "matrices",
+      "lessons": [],
+      "edges": [
+        { "type": "built-on", "to": "linear-combination" },
+        { "type": "built-on", "to": "dot-product" },
+        { "type": "built-on", "to": "change-of-basis" }
+      ],
+      "ru": { "label": "Матрица", "def": "Матрица — это таблица чисел, которая двигает все векторы сразу: каждый результат — линейная комбинация её столбцов." }
+    },
+    {
+      "id": "determinant",
+      "label": "Determinant",
+      "def": "The determinant is the signed factor by which a matrix scales area or volume.",
+      "depth": "matrices",
+      "lessons": [],
+      "edges": [{ "type": "built-on", "to": "matrix" }, { "type": "built-on", "to": "signed-area" }],
+      "ru": { "label": "Определитель", "def": "Определитель — это множитель со знаком, на который матрица меняет площадь или объём." }
+    },
+    {
+      "id": "attention",
+      "label": "Attention",
+      "def": "Attention weighs tokens by the dot products of their query and key embeddings, then mixes their values.",
+      "depth": "ai",
+      "lessons": [],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "embedding" }],
+      "ru": { "label": "Внимание (attention)", "def": "Внимание взвешивает токены скалярными произведениями эмбеддингов запросов и ключей, а затем смешивает их значения." }
+    }
+  ]
+}

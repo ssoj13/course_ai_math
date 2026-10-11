@@ -72,6 +72,36 @@ Nodes = terms with a one-line "X is Y built on Z" definition and depth level; ty
 to the roots, depth stack, glossary, auto flashcards ("variance is built on ___"). Build-time validation: all refs
 exist, no cycles in `built-on`. Example: attention → softmax + dot product → cosine → law of cosines → Pythagoras.
 
+Implemented (Task 9, 2026-10-11):
+- `src/data/terms.json` (62 terms: Part 0/1 + forward terms `float`, `matrix`, `determinant`, `attention` with
+  `lessons: []`). English fields top-level, Russian under `ru` (course.json convention). `lessons[0]` = where the
+  term is introduced. Depth: ground | vectors | matrices | ai | machine. Edges are stored once on the term they read
+  from (`X built-on Y`); `is-a` counts as a foundation edge with `built-on` (acyclic, genealogy follows both); a
+  `used-in` that restates a reversed `built-on` is rejected; `equivalent-to` is stored on one side only.
+- `src/viz/terms/graph.ts` (pure: validate, ancestry, neighborhood, genealogy, relations), `data.ts` (server/tests:
+  parsed graph, `mapData` resolves locale texts + lesson/glossary URLs; islands never load terms.json),
+  `TermMap.tsx` (SSR entry: card, legend, accessible list view; `local` | `genealogy` mode), lazy
+  `TermMap.impl.tsx` (React Flow) + `layout.ts` (ELK protocol client) + `elk.worker.ts`.
+- TRAP: `elkjs/lib/elk.bundled.js` cannot run inside a Web Worker (its embedded worker build hijacks `self.onmessage`
+  and its constructor throws). The worker imports `elkjs/lib/elk-worker.min.js` (installs ELK's dispatcher) and
+  layout.ts speaks its `{ id, cmd }` protocol, registering `layered` first.
+- Placement: `<LessonMap />` under `## Term map` / `## Карта терминов` at the end of every lesson (route-derived
+  lesson; Russian fallback pages get a Russian map); `<Glossary />` in `glossary.mdx` + `ru/glossary.mdx`.
+  `tests/js/terms.test.ts` requires both; `UiStrings ns={['terms']}`.
+- Lesson card (fix round 1, controller ruling I2): focus = terms the lesson INTRODUCES (`lessons[0]`); the card draws
+  them + their direct foundations (`foundationsIn`; machine terms not expanded), <= 12 nodes, box height from
+  `layerCount` (`mapHeight`, server-reserved via `--lab-tm-box`). Full screen + list = the 1-hop neighbourhood.
+  Labels > 12 chars wrap onto two lines (`wrapLabel`, shared by server height and client boxes). Opening zoom floor
+  0.88 (10.6 px labels): below it the card opens on the focus terms; one-finger drag pans inside the box (touch too).
+  Genealogy always opens on the whole tree (floor 0) and also shows the foundations of its machine terms.
+- `validate()` enforces course order: no foundation edge to a term introduced in a later lesson.
+- TRAP: React Flow store reuse across a genealogy retarget fitted the OLD nodes; the provider is keyed by the view
+  and the opening view goes through React Flow's own `fitView` + `fitViewOptions` (`openView`).
+- ELK `nodePlacement: NETWORK_SIMPLEX` packs layers tighter than the default (measured on the DP card).
+- Budget (`bun run build`, 2026-10-11): elk worker 439 kB gz + map impl 60 kB gz = 499 kB lazy (<= 600 kB); entry
+  2.7 kB gz + 3.7 kB gz CSS on map pages only; no map code on pages without a map.
+- [ ] Depth stack view, flashcards and the roadmap overlay (C6) are not built yet (out of Task 9 scope; C6 open).
+
 ## "Why squares everywhere" (statistics spine)
 
 1. Pythagoras: Euclidean distance; squared error = squared distance between data and prediction vectors.

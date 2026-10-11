@@ -1,0 +1,92 @@
+---
+/**
+ * Glossary - generated from the term graph (src/data/terms.json), in the page locale: a genealogy map (pick a term,
+ * see everything it is built on down to the roots, plus the machine-level terms used along the way), then one entry
+ * per term, grouped by depth: definition, every relation, the full root chain, the machine level and the lesson that
+ * introduces it. Entries are server HTML (searchable, readable without JavaScript); their "show its genealogy"
+ * links retarget the map through `data-tm-term` (TermMap.tsx, genealogy mode). `client:load`, not `client:visible`: the
+ * map heads the page and must already listen when a reader clicks such a link far below it.
+ */
+import UiStrings from './UiStrings.astro';
+import { pageLocale, t } from '../i18n/ui';
+import { DEPTH_KEY, IN_KEY, OUT_KEY, TermMap } from '../viz/terms/TermMap';
+import { EDGES, ORDER, TERMS, glossId, mapData } from '../viz/terms/data';
+import { DEPTHS, ancestorsIn, relations } from '../viz/terms/graph';
+
+/** The term the genealogy map opens on: the course's centerpiece, whose chain reaches from Pythagoras to FMA. */
+const INITIAL = 'dot-product';
+
+const locale = pageLocale(Astro);
+const all = mapData(ORDER, EDGES, locale);
+const node = new Map(all.nodes.map((n) => [n.id, n]));
+const label = (id: string) => node.get(id)?.label ?? id;
+const machine = new Set(TERMS.terms.filter((x) => x.depth === 'machine').map((x) => x.id));
+
+const groups = DEPTHS.map((depth) => ({
+	depth,
+	terms: all.nodes.filter((n) => n.depth === depth).sort((a, b) => a.label.localeCompare(b.label, locale)),
+})).filter((g) => g.terms.length > 0);
+
+const entry = (id: string) => {
+	const roots = ancestorsIn(EDGES, id);
+	const chain = new Set([id, ...roots]);
+	const metal = [...new Set(EDGES.filter((e) => e.type === 'used-in' && chain.has(e.to) && machine.has(e.from)).map((e) => e.from))].filter((m) => m !== id);
+	return { rels: relations(EDGES, id), roots, metal };
+};
+---
+
+<div id="genealogy">
+	<TermMap client:load locale={locale} data={all} mode="genealogy" focus={[INITIAL]} />
+</div>
+<UiStrings ns={['terms']} />
+
+{
+	groups.map((g) => (
+		<section class="lab-gl not-content" data-depth={g.depth}>
+			<h2 id={`depth-${g.depth}`}>{t(locale, DEPTH_KEY[g.depth])}</h2>
+			{g.terms.map((n) => {
+				const e = entry(n.id);
+				return (
+					<article class="lab-gl-entry" id={glossId(n.id)} data-depth={n.depth}>
+						<h3>{n.label}</h3>
+						<p>{n.def}</p>
+						{e.rels.map((r) => (
+							<p class="lab-gl-meta">
+								<b>{t(locale, r.dir === 'out' ? OUT_KEY[r.type] : IN_KEY[r.type])}</b>:{' '}
+								{r.ids.map((id, i) => (
+									<>
+										{i > 0 && ', '}
+										<a href={`#${glossId(id)}`}>{label(id)}</a>
+									</>
+								))}
+							</p>
+						))}
+						{e.roots.length > 0 && (
+							<p class="lab-gl-meta">
+								<b>{t(locale, 'terms.roots')}</b>: {e.roots.map(label).join(' · ')}
+							</p>
+						)}
+						{e.metal.length > 0 && (
+							<p class="lab-gl-meta">
+								<b>{t(locale, 'terms.machineLevel')}</b>: {e.metal.map(label).join(' · ')}
+							</p>
+						)}
+						<p class="lab-gl-meta">
+							{n.href ? (
+								<a href={n.href}>
+									{t(locale, 'terms.lesson')}: {n.lesson}
+								</a>
+							) : (
+								<i>{t(locale, 'terms.later')}</i>
+							)}
+							{' · '}
+							<a href="#genealogy" data-tm-term={n.id}>
+								{t(locale, 'terms.showGenealogy')}
+							</a>
+						</p>
+					</article>
+				);
+			})}
+		</section>
+	))
+}

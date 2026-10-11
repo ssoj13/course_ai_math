@@ -1,10 +1,11 @@
 ---
 title: "Скалярное произведение: вывод из теоремы косинусов"
 description: "Σ aᵢbᵢ = |a||b| cos θ и что означает его знак."
-translatedFrom: a79a8ba239af34c41fcf4881db7985ac56717c1a
+translatedFrom: f1a66d7802265a6f6008570ca67535ddfc53d0fc
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
+import LessonMap from '../../../../components/LessonMap.astro';
 import UiStrings from '../../../../components/UiStrings.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { DotScene, DotControls } from '../../../../viz/lessons/dot-product';
@@ -397,3 +398,7 @@ print(np.dot(x, y), np.dot(x[::-1], y[::-1]), float(np.sum((x * y).astype(np.flo
 ## Что это открывает
 
 Теперь мы знаем, что число $\mathbf{a} \cdot \mathbf{b}$ равно $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$, и мельком увидели его как тень. Следующий урок рассматривает эту тень вблизи и обнаруживает, что компоненты вектора всё это время были тенями: [Проекция: тени на ось](lesson:projection). Два более поздних урока опираются на найденные здесь знак и диапазон для единичных векторов: [Косинусное сходство](lesson:cosine-similarity) и, боковой веткой, [векторное произведение](lesson:cross-product).
+
+## Карта терминов
+
+<LessonMap />

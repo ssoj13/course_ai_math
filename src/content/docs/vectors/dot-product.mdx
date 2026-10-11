@@ -4,6 +4,7 @@ description: "Σ aᵢbᵢ = |a||b| cos θ, and what its sign means."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import LessonMap from '../../../components/LessonMap.astro';
 import UiStrings from '../../../components/UiStrings.astro';
 import SceneIsland from '../../../viz/SceneIsland.astro';
 import { DotScene, DotControls } from '../../../viz/lessons/dot-product';
@@ -396,3 +397,7 @@ A dot product on hardware is an accumulator loop: `acc = fma(a[i], b[i], acc)`, 
 ## What this opens
 
 We now know the number $\mathbf{a} \cdot \mathbf{b}$ equals $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$, and we have glimpsed it as a shadow. The next lesson looks at that shadow directly, and finds that the components of a vector were shadows all along: [Projection: shadows on an axis](lesson:projection). Two later lessons lean on the sign and the unit-vector range found here: [Cosine similarity](lesson:cosine-similarity) and, as a side branch, [the cross product](lesson:cross-product).
+
+## Term map
+
+<LessonMap />
