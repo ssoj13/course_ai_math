@@ -359,7 +359,8 @@ screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a 
 - **Custom drag mapping**: `Draggable.move?(vals, raw, src: 'drag' | 'key') => Move` with
   `Move = { set: Record<string, Val>; ease?: string[] }` replaces `moved`. ONE write path for drag and key:
   `reg.apply(d, vals, raw, src)` = mapping (or grid `moved`) -> `clampMove` to the card's `ranges` (from the N-panel
-  rows, `rowRanges`; a drag can never leave what a field of the same key allows, which the chip model relies on) ->
+  rows, `rowRanges`; a drag can never leave what a field of the same key allows, which the chip model relies on;
+  component-wise, except a vector key in `ease` (magnet-caught direction): scaled uniformly so a·b = 0 survives) ->
   `writeMove(lesson, set, how, ease)` (drag = cut, key = ease, keys in `ease` always ease). A mapping lists a key in
   `ease` when `magnet()` changed it: a pointer-drag catch glides while the other keys follow 1:1; the repeated caught
   value is skipped (`sameVal`) so the spring keeps running, leaving the zone is a cut. Pressing a glyph mid-ease cuts

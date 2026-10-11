@@ -218,6 +218,23 @@ test('clampMove clamps keys with a range (vectors per component), rowRanges read
 	).toThrow(/two ranges/);
 });
 
+test('a caught vector is clamped by uniform scaling, so the caught direction survives the range edge', () => {
+	// The reviewer's case: a = (2, 1), b dragged to about (-2.2, 4) is caught exactly perpendicular, |b| > 4 in y.
+	const v = { ...base, sa: [2, 1], sb: [-2, 4] };
+	const m = moveSb(v, [-0.2, 0.05], 'drag');
+	expect(m.ease).toEqual(['sb']);
+	const ranges = { sb: { min: -4, max: 4 } };
+	const sb = clampMove(m.set, ranges, m.ease).sb as number[];
+	expect(Math.abs(dot([2, 1], sb))).toBeLessThan(1e-9);
+	expect(Math.max(...sb.map(Math.abs))).toBeLessThanOrEqual(4 + 1e-12);
+	expect(Math.max(...sb.map(Math.abs))).toBeCloseTo(4, 12);
+	// The same vector not caught: component-wise clip (the ordinary drag rule), which bends the direction.
+	const plain = clampMove(m.set, ranges).sb as number[];
+	expect(Math.abs(dot([2, 1], plain))).toBeGreaterThan(1e-3);
+	// A range without 0 cannot be reached by scaling: falls back to the component clamp.
+	expect(clampMove({ k: [5, 0.5] }, { k: { min: 1, max: 4 } }, ['k'])).toEqual({ k: [4, 1] });
+});
+
 test('frameMismatch: panel presence and line count must match the server frame unless overridden', () => {
 	const rows = ROWS2;
 	const lines = chipLines(rows);
