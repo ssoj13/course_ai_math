@@ -6,13 +6,13 @@
  * also what makes a derived point draggable. Hover, keyboard focus or a drag light it (hot = an orange ring outside
  * the rim; the disc keeps its color).
  */
-import { useRef } from 'react';
+import { useContext, useRef } from 'react';
 import { AdditiveBlending, CircleGeometry, type Group } from 'three';
 import { to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot, useVals, type LessonState } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
-import { lightened } from './look';
+import { lightened, LookCtx, assertSubject } from './look';
 import { usePxScale } from './view';
 
 export interface PointProps {
@@ -35,6 +35,7 @@ const DISC = new CircleGeometry(1, 28);
 const RING = (STYLE.pointR + STYLE.rim + STYLE.hotPad) / STYLE.pointR;
 
 export function Point(p: PointProps): React.JSX.Element {
+ assertSubject(useContext(LookCtx),true);
 	const reg = useStage();
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);

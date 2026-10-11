@@ -10,7 +10,7 @@ export interface ClayProps {lesson:string;id:string;at?:[number,number,number];s
 export function ClayTile({lesson,id,at=[0,.12,0],size=[1,.24,1],role='clayA',negative=false}:ClayProps){
  const p=usePalette(),hot=useHot(lesson,id),hover=useHoverable(lesson,id,HOVER_RANK.fill);
  const matcap=useLoader(TextureLoader,import.meta.env.BASE_URL.replace(/\/$/, '')+'/matcap-clay.png');matcap.colorSpace=SRGBColorSpace;
- const geo=useMemo(()=>new RoundedBoxGeometry(...size,3,Math.min(...size)*.14),[...size]);
+ const geo=useMemo(()=>new RoundedBoxGeometry(...size,3,Math.min(...size)*.06),[...size]);
  useEffect(()=>()=>geo.dispose(),[geo]);
  const [x,y,z]=size;
  return <group position={at} {...hover}>

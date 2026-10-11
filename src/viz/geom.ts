@@ -14,6 +14,24 @@ export function dimensionLayout(a: V,b: V,wpp: number,normal: V=[0,0,1]): {a:num
  const aa=add(a,out),bb=add(b,out);
  return {a:aa,b:bb,mid:scale(add(aa,bb),.5),out};
 }
+/** Screen-space dimension endpoints; null means the segment cannot be measured from this view. */
+export function screenDimension(a:V,b:V,out:V,px=14): {a:number[];b:number[];normal:number[]}|null {
+ const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);
+ if(!Number.isFinite(length)||length<.01)return null;
+ let nx=-dy/length,ny=dx/length;
+ if(nx*(out[0]-a[0])+ny*(out[1]-a[1])<0){nx=-nx;ny=-ny;}
+ return {a:[a[0]+px*nx,a[1]+px*ny],b:[b[0]+px*nx,b[1]+px*ny],normal:[nx,ny]};
+}
+/** World-aligned orthonormal plane basis. Anchor is world origin projected into the plane, never a face corner. */
+export function worldPlaneBasis(u:V,v:V): [number[],number[]] {
+ if(u.length===2)return [[1,0,0],[0,1,0]];
+ let n=normalize(cross(u,v));
+ const dominant=n.reduce((a,x,i)=>Math.abs(x)>Math.abs(n[a])?i:a,0);
+ if(n[dominant]<0)n=scale(n,-1);
+ const seed=Math.abs(n[0])<.9?[1,0,0]:[0,1,0];
+ const x=normalize(sub(seed,scale(n,dot(seed,n))));
+ return [x,normalize(cross(n,x))];
+}
 export type V = readonly number[];
 
 /** Silent truncation by `zip` would hide a 2D/3D mix-up in a lesson, so mismatches are loud. */

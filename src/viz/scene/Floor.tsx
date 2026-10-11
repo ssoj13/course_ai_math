@@ -17,7 +17,11 @@ export function Mirror({children}:{children:ReactNode}){
    for(const m of mats){
     if(m.userData.mirrorConfigured)continue;
     m.userData.mirrorConfigured=true;
-    m.transparent=true;m.depthWrite=false;m.side=DoubleSide;
+    m.transparent=true;m.depthWrite=false;
+    // Wide lines need both sides after reflection; meshes keep their intended front/back silhouette culling.
+    if(m.type==='LineMaterial')m.side=DoubleSide;
+    // Draw reflected clay surfaces first: depth hides the back-face highlight inside the silhouette.
+    if(m.type==='MeshMatcapMaterial'){m.depthWrite=true;mesh.renderOrder-=.1;}
     const alpha=STYLE.mirrorA*(m.blending===AdditiveBlending?.5:1);
     const previous=m.onBeforeCompile;
     m.onBeforeCompile=(s,renderer)=>{
@@ -29,7 +33,6 @@ export function Mirror({children}:{children:ReactNode}){
       s.vertexShader=s.vertexShader.replace('gl_Position = clip;','mirrorDepth=abs((modelMatrix*vec4(mix(instanceStart,instanceEnd,position.y<0.5?0.:1.),1.)).y); gl_Position = clip;');
      if(!s.vertexShader.includes('mirrorDepth=')) s.vertexShader=s.vertexShader.replace(/void main\s*\(\s*\)\s*\{/, 'void main(){mirrorDepth=abs((modelMatrix*vec4(position,1.)).y);');
      s.fragmentShader='varying float mirrorDepth;\n'+s.fragmentShader;
-     s.fragmentShader=s.fragmentShader.replace(/void main\s*\(\s*\)\s*\{/, 'void main(){');
      const end=s.fragmentShader.lastIndexOf('}');
      s.fragmentShader=s.fragmentShader.slice(0,end)+'gl_FragColor.a *= '+alpha+'*(1.-smoothstep(0.,'+(reg.extent*.8).toFixed(5)+',mirrorDepth));\n'+s.fragmentShader.slice(end);
     };

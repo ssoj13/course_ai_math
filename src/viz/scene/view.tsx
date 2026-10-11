@@ -132,6 +132,7 @@ export interface StrokeProps {
 	order?: number;
 	/** Core opacity (a shadow band is a translucent wide stroke). */
 	opacity?: number;
+ innerAlpha?: number;
 }
 
 /**
@@ -141,7 +142,7 @@ export interface StrokeProps {
  * an opaque core would be painted over by its own halo); depth writes are off for the same reason.
  */
 export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
-	{ points, color, hot = false, width = STYLE.core, halo = true, dashPx, segments, order = 2, opacity = 1 },
+	{ points, color, hot = false, width = STYLE.core, halo = true, dashPx, segments, order = 2, opacity = 1, innerAlpha = STYLE.innerA },
 	fwd,
 ) {
 	const pal = usePalette();
@@ -190,7 +191,7 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 					renderOrder={order - 0.2}
 				/>
 			)}
-			{halo && <SLine ref={inner} {...common} color={color} lineWidth={STYLE.inner} opacity={STYLE.innerA} blending={AdditiveBlending} renderOrder={order - .15} />}
+			{halo && <SLine ref={inner} {...common} color={color} lineWidth={STYLE.inner} opacity={innerAlpha} blending={AdditiveBlending} renderOrder={order - .15} />}
 			{hot && <SLine ref={out} {...common} color={pal.hot} lineWidth={outW} renderOrder={order - 0.1} />}
 			<SLine ref={core} {...common} color={lightened(color)} lineWidth={width} opacity={opacity} renderOrder={order} />
 		</>

@@ -6,10 +6,11 @@
  * around shaft and head; its own color stays). Data is y-up in 3D (three.js convention).
  */
 import { useFrame } from '@react-three/fiber';
-import { useContext, useMemo, useRef } from 'react';
-import { BufferGeometry, ConeGeometry, DoubleSide, Float32BufferAttribute, Quaternion, Vector3, type Group, type Mesh } from 'three';
+import { useContext, useLayoutEffect, useMemo, useRef } from 'react';
+import { AdditiveBlending, MeshBasicMaterial, BufferGeometry, ConeGeometry, DoubleSide, Float32BufferAttribute, Quaternion, Vector3, type Group, type Mesh } from 'three';
 import { norm, scale, sub, to3, type V } from '../geom';
-import { LookCtx, assertSubject } from './look';
+import { LookCtx, assertSubject, hotAlpha, lightened } from './look';
+import { reducedMotion } from './motion';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
@@ -135,9 +136,12 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 	const head = useRef<Group>(null);
 	const out = useRef<Mesh>(null);
 	const glow = useRef<Mesh>(null);
+ const inner = useRef<Mesh>(null), started = useRef(performance.now());
+ useLayoutEffect(()=>{started.current=performance.now();},[hot]);
 	const shaft = useRef<StrokeHandle>(null);
 	const last = useRef({ geom: null as unknown, end: '' });
-	useFrame(({ camera }) => {
+	useFrame(({ camera, invalidate }) => {
+  if(hot && glow.current){(glow.current.material as MeshBasicMaterial).opacity=hotAlpha((performance.now()-started.current)/1000,reducedMotion());if(!reducedMotion())invalidate();}
 		const el = reg.el;
 		const h = head.current;
 		const s = shaft.current;
@@ -161,6 +165,7 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 		};
 		rim(out.current, PAD_OUT);
 		rim(glow.current, PAD_HALO);
+  rim(inner.current, (STYLE.inner-STYLE.core)/2);
 		// The shaft stops inside the head: the line's round cap would otherwise poke out past the apex.
 		const end = [tip.x - dirV.x * hl * 0.6, tip.y - dirV.y * hl * 0.6, tip.z - dirV.z * hl * 0.6];
 		const key = end.join();
@@ -179,15 +184,16 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 				<Stroke ref={shaft} points={g.shaft} color={color} hot={hot} order={2} />
 				<group ref={head} position={g.b} quaternion={g.q}>
 					<mesh ref={glow} geometry={geo} renderOrder={1.8}>
-						<meshBasicMaterial color={hot ? pal.hot : color} transparent opacity={hot ? STYLE.hotHaloA : STYLE.haloA} depthWrite={false} side={DoubleSide} />
+						<meshBasicMaterial color={hot ? pal.hot : color} blending={AdditiveBlending} transparent opacity={hot ? STYLE.hotHaloA : STYLE.haloA} depthWrite={false} side={DoubleSide} />
 					</mesh>
+     <mesh ref={inner} geometry={geo} renderOrder={1.85}><meshBasicMaterial color={color} blending={AdditiveBlending} transparent opacity={STYLE.innerA} depthWrite={false} side={DoubleSide}/></mesh>
 					{hot && (
 						<mesh ref={out} geometry={geo} renderOrder={1.9}>
 							<meshBasicMaterial color={pal.hot} transparent depthWrite={false} side={DoubleSide} />
 						</mesh>
 					)}
 					<mesh geometry={geo} renderOrder={2}>
-						<meshBasicMaterial color={color} transparent depthWrite={false} side={DoubleSide} />
+						<meshBasicMaterial color={lightened(color)} transparent depthWrite={false} side={DoubleSide} />
 					</mesh>
 				</group>
 			</group>

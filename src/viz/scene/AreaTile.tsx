@@ -11,12 +11,13 @@
  * inward and is hatched (sign readable without color), zero draws nothing. A zero-length base also draws nothing (a
  * reader can drag a onto b); mixing `signed` and `area` wrong, or a 3D tile without `normal`, is an authoring error.
  */
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { useStore } from 'zustand';
 import { norm, rightOf, scale, sub, type V } from '../geom';
 import type { SceneRole } from '../palette';
 import { lessonStore, type LessonState } from '../store';
 import { usePos } from './handles';
+import { LookCtx, assertSubject } from './look';
 import { Quad } from './Parallelogram';
 
 export interface AreaTileProps {
@@ -38,6 +39,7 @@ export interface AreaTileProps {
 }
 
 export function AreaTile(p: AreaTileProps): React.JSX.Element | null {
+ assertSubject(useContext(LookCtx),true);
 	if (p.signed && p.area === undefined) throw new Error(`AreaTile "${p.id}": a signed tile needs \`area\``);
 	if (!p.signed && p.area !== undefined) throw new Error(`AreaTile "${p.id}": \`area\` is only for signed tiles (a square's area is |b - a|^2)`);
 	const a = usePos(p.lesson, p.a);

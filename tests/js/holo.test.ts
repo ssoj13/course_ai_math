@@ -9,7 +9,7 @@ test('ruler ticks preserve metre scale and suppress unreadable labels',()=>{
  expect(rulerTicks(3,24).filter(t=>t.label).map(t=>t.value)).toEqual([0,1,2,3]);
  expect(rulerTicks(3,40).map(t=>t.value)).toEqual([0,.5,1,1.5,2,2.5,3]);
 });
-test('dimension offset is perpendicular and exactly 14 CSS pixels',()=>{
+test('planar dimension helper preserves Euclidean length',()=>{
  const a=[2,1],b=[5,5],wpp=.03,p=dimensionLayout(a,b,wpp);
  expect(dot(sub(b,a),p.out)).toBeCloseTo(0,12);expect(norm(p.out)/wpp).toBeCloseTo(14,12);
  expect(norm(sub(p.b,p.a))).toBeCloseTo(5,12);

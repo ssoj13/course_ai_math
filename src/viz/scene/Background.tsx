@@ -10,27 +10,32 @@ const fragment = `
 precision highp float;
 varying vec2 st; uniform vec2 resolution; uniform vec3 top,bottom,star,nebulaA,nebulaB,vignette; uniform float seed,clay;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7))+seed)*43758.5453);}
-vec3 galaxy(vec2 p, float turn){
- p=mat2(cos(turn),-sin(turn),sin(turn),cos(turn))*p; p.y*=2.7;
- float r=length(p), a=atan(p.y,p.x);
- float arms=pow(.5+.5*cos(a*2.-r*28.),2.);
- float dust=.55+.45*sin(p.x*131.+sin(p.y*73.)*4.);
- return mix(nebulaB*3.4,nebulaA*5.8,arms)*exp(-r*5.)*(.25+arms)*dust+vec3(.12,.17,.25)*exp(-r*38.);
+float noise(vec2 p){return .5+.1667*(sin(p.x+sin(p.y*1.3))+sin(p.y*.83+sin(p.x*.7))+sin(p.x*.73-p.y*.91));}
+float cloud(vec2 p){float n=0.,a=.5;for(int i=0;i<5;i++){n+=a*noise(p);p=mat2(1.6,-1.2,1.2,1.6)*p+17.;a*=.5;}return n;}
+vec3 galaxy(vec2 p,float turn){
+ p=mat2(cos(turn),-sin(turn),sin(turn),cos(turn))*p;p.y*=2.1;
+ float r=length(p),a=atan(p.y,p.x),n=cloud(p*19.);
+ float arms=pow(.5+.5*cos(a*2.-log(r+.045)*4.+n*3.),3.);
+ float dust=pow(cloud(p*46.+cloud(p*7.)*4.),1.5);
+ float halo=exp(-r*3.8),lane=smoothstep(.18,.68,dust);
+ return mix(nebulaB*6.,nebulaA*8.,n)*halo*(.12+arms*.65)*lane
+ +vec3(.35,.31,.43)*exp(-r*25.)+vec3(.08,.10,.18)*halo*dust;
 }
 void main(){
  vec2 q=st-.5; float edge=smoothstep(.25,.7,length(q));
  vec3 c=mix(bottom,top,st.y);
  if(clay>.5){gl_FragColor=vec4(mix(vec3(.769,.788,.824),vec3(.839,.855,.882),st.y),1.);return;}
  c+=galaxy((st-vec2(.86,.68))*2.5,.7)+galaxy((st-vec2(.14,.84))*3.7,-.4);
- c+=nebulaA*.22*exp(-dot(q-vec2(-.3,.25),q-vec2(-.3,.25))*15.);
- c+=nebulaB*.22*exp(-dot(q-vec2(.3,-.2),q-vec2(.3,-.2))*16.);
+ float dust=cloud(st*7.+vec2(cloud(st*5.),cloud(st*5.+30.))*3.);
+ c+=mix(nebulaA,nebulaB,cloud(st*4.+8.))*dust*1.8*smoothstep(.15,.48,length(q));
+ c=mix(mix(bottom,top,st.y),c,smoothstep(.30,.47,length(q)));
  c=mix(c,vignette,edge*.55);
  vec2 pix=st*resolution;
  for(int i=0;i<3;i++){
   float cell=22.+float(i)*11.; vec2 g=floor(pix/cell);
   vec2 ctr=(g+vec2(hash(g+float(i)),hash(g+17.+float(i))))*cell;
   float chance=hash(g+vec2(81.+float(i)*13.,5.));
-  float rad=mix(.55,1.15,edge)*(.65+.35*hash(g+12.));
+  float rad=mix(1.,1.15,edge)*(.65+.35*hash(g+12.));
   float s=(1.-smoothstep(rad*.2,rad,length(pix-ctr)))*step(.40,chance);
   c+=star*s*mix(.25,.5+.4*edge,hash(g+32.));
  }

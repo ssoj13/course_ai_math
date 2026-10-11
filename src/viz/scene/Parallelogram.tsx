@@ -5,15 +5,16 @@
  * plain quad in the plane of a and b (area |a x b| has no sign). Collinear or zero vectors span no area and draw
  * nothing (no throw: a reader can drag into that). `Quad` here is also the drawing of AreaTile.
  */
-import { lazy, Suspense, useLayoutEffect, useMemo, useRef } from 'react';
+import { lazy, Suspense, useContext, useLayoutEffect, useMemo, useRef } from 'react';
 import { Float32BufferAttribute, type Group } from 'three';
-import { add, cross, hatch, norm, scale, signedArea2, to3, type V } from '../geom';
+import { add, cross, hatch, norm, scale, signedArea2, to3, worldPlaneBasis, dot, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useHoverable, useLabel, usePos } from './handles';
 import { SLine, Stroke, useDynGeo, useReveal, useWorldPx, writeGeo } from './view';
 
 import { Point } from './Point';
+import { LookCtx, assertSubject } from './look';
 const Glass = lazy(()=>import('./Glass').then(m=>({default:m.Glass})));
 const QUAD_INDEX = [0, 1, 2, 0, 2, 3];
 const O2: V = [0, 0];
@@ -39,6 +40,7 @@ export interface QuadProps {
  * outline, the fill keeps its color. Draw-in: the whole shape fades in with the reveal.
  */
 export function Quad(p: QuadProps): React.JSX.Element {
+ assertSubject(useContext(LookCtx),true);
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);
 	const { o, u, v } = p;
@@ -47,7 +49,7 @@ export function Quad(p: QuadProps): React.JSX.Element {
 		return { c, edge: [...c, c[0]], center: add(o, scale(add(u, v), 0.5)) };
 	}, [o, u, v]);
 	const geo = useDynGeo(4, QUAD_INDEX);
-	useLayoutEffect(() => { writeGeo(geo, g.c); geo.setAttribute('uv', new Float32BufferAttribute([0,0,1,0,1,1,0,1],2)); }, [geo, g]);
+	useLayoutEffect(() => { writeGeo(geo, g.c); geo.setAttribute('uv', new Float32BufferAttribute([0,0,1,0,1,1,0,1],2)); const basis=worldPlaneBasis(u,v); geo.setAttribute('plane',new Float32BufferAttribute(g.c.flatMap(p=>basis.map(axis=>dot(p,axis))),2)); }, [geo, g]);
 	const step = useWorldPx(STYLE.hatchPx, g.center);
 	const lines = useMemo(() => (p.neg && step ? hatch(o, u, v, step).map(to3) : null), [p.neg, step, o, u, v]);
 	useLabel(p.text === undefined ? null : { lesson: p.lesson, text: p.text, role: p.role, hot: p.id, at: () => g.center });
@@ -60,9 +62,9 @@ export function Quad(p: QuadProps): React.JSX.Element {
 	return (
 		<group ref={group} {...hover}>
 			<mesh geometry={geo} frustumCulled={false} renderOrder={0}>
-				<Suspense fallback={<meshBasicMaterial color={color} transparent opacity={STYLE.glassBottomA} depthWrite={false}/>}><Glass color={color} hot={hot} units={[norm(u),norm(v)]} px={step ? STYLE.hatchPx/step : 30}/></Suspense>
+				<Suspense fallback={<meshBasicMaterial color={color} transparent opacity={STYLE.glassBottomA} depthWrite={false}/>}><Glass color={color} hot={hot} px={step ? STYLE.hatchPx/step : 30}/></Suspense>
 			</mesh>
-			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} halo order={1} />
+			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} innerAlpha={.30} halo order={1} />
 			{g.c.map((at,i)=><Point key={i} lesson={p.lesson} id={p.id} size={5} at={at} drag={false} role={p.role}/>)}
 			{lines && lines.length > 0 && (
 				<SLine points={lines} segments color={color} lineWidth={STYLE.hatchW} transparent depthWrite={false} renderOrder={1} />
@@ -84,6 +86,7 @@ export interface ParallelogramProps {
 }
 
 export function Parallelogram(p: ParallelogramProps): React.JSX.Element | null {
+ assertSubject(useContext(LookCtx),true);
 	const a = usePos(p.lesson, p.a);
 	const b = usePos(p.lesson, p.b);
 	const o = usePos(p.lesson, p.at ?? (a.length === 3 ? O3 : O2));

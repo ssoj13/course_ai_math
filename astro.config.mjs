@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import { satteri } from '@astrojs/markdown-satteri';
 import courseLinks from './src/lib/remark-lesson-links.mjs';
 import katexMath from './src/lib/satteri-math.mjs';
+import { compactThreeShaders } from './src/lib/compact-glsl.mjs';
 import { fontsource } from './src/lib/fonts.mjs';
 
 const BASE = '/math-course';
@@ -70,17 +71,18 @@ export default defineConfig({
 	vite: {
 		// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
 		worker: { format: 'es' },
-		// The scene chunk (three + r3f + drei, ~1022 kB raw / 273 kB gz) cannot shrink: r3f registers all of THREE
-		// (`import *`), so three core is not tree-shaken. Task 6b added drei's Line (three-stdlib Line2/LineMaterial,
-		// ~32 kB) for pixel-stable lines; Task 6c's angle/area/label primitives and demo added ~9 kB raw; Task 6d's
-		// viewport chrome (ViewportCard, N-panel, gizmo, status bar, motion) and drei's shader Grid added ~31 kB raw
-		// (+10 kB gz; KaTeX for tooltips stays in the shared Formula chunk). Task 6e's lesson primitives (half-plane,
-		// lit sphere, circle, magnet ticks, eased store, chip model) and their demo cards added ~7 kB raw (+2 kB gz),
-		// its review fixes (move contract with eased keys, range clamp) ~2 kB raw.
-		// The limit is set just above it so any
-		// further growth warns; the real gate is the per-page gzip budget of scripts/size-report.ts (Task 11, viz core
-		// <= 300 kB gz). The chunk loads only on scene pages.
-		build: { chunkSizeWarningLimit: 1015 },
+        // Compact runtime GLSL string whitespace while retaining every token and preprocessor newline.
+        plugins: [{
+            name: 'compact-three-glsl',
+            transform(code, id) {
+                if (!id.endsWith('/three/build/three.module.js')) return;
+                return { code: compactThreeShaders(code), map: null };
+            },
+        }],
+		// Keep the original raw warning threshold. Lazy look/probe boundaries split actual chunks;
+		// token-preserving GLSL compaction reduces Three's emitted shader strings. Hidden maps
+		// support exact source-byte ownership audits of shared chunks (including palette/controls).
+		build: { chunkSizeWarningLimit: 1015, sourcemap: 'hidden' },
 	},
 	integrations: [
 		starlight({
