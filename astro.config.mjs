@@ -6,7 +6,6 @@ import { readFileSync } from 'node:fs';
 import { satteri } from '@astrojs/markdown-satteri';
 import courseLinks from './src/lib/remark-lesson-links.mjs';
 import katexMath from './src/lib/satteri-math.mjs';
-import { compactThreeShaders } from './src/lib/compact-glsl.mjs';
 import { STARLIGHT_LOCALES, courseText } from './src/lib/course-rules.mjs';
 import { fontsource } from './src/lib/fonts.mjs';
 
@@ -74,18 +73,8 @@ export default defineConfig({
 	vite: {
 		// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
 		worker: { format: 'es' },
-        // Compact runtime GLSL string whitespace while retaining every token and preprocessor newline.
-        plugins: [{
-            name: 'compact-three-glsl',
-            transform(code, id) {
-                if (!id.endsWith('/three/build/three.module.js')) return;
-                return { code: compactThreeShaders(code), map: null };
-            },
-        }],
-		// Keep the original raw warning threshold. Lazy look/probe boundaries split actual chunks;
-		// token-preserving GLSL compaction reduces Three's emitted shader strings. Hidden maps
-		// support exact source-byte ownership audits of shared chunks (including palette/controls).
-		build: { chunkSizeWarningLimit: 1015, sourcemap: 'hidden' },
+		// Keep the original raw warning threshold (Task 11: the real gate is the physical renderer chunk <= 300 kB gz).
+		build: { chunkSizeWarningLimit: 1015 },
 	},
 	integrations: [
 		starlight({
