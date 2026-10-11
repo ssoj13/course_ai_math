@@ -23,7 +23,8 @@ that solver have never seen the formula's name.
 At $\theta = 90^\circ$ the sticks make a square corner, and the last two lessons answer the question:
 $c^2 = a^2 + b^2 = 9 + 16 = 25$, so $c = 5$.
 
-Now close the sticks a little, to $\theta = 60^\circ$. Measure the gap: $c \approx 3.61$, and $c^2 = 13$.
+Now close the sticks a little, to $\theta = 60^\circ$. Measured with a ruler (or in the scene below), the gap is
+$c \approx 3.61$, so $c^2 \approx 13$.
 Pythagoras promised $25$. Twelve units of area are missing. Where did they go?
 
 ## The missing rectangles
@@ -60,9 +61,12 @@ both are $a \cdot b \cdot \cos\theta$ with the factors in a different order. (Th
 when $a = b$.)
 
 **Step 4: count.** Two strips of 6 make 12. That is exactly what was missing: $25 - 12 = 13 = c^2$. What is
-left of the two squares after the strips are cut fits exactly into the square on $c$. In the scene you can
-watch the leftovers do it: each leftover rectangle leans into a parallelogram (same base, same height, same
-area), turns a quarter turn around the corner, and leans back upright inside $c^2$. This is Euclid's own
+left of the two squares after the strips are cut fits exactly into the square on $c$. With numbers: the square
+on $a$ minus its strip leaves $9 - 6 = 3$, the square on $b$ minus its strip leaves $16 - 6 = 10$, and
+$3 + 10 = 13 = c^2$. The square on $c$ splits into two rectangles of exactly those areas along the line of the
+height dropped from $C$. In the scene you can watch the leftovers do it: each leftover rectangle leans into a
+parallelogram (same base, same height, same area), turns a quarter turn around the far end of its side ($B$ for
+the leftover of $a$, $A$ for the leftover of $b$), and leans back upright inside $c^2$. This is Euclid's own
 proof, extended from the square corner to any corner.
 
 So for a corner that is not square, the rule is:
@@ -121,8 +125,10 @@ Now the sign, which is the part people get backwards.
   past the corner. The strip now has negative area (hatched in the scene), and subtracting a negative strip
   means *adding*. $c$ is *longer* than $\sqrt{a^2 + b^2}$: at $120^\circ$, $c^2 = 25 + 12 = 37$.
 
-So the correction is not "always a subtraction". It is a signed quantity, and its sign is the sign of
-$\cos\theta$, which the unit circle lesson placed on the left half of the circle for wide angles.
+So the correction is not "always a subtraction". The strips, $2ab\cos\theta$, carry the sign of $\cos\theta$; the
+term in the formula, $-2ab\cos\theta$, has the opposite sign: it takes area away for a sharp corner and adds area
+for a wide one. And $\cos\theta$ is negative for wide corners because, as the unit circle lesson showed, a point
+past $90^\circ$ sits on the left half of the circle.
 
 ## The same result from algebra
 
@@ -194,8 +200,9 @@ $$
 \cos\varphi = \frac{L_1^2 + L_2^2 - d^2}{2\,L_1 L_2} = \frac{4 + 2.25 - 8.5}{6} = \frac{-2.25}{6} = -0.375
 $$
 
-$\varphi = \arccos(-0.375) \approx 112^\circ$. A negative cosine, so the elbow is bent past square, which is
-right: the hand is farther away than the $\sqrt{4 + 2.25} = 2.5$ a square elbow would reach.
+$\varphi = \arccos(-0.375) \approx 112^\circ$. A negative cosine, so the elbow is opened wider than a square
+corner ($112^\circ$ between the bones, where $180^\circ$ would be a straight arm). That is right: the hand is
+farther away than the $\sqrt{4 + 2.25} = 2.5$ that a square elbow would reach.
 
 Move the target to distance $d = 2.5$ exactly, say $(2.5, 0)$: $\cos\varphi = (6.25 - 6.25) / 6 = 0$ and
 $\varphi = 90^\circ$. The strips vanish, the elbow is square. That is the Pythagoras case inside the rig.
@@ -216,10 +223,15 @@ The other end: a target closer than $|L_1 - L_2| = 0.5$, say $d = 0.3$, gives $\
 clamped to $1$, $\varphi = 0^\circ$, the arm folded flat.
 
 ```python
-d   = length(hand - shoulder)
+import numpy as np
+
+L1, L2 = 2.0, 1.5
+shoulder, hand = np.array([0.0, 0.0]), np.array([2.5, 1.5])
+d   = np.linalg.norm(hand - shoulder)
 c   = (L1*L1 + L2*L2 - d*d) / (2*L1*L2)
-c   = clamp(c, -1.0, 1.0)      # out of reach -> 180°, too close -> 0°, never NaN
-phi = acos(c)                  # elbow angle, radians
+c   = np.clip(c, -1.0, 1.0)      # out of reach -> 180°, too close -> 0°, never NaN
+phi = np.arccos(c)               # elbow angle, radians
+print(round(d, 4), round(c, 4), round(np.degrees(phi), 2))   # 2.9155 -0.375 112.02
 ```
 
 The solver needs one more angle to place the elbow, the shoulder's offset from the shoulder-to-target line,
@@ -261,22 +273,22 @@ all; that is what a pole vector is for.
       q: "The law of cosines only works if one angle of the triangle is 90°.",
       options: [
         "True, it is a rearranged Pythagoras",
-        "False: it works for every triangle, and at 90° it reduces to Pythagoras",
         "True, otherwise the correction term is undefined and the whole formula fails",
-        "False, it works only when no angle is 90°"
+        "False, it works only when no angle is 90°",
+        "False: it works for every triangle, and at 90° it reduces to Pythagoras"
       ],
-      answer: 1,
+      answer: 3,
       explain: "Pythagoras is the special case θ = 90°, where cos θ = 0 kills the correction term. For every other angle the term is simply nonzero. The law needs no right angle anywhere."
     },
     {
       q: "In c² = a² + b² − 2ab cos θ, which angle is θ?",
       options: [
+        "The angle between a and b, opposite side c",
         "The angle opposite side a",
         "The largest angle of the triangle",
-        "The angle between a and b, opposite side c",
         "Any of the three angles, the formula is symmetric"
       ],
-      answer: 2,
+      answer: 0,
       explain: "θ is the corner where a and b meet, and c is the side across from it. Swap the roles and you compute a different side; the formula is not symmetric in which side is c."
     },
     {
@@ -295,10 +307,10 @@ all; that is what a pole vector is for.
       options: [
         "the same area and the same shape",
         "different areas unless θ = 45°",
-        "the same area; the same shape only when a = b",
-        "the same shape but different areas, since the factors are swapped"
+        "the same shape but different areas, since the factors are swapped",
+        "the same area; the same shape only when a = b"
       ],
-      answer: 2,
+      answer: 3,
       explain: "Both areas are a·b·cos θ, the same product with the factors in a different order. The shapes are a-by-(b cos θ) and b-by-(a cos θ), which coincide only when a = b."
     },
     {
@@ -351,7 +363,7 @@ print(law_of_cosines(3, 4, 120))  # 6.082...
 
 # the two strips: a * (b cos th) and b * (a cos th) are the same number
 a, b, th = 3.0, 4.0, np.radians(60)
-print(a * (b*np.cos(th)), b * (a*np.cos(th)))   # 6.0 6.0
+print(round(a * (b*np.cos(th)), 9), round(b * (a*np.cos(th)), 9))   # 6.0 6.0 (rounded: cos(th) carries a tiny fp error)
 print(a*a + b*b - 2*6.0)                        # 13.0 = c^2
 
 # sweep theta: c grows from |a - b| to a + b
@@ -365,7 +377,7 @@ def elbow_deg(L1, L2, d):
 
 print(elbow_deg(2, 1.5, 2.5))     # 90.0
 print(elbow_deg(2, 1.5, 4.0))     # 180.0 (out of reach, clamped)
-print(np.arccos(-1.625))          # nan -> what happens without the clamp
+print(np.arccos(-1.625))          # nan (plus a RuntimeWarning) -> what happens without the clamp
 ```
 
 <details>
@@ -379,18 +391,22 @@ write that feeds `acos` or `asin` a computed value.
 
 A second, quieter problem lives near the same ends. The slope of `acos` is infinite at $\pm 1$: near a straight or
 a folded arm, a tiny rounding error in the cosine becomes a large error in the angle. At $\cos\varphi = -0.99999$
-the angle is $179.74^\circ$; at $-0.9999$ it is $179.19^\circ$. One digit in the fifth place moved the elbow half a
-degree. Solvers that need stability at full extension use `atan2` on the height and the shadow instead, which has no
+the angle is $179.74^\circ$; at $-0.9999$ it is $179.19^\circ$. A change of $0.00009$ in the cosine moved the elbow
+by more than half a degree. Solvers that need stability at full extension use `atan2` on the height and the shadow instead, which has no
 such cliff.
 
 </details>
 
 ## What this opens
 
-Look at the strip one more time. Its area is $a$ times the shadow of $b$ on $a$, that is $|a|\,(b\cos\theta)$.
-The lesson on [the dot product](lesson:dot-product) gives that product a name, $a \cdot b$, and shows a way to
-compute it from coordinates alone, with no angle in sight. Then the law of cosines reads
-$|a - b|^2 = |a|^2 + |b|^2 - 2\,a \cdot b$: Pythagoras with two rectangles cut out.
+Look at the strip one more time. Its area is the length of side $a$ times the shadow of side $b$ on it. In the
+next lessons the sides become arrows, written in bold, $\mathbf{a}$ and $\mathbf{b}$, with lengths $|\mathbf{a}|$
+and $|\mathbf{b}|$. Then the strip is $|\mathbf{a}|\,(|\mathbf{b}|\cos\theta)$, and the lesson on
+[the dot product](lesson:dot-product) gives that product a name, $\mathbf{a} \cdot \mathbf{b}$ (a new meaning of
+the dot: not plain multiplication), and shows how to compute it from coordinates alone, with no angle in sight.
+Then the law of cosines reads
+$|\mathbf{a} - \mathbf{b}|^2 = |\mathbf{a}|^2 + |\mathbf{b}|^2 - 2\,\mathbf{a} \cdot \mathbf{b}$: Pythagoras with
+two rectangles cut out.
 
 But first the sticks themselves. They have a length and a direction, and we have been treating them as
 "sides". The next lesson, [A vector: an arrow and a list of numbers](lesson:vector), treats them as arrows

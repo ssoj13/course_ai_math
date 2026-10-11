@@ -10,7 +10,7 @@ a point is two readings on two rulers).
 
 ## How far apart are two points?
 
-Two vertices in a Maya scene: $P = (1, 2)$ and $Q = (4, 6)$. You call `distance(P, Q)` or
+Two points on the Maya grid plane (ignore height for now): $P = (1, 2)$ and $Q = (4, 6)$. You call `distance(P, Q)` or
 `length(Q - P)` and get a number. This lesson is about what that function computes, why it has squares
 inside, and why the same formula keeps working when the points have 3 coordinates, or 4, or 4096.
 
@@ -54,7 +54,7 @@ turns an area back into a side.
 ### Why it is true
 
 Take the right triangle with legs $a$ and $b$ and hypotenuse $c$. Make four copies. Arrange them inside a big
-square of side $a + b$, each copy in a corner, with the right angles pointing out. The four hypotenuses now
+square of side $a + b$, each copy with its right angle sitting in one corner of the big square. The four hypotenuses now
 fence off a tilted square in the middle, of side $c$.
 
 {/* scene: 0.3-2 — dissection proof as a timeline: four copies of the triangle rearrange inside an (a+b)² square; step and scrub; a² + b² = c² without algebra */}
@@ -166,11 +166,11 @@ need to see the room; you need to square, add and root. Numbers do not care how 
       q: "P = (1, 2), Q = (4, 6). The distance between them is…",
       options: [
         "7, the sum of the two legs",
-        "5",
         "3.5, half the sum of the legs",
-        "25"
+        "25",
+        "5"
       ],
-      answer: 1,
+      answer: 3,
       explain: "Legs 3 and 4; squares 9 and 16; sum 25; root 5. The sum of the legs (7) is the Manhattan distance, the length of the grid walk, not the straight line. 25 is the squared distance."
     },
     {
@@ -182,17 +182,17 @@ need to see the room; you need to square, add and root. Numbers do not care how 
         "Yes, as long as a and b are whole numbers"
       ],
       answer: 1,
-      explain: "The root of a sum is not the sum of the roots. √(9 + 16) = √25 = 5, while 3 + 4 = 7. The two are equal only when one of the legs is zero."
+      explain: "The root of a sum is not the sum of the roots. √(9 + 16) = √25 = 5, while 3 + 4 = 7. The two are equal only when one of the legs is zero (and the other is not negative)."
     },
     {
       q: "You compute dx = x₂ − x₁ but accidentally swap the points, getting dx = −3 instead of 3. The distance…",
       options: [
-        "comes out negative and must be fixed",
         "is unchanged, because the leg is squared",
+        "comes out negative and must be fixed",
         "is off by 6, twice the leg",
         "becomes undefined because of the root of a negative"
       ],
-      answer: 1,
+      answer: 0,
       explain: "(−3)² = 9 = 3². Squares forget the sign, so the distance from P to Q equals the distance from Q to P, and nothing under the root is ever negative."
     },
     {
@@ -268,7 +268,7 @@ print(np.linalg.norm(q4 - p4))        # 3.0
 `np.hypot(a, b)` and C's `std::hypot` compute $\sqrt{a^2 + b^2}$ without ever forming $a^2$ in memory.
 Why bother? Because squaring can overflow when the legs do not. In fp64 the largest number is about
 $1.8 \times 10^{308}$, so a leg of $10^{200}$ has a square of $10^{400}$: infinity. In fp32 the limit is about
-$3.4 \times 10^{38}$, so legs around $3 \times 10^{19}$ already break. The same happens at the small end: a
+$3.4 \times 10^{38}$, so legs above about $1.8 \times 10^{19}$ already break. The same happens at the small end: a
 leg of $10^{-200}$ squares to zero (underflow), and the distance between two nearby points comes out as 0.
 `hypot` rescales by the larger leg first, computes $\sqrt{1 + (b/a)^2}$ and scales back.
 

@@ -34,8 +34,8 @@ One more: $x = 7$ gives $7^2 = 49$. Forty-nine unit tiles, 7 by 7.
 
 {/* scene: 0.G-1 — scrub x in "x² = ?": a literal square of side x grows on the grid, the area readout is the formula value; drag x negative, the square stays and the area stays positive */}
 
-Now a case that surprises people. Let $x = 0.5$. Then $x^2 = 0.5 \cdot 0.5 = 0.25$. The square is *smaller*
-than its side. Squaring does not always make a number bigger: between 0 and 1 it makes it smaller. The picture
+Now a case that surprises people. Let $x = 0.5$. Then $x^2 = 0.5 \cdot 0.5 = 0.25$. The number $0.25$ is
+*smaller* than $0.5$. Squaring does not always make a number bigger: between 0 and 1 it makes it smaller. The picture
 explains it: a square with a side of half a tile covers a quarter of a tile.
 
 ### Squares forget the sign
@@ -144,12 +144,12 @@ $4 + 9 = 13$. Keep that number in mind. The next lesson shows what $\sqrt{13}$ m
     {
       q: "What is (−3)²?",
       options: [
-        "−9, because the minus sign is kept",
         "9",
+        "−9, because the minus sign is kept",
         "−6, because squaring doubles the number",
         "6"
       ],
-      answer: 1,
+      answer: 0,
       explain: "(−3)² = (−3)·(−3) = 9. A negative times a negative is positive. Squares forget the sign. (In Python, -3**2 is −9 only because of operator precedence: it means −(3²).)"
     },
     {
@@ -167,22 +167,22 @@ $4 + 9 = 13$. Keep that number in mind. The next lesson shows what $\sqrt{13}$ m
       q: "A point on the plane and its pair of coordinates (x, y) are…",
       options: [
         "two different things that usually agree but can drift apart",
-        "the same thing seen two ways, once the axes are fixed",
         "related only when x and y are whole numbers",
-        "the same thing only at the origin"
+        "the same thing only at the origin",
+        "the same thing seen two ways, once the axes are fixed"
       ],
-      answer: 1,
+      answer: 3,
       explain: "Once the two rulers are fixed, the point IS the pair of readings. Drag the dot and the numbers change; edit the numbers and the dot moves. There is nothing in between."
     },
     {
       q: "Which statement about squaring is true?",
       options: [
         "x² is always bigger than x",
-        "x² is never smaller than 0",
         "x² is always smaller than x",
+        "x² is never smaller than 0",
         "x² has the same sign as x"
       ],
-      answer: 1,
+      answer: 2,
       explain: "An area is never negative: x² ≥ 0 for every x. It is not always bigger than x: 0.5² = 0.25, which is smaller than 0.5."
     }
   ]}
@@ -231,14 +231,14 @@ print(p[0]**2 + p[1]**2)      # 13.0 -> next lesson
 <summary>Machine layer: why CG code compares squared distances</summary>
 
 `x * x` is one multiply: a single instruction, about as cheap as an add. `sqrt` is also a hardware
-instruction on every modern CPU and GPU, but it is a slow one, roughly 10 to 20 times the cost of a multiply,
-and it cannot be pipelined as freely.
+instruction on every modern CPU and GPU, but it is a slower one, several times the cost of a multiply (roughly
+3 to 10 times on current CPUs), and it cannot be pipelined as freely.
 
 Here is the trick everyone in CG uses without naming it. Squaring keeps order: if $0 \le a \le b$ then
 $a^2 \le b^2$, and the other way round. So to ask "is this point closer than $r$?" you never need the root:
 compare the squared distance with $r^2$ instead. That is the `dist2 < r * r` you have written in every
-spatial query, culling test and particle solver. One multiply instead of one square root, and the answer is
-exactly the same.
+spatial query, culling test and particle solver. One multiply instead of one square root, and, apart from points
+within a rounding error of the boundary, the answer is the same.
 
 </details>
 

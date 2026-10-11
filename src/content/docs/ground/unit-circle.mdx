@@ -54,7 +54,8 @@ $\cos\theta$. Shine a light from the right: the shadow on the y axis lands at $\
 from the point to the axes, the ones you met in the first lesson, *are* cos and sin.
 
 Work through $\theta = 60^\circ$. The point on the circle sits at $(0.5, 0.866)$. So $\cos 60^\circ = 0.5$ and
-$\sin 60^\circ = 0.866$. Check that it is really on the circle: $0.5^2 + 0.866^2 = 0.25 + 0.75 = 1$. It is.
+$\sin 60^\circ = 0.866$. Check that it is really on the circle: $0.5^2 + 0.866^2 \approx 0.25 + 0.75 = 1$. It is
+($0.866$ is the rounded value of $\sqrt{3}/2$, whose square is exactly $0.75$).
 
 Now the easy ones, which you should be able to read off the picture without any table:
 
@@ -77,8 +78,8 @@ Similarly sin is negative between $180^\circ$ and $360^\circ$, the bottom half.
 
 cos is the x coordinate of a point that is exactly 1 unit from the origin. A point at distance 1 cannot have an
 x coordinate of 1.3, any more than a vertex can be farther from the origin along x than it is in total.
-So $-1 \le \cos\theta \le 1$ and the same for sin, always. If a calculation ever hands you $\cos\theta = 1.0002$,
-the calculation is wrong (or rounding happened; the law of cosines lesson shows where that bites).
+So $-1 \le \cos\theta \le 1$ and the same for sin, always. If a calculation hands you $\cos\theta = 1.3$, it is
+wrong; if it hands you $1.0000001$, rounding happened (the law of cosines lesson shows where that bites).
 
 ## Radians: an angle measured as arc length
 
@@ -97,8 +98,8 @@ $$
 
 For $60^\circ$: $60 \cdot 3.14159 / 180 = 1.0472$ radians. And back the other way: $1.0472 \cdot 180 / 3.14159 = 60^\circ$.
 
-"Radians are harder" is the usual reaction. They are not harder, they are more honest: a radian is a length,
-so arc length on a circle of radius $r$ is simply $r \cdot \theta$ with no conversion factor, and for small
+"Radians are harder" is the usual reaction. They are not harder, they are more honest: a radian is measured as
+a length on the unit circle, so arc length on a circle of radius $r$ is simply $r \cdot \theta$ with no conversion factor, and for small
 angles $\sin\theta \approx \theta$ (try $\theta = 0.1$: $\sin 0.1 = 0.0998$). Every formula in calculus and
 every shader function assumes radians for exactly this reason.
 
@@ -140,20 +141,24 @@ proof in this course. Exact values first, decimals after.
 {/* scene: 0.4-3 — special angles with snap: the point snaps to 0, 30, 45, 60, 90, 120, 180 and the table row lights up */}
 
 Notice $45^\circ$: cos and sin are equal, because the point sits on the diagonal, as far along x as along y.
-Check Pythagoras: $0.707^2 + 0.707^2 = 0.5 + 0.5 = 1$. And notice $30^\circ$ and $60^\circ$ swap their values:
-turning $30^\circ$ from the x axis is the same as turning $30^\circ$ short of the y axis.
+Check Pythagoras: $0.707^2 + 0.707^2 \approx 0.5 + 0.5 = 1$. And notice $30^\circ$ and $60^\circ$ swap their
+values. The point at $60^\circ$ is $30^\circ$ short of the y axis, exactly as the point at $30^\circ$ is $30^\circ$
+past the x axis: the two points are mirror images across the $45^\circ$ diagonal, and mirroring across that diagonal
+swaps x and y.
 
 ## Going back: from a point to its angle
 
 Sometimes you have the point and want the angle. A vertex at $(x, y)$, a velocity, a joint's child position:
 which direction is that? The function is `atan2(y, x)`, and it returns the angle whose cos and sin point that way.
 
-Two details that cause bugs. First, the argument order is **y first, then x**, in every language that has
-`atan2`. Second, the result is in radians, in the range $-180^\circ$ to $180^\circ$ (that is $-\pi$ to $\pi$).
+Two details that cause bugs. First, the argument order is **y first, then x** in C, C++, Python, NumPy, VEX and
+HLSL (GLSL spells it `atan(y, x)`; spreadsheets swap the order). Second, the result is in radians, in the range
+from $-\pi$ (excluded) to $\pi$ (included), that is $-180^\circ$ to $180^\circ$.
 
-Examples: `atan2(0.866, 0.5)` gives $1.047$ radians, which is $60^\circ$. `atan2(1, -1)` gives $135^\circ$: the
-point $(-1, 1)$ is up and left, three eighths of a turn. `atan2(-1, 0)` gives $-90^\circ$: the point $(0, -1)$
-is straight down, a quarter turn *clockwise*, which is the same direction as $270^\circ$ counter-clockwise.
+Examples: `atan2(0.866, 0.5)` gives $1.047$ radians, which is $60^\circ$. `atan2(1, -1)` gives $2.356$ radians,
+which is $135^\circ$: the point $(-1, 1)$ is up and left, three eighths of a turn. `atan2(-1, 0)` gives $-1.571$
+radians, $-90^\circ$: the point $(0, -1)$ is straight down, a quarter turn *clockwise*, which is the same direction
+as $270^\circ$ counter-clockwise.
 
 > **Say it simpler.** cos θ is how much of a length-1 arrow points along x; sin θ is how much points along y.
 > A radian is the arc you slid along the unit circle. Libraries want radians; artists type degrees.
@@ -177,11 +182,11 @@ is straight down, a quarter turn *clockwise*, which is the same direction as $27
       q: "The sign of cos 120° is…",
       options: [
         "positive, because 120° is less than 180°",
-        "negative, because the point is on the left half of the circle",
         "zero, because 120° is past 90°",
-        "positive, because any angle smaller than 180° stays on the upper half of the circle"
+        "positive, because any angle smaller than 180° stays on the upper half of the circle",
+        "negative, because the point is on the left half of the circle"
       ],
-      answer: 1,
+      answer: 3,
       explain: "At 120° the point is at (−0.5, 0.866). Its x coordinate, cos 120°, is −0.5. For every angle between 90° and 270° the point is on the left, so cos is negative."
     },
     {
@@ -198,12 +203,12 @@ is straight down, a quarter turn *clockwise*, which is the same direction as $27
     {
       q: "A radian is…",
       options: [
-        "one 360th of a turn, like a degree but harder to type and read",
         "the angle whose arc on the unit circle has length 1",
+        "one 360th of a turn, like a degree but harder to type and read",
         "a unit used only in computer graphics",
         "a 100th of a right angle"
       ],
-      answer: 1,
+      answer: 0,
       explain: "Radians measure an angle by the arc length it cuts on a circle of radius 1. A full turn is 2π radians because the unit circle's circumference is 2π. Nothing about it is harder, and arc length on any circle becomes r·θ."
     },
     {
@@ -249,13 +254,16 @@ import numpy as np
 th = np.radians(60)                       # degrees -> radians: 1.0471975511965976
 x, y = np.cos(th), np.sin(th)             # the point on the unit circle at 60°
 print(x, y)                               # 0.5000000000000001 0.8660254037844386
-print(x**2 + y**2)                        # 1.0 -> on the circle
+# That trailing 1 is floating-point rounding: cos(π/3) is exactly 0.5, but π/3 is not
+# exactly representable. Every result below is rounded to 6 decimals for that reason.
+print(round(x**2 + y**2, 6))              # 1.0 -> on the circle
 
-print(np.cos(60))                         # -0.9524129804151563: cosine of 60 RADIANS (the trap)
+print(round(np.cos(60), 6))               # -0.952413: cosine of 60 RADIANS (the trap)
 
-print(np.degrees(np.arctan2(y, x)))       # 60.0: back from the point to the angle (y first!)
-print(np.degrees(np.arctan2(1, -1)))      # 135.0
-print(np.degrees(np.arctan2(-1, 0)))      # -90.0 (same direction as 270°)
+deg = lambda rad: round(np.degrees(rad), 6)
+print(deg(np.arctan2(y, x)))              # 60.0: back from the point to the angle (y first!)
+print(deg(np.arctan2(1, -1)))             # 135.0
+print(deg(np.arctan2(-1, 0)))             # -90.0 (same direction as 270°)
 
 for deg in (0, 30, 45, 60, 90, 120, 180): # the special-angles table
     r = np.radians(deg)
@@ -268,9 +276,9 @@ for deg in (0, 30, 45, 60, 90, 120, 180): # the special-angles table
 There is no sine circuit that reads a sine off a circle. A library `sin` does two things: **range reduction**,
 which subtracts whole multiples of $2\pi$ until the angle is small (that is why the result for 60 radians is a
 perfectly good number, just not the one you wanted), and then a **polynomial approximation** of the sine on that
-small range, a handful of multiplies and adds. GLSL and CUDA offer fast versions (`__sinf` in CUDA, the
-hardware "special function unit") that skip most of the reduction and are accurate only for modest angles; old
-games used a lookup table of a few hundred values and interpolated.
+small range, a handful of multiplies and adds. CUDA offers fast versions (`__sinf`, which runs on the hardware
+special function unit), and GLSL `sin` on most GPUs already is that fast path: both skip most of the reduction
+and are accurate only for modest angles. Old games used a lookup table of a few hundred values and interpolated.
 
 The practical consequence: precision collapses for huge angles. An angle of $10^6$ radians stored in fp32 has an
 absolute error of up to about $0.03$ radians before `sin` even runs (the spacing of fp32 numbers near $10^6$ is
