@@ -14,6 +14,9 @@ Cost: the reader waits longer for the first "real" lesson. Mitigation: the roadm
 
 ## 2. Lesson-by-lesson storyboard
 
+Note (2026-10-10): the ids "0.1" and "0.2" in §1, §2 and §6 are the pre-2026-10-10 numbering (0.1 squares, 0.2 slope).
+Since CURRICULUM.md 2661c02, **0.2 is the Powers lesson** (`powers.mdx`); its scenes are in §7.
+
 Conventions used below. **Page template** (fixed order, every lesson): Hook → Scenes (each with a one-sentence "what to drag") → "Say it simpler" box → Hand exercises (answers behind a reveal) → Quiz → Python cell (Pyodide, lazy; "Open in Colab" badge) → Machine layer (collapsible `<details>`) → "Next question" → Local term map (1–2 hops). **Linking**: every scene publishes values to a per-lesson store; formula terms, table cells, code lines and scene objects share **term ids**; hovering/selecting any of them sets `hot` and all four views highlight. **Timeline** = stepped, scrubbable derivation (never autoplay).
 
 ### 0.G — Ground: squares, roots, the plane (merged 0.1 + 0.2)
@@ -255,6 +258,8 @@ All React (`src/viz/`), TypeScript strict, props are plain data; every id string
 
 ## 6. Curriculum ordering changes (brief)
 
+Note: "0.2" in item 1 is the old slope lesson, not the Powers lesson 0.2 of §7.
+
 1. **Merge 0.1 + 0.2 → 0.G** ("squares, roots, the plane"); move "line y = kx + b and slope" into 4.1 where it is first needed. Nothing in Parts 0–1 uses slope.
 2. **1.6: orthonormal change of basis only.** The general change of basis needs the inverse (2.7). Say so explicitly and leave a forward link; otherwise 1.6 silently requires solving a linear system.
 3. **1.4: add "a·a = |a|²" and the sign of the dot product** as named checkpoints (both are used by 1.5, 1.7, 8.3 and 10.2).
@@ -264,3 +269,514 @@ All React (`src/viz/`), TypeScript strict, props are plain data; every id string
 7. **Machine layer continuity:** 0.G (squared-distance comparisons) → 0.3 (`hypot`) → 1.3 (fp16 overflow, fp32 accumulation) → 1.4 (FMA, summation order) forms a single thread that lands in branch Q; name it as a thread in the roadmap so the "zoom down" promise is visible from lesson one.
 
 Sources consulted for library claims: [drei View docs](https://drei.docs.pmnd.rs/portals/view), [KaTeX supported functions (HTML extension)](https://katex.org/docs/supported.html), [Pyodide loading packages](https://pyodide.org/en/stable/usage/loading-packages.html), [Starlight CSS guide](https://starlight.astro.build/guides/css-and-tailwind/), [Chromium WebGL context limit review](https://codereview.chromium.org/14217005/), [Mozilla bug 1748592 (per-platform limits)](https://bugzilla.mozilla.org/show_bug.cgi?id=1748592), [WebKit max-active-contexts test](https://webkit.googlesource.com/WebKit/+/master/LayoutTests/webgl/max-active-contexts-oldest-context-lost-expected.txt).
+
+
+## 7. Scenes for 0.G and 0.2 (squares are areas; powers)
+
+Status: scene design for implementation (2026-10-11, rev 3 after recovery review: ladder geometry, TileGrid contract, clay look
+per visual-language v3, complete store tables, real store API). Same precision as `lessons-law-of-cosines-dot-product.md`
+§1; all conventions of its §0 apply (ids/derive, `fmt`, drag/snap/keyboard, ViewportCard layout, motion, challenge boxes).
+Lesson 0.2 was added to the curriculum after §2 above was written (user request: "a square is an area — show it, maybe as a
+3D widget; explain fractional and negative powers too"); its prose is `src/content/docs/ground/powers.mdx`, and the slot
+ids below are the `{/* scene: ... */}` comments in `squares-and-plane.mdx` (0.G-1..3) and `powers.mdx` (0.2-1..5).
+
+Existing engine API (`src/viz`, 6e): `lessonStore` with `vals`/`shown`, single-key `set(key, v, how)`,
+`Challenge.check(vals, step)`, N-panel rows `num | vec | ro | bool`, and `Draggable.move(vals, raw, src)`.
+Current `writeMove` writes multiple keys sequentially and is used by handles, not N-panel/Formula/Num.
+This section requires the future linked atomic store contract of 7.13 for all those writers; scene delivery is
+blocked until that contract is implemented and tested. Timeline/NumTable remain Task 7 contracts (planned).
+The tables below specify the complete intended behavior, including required engine additions; this branch is content/spec only.
+
+### 7.0 Look (visual-language v3)
+
+Every object in 0.G-1, 0.G-3 and 0.2-1..0.2-4 is a countable solid, so those six cards are **clay cards**
+(`look: 'clay'` on the ViewportCard: light studio background `#D6DAE1 → #C4C9D2`, no stars, grid `#B9BFC9`, same chrome).
+Tiles and cubes are `ClayTile`/`ClayCube` bodies (matcap, `RoundedBoxGeometry` bevel 6 % of the smallest side, footprint
+sprite under the bottom layer): the square of side x is `clayB` (sky), the root-driven square of 0.G-3 / 0.2-4 is `clayC`
+(lilac), partial tiles are `clayAccent` (orange, the reference's "cut out" tiles), labels sit on `clayPlate` plates in
+`clayInk`. Measured sides are **measurement arrows** (dimension lines in `clayInk`, 1 px, end ticks, value in mono) with the
+drag handle at the far end — not glowing filaments, which would be lost on the light background. Hot = the orange outline
+around the body silhouette (v3 clay rule). 0.G-2 (a point and two legs) and 0.2-5 (curves) draw lines, not solids: they are
+**holo cards** (deep-space background, filaments, glass plates), roles `vecA`/`vecB`, axis colours for the legs.
+A card never mixes both backgrounds.
+
+### 7.1 Shared primitive: `TileGrid` (new, `scene/TileGrid.tsx`)
+
+The one object this section draws: a box or a row of unit pieces, clipped exactly to a real-valued size, counted.
+
+**Props.**
+
+| prop | type | meaning |
+|---|---|---|
+| `id` | string | term id of the whole (hover outlines the whole shape, lights `area`/`xn`) |
+| `shape` | `{ kind: 'box', size: [sx, sy, sz], thin: [boolean, boolean, boolean] }` \| `{ kind: 'row', len, wrap }` | **box**: unit pieces fill `[0, sx] × [0, sy] × [0, sz]`; only an explicit `thin: true` marks a display-only axis (one 0.12-thick layer, not counted). Active dimensions retain their exact size, even 0.1; no size threshold. **row**: `len` unit pieces laid along +x, wrapping to a new row (−y in 2D, +z in 3D) every `wrap` pieces; `len` may be fractional (last piece clipped). |
+| `plane` | `'xy' \| 'xz'` (default `'xy'`) | 2D stages draw in the xy plane; a box lying on a 3D floor uses `'xz'` (its thin axis is y). Ignored for a full 3D box. |
+| `fill` | number in [0, 1], optional | for a `row` with `len ≤ 1`: ONE unit outline (thin `clayInk` frame) with a body of width `fill` filled from the left — the "fraction of a tile" of the ladder's negative rungs. `len > 1` with `fill` throws. |
+| `origin` | V (default 0) | low corner |
+| `role` | clay role | body colour; partial pieces always `clayAccent` |
+| `count` | boolean | publishes `whole`, `partial`, `pieces` (below) |
+| `label` | boolean | centre plate with the total (`fmt`: integer when the size is integer, else 2 decimals) |
+| `negative` | `'mirror'`, optional | a negative size draws the same shape mirrored through the origin on that axis (0.G-1 only); without it a negative size throws (a design bug, not a reader state) |
+
+**Geometry.** One `InstancedMesh` of `RoundedBoxGeometry` unit bodies; instance `(i, j, k)` is scaled to
+`min(1, sx − i) × min(1, sy − j) × min(1, sz − k)` (explicit thin axis: 0.12; active mirrored sizes use abs(size)) and anchored at its low corner, so the union of the
+pieces IS the shape and partial pieces are clipped exactly (a 2.5 side gives 0.5-wide pieces, never a scaled 1-unit body).
+Capacity: active box dimensions use `ceil(abs(size))`, each at most 4; explicit thin axes use 1.
+Rows use `ceil(len)` instances with `wrap ≤ 16` controlling arrangement only. The largest
+instance count is 64 for a cube and 27 for the largest ladder rung (base 3, exponent 3); one draw call per TileGrid. Row capacity is `ceil(len)`, not wrap times a box limit.
+Matrices are rebuilt in `useFrame` only when the shown size changes (`moved` check; one module-level `Object3D`
+temporary; no allocation per frame).
+
+**Counting (`count`).** For boxes take the product over active axes only: `pieces = ∏ceil(abs(size))`,
+`whole = ∏floor(abs(size))`, `total = ∏abs(size)`, `partial = total − whole`; explicit thin axes contribute 1.
+For rows without fill: `pieces = ceil(len)`, `whole = floor(len)`, `total = len`; with fill: `pieces = fill > 0 ? 1 : 0`,
+`whole = fill === 1 ? 1 : 0`, `total = fill`, and always `partial = total − whole`. The optional outline is not a counted body. These are
+derived values (`derive(vals)`), not store keys; the scene's N-panel rows `whole`/`partial` and the formula terms read them.
+
+**Material and transparency (decision).** Bodies are **opaque** clay (`MeshMatcapMaterial`, pastel `color`, no
+`transparent`). Translucent instanced cubes are rejected: three.js does not sort instances inside an `InstancedMesh`, so
+18 % faces with depth writes flicker by draw order and without depth writes 4×4×4 faces pile up into an opaque blob. With
+opaque bodies the interior is hidden and the count is carried by the bevel seams between bodies (matcap shading makes
+every seam a visible dark line, ≥ 1.5 px at the default camera) plus the per-piece edge frame in 2D. Acceptance check:
+at `x = 3`, default 3D camera, the three layers of the cube are distinguishable by their seams; at `x = 2.5` the
+orange partial slabs on three faces read as "cut".
+
+**Instance-count transitions (0.2-2 morph, 0.2-3 splitting).** The instance count is the max over the two states; a
+body that exists only in the target starts at `min(0.12, target clipped size)` on the growing axes and springs to its exact target size; a body that
+exists only in the source springs to `min(0.12, source clipped size)` and is then hidden (render instance count set after the spring; numeric counts always describe the target truth). Nothing pops.
+
+**Hover.** The whole shape gets the hot outline (never per piece). `whole`/`partial` rows: the matching pieces keep
+their colour, the others use `mix(cardBackground, bodyColor, 0.35)` in their per-instance colour attribute. Alpha stays 1, depth writes stay on; this is a colour dim, never transparency.
+
+**Degenerate.** A size of 0 draws nothing; labels read `0`; counts 0.
+
+Other primitives used here, all existing unless marked: `Stage`, `ViewportCard` (Header, NPanel, StatusBar, Gizmo),
+`Grid`, `Segment`, `Point`, `Arrow`, `AreaTile`, `RightAngle`, `Label`, `Formula` (`\t{}`, `\s{}`), `Num`, `Challenge`,
+N-panel `bool` rows; `Timeline`, `NumTable` (Task 7, planned); **new**: `TileGrid` (above), `FnCurve` (0.2-5: a
+pixel-stable polyline of `y = f(t)` over an interval on `Stroke`), the measurement arrow with a drag handle (v3 instrument
++ `Draggable`), clay card mode. All listed in 7.13.
+
+### 7.2 Store `squares-and-plane` (0.G)
+
+| key | type | initial | range / step | written by |
+|---|---|---|---|---|
+| `x` | number | 3 | [−4, 4] / 0.1 | `\s{x}` scrub (prose and formula), N-panel field, side handle drag (0.G-1); 0.G-3 writes it from `A` (always ≥ 0) |
+| `A` | number | 9 | [0, 16] / 0.25 | N-panel field and `\s{A}` (0.G-3); 0.G-1 writes it from `x` |
+| `P` | [x, y] | [−2, 3] | stage extent, snap 0.1 | point drag (0.G-2), two N-panel fields |
+
+Both scenes write `x` and `A` together through the future store-level linked patch contract (7.13), including N-panel, Formula, Num and handles: 0.G-1's handle/field writes
+`{ x: v, A: v·v }`; 0.G-3's field writes `{ A: v, x: sqrt(v) }`. So a negative `x` set in 0.G-1 becomes positive the
+moment 0.G-3 writes `A` (the root is never negative); that is intended and the 0.G-3 status bar says so.
+
+Derived (one `derive(vals)`; every id below appears in a formula, row or challenge):
+
+| id | value | used in |
+|---|---|---|
+| `x2` | `x·x` | 0.G-1 formula, row |
+| `whole` | `floor(|x|)²` | 0.G-1 row, formula line 2 |
+| `partial` | `x2 − whole` | 0.G-1 row, formula line 2 |
+| `sqrtA` | `sqrt(A)` | 0.G-3 formula, row, side label |
+| `check` | `sqrtA²` | 0.G-3 formula, row |
+| `px`, `py` | `P[0]`, `P[1]` | 0.G-2 fields, legs, formula |
+| `px2`, `py2`, `sum` | `px²`, `py²`, `px2 + py2` | 0.G-2 rows, formula line 2, challenge 2 |
+
+### 7.3 Scene 0.G-1 — "Why is x² called a square?" (lead scene, draws itself on first view, clay card)
+
+**Purpose.** The number `x²` is the count of unit tiles in a square of side `x`. Aha: the tiles ARE the number; a
+side of 2.5 has partial tiles and the formula still gives the exact area; a negative side draws the same square on the
+other side of the origin and the area stays positive (squares forget the sign).
+
+**Stage.** 2D, `extent = 4.5` (x = ±4 → the square reaches ±4, 10 % margin), centred `[0, 0]`. Grid step 1, axes on
+(axisX/axisY, so "negative x" is visibly a direction).
+
+**Objects.**
+
+| id | primitive | geometry | role | label | drag |
+|---|---|---|---|---|---|
+| `sq` | TileGrid | `shape: box [x, x, 0], thin [false, false, true]`, `plane: 'xy'`, `negative: 'mirror'`, `count`, `label` | clayB (partials clayAccent) | `x² = 9` plate at the centre | — |
+| `side` | measurement arrow + handle at `[x, 0]` | `[0, 0] → [x, 0]`, 14 px below the bottom edge | clayInk | `x = 3.0` in the middle (negative: the arrow points left, value `−3.0`) | handle: x only, `move` → `{ x: clamp(snap(px), −4, 4) }`; linked resolver derives A |
+| `o` | Point | `[0, 0]` | clayInk | `0` | — |
+
+**ViewportCard.** Header: `2D` · `Ortho` · `Overlays ▾` (grid on, tiles on, labels on, axes on) · `Reset view` ·
+`0.G-1 · Square`. N-panel rows: `x` num [−4, 4; 0.1; Ctrl snaps 0.5] (writes `{ x, A }`) · separator AREA · `x2` ro (`x²`) ·
+`whole` ro (`whole tiles`) · `partial` ro (`partial area`, `visible: partial > 0`). Status bar: over the handle — "LMB drag
+the side · x can be negative"; over the square — "x² = 9 · 9 whole tiles"; idle — "Wheel zoom · MMB pan · N panel".
+
+**Formula.** `\t{x2}{x^2} = \s{x} \cdot \s{x} = \s{x2}`; a second line while `partial > 0`:
+`= \t{whole}{\s{whole}} \text{ whole tiles} + \t{partial}{\s{partial}}`.
+
+**Hover map.** `x`: the measurement arrow + handle + `\s{x}` + field. `x2`: square outline + its plate + `x^2` + `\s{x2}` +
+row. `whole`: whole tiles stay, partials dim with the 35 % body-colour mix of 7.1. `partial`: the reverse.
+
+**Edge cases.** `x = 0`: no tiles, arrow of zero length (value `0.0`), plate `x² = 0`. `x = −3`: square on `[−3, 0]²`,
+plate `x² = 9` (positive), arrow value `−3.0` to the left; row `x2` reads `9.00`. `x = 2.5`: 4 whole + 2.25 partial
+(5 orange pieces), `x2 = 6.25`.
+
+**Challenges** (`check(vals)`). 1. "Make the square hold exactly 16 tiles." `|x| === 4`. 2. "Make the area positive
+with a negative side." `x < 0` (card: "the square is drawn to the left and down; its area is still x²").
+
+**Motion.** First view: the arrow grows from the origin (300 ms), then the tiles rise into place row by row (300 ms;
+`DrawIn`); reduced motion: the final state at once. Drags 1:1; field arrows/typed values ease (Ruling U).
+
+### 7.4 Scene 0.G-2 — Two rulers, one point (holo card)
+
+**Purpose.** A point is two readings; the two dashed legs are its coordinates, drawn. Aha: drag the dot and the numbers
+change; type the numbers and the dot moves; there is nothing in between.
+
+**Stage.** 2D, `extent = 5`, centred `[0, 0]`, grid step 1, axes on with tick labels every 1 (muted mono); rulers
+overlay on (v3 instruments: the vertical ruler is the y scale).
+
+**Objects.** `P` Point (ink, 6 px, label `(−2, 3)` live; drag free, snap 0.1); `legx` Segment dashed `P → [px, 0]`
+(axisX colour, label `x = −2.0` at the foot); `legy` Segment dashed `P → [0, py]` (axisY colour, label `y = 3.0`);
+`footx`, `footy` small Points (muted) at the feet; `rtx`, `rty` RightAngle at the feet (muted).
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, axes, legs, labels, rulers) · `Reset view` · `0.G-2 · Point`.
+N-panel: `P` vec (two fields `x`, `y`, [−4.5, 4.5; 0.1]) · separator SQUARES · `px2` ro (`x²`) · `py2` ro (`y²`) · `sum` ro
+(`x² + y²`). Status: over P — "LMB drag P · arrows nudge 0.1 · Shift 1.0"; over a leg — "x leg: the x coordinate, −2.0";
+idle — "Drag P or type x, y in the N panel".
+
+**Formula.** `P = (\s{px},\; \s{py})`; second line (the hand-off to 0.3): `\t{px2}{x^2} + \t{py2}{y^2} = \s{px2} + \s{py2}
+= \s{sum}`, dim until the reader hovers a SQUARES row.
+
+**Hover map.** `px`: leg x + foot + its label + `\s{px}` + the x field; `py` likewise; `px2`/`py2`: the leg brightens and
+a transient glass `AreaTile` (axis colour) is drawn on the leg for the hover; `sum`: both tiles.
+
+**NumTable** (Task 7; 2 rows `x`, `y`, 1 column) under the formula: the "two readings" view, cells `px`/`py`.
+
+**Edge cases.** `P` on an axis: one leg has zero length, its label reads `0.0`, its foot coincides with P. `P` at the
+origin: both.
+
+**Challenges.** 1. "Put P at (−2, 3) by typing, not dragging." `px === −2 && py === 3` (any route; the hint names the
+N panel). 2. "Make x² + y² equal 13 with a different point." `sum === 13 && !(px === −2 && py === 3)` (e.g. (3, 2)).
+
+### 7.5 Scene 0.G-3 — The root undoes the square (clay card)
+
+**Purpose.** Reverse the direction: the reader sets the AREA, and the side appears. Aha: most areas give an ugly side
+(√2 = 1.4142…); the side is never negative.
+
+**Stage.** As 0.G-1 (`extent = 4.5`), centred `[2, 2]`, axes off. Reuses `TileGrid` with size `sqrtA` — the same square
+as 0.G-1, here driven by `A`.
+
+**Objects.** `sq` TileGrid (`box [sqrtA, sqrtA, 0], thin [false, false, true]`, clayC, partials clayAccent, `count`, plate `A = 9`); `side`
+measurement arrow `[0, 0] → [sqrtA, 0]`, value `√A = 3.0`, **no handle** (the side is the OUTPUT; the status bar says
+so); `o` Point.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` · `Reset view` · `0.G-3 · Root`. N-panel: `A` num [0, 16; 0.25;
+Ctrl snaps to 0, 1, 4, 9, 16] (writes `{ A, x: sqrt(A) }`) · separator SIDE · `sqrtA` ro (`√A`, 4 decimals, so √2 shows
+`1.4142`) · `check` ro (`(√A)²`, 2 decimals: the root squared returns the area). Status: over the square — "Scrub A in the
+N panel · the side follows"; over the side — "√A = 1.4142 · output, not a handle · never negative"; idle — "Ctrl-drag A
+snaps to perfect squares".
+
+**Formula.** `\t{sqrtA}{\sqrt{\s{A}}} = \s{sqrtA}` and `\t{check}{(\sqrt{A})^2} = \s{check}`.
+
+**Edge cases.** `A = 0`: nothing drawn, `sqrtA` 0. `A = 2`: side 1.4142, 1 whole tile + 3 partial tiles (partial area
+1.00), `check` 2.00.
+
+**Challenges.** 1. "Find an area whose side is a whole number, other than 9." `Number.isInteger(sqrtA) && A !== 9 && A > 0`.
+2. "Make the side exactly 1.5." `A === 2.25`.
+
+### 7.6 Store `powers` (0.2)
+
+| key | type | initial | range / step | written by |
+|---|---|---|---|---|
+| `x` | number | 3 | [0, 4] / 0.1 | side handle, `\s{x}`, N-panel field (0.2-1, 0.2-2); the `A`/`V` fields (0.2-1, 0.2-4) through the root. Never negative (negative bases are prose-only) |
+| `A` | number | 9 | [0, 16] / 0.25 | N-panel field + `\s{A}` (0.2-1, 0.2-4 2D); written from `x` otherwise |
+| `V` | number | 27 | [0, 64] / 1 | N-panel field + `\s{V}` (0.2-4 3D); written from `x` otherwise |
+| `from` | number 0/1/2 | 0 | — | which key the reader wrote last (0 = `x`, 1 = `A`, 2 = `V`); part of every patch below; read by 0.2-1 challenges |
+| `n` | number (int), authoritative | 2 | 1..3 / 1 | Formula scrub, power Timeline adapter, power chips `x¹ x² x³` (0.2-2), keys 1/2/3, N-panel integer field |
+| `base` | number | 2 | [1.5, 3] / 0.5 | N-panel field (0.2-3 only; its own key so the ladder base never fights the side `x`) |
+| `d3` | number 0/1 | 0 | bool | header `2D / 3D` toggle and N-panel bool row (0.2-4) |
+| `g` | number | 2.2 | [0.2, 32] / 0.1 | `\s{g}`, N-panel field (0.2-5); presets 2.2, 1/2.2, 8, 32 set it exactly (no rounding to step; all inside the same range) |
+| `t` | number | 0.5 | [0, 1] / 0.01 | point drag along x, N-panel field (0.2-5) |
+| `k` | number (int), authoritative | 3 | [−3, 3] / 1 | N-panel `kind: 'num', key: 'k', spec: { min: -3, max: 3, step: 1 }`, Formula scrub, ladder Timeline adapter |
+| `step['ladder']` | mirrored 0..6 | 0 | — | read-only mirror `3 − k`; Timeline request i writes `k = 3 − i` via the linked adapter (7.13) |
+| `step['power']` | 0..2 | 1 | — | read-only mirror `n − 1`; Timeline request i writes authoritative `n = i + 1` via the linked adapter (7.13), never a second independent source |
+
+**One atomic linked write per interaction** (future store contract, 7.13): from `x`: `{ x, A: x², V: x³, from: 0 }`; from `A`: `{ A, x: sqrt(A),
+V: sqrt(A)³, from: 1 }`; from `V`: `{ V, x: cbrt(V), A: cbrt(V)², from: 2 }` (clamped to the ranges first: `A = 20`
+typed → `A = 16, x = 4, V = 64`). `x` is the canonical geometric size; `A` and `V` are synchronized writable projections and `from` records the input channel. `n` and `k` are authoritative keys; their timeline indices are read-only mirrors updated in the same transaction.
+
+Derived (`derive(vals, step)`; every id appears in a formula, row, label or challenge):
+
+| id | value | used in |
+|---|---|---|
+| `x2`, `x3` | `x²`, `x³` | 0.2-1 formula/row; 0.2-2 expansions |
+| `xn` | `x^n` | 0.2-2 plate, formula, row |
+| `whole`, `partial` | per TileGrid counting for the current shape | rows, formula line 2 (0.2-1), 0.2-2 rows |
+| `layers` | `floor(x)` (n = 3 only) | 0.2-2 row, status |
+| `sqrtA`, `check2` | `sqrt(A)`, `sqrtA²` | 0.2-1 line 2; 0.2-4 2D formula/rows |
+| `cbrtV`, `check3` | `cbrt(V)`, `cbrtV³` | 0.2-4 3D formula/rows |
+| ladder index | `3 − vals.k` (mirror in `step['ladder']`) | 0.2-3 Timeline; `k` itself is stored, not a derived duplicate |
+| `p3 … pm3` | `base^j` for j = 3..−3 (seven ids: `p3, p2, p1, p0, pm1, pm2, pm3`) | 0.2-3 rung labels, rows |
+| `cur` | `base^k` | 0.2-3 formula line 1 |
+| `prevval` | `base^(k+1)` | 0.2-3 formula line 2 (hidden at k = 3) |
+| `next` | `cur / base` (= `base^(k−1)`) | 0.2-3 "÷ base" annotation, step text |
+| `y` | `t^g` | 0.2-5 point label, row, formula |
+| `yinv` | `y^(1/g)` (reads back `t`) | 0.2-5 row, formula |
+
+### 7.7 Scene 0.2-1 — "A square is an area" (lead scene of 0.2, clay card)
+
+**Purpose.** Same square as 0.G-1 (the lesson says "the same tiles"), now with the root field next to it: the N-panel
+has `x` AND `A`, and either one drives the other. Aha: the two fields are one fact read in two directions (x → x²
+forward, √ backward); `x = 2.5` shows 4 whole tiles, two half pieces on the right, two on top and a quarter.
+
+**Stage.** 2D, `extent = 4.5`, centred `[2, 2]` (positive quadrant: 0.2 has no negative sides), grid step 1, axes on.
+
+**Objects.** `sq` TileGrid (`box [x, x, 0], thin [false, false, true]`, clayB, `count`, plate `x² = 9`); `side` measurement arrow + handle at
+`[x, 0]` (value `x = 3.0`; drag: x only, `move` → `{ x: clamp(snap, 0, 4) }`; linked resolver derives A/V/from); `top` measurement arrow
+(thin, no handle) along the top edge with value `x` (the second factor: the reader sees x·x, not x alone); `o` Point.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, tiles, labels, axes) · `Reset view` · `0.2-1 · Square`.
+N-panel: `x` num [0, 4; 0.1; Ctrl 0.5] · `A` num [0, 16; 0.25; Ctrl perfect squares] (label `x² = A`, a `√` glyph before
+the field: typing here runs the root) · separator TILES · `whole` ro · `partial` ro (`visible: partial > 0`). Status: over
+the handle — "LMB drag the side · or type A in the N panel"; over the square — "x² = 6.25 · 4 whole tiles + 2.25";
+over the `A` field — "Type an area: the side becomes √A"; idle — "Wheel zoom · MMB pan · N panel".
+
+**Formula.** `\t{x2}{x^2} = \s{x} \cdot \s{x} = \s{x2}` · second line `\s{x} = \t{sqrtA}{\sqrt{\s{A}}}` (always visible:
+it is the lesson's point). Scrubbing `\s{A}` in the formula writes the `A` patch.
+
+**Hover map.** As 0.G-1; `A`/`sqrtA`: the outline + the `A` field + the second formula line.
+
+**Edge cases.** `x = 0`: nothing, `A = 0`. `A = 2` typed: `x = 1.4142`, 1 whole tile + 3 partial tiles (partial area
+`1.00`). Typed values outside a range clamp (`A = 20` → `A = 16`, `x = 4`).
+
+**Challenges** (`check(vals)`). 1. "Make the square hold exactly 4 whole tiles and nothing else." `x === 2`. 2. "Type an
+area whose side is not a whole number, then read the side." `!Number.isInteger(x) && from === 1`. 3. "Get 6.25 without
+typing it." `A === 6.25 && from === 0`.
+
+**Motion.** First view: the arrow grows (300 ms) then the tiles rise (300 ms); reduced motion: cut. Drags and scrubs 1:1.
+
+### 7.8 Scene 0.2-2 — The 3D widget: segment → square → cube (clay card)
+
+**Purpose.** `x¹`, `x²`, `x³` are a length, an area, a volume. The reader morphs one object through the three with
+the power chips (or the `power` timeline) and orbits the cube. Aha: the cube is layers of the square (27 = 3 layers of 9);
+the count of unit pieces is `x^n` for every n; a side of 2.5 gives partial (orange) pieces.
+
+**Stage.** 3D, `extent = 4.5`, camera at `[7, 5.5, 7]` looking at `[1.5, 1.5, 1.5]` (fits x = 4 with margin; set
+explicitly — 7.13). Floor grid at y = 0, step 1; axes on (axisX/axisY/axisZ) with the gizmo top-right. Orbit on drag
+(OrbitControls, damping off, `maxPolarAngle = 0.49π` so the floor never flips); touch rule as the engine does.
+
+**Objects.** `obj` TileGrid, all three states are 3D boxes on the floor (y-up), low corner at the origin:
+
+| n | `shape` | pieces | counted as |
+|---|---|---|---|
+| 1 | `box [x, 0.12, 0.12], thin [false, true, true]` | a row of unit-length sticks along x | `floor(x)` whole + partial length |
+| 2 | `box [x, 0.12, x], thin [false, true, false]` | a slab of unit tiles on the floor (sweep along z) | `floor(x)²` whole tiles |
+| 3 | `box [x, x, x], thin [false, false, false]` | unit cubes (lift along y) | `floor(x)³` whole cubes |
+
+The morph between states scales each body on its growing/shrinking axes using the capped thickness rule of 7.1
+(180 ms spring; reduced motion: cut): new bodies start at `min(0.12, target clipped size)` and grow to full size;
+departing bodies shrink to `min(0.12, source clipped size)`, then hide. Role clayB, partials clayAccent. `side` measurement arrow along x on the floor with a handle at `[x, 0, 0]`
+(drag: along world x via `rayPlane` on the floor; `move` → the `x` patch); edge values `x` on each visible edge of the
+current shape (1, 2 or 3 arrows); plate on the top face: `x^n = \s{xn}` (text follows n: `x¹ = 3`, `x² = 9`, `x³ = 27`).
+
+**ViewportCard.** Header `3D` (2D disabled) · `Persp` · `Overlays ▾` (grid, axes, edge arrows, floor) · `Reset view` ·
+`0.2-2 · Cube`. N-panel: `x` num [0, 4; 0.1] · `n` integer chip field (`x¹ x² x³`, keys 1/2/3; 7.13) · separator COUNT ·
+`xn` ro (label follows n) · `whole` ro (`whole pieces`) · `partial` ro (`visible: partial > 0`) · `layers` ro
+(`visible: n === 3`, `floor(x)` layers of `floor(x)²`). Status: over the handle — "LMB drag along x"; over the shape —
+"x³ = 27 · 3 layers of 9"; idle — "LMB orbit · Wheel zoom · 1/2/3 switch the power". 360 px: tap-to-interact overlay.
+
+**Formula.** `\t{xn}{x^{\s{n}}} = \s{xn}` with `n` scrubbable (1..3); below it the expansion for the current n:
+`= \s{x} \cdot \s{x} \cdot \s{x}` (n = 3), two factors (n = 2), `= \s{x}` (n = 1).
+
+**Timeline `power`** (3 steps, mirrors `n`): 0 "A stick of length x: x¹." 1 "Sweep it sideways along z by x: a
+square, x² tiles." 2 "Lift the square along y by x: a cube, x³ unit cubes, floor(x) layers of floor(x)² each."
+
+**Hover map.** `x`: the side arrow + every edge arrow + field. `xn`: the whole shape outlined + plate + term.
+`whole`/`partial` as in 7.1. `layers`: the cube's layers separate by 0.08 along y (exploded view) for the hover
+(spring; cut under reduced motion).
+
+**Edge cases.** `x = 0`: nothing drawn, counts 0. `x = 2.5`, `n = 3`: 8 whole cubes, partial 7.625, `xn = 15.625`.
+
+**Challenges.** 1. "Make 27 unit cubes." `n === 3 && x === 3`. 2. "Find a side whose cube is smaller than its square."
+`n === 3 && x > 0 && x < 1` (card: "between 0 and 1, more copies make it smaller"). 3. "Make a cube of 2 layers of 4."
+`n === 3 && x === 2`.
+
+### 7.9 Scene 0.2-3 — The ladder of powers (clay card)
+
+**Purpose.** The exponent walks from 3 down to −3; each rung divides by the base, so x⁰ is one tile and x⁻¹ is a
+fraction of a tile. Aha: nothing special happens at 0 or at the first negative rung; the division just continues; for
+base 2 the tiles halve seven times, for base 3 they are cut in three.
+
+**Layout (real ladder).** Seven rungs stacked top (k = 3) to bottom (k = −3), left-aligned at x = 0, each a TileGrid
+`row` with `wrap = 8`; a rung's rows are 1 unit tall, rungs are separated by 0.5. Rung k ≥ 1: `row { len: base^k, wrap: 8 }`
+(fractional `len` for non-integer bases: 2.5³ = 15.625 → 15 whole pieces + one 0.625 piece, orange). Rung k ≤ 0:
+`row { len: 1, wrap: 8, fill: base^k }` — one unit frame with the left `base^k` of it filled (k = 0: full, `fill = 1`).
+Labels in a column left of the tiles (x ∈ [−9, −0.5]): `\s{base}^{k} = \s{p_k}` on a clay plate per rung; between rungs,
+at x = −0.5, a short down arrow. Its live `÷ \s{base}` label sits beside the arrow in the left column with at least 14 CSS px height, never inside the 0.5-unit gap. Labels reserve 90 CSS px at mono 11 px for stages ≥328 px. At a 320 px page (roughly 288 px stage), use a measured compact label budget ≤80 CSS px and keep arrow captions in a separate horizontal lane so they cannot overlap rung plates. Narrow cards omit repeated base from the plate (`k → value`), with full `base^k = value` in the row, formula and accessible text.
+
+**Stage.** 2D, ortho; the tallest configuration is base 3: rung 3 = 27 pieces = 4 rows, rung 2 = 9 = 2 rows, rung 1 = 1
+row, rungs 0..−3 = 1 row each → 11 rows + 6 gaps × 0.5 = 14 units; width 8 (tiles) + 9 (labels) = 17 units. Stage
+`extent = 7.7` (half of 14 + 10 %; on the 16:10 viewport the half-width is then 12.3 ≥ 8.5, so everything fits without
+panning at every base in [1.5, 3]), centred on `[−0.5, 0]` (tiles x ∈ [0, 8], labels x ∈ [−9, −0.5], rows from y = 7 down
+to y = −7, the top-left tile of rung 3 at y = 6..7). Grid step 1, axes off. At 328–360 px stage width, the actual Stage margin gives roughly 11–12.5 px per unit, so the 8.5-unit label column provides 95–106 px. Use the compact labels and CSS-pixel arrow-label budget above; check text bounds at 320 and 360 px. Nothing scrolls.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, labels, arrows) · `Reset view` · `0.2-3 · Ladder`.
+N-panel: `base` num [1.5, 3; 0.5] · `k` num field (`key: 'k'`, integer spec −3..3; writes the authoritative key; Timeline mirrors `3 − k`)
+· separator RUNGS · `p3 … pm3` ro (seven rows, labels `b³ … b⁻³` with the live base, 3 decimals for k < 0). Status: over a
+rung — "`{base}^{k}` = `{p_k}` · `{pieces}` pieces" (k < 0: "`{fill}` of a tile"); over an arrow — "One step down divides
+by `{base}`"; idle — "◀ ▶ step the ladder · base in the N panel".
+
+**Formula.** `\t{cur}{\s{base}^{\s{k}}} = \s{cur}`; second line (hidden at k = 3):
+`= \t{prevval}{\s{base}^{k+1}} / \s{base} = \s{prevval} / \s{base}`.
+
+**Timeline `ladder`** (7 steps; index `3 − k`). Reached rungs `j > k` use the opaque 35 % colour mix of 7.1; current rung k has the hot outline. Not-yet-reached rungs `j < k` hide their bodies and values, preserving their layout slots and exponent labels. Their N-panel value rows use `visible: (_, step) => j >= 3 - step.ladder`; returning upward hides them again. Base edits recompute reached rungs without revealing hidden answers.
+Step k → k−1 animation, generic in `base`: for k ≥ 1 "the rung's pieces fall into `base` equal groups; one group stays":
+the pieces beyond index `base^(k−1)` shrink toward zero scale over 180 ms, with alpha fixed at 1 (a non-integer base leaves a clipped piece at the boundary),
+then the kept group springs down into the next rung's row(s) as rung k−1 while rung k is redrawn in full above it (dimmed).
+For k ≤ 0 "the single tile is cut into `base` equal parts; one part stays": the filled body shrinks from width `base^k`
+to `base^(k−1)` (180 ms), the frame stays; non-integer bases cut into non-integer parts (1.5 parts of width 0.667).
+Reduced motion: cuts. Step texts (`{base}` and the values are live):
+
+| step | k | text |
+|---|---|---|
+| 0 | 3 | "`{base}`³ = `{p3}`: three copies of `{base}` multiplied. `{p3}` tiles." |
+| 1 | 2 | "One rung down: divide by `{base}`. `{base}`² = `{p2}`." |
+| 2 | 1 | "Again: `{base}`¹ = `{p1}`." |
+| 3 | 0 | "Again: `{p1}` / `{base}` = 1. So `{base}`⁰ = 1 — one tile. Not zero: there is a tile here." |
+| 4 | −1 | "Keep going: 1 / `{base}` = `{pm1}`. `{base}`⁻¹ is `{pm1}` of a tile. The minus sign says 'divide', not 'negative'." |
+| 5 | −2 | "`{pm1}` / `{base}` = `{pm2}`: `{base}`⁻² = 1/`{base}`²." |
+| 6 | −3 | "`{pm3}` of a tile. The ladder never stops; it just moves into fractions. Change the base in the N panel: 3⁰ is also one tile." |
+
+**Hover map.** `pK`: rung + its plate + its row; `base`: every plate's base + field; `cur`: the current rung; `prevval`:
+the rung above.
+
+**Edge cases.** `base = 1.5`: rungs 3.375, 2.25, 1.5, 1, 0.667, 0.444, 0.296 — clipped pieces everywhere; 3 decimals.
+`base` is never 0 or 1 (range starts at 1.5) so every rung is distinct. `base = 3`: rung 3 = 27 pieces = 3 rows of 8 + 3.
+`base = 2.5`: rung 3 = 15.625 = 2 rows (8 + 7.625).
+
+**Challenges.** 1. "Reach one tile." `k === 0`. 2. "Find the rung that is a quarter tile at base 2." `base === 2 && k === −2`.
+3. "Make the b⁰ rung still read 1 with a different base." `k === 0 && base !== 2`.
+
+### 7.10 Scene 0.2-4 — Fractional power: area → side, volume → edge (clay card, 2D/3D)
+
+**Purpose.** `x^½` is the side of a square of area A; `x^⅓` is the edge of a cube of volume V. The reader scrubs the
+AREA (or VOLUME) and watches the side follow. Aha: the forward direction (0.2-1/0.2-2) and the backward direction are the
+same object; the root is the power whose "copies" must multiply back to the input.
+
+**Stage.** `d3 = 0`: 2D (`extent = 4.5`, centred `[2, 2]`); `d3 = 1`: 3D (as 0.2-2). One ViewportCard whose header
+`2D / 3D` toggle writes `d3`; the card mounts the 2D Stage or the 3D Stage accordingly (two Stages, one mounted at a
+time; 7.13).
+
+**Objects.** `sq` TileGrid (`box [sqrtA, sqrtA, 0], thin [false, false, true]`, clayC, in 2D; `box [cbrtV, cbrtV, cbrtV], thin [false, false, false]`, clayC, in 3D), plate
+`A = 9` / `V = 27`; `side` measurement arrow along x, **no handle** (output), value `A^{1/2} = 3.0` / `V^{1/3} = 3.0`;
+`o` Point.
+
+**ViewportCard.** Header `2D ◧ 3D ◫` (live) · `Ortho`/`Persp` follows · `Overlays ▾` · `Reset view` · `0.2-4 · Root`.
+N-panel: `d3` bool (`3D`) · 2D: `A` num [0, 16; 0.25; Ctrl perfect squares] · separator SIDE · `sqrtA` ro (`A^½`, 4
+decimals) · `check2` ro (`(A^½)²`, 2 decimals). 3D: `V` num [0, 64; 1; Ctrl perfect cubes 0, 1, 8, 27, 64] · separator
+EDGE · `cbrtV` ro (`V^⅓`, 4 decimals) · `check3` ro (`(V^⅓)³`). Rows of the other view are `visible: false`. Status:
+over the shape — "Scrub A · the side is A^½"; over the side — "Output: the root"; idle — "2D / 3D in the header ·
+Ctrl-drag snaps to perfect squares / cubes".
+
+**Formula.** 2D: `\t{sqrtA}{\s{A}^{1/2}} = \sqrt{\s{A}} = \s{sqrtA}`, then `\t{check2}{(\s{sqrtA})^2} = \s{check2}`.
+3D: `\t{cbrtV}{\s{V}^{1/3}} = \s{cbrtV}`, then `\t{check3}{(\s{cbrtV})^3} = \s{check3}`. The check line is the lesson's
+"the copies multiply back" argument as numbers.
+
+**Hover map.** `A`/`V`: shape outline + field + `\s{}`; `sqrtA`/`cbrtV`: the side arrow + its value + the SIDE/EDGE row;
+`check2`/`check3`: the whole shape (it IS the check).
+
+**Edge cases.** `A = 0`/`V = 0`: nothing drawn, roots 0. `V = 2`: edge 1.2599, 1 whole cube + 7 partial cubes (partial
+volume 1.00). Switching `d3` keeps `x` (the shared key) so the 3D edge equals the 2D side the reader just set:
+`A = 6.25` → `x = 2.5` → `V = 15.625` shown on switch.
+
+**Challenges.** 1. "Find a volume whose edge is a whole number, other than 27." `d3 === 1 && Number.isInteger(cbrtV) &&
+V !== 27 && V > 0`. 2. "Set the area so the edge in 3D is 2." `A === 4 && d3 === 1` (switch views and read `V = 8`).
+
+### 7.11 Scene 0.2-5 — pow curves (gamma and specular; holo card)
+
+**Purpose.** For a base between 0 and 1, a bigger exponent makes a SMALLER number. One curve `y = t^g` on [0, 1] with a
+scrubbable `g`: at 2.2 the display → linear decode curve, at 1/2.2 the encode curve, at 32 the specular lobe that is
+black except near 1. Aha: `g = 1` is the diagonal; `g` and `1/g` mirror across it (encode then decode returns the diagonal).
+
+**Stage.** 2D, `extent = 0.6`, centred `[0.5, 0.5]` (the unit square fills the viewport with margin), grid step 0.1
+(minor) / 0.5 (major), axes on with labels `0`, `0.5`, `1`; rulers overlay on.
+
+**Objects.** `curve` FnCurve `y = t^g`, 65 samples, vecA filament; `diag` Segment `[0,0] → [1,1]` dashed muted (the `g = 1`
+reference); `inv` FnCurve `y = t^{1/g}`, vecB, 1.5 px (Overlay "inverse", default on); `pt` Point on the curve at
+`[t, y]` with dashed drops to both axes and label `t^g = \s{y}`; `pt` drag: along x only, writes `t` (snap 0.01).
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, diagonal, inverse curve, drops, rulers) · `Reset view` ·
+`0.2-5 · pow`. N-panel: `g` num [0.2, 32; 0.1] with four preset chips under it: `2.2`, `1/2.2`, `8`, `32` (7.13) · `t` num
+[0, 1; 0.01] · separator VALUES · `y` ro (`t^g`, 4 decimals) · `yinv` ro (`(t^g)^{1/g}`, 4 decimals: reads back `t`).
+Status: over the curve — "y = t^2.2 · below the diagonal: darker"; over the point — "LMB drag along x"; idle —
+"Presets: 2.2 decode · 1/2.2 encode · 8 / 32 specular".
+
+**Formula.** `\t{y}{\s{t}^{\s{g}}} = \s{y}` and `\t{yinv}{(\s{t}^{\s{g}})^{1/\s{g}}} = \s{yinv}`.
+
+**Hover map.** `g`: the curve + field + `\s{g}`; `y`: the point, its drops, the row; `yinv`: the inverse curve and the
+mirrored point on it (drawn only during the hover).
+
+**Edge cases.** `g = 32`, `t = 0.5`: `y` reads `0.0000` (true value 2.3e−10; the status bar shows the scientific form
+`2.3e-10` so no reader thinks it is exactly zero; the 4-decimal readout first collapses to `0.0000` above g ≈ 14.3 at
+t = 0.5). `t = 0`, `g = 0.2`: `0^0.2 = 0`; `t = 1`: every curve passes through 1. `g` never reaches 0 (range starts at
+0.2) so `0^0` never appears here; the prose owns that warning.
+
+**Challenges.** 1. "Make the two curves coincide." `g === 1`. 2. "Find g where 0.5 becomes 0.25." `g === 2 && t === 0.5`.
+3. "Make the highlight: pick the preset where y(0.5) shows 0.0000." `g === 32 && t === 0.5` (the card says a highlight
+needs a cosine very close to 1).
+
+### 7.12 Reduced motion, 360 px, a11y (all scenes)
+
+- `prefers-reduced-motion: reduce`: the tile rise-in, the layer explode, the stick → slab → cube morph, the ladder
+  splitting and every spring are hard cuts; the "draws itself" moment of 0.G-1 and 0.2-1 is skipped; the hot pulse is static.
+- 360 px: every card keeps 16:10; N-panel → chip row (ids unchanged; rows declared once per card, `chips.ts` model);
+  0.2-3 fits at its fixed extent (no panning needed); 3D scenes get the tap-to-interact overlay; v3 instruments are off
+  below 900 px.
+- Keyboard: every handle has its DragKeys button; the power chips (0.2-2), the `2D/3D` toggle (0.2-4) and the presets
+  (0.2-5) are buttons; Timelines are range inputs; every challenge is reachable by typing values in N-panel fields alone
+  (checks read `vals`/`step` only).
+- Every scene's accessible name is the server `<figcaption>` from `SceneIsland`; live values are in the N-panel rows
+  (DOM), so a screen reader gets the numbers without the canvas.
+
+### 7.13 What the engine must add for this section
+
+| item | status | needed by |
+|---|---|---|
+| `TileGrid` (7.1: `shape` box/row with wrap, `plane`, `fill`, opaque clay instances, exact clipping, counts, mirror, instance-count transitions) | new, `scene/TileGrid.tsx` | all clay scenes |
+| Clay card mode (`look: 'clay'`: light studio background, `ClayTile`/`ClayCube` matcap material, footprint sprites, clay roles in `palette.ts`) | new (visual-language v3 §Clay) | 0.G-1, 0.G-3, 0.2-1..4 |
+| Measurement arrow with a drag handle (v3 dimension line + `Draggable`) | new, small | 0.G-1, 0.2-1, 0.2-2 |
+| `FnCurve` (sampled polyline on `Stroke`) | new, small | 0.2-5 |
+| Explicit 3D camera position/target per Stage (AGENTS.md open framing item) | engine fix | 0.2-2, 0.2-4 |
+| Live `2D / 3D` on one ViewportCard: header toggle writes a store key; the card mounts the 2D or the 3D Stage (two Stages, one mounted) | new | 0.2-4 |
+| N-panel integer chip field (`x¹ x² x³`) and preset chips under a num field | NPanel addition | 0.2-2, 0.2-5 |
+| `Timeline`, `NumTable` | Task 7 contracts (planned) | 0.2-2, 0.2-3, 0.G-2 |
+| Store-level linked atomic patch + timeline adapter (contract below) | **required new store API**, not supplied by current `writeMove`; no engine implementation in this content branch | 0.G coupling, 0.2 x/A/V/from, n/k fields and timelines |
+| Clay axis contrast backing | new clay-card stroke/label backing (contract below) | 0.G-1, 0.2-1, 0.2-2 |
+
+
+**Linked write contract (required before scene delivery).** Register pure lesson links once in the SSR-safe entry,
+not during render. All existing `store.set(key, value, how)` callers (NPanel, Formula, Num and handles) must enter
+one resolver: validate finite input, clamp the input key, then compute the complete patch from that input channel.
+Publish the entire `vals` patch and the n/k timeline mirrors with one Zustand update; synchronous subscribers must
+never observe new x with old A/V/from. Do not implement this as a subscription that writes back recursively.
+Run the resolver before pruning no-op values: writing the same A/x must still update the input channel from. Current `writeMove` loops over `set` and cannot provide this guarantee: adapt it to one `setMany(patch, how)`
+transaction. Handles submit only the authoritative input (`x`), letting the same resolver derive the patch; component
+callbacks and duplicated coupling logic are unnecessary. Unlinked keys keep current behavior. A patch with conflicting
+linked inputs is rejected; loading defaults supplies a coherent initial snapshot (x=3, A=9, V=27, from=0).
+
+For `ease`, spring only canonical x in this linked group, deriving shown A=x² and V=x³ each frame; vals already
+holds the exact target and from cuts immediately. For `cut`, publish both views together. Thus side, area and cube
+remain geometrically consistent during easing. Reduced motion cuts. Scrub cancellation restores the complete
+pre-press linked snapshot, including from, rather than calling a fresh A/x write that changes the input channel;
+extend the shared scrub transaction hook to capture/restore that snapshot for NPanel, Formula and Num.
+
+Timeline adapters map `setStep('power', i)` to `set('n', clamp(trunc(i)+1,1,3), 'ease')` and
+`setStep('ladder', i)` to `set('k', 3-clamp(trunc(i),0,6), 'ease')`; key writes update their mirrors atomically.
+Initialize mirrors to power=1 and ladder=0. Neither mirror writes back independently. Integer n/k writes are
+normalized before publication, with no fractional shown exponents; their scene transition progress is separate
+animation state. Formula scrubs keep their existing specs and store keys, including k. Chips/presets use that
+same set path; g's row, Formula and presets share [0.2,32], preserving exact 1/2.2.
+
+**Explicit thin-axis acceptance.** Every box must declare thin flags (2D xy: false/false/true; 3D stick:
+false/true/true; xz slab: false/true/false; cube: all false). Zero on an active axis draws/counts nothing;
+zero on a display-only axis is allowed. Transition thickness is capped by the exact clipped size, so a 0.1 body is never enlarged to 0.12. Active 0.1×0.1 square: one clipped piece, whole=0, partial=0.01;
+0.1 cube: one clipped piece, whole=0, partial=0.001. Counts use absolute active lengths for mirrors and never
+morph display thickness. Row fill counts measure fill, with whole=1 only at fill=1, otherwise whole=0.
+
+**Clay-axis acceptance.** Keep Blender axis hues, but their bare contrast on the light studio is insufficient.
+Clay cards add an opaque clayInk (#2A2E36) backing stroke (core width + 2 px each side) beneath every axis
+filament, and cream clayPlate backing behind axis letters/ticks; text uses clayInk with the axis colour as a
+swatch. Axis colours against the dark backing must each meet 3:1 and clayInk text against clayPlate 4.5:1;
+verify both studio gradient ends and all axis states. Computed axis/backing ratios are X 3.79:1, Y 8.00:1, Z 4.23:1; clayInk/clayPlate text is 11.24:1. The gizmo keeps its existing dark chrome. This requirement
+is local to the clay-card mode and does not recolour global axis tokens.
