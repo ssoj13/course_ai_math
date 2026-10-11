@@ -17,6 +17,8 @@ import { fmtField, type ScrubSpec } from '../scrub';
 
 /** The narrowest phone the reservation is computed for (CSS px viewport width). */
 export const BASIS_PX = 320;
+/** Wider phone viewports with their own chip-row reservation (SceneIsland emits one variable per bucket, lab.css picks). */
+export const CHIP_BUCKETS = [360, 390, 412, 480, 600] as const;
 
 /** Chip geometry in CSS px; lab.css reads these through the variables NPanel sets (one source of truth). */
 export const CHIP = {

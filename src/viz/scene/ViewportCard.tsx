@@ -55,6 +55,30 @@ export interface ViewportCardProps {
 const NARROW = '(max-width: 719.98px)';
 
 /**
+ * Keeps the scene name in the header whole (EN and RU names differ a lot in length): when it does not fit, the
+ * header first drops the text of its labelled buttons (icons stay, with accessible names), then lets the name wrap
+ * onto two smaller lines. Re-evaluated whenever the header resizes.
+ */
+function useHeaderFit(root: React.RefObject<HTMLDivElement | null>, name: string): void {
+	useLayoutEffect(() => {
+		const head = root.current?.querySelector<HTMLElement>('.lab-vp-head');
+		const label = head?.querySelector<HTMLElement>('.lab-vp-name');
+		if (!head || !label) return;
+		const fits = () => label.scrollWidth <= label.clientWidth + 0.5;
+		const update = () => {
+			head.removeAttribute('data-fit');
+			if (fits()) return;
+			head.setAttribute('data-fit', 'icons');
+			if (!fits()) head.setAttribute('data-fit', 'wrap');
+		};
+		update();
+		const ro = new ResizeObserver(update);
+		ro.observe(head);
+		return () => ro.disconnect();
+	}, [root, name]);
+}
+
+/**
  * Space the home view keeps free around the figure: the instrument columns (hud.ts, from the stage's free area) and,
  * on desktop where it floats over the stage, the formula plate with its bottom offset. Measured from the live DOM
  * (stage box, plate box) and recomputed when they resize, so the figure is framed between the instruments and above
@@ -117,6 +141,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	toggleRef.current = toggle;
 	const tip = useTip();
 	const pad = useFramePad(root, p.mode, inset, Boolean(p.instruments), Boolean(p.formula));
+	useHeaderFit(root, p.name);
 
 	// The server frame reserves the chip row from the rows SceneIsland was given; other rows here would shift the layout
 	// on phones, so a mismatch is an authoring error (pass the same rows array to both).

@@ -562,6 +562,7 @@ function LabelEl({ reg, s }: { reg: StageReg; s: LabelSpec }): React.JSX.Element
  */
 export function placeLabels(reg: StageReg): void {
 	const project = reg.project;
+	placed.length = 0;
 	for (const s of reg.labels.list()) {
 		const el = reg.labelEls.get(s.id);
 		if (!el) continue;
@@ -570,12 +571,69 @@ export function placeLabels(reg: StageReg): void {
 			el.style.visibility = 'hidden';
 			continue;
 		}
-		const t = `translate(${+p[0].toFixed(1)}px, ${+p[1].toFixed(1)}px)`;
+		// Pooled boxes: reused across frames, so placement allocates nothing per label per frame.
+		const b = (pool[placed.length] ??= { el, x: 0, y: 0, w: 0, h: 0, small: false });
+		b.el = el;
+		b.x = p[0];
+		b.y = p[1];
+		b.w = el.offsetWidth;
+		b.h = el.offsetHeight;
+		b.small = Boolean(s.small);
+		placed.push(b);
+	}
+	separate(placed);
+	for (const { el, x, y } of placed) {
+		const t = `translate(${+x.toFixed(1)}px, ${+y.toFixed(1)}px)`;
 		if (el.style.transform !== t) el.style.transform = t;
 		el.style.visibility = 'visible';
 		// Draw-in: labels fade in over the second half of the reveal, after the beams they name.
 		const o = reg.reveal >= 1 ? '' : String(Math.max(0, reg.reveal * 2 - 1));
 		if (el.style.opacity !== o) el.style.opacity = o;
+	}
+}
+
+/** A label's box this frame: centre (x, y) and size in CSS px (labels are centred on their position). */
+interface Placed {
+	el: HTMLElement;
+	x: number;
+	y: number;
+	w: number;
+	h: number;
+	small: boolean;
+}
+// Reused every frame (placement runs per rendered frame).
+const placed: Placed[] = [];
+const pool: Placed[] = [];
+/** Free space kept between two labels, CSS px. */
+const LABEL_GAP = 2;
+
+const overlaps = (a: Placed, b: Placed, dx: number, dy: number) =>
+	Math.abs(a.x + dx - b.x) * 2 < a.w + b.w + 2 * LABEL_GAP && Math.abs(a.y + dy - b.y) * 2 < a.h + b.h + 2 * LABEL_GAP;
+
+/**
+ * Keeps object labels from printing over each other (e.g. "shoulder" and "min reach" at one point on a phone):
+ * labels are settled in registration order; one that overlaps an already settled label moves by the smallest of a
+ * few candidate offsets (down, up, right, left, by its own size) that frees it. Tick numbers (`small`) are laid out
+ * by their axis and neither move nor push. Deterministic, so a label does not jitter between frames.
+ */
+function separate(list: Placed[]): void {
+	for (let i = 0; i < list.length; i++) {
+		const a = list[i];
+		if (a.small) continue;
+		const clash = (dx: number, dy: number) => {
+			for (let j = 0; j < i; j++) if (!list[j].small && overlaps(a, list[j], dx, dy)) return true;
+			return false;
+		};
+		if (!clash(0, 0)) continue;
+		const sy = a.h + LABEL_GAP;
+		const sx = a.w * 0.6 + LABEL_GAP;
+		const tries: readonly (readonly [number, number])[] = [[0, sy], [0, -sy], [sx, 0], [-sx, 0], [0, 2 * sy], [0, -2 * sy], [sx, sy], [-sx, sy], [sx, -sy], [-sx, -sy]];
+		for (const [dx, dy] of tries) {
+			if (clash(dx, dy)) continue;
+			a.x += dx;
+			a.y += dy;
+			break;
+		}
 	}
 }
 

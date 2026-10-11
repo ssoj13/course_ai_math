@@ -567,6 +567,31 @@ h1#_top,
 		--lab-vp-chips: var(--lab-vp-chip-h);
 	}
 }
+@media (min-width: 360px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-360, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 390px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-390, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 412px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-412, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 480px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-480, var(--lab-vp-chip-h));
+	}
+}
+@media (min-width: 600px) and (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: var(--lab-vp-chip-h-600, var(--lab-vp-chip-h));
+	}
+}
 
 .lab-vp-card {
 	position: absolute;
@@ -665,6 +690,24 @@ h1#_top,
 	width: 12px;
 	height: 12px;
 	flex: none;
+}
+@media (max-width: 719.98px) {
+	/* No N-panel toggle on phones (StatusBar hintSegments). */
+	.lab-vp-status .lab-st-panel {
+		display: none;
+	}
+}
+.lab-vp-head[data-fit] .lab-vp-label {
+	display: none;
+}
+.lab-vp-head[data-fit='wrap'] .lab-vp-name {
+	white-space: normal;
+	text-align: right;
+	font-size: 10px;
+	line-height: 11px;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 }
 .lab-vp-name {
 	margin-left: auto;
@@ -774,18 +817,28 @@ h1#_top,
 }
 .lab-np-row {
 	display: grid;
-	grid-template-columns: 50px minmax(0, 1fr);
+	grid-template-columns: var(--np-label-w, 50px) minmax(0, 1fr);
 	align-items: start;
 	gap: 6px;
 	padding: 1px 0;
+}
+.lab-np-row.is-pending {
+	display: none;
 }
 .lab-np-label {
 	line-height: 20px;
 	text-align: right;
 	color: var(--viz-ink);
 	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+}
+/* The column is sized to the longest label (NPanel useLabelColumn); only labels past its maximum wrap. */
+@media (min-width: 720px) {
+	.lab-vp-panel[data-wrap] .lab-np-label {
+		white-space: normal;
+		line-height: 14px;
+		padding-block: 3px;
+		overflow-wrap: anywhere;
+	}
 }
 .lab-np-vec {
 	display: grid;
@@ -950,6 +1003,16 @@ h1#_top,
 		gap: var(--np-lg);
 		height: var(--np-h);
 		padding: 0;
+	}
+	.lab-np-row.is-pending {
+		display: flex;
+		opacity: 0.32;
+	}
+	.lab-np-pending {
+		flex: 1;
+		height: 2px;
+		border-radius: 1px;
+		background: var(--viz-field);
 	}
 	/* Mono at 11 px (advance <= 6.9 px): the label fits the model's 7 px per character with any fallback font. */
 	.lab-np-label {

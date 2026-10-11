@@ -98,6 +98,17 @@ export function hintTokens(s: string): { text: string; key: boolean }[] {
 	return out;
 }
 
+const SEP = ' · ';
+
+/**
+ * A hint as its ' · '-separated segments of tokens; `panel` marks the segment that names the `[N]` key. The N-panel
+ * toggle does not exist on phones (the panel is the chip row there), so that segment is hidden under 720 px (CSS)
+ * and the rest of the hint fits the narrow bar.
+ */
+export function hintSegments(s: string): { tokens: { text: string; key: boolean }[]; panel: boolean }[] {
+	return s.split(SEP).map((part) => ({ tokens: hintTokens(part), panel: part.includes('[N]') }));
+}
+
 // Whether the reader is on touch: a coarse primary pointer, then whatever pointer was last pressed (hybrid devices).
 // One page-wide listener shared by every status bar.
 let touchNow = false;
@@ -134,7 +145,12 @@ export function StatusBar({ reg, lesson, spec }: { reg: StageReg; lesson: string
 			{/* Keyed by the text: a new hint is new nodes, so token spans reused by index never "move" (each such move was
 			    a layout-shift entry during every drag, measured at 360 px). */}
 			<span key={text}>
-				{hintTokens(text).map((t, i) => (t.key ? <kbd key={i}>{t.text}</kbd> : <span key={i}>{t.text}</span>))}
+				{hintSegments(text).map((seg, j) => (
+					<span key={j} className={seg.panel ? 'lab-st-panel' : undefined}>
+						{j > 0 && SEP}
+						{seg.tokens.map((t, i) => (t.key ? <kbd key={i}>{t.text}</kbd> : <span key={i}>{t.text}</span>))}
+					</span>
+				))}
 			</span>
 		</div>
 	);
