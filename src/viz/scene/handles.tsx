@@ -40,9 +40,26 @@ export interface Draggable {
 	 * and an angle, a point is kept on a sphere, an angle snaps to magnet targets). `vals` are the values the raw move
 	 * is measured from: the press-time values for a pointer drag (raw = pointer travel on the drag plane since the
 	 * press), the current values for a key press (raw = one `keyDelta` step). `raw` has the dimension of `at`. `src`
-	 * lets a magnet be one-way for keyboard steps (see `magnet`). Returned keys may hold numbers or vectors.
+	 * lets a magnet be one-way for keyboard steps (see `magnet`). See `Move` for what it returns.
 	 */
-	move?(vals: Vals, raw: readonly number[], src: 'drag' | 'key'): Record<string, Val>;
+	move?(vals: Vals, raw: readonly number[], src: 'drag' | 'key'): Move;
+}
+
+/**
+ * The result of a handle mapping: `set` = store writes (numbers or vectors); `ease` = keys whose new value is an
+ * indirect jump even in a pointer drag (a magnet catch: "the value sticks, the glyph eases", lessons spec §0.3). Those
+ * keys ease, every other key of a drag stays 1:1. While the pointer stays in the magnet zone the caught value is
+ * written again unchanged and skipped, so the spring keeps running; leaving the zone is a cut that ends it.
+ */
+export interface Move {
+	set: Record<string, Val>;
+	ease?: readonly string[];
+}
+
+/** Store range of a handle-written key (from the card's N-panel rows): every write is clamped into it. */
+export interface Range {
+	min: number;
+	max: number;
 }
 
 /**
@@ -134,6 +151,11 @@ export interface StageReg {
 	pick(x: number, y: number, radius?: number): Draggable | null;
 	/** Applies a key press to `d`; false when the key does not move it (caller keeps the browser default). */
 	nudge(d: Draggable, key: string, shift: boolean): boolean;
+	/**
+	 * THE write path of every handle (pointer drag and key press): `move` or the grid `moved`, clamped to the card's
+	 * ranges, written with `how` (drag = cut, key = ease) plus the mapping's eased keys.
+	 */
+	apply(d: Draggable, vals: LessonState['vals'], raw: readonly number[], src: 'drag' | 'key'): void;
 	/** The ViewportCard this stage belongs to (lesson, card id, declared overlays), or null for a bare Stage. */
 	readonly card: CardInfo | null;
 	/** What the pointer (or keyboard focus) is over, for the status bar. */
@@ -159,6 +181,12 @@ export interface CardInfo {
 	lesson: string;
 	id: string;
 	overlays: readonly OverlayDef[];
+	/**
+	 * Ranges of store keys declared by the card's editable N-panel rows (`rowRanges`). Handle writes are clamped into
+	 * them, so a drag (or a key step) can never leave the range a field would allow, and the fixed-width chip model,
+	 * which sizes fields from the range ends, holds for every reachable value.
+	 */
+	ranges?: Readonly<Record<string, Range>>;
 }
 
 /** Store key of overlay `ov` of card `card`; flags live in the lesson store as 0/1 so every view can read them. */
@@ -223,11 +251,25 @@ const sameVal = (a: Val | undefined, b: Val): boolean =>
 
 /**
  * Writes every key of a move (numbers or vectors); values that did not change are skipped so a still pointer causes
- * no re-render. `how`: a pointer drag is a cut (1:1), a key press eases the glyph (Ruling U, see store.ts).
+ * no re-render. `how`: a pointer drag is a cut (1:1), a key press eases the glyph (Ruling U, see store.ts); keys in
+ * `ease` ease regardless (a magnet catch, see `Move`).
  */
-export function writeMove(lesson: string, next: Record<string, Val>, how: WriteHow = 'cut'): void {
+export function writeMove(lesson: string, next: Record<string, Val>, how: WriteHow = 'cut', ease: readonly string[] = []): void {
 	const st = lessonStore(lesson).getState();
-	for (const [k, v] of Object.entries(next)) if (!sameVal(st.vals[k], v)) st.set(k, v, how);
+	for (const [k, v] of Object.entries(next)) if (!sameVal(st.vals[k], v)) st.set(k, v, ease.includes(k) ? 'ease' : how);
+}
+
+const clamp1 = (x: number, r: Range) => Math.min(r.max, Math.max(r.min, x));
+
+/** `set` with every key that has a range clamped into it (vectors per component); other keys unchanged. */
+export function clampMove(set: Record<string, Val>, ranges: Readonly<Record<string, Range>> | undefined): Record<string, Val> {
+	if (!ranges) return set;
+	return Object.fromEntries(
+		Object.entries(set).map(([k, v]) => {
+			const r = ranges[k];
+			return [k, !r ? v : typeof v === 'number' ? clamp1(v, r) : v.map((x) => clamp1(x, r))];
+		}),
+	);
 }
 
 export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): StageReg {
@@ -267,8 +309,12 @@ export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): St
 			const vals = lessonStore(d.lesson).getState().vals;
 			const delta = keyDelta(key, shift, d.at(vals).length);
 			if (!delta) return false;
-			writeMove(d.lesson, d.move ? d.move(vals, delta, 'key') : moved(vals, d.keys, delta), 'ease');
+			reg.apply(d, vals, delta, 'key');
 			return true;
+		},
+		apply(d, vals, raw, src) {
+			const m: Move = d.move ? d.move(vals, raw, src) : { set: moved(vals, d.keys, raw) };
+			writeMove(d.lesson, clampMove(m.set, card?.ranges), src === 'key' ? 'ease' : 'cut', m.ease);
 		},
 	};
 	return reg;

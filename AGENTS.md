@@ -356,10 +356,15 @@ screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a 
   it. Ease: keyboard nudges of handles, N-panel arrows/step arrows/typed values, Formula/Num arrow keys. Cut: pointer
   drags and scrubs (1:1), checkboxes, overlays. Reduced motion = cut. A requestAnimationFrame that calls back
   synchronously (test stubs) is detected in `nextFrame` (it would recurse into a stack overflow).
-- **Custom drag mapping**: `Draggable.move?(vals, raw, src: 'drag' | 'key') => Record<string, Val>` replaces `moved`
-  in DragLayer (vals = press-time values, raw = plane travel since the press, sliced to the handle's dimension) and in
-  `nudge` (current values, one `keyDelta` step, written `ease`). `writeMove` takes numbers and vectors. Point takes
-  `move` and `keys`, and `at` may be a function of the values (a derived vertex); Arrow takes `move` (tip/whole).
+- **Custom drag mapping**: `Draggable.move?(vals, raw, src: 'drag' | 'key') => Move` with
+  `Move = { set: Record<string, Val>; ease?: string[] }` replaces `moved`. ONE write path for drag and key:
+  `reg.apply(d, vals, raw, src)` = mapping (or grid `moved`) -> `clampMove` to the card's `ranges` (from the N-panel
+  rows, `rowRanges`; a drag can never leave what a field of the same key allows, which the chip model relies on) ->
+  `writeMove(lesson, set, how, ease)` (drag = cut, key = ease, keys in `ease` always ease). A mapping lists a key in
+  `ease` when `magnet()` changed it: a pointer-drag catch glides while the other keys follow 1:1; the repeated caught
+  value is skipped (`sameVal`) so the spring keeps running, leaving the zone is a cut. Pressing a glyph mid-ease cuts
+  the ease of its keys first (it is grabbed where it is drawn). Point takes `move` and `keys`, and `at` may be a
+  function of the values (a derived vertex); Arrow takes `move` (tip/whole).
 - **Magnet** `magnet(v, targets, zone, from?)` (drag.ts): nearest target within the zone. TRAP: a keyboard step of 0.1
   is smaller than the zone (1.4 degrees at radius 4 vs 2.5), so a plain magnet pulls every key step back onto the
   target it left: pass `from` (the current value) for `src === 'key'`; the magnet then only catches steps that move
@@ -396,9 +401,5 @@ screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a 
   than its box once per row (`console.error`): raise `chars` or shorten `fmt`.
 - [ ] Formula: a centred display formula whose live number changes width shifts its line (measured during a drag of
   the 2D demo, `cls-probe.ts`; excluded from CLS by hadRecentInput but an entry): Task 7 should anchor `\s{}` numbers.
-- [ ] A magnet catch during a POINTER drag is a cut (the spec wants the glyph to ease); `move` has no way to say "this
-  write was a catch". Key-step catches ease.
-- [ ] Lessons spec DP-2 writes b's perpendicular as `nb * cw(ahat) * sign(cross(a, b))`, which is the other side of
-  a's line; the demo (`moveSb`) uses the side of b. Fix the spec when the lesson is built.
 - [ ] Point sizes (DP-4 "sun glyph, larger", LC-0 small feet D/E/F, LC-3 larger joint) and the `nl_light` typed-value
   clamp (outside the sphere) are lesson-task scope (Point `size`, a row-level constraint).

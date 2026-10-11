@@ -127,6 +127,30 @@ export const chipAvail = (vw: number): number => vw - 2 * CHIP.pagePad - 2 * CHI
 /** Height in px of a chip row with `lines` lines (0 lines = no row). */
 export const chipHeight = (lines: number): number => (lines > 0 ? CHIP.border + 2 * CHIP.padY + lines * CHIP.h + (lines - 1) * CHIP.gapY : 0);
 
+/** What the server frame (SceneIsland) declared: whether it reserved a chip row, how many lines, and if by override. */
+export interface FrameDecl {
+	panel: boolean;
+	lines: number | null;
+	override: boolean;
+}
+
+/** Reads the declaration from the frame's attributes (`data-panel`, `data-chip-lines`, `data-chip-override`). */
+export function frameOf(fig: HTMLElement): FrameDecl {
+	const l = fig.dataset.chipLines;
+	return { panel: fig.hasAttribute('data-panel'), lines: l === undefined ? null : Number(l), override: fig.hasAttribute('data-chip-override') };
+}
+
+/**
+ * Why a card's rows do not match its server frame, or null: a different panel presence, or (without the `chipLines`
+ * override) another line count. Either would shift the page when the card hydrates on a phone.
+ */
+export function frameMismatch(f: FrameDecl, rows: readonly ChipRow[]): string | null {
+	if (f.panel !== rows.length > 0) return `SceneIsland has ${f.panel ? '' : 'no '}rows but the card has ${rows.length} N-panel rows`;
+	if (!f.panel || f.override) return null;
+	const lines = chipLines(rows);
+	return f.lines === lines ? null : `SceneIsland reserved ${f.lines} chip lines, the card's rows need ${lines} (pass the same rows to both)`;
+}
+
 /** Lines the chips of `rows` take on a viewport `vw` px wide (every row counted: rows revealed later must fit too). */
 export function chipLines(rows: readonly ChipRow[], vw = BASIS_PX): number {
 	return wrapLines(

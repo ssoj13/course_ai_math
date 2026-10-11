@@ -23,7 +23,7 @@ import { hotOff, hotOn, lessonStore, type LessonState, type WriteHow } from '../
 import { renderStaticMath } from '../tex';
 import { startScrubDrag } from '../useScrub';
 import { CHIP, chipBox, type ChipRow } from './chips';
-import type { StageReg } from './handles';
+import type { Range, StageReg } from './handles';
 
 type Vals = LessonState['vals'];
 
@@ -56,6 +56,22 @@ export interface Row extends ChipRow {
 	/** Group caption: a separator is drawn where the group changes. */
 	group?: string;
 	tip?: Tip;
+}
+
+/**
+ * Ranges of the store keys the editable rows declare (num and vec rows with a spec), for the card's handle clamp
+ * (`CardInfo.ranges`): a field and a handle writing the same key share bounds. Two rows giving one key different
+ * ranges is an authoring error.
+ */
+export function rowRanges(rows: readonly Row[]): Record<string, Range> {
+	const out: Record<string, Range> = {};
+	for (const r of rows) {
+		if ((r.kind !== 'num' && r.kind !== 'vec') || !r.key || !r.spec) continue;
+		const cur = out[r.key];
+		if (cur && (cur.min !== r.spec.min || cur.max !== r.spec.max)) throw new Error(`N-panel rows give key "${r.key}" two ranges`);
+		out[r.key] = { min: r.spec.min, max: r.spec.max };
+	}
+	return out;
 }
 
 /** Pixels of horizontal travel per step while scrubbing (the same rate as Formula/Num). */
@@ -386,8 +402,14 @@ const CHIP_VARS = {
  */
 function useOverflowCheck(panel: React.RefObject<HTMLElement | null>): void {
 	const warned = useRef(new Set<string>());
+	// Last text measured per value element: a render that did not change a value's text (most of a drag) costs no
+	// layout read for it.
+	const seen = useRef(new WeakMap<HTMLElement, string>());
 	useLayoutEffect(() => {
 		for (const v of panel.current?.querySelectorAll<HTMLElement>('.lab-np-val') ?? []) {
+			const text = v.textContent ?? '';
+			if (seen.current.get(v) === text) continue;
+			seen.current.set(v, text);
 			const box = v.parentElement;
 			const id = v.closest<HTMLElement>('.lab-np-row')?.dataset.id ?? '?';
 			if (!box || v.offsetWidth <= box.clientWidth || warned.current.has(id)) continue;

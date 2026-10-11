@@ -6,7 +6,7 @@
  * `challenge:<lesson>:<n>` (src/lib/challenges.ts). A record from an earlier visit shows as solved after hydration
  * (the server renders "not yet": storage is per reader). Page-side DOM, follows the Starlight theme.
  */
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import { challengeKey, markSolved, readSolved } from '../lib/challenges';
 import { lessonStore, type LessonState } from './store';
@@ -30,6 +30,11 @@ export function Challenge(p: ChallengeProps): React.JSX.Element {
 	const [done, setDone] = useState(false);
 	const id = useId();
 	// After hydration only: the server cannot know what this reader solved before.
+	// A check that already holds on the initial values solves itself without the reader: an authoring slip.
+	const first = useRef(ok);
+	useEffect(() => {
+		if (import.meta.env.DEV && first.current) console.warn(`Challenge ${key}: check() is already true on the initial values`);
+	}, [key]);
 	useEffect(() => {
 		if (readSolved()[key]) setDone(true);
 	}, [key]);

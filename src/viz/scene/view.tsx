@@ -10,8 +10,8 @@ import { BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, Per
 import { sub, to3, type V } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
-import { hitRadius, moved, ndcToPx, rayPlane, worldPerPx } from './drag';
-import { gateWheel, placeLabels, useStage, writeMove, type Draggable } from './handles';
+import { hitRadius, ndcToPx, rayPlane, worldPerPx } from './drag';
+import { gateWheel, placeLabels, useStage, type Draggable } from './handles';
 import { DRAW_MS, reducedMotion, springProgress } from './motion';
 
 // Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
@@ -276,6 +276,10 @@ export function DragLayer(): null {
 				if (active || (e.pointerType === 'mouse' && e.button !== 0)) return;
 				const d = reg.pick(...local(e.clientX, e.clientY), hitRadius(e.pointerType));
 				if (!d) return;
+				// A glyph still gliding after a key step is grabbed where it is drawn but measured from the stored value:
+				// finish its ease now (a cut to the value it was heading for), so the drag starts from what is on screen.
+				const st = lessonStore(d.lesson).getState();
+				for (const k of d.keys) if (st.shown[k] !== st.vals[k] && st.vals[k] !== undefined) st.set(k, st.vals[k]);
 				const start = lessonStore(d.lesson).getState().vals;
 				const p0 = to3(d.at(start));
 				// 2D: the data plane z = 0. 3D: the plane through the handle facing the camera, so the handle follows the
@@ -303,9 +307,8 @@ export function DragLayer(): null {
 					const h = hitPlane(last[0], last[1], a);
 					last = null;
 					if (!h) return;
-					const raw = sub(h, a.h0);
-					// A custom mapping gets the raw move in the handle's own dimension (a 2D handle moves on z = 0).
-					writeMove(a.d.lesson, a.d.move ? a.d.move(a.start, raw.slice(0, a.dims), 'drag') : moved(a.start, a.d.keys, raw));
+					// The raw move in the handle's own dimension (a 2D handle moves on z = 0), through the one write path.
+					reg.apply(a.d, a.start, sub(h, a.h0).slice(0, a.dims), 'drag');
 				};
 				const drag = new AbortController();
 				const opts = { signal: drag.signal };

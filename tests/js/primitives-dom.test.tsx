@@ -82,7 +82,7 @@ test('a handle with `move` maps the key step through it (src "key") and eases th
 		at: (v) => [(v.r as number) * Math.cos(((v.deg as number) * Math.PI) / 180), (v.r as number) * Math.sin(((v.deg as number) * Math.PI) / 180)],
 		move: (v, raw, src) => {
 			calls.push(`${src}:${raw.join()}`);
-			return { r: (v.r as number) + raw[0], deg: (v.deg as number) + 10 * raw[1] };
+			return { set: { r: (v.r as number) + raw[0], deg: (v.deg as number) + 10 * raw[1] } };
 		},
 	});
 	const host = mount(<DragKeys reg={reg} />);
@@ -99,6 +99,42 @@ test('a handle with `move` maps the key step through it (src "key") and eases th
 function panel(lesson: string, rows: readonly Row[]) {
 	return mount(<NPanel lesson={lesson} rows={rows} reg={createStage('2d', { lesson, id: 'c', overlays: [] })} />);
 }
+
+test('drag path: only the keys a mapping marks as caught ease, the rest is 1:1; writes are clamped to the card ranges', () => {
+	const lesson = 'mv-drag';
+	lessonStore(lesson, { lb: 4, lth: 58, v: [0, 0] });
+	const reg = createStage('2d', { lesson, id: 'c', overlays: [], ranges: { v: { min: -4, max: 4 }, lb: { min: 0.5, max: 4 } } });
+	const d = {
+		id: 'A:pt',
+		owner: 'A',
+		label: 'Move point A',
+		lesson,
+		keys: ['lb', 'lth'],
+		at: () => [0, 0],
+		move: () => ({ set: { lb: 3.5, lth: 60 }, ease: ['lth'] }),
+	};
+	reg.apply(d, st(lesson).vals, [1, 0], 'drag');
+	expect(st(lesson).vals.lth).toBe(60);
+	expect(st(lesson).shown.lth).toBe(58); // the caught angle glides
+	expect(st(lesson).shown.lb).toBe(3.5); // the length follows the pointer
+	// Grid moves are clamped to the range a field of the same key allows (a zoomed-out drag cannot reach -10).
+	const v = { id: 'v:tip', owner: 'v', label: 'Move tip of v', lesson, keys: ['v'], at: (x: Record<string, unknown>) => x.v as number[] };
+	reg.apply(v, st(lesson).vals, [-10, 2], 'drag');
+	expect(st(lesson).vals.v).toEqual([-4, 2]);
+	expect(st(lesson).shown.v).toEqual([-4, 2]);
+});
+
+test('reduced motion: an eased write is a cut', () => {
+	const mm = globalThis.matchMedia;
+	globalThis.matchMedia = ((q: string) => ({ matches: q.includes('prefers-reduced-motion'), media: q })) as unknown as typeof matchMedia;
+	try {
+		const s = lessonStore('ease-rm', { x: 0 });
+		s.getState().set('x', 1, 'ease');
+		expect(st('ease-rm').shown.x).toBe(1);
+	} finally {
+		globalThis.matchMedia = mm;
+	}
+});
 
 test('a bool row is a checkbox writing 0/1; it throws on a non 0/1 value', () => {
 	lessonStore('np-bool', { flip: 0, bad: 2 });

@@ -3,8 +3,9 @@
 import { expect, test } from 'bun:test';
 import { arcTicks, circlePoints, cross, dot, halfPlanePoly, norm, planeBasis, signedArea2 } from '../../src/viz/geom';
 import { magnet } from '../../src/viz/scene/drag';
-import { CHIP, chipAvail, chipBox, chipHeight, chipLines, wrapLines } from '../../src/viz/scene/chips';
-import { screenWedge } from '../../src/viz/scene/handles';
+import { CHIP, chipAvail, chipBox, chipHeight, chipLines, frameMismatch, wrapLines } from '../../src/viz/scene/chips';
+import { clampMove, screenWedge } from '../../src/viz/scene/handles';
+import { rowRanges } from '../../src/viz/scene/NPanel';
 import { fmt2, ledgerLayout, spreadLabels } from '../../src/viz/Ledger';
 import { lamp, MAGNET, moveA, moveB, moveLight, moveP, moveSb, ROWS2, ROWS3, ROWSLAMP, ROWSLC, ROWSPOLAR, ROWSSIGN, SPHERE_R, tri } from '../../src/viz/demo/engine.rows';
 
@@ -151,52 +152,86 @@ test('spreadLabels keeps order, a minimum gap and the bounds', () => {
 const base = { la: 3, lb: 4, lth: 60, sa: [2, 1], sb: [1, 2], nl_light: [2, 2.5, 1.5], nl_pt: [0, 0, SPHERE_R], nl_raw: 0 };
 
 test('moveB slides B along x and writes the clamped side length', () => {
-	expect(moveB(base, [0.47, 3])).toEqual({ la: 3.5 });
-	expect(moveB(base, [-9, 0])).toEqual({ la: 0.5 });
-	expect(moveB(base, [9, 0])).toEqual({ la: 4 });
+	expect(moveB(base, [0.47, 3])).toEqual({ set: { la: 3.5 } });
+	expect(moveB(base, [-9, 0]).set).toEqual({ la: 0.5 });
+	expect(moveB(base, [9, 0]).set).toEqual({ la: 4 });
 });
 
-test('moveA: polar length and angle, the magnet on drags, one-way magnet on key steps, folding below the axis', () => {
+test('moveA: polar length and angle, the magnet on drags (eased catch), one-way on key steps, folding below the axis', () => {
 	const A = tri(base).A;
-	// Drag A to 58 degrees at radius 4: the angle sticks to 60.
 	const to = (deg: number, r: number) => [r * Math.cos((deg * Math.PI) / 180) - A[0], r * Math.sin((deg * Math.PI) / 180) - A[1]];
-	expect(moveA(base, to(58, 4), 'drag')).toEqual({ lb: 4, lth: 60 });
-	expect(moveA(base, to(70, 3.04), 'drag')).toEqual({ lb: 3, lth: 70 });
+	// Drag A to 58 degrees at radius 4: the angle sticks to 60 and only the angle is marked to ease; b stays 1:1.
+	expect(moveA(base, to(58, 4), 'drag')).toEqual({ set: { lb: 4, lth: 60 }, ease: ['lth'] });
+	// Outside every zone: nothing eases.
+	expect(moveA(base, to(70, 3.04), 'drag')).toEqual({ set: { lb: 3, lth: 70 }, ease: [] });
 	// A key step of 0.1 to the right from 60 degrees: about 1.2 degrees, off the target, and it stays off.
-	const step = moveA(base, [0.1, 0], 'key');
-	expect(step.lth).toBe(59);
-	expect(moveA({ ...base, lth: 59 }, [0.1, 0], 'key').lth).toBe(58);
+	expect(moveA(base, [0.1, 0], 'key').set.lth).toBe(59);
+	expect(moveA({ ...base, lth: 59 }, [0.1, 0], 'key').set.lth).toBe(58);
 	// Below the x axis: folds to the nearer end of [0, 180].
-	expect(moveA(base, to(-20, 4), 'drag').lth).toBe(0);
-	expect(moveA(base, to(-160, 4), 'drag').lth).toBe(180);
+	expect(moveA(base, to(-20, 4), 'drag').set.lth).toBe(0);
+	expect(moveA(base, to(-160, 4), 'drag').set.lth).toBe(180);
 });
 
-test('moveSb: snaps exactly perpendicular within 3 degrees, on b own side; a key step can leave', () => {
+test('moveSb: snaps exactly perpendicular within 3 degrees, on b own side, eased; a key step can leave', () => {
 	const a = base.sa;
 	// b = (-1, 2.1): 2.6 degrees off the perpendicular, counter-clockwise of a.
-	const caught = moveSb(base, [-2, 0.1], 'drag').sb as number[];
+	const m = moveSb(base, [-2, 0.1], 'drag');
+	expect(m.ease).toEqual(['sb']);
+	const caught = m.set.sb as number[];
 	expect(Math.abs(dot(a, caught))).toBeLessThan(1e-12);
 	expect(signedArea2(a, caught)).toBeGreaterThan(0);
 	expect(norm(caught)).toBeCloseTo(Math.hypot(-1, 2.1), 12);
 	// Clockwise side.
-	const cw = moveSb(base, [0.1, -4], 'drag').sb as number[]; // b = (1.1, -2)
+	const cw = moveSb(base, [0.1, -4], 'drag').set.sb as number[]; // b = (1.1, -2)
 	expect(Math.abs(dot(a, cw))).toBeLessThan(1e-12);
 	expect(signedArea2(a, cw)).toBeLessThan(0);
-	// Far from the perpendicular: plain grid move.
-	expect(moveSb(base, [0.5, 0], 'drag')).toEqual({ sb: [1.5, 2] });
+	// Far from the perpendicular: plain grid move, no ease.
+	expect(moveSb(base, [0.5, 0], 'drag')).toEqual({ set: { sb: [1.5, 2] } });
 	// A key step away from the perpendicular is not pulled back.
-	const at = { ...base, sb: [-1, 2] };
-	expect(moveSb(at, [0.1, 0], 'key')).toEqual({ sb: [-0.9, 2] });
+	expect(moveSb({ ...base, sb: [-1, 2] }, [0.1, 0], 'key')).toEqual({ set: { sb: [-0.9, 2] } });
 });
 
 test('moveLight keeps the light outside the sphere; moveP keeps P on it', () => {
-	expect(moveLight(base, [0.1, 0, 0])).toEqual({ nl_light: [2.1, 2.5, 1.5] });
-	const inside = moveLight({ ...base, nl_light: [2, 0, 0] }, [-1, 0, 0]).nl_light as number[];
+	expect(moveLight(base, [0.1, 0, 0])).toEqual({ set: { nl_light: [2.1, 2.5, 1.5] } });
+	const inside = moveLight({ ...base, nl_light: [2, 0, 0] }, [-1, 0, 0]).set.nl_light as number[];
 	expect(norm(inside)).toBeCloseTo(SPHERE_R + 0.3, 12);
 	expect(inside[0]).toBeGreaterThan(0);
-	const p = moveP(base, [1, 0, 0]).nl_pt as number[];
+	const p = moveP(base, [1, 0, 0]).set.nl_pt as number[];
 	expect(norm(p)).toBeCloseTo(SPHERE_R, 12);
-	expect(moveP({ ...base, nl_pt: [1, 0, 0] }, [-1, 0, 0])).toEqual({ nl_pt: [1, 0, 0] });
+	expect(moveP({ ...base, nl_pt: [1, 0, 0] }, [-1, 0, 0])).toEqual({ set: { nl_pt: [1, 0, 0] } });
+});
+
+test('clampMove clamps keys with a range (vectors per component), rowRanges reads the editable rows', () => {
+	const r = rowRanges([
+		{ id: 'a', label: 'a', kind: 'vec', key: 'a', dims: 2, spec: { min: -4, max: 4, step: 0.1 } },
+		{ id: 't', label: 't', kind: 'num', key: 't', spec: { min: 0, max: 180, step: 1 } },
+		{ id: 'c', label: 'c', kind: 'ro', key: 'c' },
+	]);
+	expect(r).toEqual({ a: { min: -4, max: 4 }, t: { min: 0, max: 180 } });
+	expect(clampMove({ a: [-10, 3], t: 200, c: 99 }, r)).toEqual({ a: [-4, 3], t: 180, c: 99 });
+	expect(clampMove({ a: [1, 2] }, undefined)).toEqual({ a: [1, 2] });
+	expect(() =>
+		rowRanges([
+			{ id: 'a', label: 'a', kind: 'num', key: 'a', spec: { min: 0, max: 1, step: 0.1 } },
+			{ id: 'b', label: 'b', kind: 'num', key: 'a', spec: { min: 0, max: 2, step: 0.1 } },
+		]),
+	).toThrow(/two ranges/);
+});
+
+test('frameMismatch: panel presence and line count must match the server frame unless overridden', () => {
+	const rows = ROWS2;
+	const lines = chipLines(rows);
+	expect(frameMismatch({ panel: true, lines, override: false }, rows)).toBeNull();
+	expect(frameMismatch({ panel: true, lines: lines - 1, override: false }, rows)).toMatch(/reserved/);
+	expect(frameMismatch({ panel: true, lines: 1, override: true }, rows)).toBeNull();
+	expect(frameMismatch({ panel: false, lines: null, override: false }, rows)).toMatch(/no rows/);
+	expect(frameMismatch({ panel: false, lines: null, override: false }, [])).toBeNull();
+	expect(frameMismatch({ panel: true, lines: 1, override: false }, [])).toMatch(/has rows/);
+});
+
+test('Circle-style guards: a non-finite normal throws instead of spreading NaN', () => {
+	expect(() => planeBasis([Number.NaN, 0, 1])).toThrow(/not finite/);
+	expect(() => circlePoints([0, 0, 0], 1, 8, [0, Number.POSITIVE_INFINITY, 0])).toThrow();
 });
 
 test('lamp: N·L, brightness and the terminator circle (every point on it has N·L = 0 up to the 0.01 offset)', () => {

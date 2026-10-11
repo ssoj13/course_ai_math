@@ -5,6 +5,7 @@
  * tests, so the numbers on the page, the geometry in the scene and the tested math are one code path.
  */
 import { magnet, snap } from '../scene/drag';
+import type { Move } from '../scene/handles';
 import type { Row } from '../scene/NPanel';
 import { angleBetween, cross, dot, norm, normalize, scale, signedArea2, sub, type V } from '../geom';
 import type { LessonState, Val } from '../store';
@@ -92,8 +93,8 @@ export function tri(v: Vals): Tri {
 }
 
 /** Vertex B moves along x only and writes the side length `la` (grid 0.1, clamped). */
-export function moveB(v: Vals, raw: readonly number[]): Record<string, Val> {
-	return { la: clamp(snap(num(v, 'la') + raw[0]), LEN.min, LEN.max) };
+export function moveB(v: Vals, raw: readonly number[]): Move {
+	return { set: { la: clamp(snap(num(v, 'la') + raw[0]), LEN.min, LEN.max) } };
 }
 
 /**
@@ -101,15 +102,17 @@ export function moveB(v: Vals, raw: readonly number[]): Record<string, Val> {
  * whole degrees with the magnet (one-way for key presses). Below the x axis the angle folds onto the nearer end of
  * [0, 180] (a triangle C -> B -> A stays counter-clockwise).
  */
-export function moveA(v: Vals, raw: readonly number[], src: 'drag' | 'key'): Record<string, Val> {
+export function moveA(v: Vals, raw: readonly number[], src: 'drag' | 'key'): Move {
 	const { A } = tri(v);
 	const p = [A[0] + raw[0], A[1] + raw[1]];
 	const out: Record<string, Val> = { lb: clamp(snap(Math.hypot(p[0], p[1])), LEN.min, LEN.max) };
-	if (Math.hypot(p[0], p[1]) === 0) return out;
+	if (Math.hypot(p[0], p[1]) === 0) return { set: out };
 	let deg = (Math.atan2(p[1], p[0]) * 180) / Math.PI;
 	if (deg < 0) deg = deg < -90 ? 180 : 0;
-	out.lth = Math.round(magnet(deg, MAGNET, ZONE, src === 'key' ? num(v, 'lth') : undefined));
-	return out;
+	const m = magnet(deg, MAGNET, ZONE, src === 'key' ? num(v, 'lth') : undefined);
+	out.lth = Math.round(m);
+	// A catch is an indirect jump: the angle glyph eases onto the target while b keeps following the pointer.
+	return { set: out, ease: m !== deg ? ['lth'] : [] };
 }
 
 export const ROWSPOLAR: readonly Row[] = [
@@ -135,18 +138,18 @@ export const PERP = Math.sin(rad(3));
  * of a the clockwise perpendicular is below a; the counter-clockwise one is meant). A key step only catches when it
  * moves toward the perpendicular, so the keyboard can leave it.
  */
-export function moveSb(v: Vals, raw: readonly number[], src: 'drag' | 'key'): Record<string, Val> {
+export function moveSb(v: Vals, raw: readonly number[], src: 'drag' | 'key'): Move {
 	const a = vec(v, 'sa');
 	const b0 = vec(v, 'sb');
 	const b = [snap(b0[0] + raw[0]), snap(b0[1] + raw[1])];
 	const na = norm(a);
 	const nb = norm(b);
-	if (!na || !nb) return { sb: b };
+	if (!na || !nb) return { set: { sb: b } };
 	const cosT = dot(a, b) / (na * nb);
 	const was = norm(b0) ? Math.abs(dot(a, b0) / (na * norm(b0))) : Infinity;
-	if (Math.abs(cosT) >= PERP || (src === 'key' && Math.abs(cosT) >= was)) return { sb: b };
+	if (Math.abs(cosT) >= PERP || (src === 'key' && Math.abs(cosT) >= was)) return { set: { sb: b } };
 	const s = signedArea2(a, b) >= 0 ? 1 : -1;
-	return { sb: scale([-a[1] / na, a[0] / na], s * nb) };
+	return { set: { sb: scale([-a[1] / na, a[0] / na], s * nb) }, ease: ['sb'] };
 }
 
 export const ROWSSIGN: readonly Row[] = [
@@ -164,20 +167,20 @@ export const SPHERE_R = 1.5;
 const LIGHT_MIN = SPHERE_R + 0.3;
 
 /** The light moves on the grid but never closer than r + 0.3 to the center (inside, there would be no terminator). */
-export function moveLight(v: Vals, raw: readonly number[]): Record<string, Val> {
+export function moveLight(v: Vals, raw: readonly number[]): Move {
 	const l0 = vec(v, 'nl_light');
 	const l = l0.map((x, i) => snap(x + (raw[i] ?? 0)));
 	const n = norm(l);
-	if (n >= LIGHT_MIN) return { nl_light: l };
+	if (n >= LIGHT_MIN) return { set: { nl_light: l } };
 	// Pushed out along its own direction; at the center there is none, so the light stays where it was.
-	return { nl_light: n === 0 ? [...l0] : scale(l, LIGHT_MIN / n) };
+	return { set: { nl_light: n === 0 ? [...l0] : scale(l, LIGHT_MIN / n) } };
 }
 
 /** P moves freely and is projected back onto the sphere (no grid: the surface is not on it). */
-export function moveP(v: Vals, raw: readonly number[]): Record<string, Val> {
+export function moveP(v: Vals, raw: readonly number[]): Move {
 	const p0 = vec(v, 'nl_pt');
 	const q = p0.map((x, i) => x + (raw[i] ?? 0));
-	return { nl_pt: norm(q) === 0 ? [...p0] : scale(normalize(q), SPHERE_R) };
+	return { set: { nl_pt: norm(q) === 0 ? [...p0] : scale(normalize(q), SPHERE_R) } };
 }
 
 export interface Lamp {

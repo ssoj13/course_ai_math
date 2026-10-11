@@ -17,8 +17,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import type { V } from '../geom';
 import { createStage, type OverlayDef } from './handles';
 import { Icon, Overlays } from './Header';
-import { chipLines } from './chips';
-import { NPanel, useTip, type Row } from './NPanel';
+import { frameMismatch, frameOf } from './chips';
+import { NPanel, rowRanges, useTip, type Row } from './NPanel';
 import { Stage } from './Stage';
 import { StatusBar, type StatusSpec } from './StatusBar';
 
@@ -50,7 +50,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	const hasPanel = rows.length > 0;
 	// One registry per card (mode, lesson and overlays of a mounted card never change): the stage, the N-panel, the
 	// status bar and the header's camera buttons all talk through it.
-	const [reg] = useState(() => createStage(p.mode, { lesson: p.lesson, id: p.id, overlays }));
+	const [reg] = useState(() => createStage(p.mode, { lesson: p.lesson, id: p.id, overlays, ranges: rowRanges(rows) }));
 	const [proj, setProj] = useState<'persp' | 'ortho'>('persp');
 	const [open, setOpen] = useState(true);
 	const [inset, setInset] = useState(0);
@@ -72,12 +72,8 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	// on phones, so a mismatch is an authoring error (pass the same rows array to both).
 	useEffect(() => {
 		const fig = root.current?.closest<HTMLElement>('.lab-vp');
-		if (!fig) return;
-		if (fig.hasAttribute('data-panel') !== hasPanel)
-			throw new Error(`ViewportCard "${p.id}": SceneIsland has ${fig.hasAttribute('data-panel') ? '' : 'no '}rows but the card has ${rows.length} N-panel rows`);
-		const lines = hasPanel ? chipLines(rows) : 0;
-		if (hasPanel && !fig.hasAttribute('data-chip-override') && Number(fig.dataset.chipLines) !== lines)
-			throw new Error(`ViewportCard "${p.id}": SceneIsland reserved ${fig.dataset.chipLines} chip lines, the card's rows need ${lines} (pass the same rows to both)`);
+		const err = fig && frameMismatch(frameOf(fig), rows);
+		if (err) throw new Error(`ViewportCard "${p.id}": ${err}`);
 	}, [hasPanel, rows]);
 
 	// Sidebar inset: the open desktop sidebar covers the viewport's right edge (region overlap); chips do not.

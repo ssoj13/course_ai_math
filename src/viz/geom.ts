@@ -216,11 +216,14 @@ export function tickValues(extent: number, step: number): number[] {
 
 /**
  * Orthonormal pair (u, v) spanning the plane perpendicular to the 3D vector `normal`, with (u, v, normal) right-handed.
- * u is built from the coordinate axis least parallel to `normal`, so it never degenerates. Null for a zero normal.
+ * u is built from the coordinate axis least parallel to `normal`, so it never degenerates. Null for a zero normal;
+ * a non-finite normal throws.
  */
 export function planeBasis(normal: V): [number[], number[]] | null {
 	if (normal.length !== 3) throw new Error('planeBasis is 3D only');
 	const l = norm(normal);
+	// NaN would pass `l === 0` and spread NaN through every point: a computed normal that is not finite is a bug.
+	if (!Number.isFinite(l)) throw new Error(`planeBasis: normal is not finite (${normal.join(', ')})`);
 	if (l === 0) return null;
 	const n = scale(normal, 1 / l);
 	const ax = n.map(Math.abs);

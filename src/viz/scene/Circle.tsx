@@ -39,6 +39,8 @@ export function Circle(p: CircleProps): React.JSX.Element | null {
 	const c = get(p.center, vals);
 	const r = get(p.r, vals);
 	const n = p.normal && get(p.normal, vals);
+	// A negative or NaN radius is a bug in the lesson's r(vals), not data to hide (0 is: a collapsed ring).
+	if (!(r >= 0) || !Number.isFinite(r)) throw new Error(`Circle "${p.id}": radius must be finite and >= 0, got ${r}`);
 	const key = `${c.join()}|${r}|${n?.join() ?? ''}`;
 	const pts = useMemo(() => (r < 1e-9 ? null : circlePoints(c, r, SEG, n)?.map(to3)), [key]);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.guide);
