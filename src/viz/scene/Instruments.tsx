@@ -300,7 +300,7 @@ export function Instruments({ reg, lesson, look = 'holo', angleKey, rows = [] }:
 			{L && caption && (
 				<div
 					className="lab-hud-caption"
-					style={{ right: `${w - L.dial.x - L.dial.size * 1.2}px`, top: `${L.dial.y + L.dial.size * 1.3}px`, maxWidth: `${Math.max(L.right * 1.6, 90)}px`, fontSize: `${L.ruler.font}px` }}
+					style={{ right: `${L.caption.right}px`, top: `${L.caption.top}px`, maxWidth: `${L.caption.width}px`, fontSize: `${L.caption.font}px` }}
 				>
 					<span>{caption.label}</span>
 					<output>{caption.value}</output>

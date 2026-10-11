@@ -17,7 +17,7 @@
  */
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useSyncExternalStore, type RefObject } from 'react';
-import { Color, DoubleSide, HalfFloatType, Matrix4, ShaderMaterial, WebGLRenderTarget, type Group, type Material, type Mesh, type Object3D, type Side } from 'three';
+import { Color, DoubleSide, HalfFloatType, Matrix4, ShaderMaterial, Vector2, WebGLRenderTarget, type Group, type Material, type Mesh, type Object3D, type Side } from 'three';
 import { usePalette } from '../palette';
 import { useStage, type FrameInfo } from './handles';
 
@@ -174,7 +174,7 @@ export function Floor({ content }: { content: RefObject<Group | null> }): React.
 				side: DoubleSide,
 				uniforms: {
 					reflection: { value: target.texture },
-					texel: { value: [1, 1] },
+					texel: { value: new Vector2(1, 1) },
 					flat2d: { value: flat2d ? 1 : 0 },
 					floorY: { value: 0 },
 					horizon: { value: 1 },
@@ -212,7 +212,7 @@ export function Floor({ content }: { content: RefObject<Group | null> }): React.
 		const w = Math.max(1, Math.round(el.clientWidth * dpr * REFLECT_SCALE));
 		const h = Math.max(1, Math.round(el.clientHeight * dpr * REFLECT_SCALE));
 		if (target.width !== w || target.height !== h) target.setSize(w, h);
-		material.uniforms.texel.value = [1 / w, 1 / h];
+		(material.uniforms.texel.value as Vector2).set(1 / w, 1 / h);
 
 		// Reflection about the horizontal plane (3D) or line (2D) y = frame.y: y -> 2 y0 - y.
 		mirror.makeScale(1, -1, 1).setPosition(0, 2 * frame.y, 0);

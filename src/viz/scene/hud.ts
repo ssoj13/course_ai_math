@@ -34,6 +34,11 @@ export interface HudLayout {
 	target: Box;
 	/** Dial on the right column (centre and radius). */
 	dial: Box;
+	/**
+	 * Caption under the dial (hovered term or angle; 3 lines, 2 in compact): right-aligned `right` px from the right
+	 * edge, clear of the right ruler's ticks, `top` px from the top, at most `width` px wide, `lines` x `font` tall.
+	 */
+	caption: { right: number; top: number; width: number; font: number; lines: number };
 	/** Planet in its ring (centre and radius). */
 	planet: Box;
 	/** Large faint arcs that frame the columns: centre x of the left one (the right one is mirrored) and radius. */
@@ -41,6 +46,8 @@ export interface HudLayout {
 }
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+/** Caption line height in units of its font size. */
+const LINE = 1.2;
 
 /**
  * Instrument layout for a free stage area of `w` x `h` CSS px. `gizmo`: a 3D view's navigation gizmo occupies the top
@@ -53,6 +60,8 @@ export function hudLayout(w: number, h: number, gizmo = false, xy = false): HudL
 		const col = 40;
 		const top = 8;
 		const panel = 26;
+		const dialY = (gizmo ? 96 : 8) + 16;
+		const captionTop = dialY + 14 * 1.2 + 2;
 		return {
 			k: 0.5,
 			compact,
@@ -61,11 +70,13 @@ export function hudLayout(w: number, h: number, gizmo = false, xy = false): HudL
 			ruler: { xl: 4, xr: w - 4, top: top + panel + 10, bottom: h - (xy ? 52 : 10), major: 6, minor: 3, font: 8.5 },
 			panels: [
 				{ x: 8, y: top, size: panel },
-				{ x: w - col + 6, y: h * 0.45, size: panel },
+				{ x: w - col + 6, y: Math.max(h * 0.45, captionTop + 2 * LINE * 8.5 + 6), size: panel },
 			],
 			target: { x: 22, y: h * 0.62, size: 9 },
-			dial: { x: w - 20, y: (gizmo ? 96 : 8) + 16, size: 14 },
-			planet: { x: w - 20, y: h - 24, size: 11 },
+			dial: { x: w - 20, y: dialY, size: 14 },
+			caption: { right: 14, top: captionTop, width: col * 1.7, font: 8.5, lines: 2 },
+			// Ring (2.05 x size) inside the column.
+			planet: { x: w - 20, y: h - 24, size: 9 },
 			arc: { cx: -2.2 * h, r: 2.2 * h + col + 6 },
 		};
 	}
@@ -74,19 +85,26 @@ export function hudLayout(w: number, h: number, gizmo = false, xy = false): HudL
 	const panel = 48 * k;
 	const top = 0.07 * h;
 	const dialY = (gizmo ? 96 : 0) + Math.max(top, 8) + 34 * k;
+	const dial = 28 * k;
+	const font = clamp(9.5 * k, 9, 15);
+	const captionTop = dialY + dial * 1.25;
+	// The planet's ring (2.05 x its radius) stays inside the column, so it never reaches the formula plate.
+	const planet = Math.min(25 * k, (col / 2 - 2) / 2.05);
 	return {
 		k,
 		compact,
 		left: col,
 		right: col,
-		ruler: { xl: 10 * k, xr: w - 10 * k, top, bottom: h - (xy ? 56 : 0.05 * h), major: 9 * k, minor: 4.5 * k, font: clamp(9.5 * k, 9, 15) },
+		ruler: { xl: 10 * k, xr: w - 10 * k, top, bottom: h - (xy ? 56 : 0.05 * h), major: 9 * k, minor: 4.5 * k, font },
 		panels: [
 			{ x: 36 * k, y: top + 6 * k, size: panel },
-			{ x: w - 36 * k - panel, y: Math.max(0.46 * h, dialY + 70 * k), size: panel },
+			// Below the dial's caption (3 lines), never over it.
+			{ x: w - 36 * k - panel, y: Math.max(0.46 * h, captionTop + 3 * LINE * font + 10 * k), size: panel },
 		],
 		target: { x: 36 * k + panel / 2, y: 0.5 * h, size: 15 * k },
-		dial: { x: w - 52 * k, y: dialY, size: 28 * k },
-		planet: { x: w - 52 * k, y: h - 0.05 * h - 36 * k, size: 25 * k },
+		dial: { x: w - col / 2, y: dialY, size: dial },
+		caption: { right: 19 * k + 4, top: captionTop, width: col * 1.7, font, lines: 3 },
+		planet: { x: w - col / 2, y: h - 0.05 * h - 36 * k, size: planet },
 		arc: { cx: -1.8 * h, r: 1.8 * h + col + 14 * k },
 	};
 }

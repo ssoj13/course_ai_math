@@ -6,7 +6,7 @@
  * Position and size are CSS (lab.css): over the floor between the instrument columns on desktop, in its own reserved
  * strip under the stage on phones. The Formula itself is unchanged (same DOM, same links).
  */
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { Look } from './look';
 
 /** Chamfered rectangle path inset by `i` px in a `w` x `h` box, corner cut `c` px. */
@@ -54,8 +54,49 @@ function HoloFrame({ w, h }: { w: number; h: number }): React.JSX.Element {
 	);
 }
 
+/** Smallest text scale the plate uses to fit its formula before it would rather spill (never reached in practice). */
+const MIN_SCALE = 0.6;
+const px = (s: string) => parseFloat(s) || 0;
+
+/**
+ * Fits the formula into the plate by its text size, never by scrollbars: a plate is a framed caption, and a 1-2 px
+ * rounding overflow used to give a two-line formula a vertical and a horizontal scrollbar (and a cut first line in a
+ * narrow card). Desktop: the room between the HUD columns (card width minus N-panel and columns); phones: the plate's
+ * reserved strip. Re-fitted whenever the card or the formula resizes.
+ */
+function useFitText(plate: React.RefObject<HTMLDivElement | null>, body: React.RefObject<HTMLDivElement | null>): void {
+	useLayoutEffect(() => {
+		const el = plate.current;
+		const inner = body.current;
+		const card = el?.parentElement;
+		if (!el || !inner || !card) return;
+		const fit = () => {
+			inner.style.fontSize = '';
+			const ps = getComputedStyle(el);
+			const cs = getComputedStyle(card);
+			const padX = px(ps.paddingLeft) + px(ps.paddingRight);
+			const padY = px(ps.paddingTop) + px(ps.paddingBottom);
+			const strip = ps.maxWidth === 'none';
+			const availW = strip
+				? el.clientWidth - padX
+				: card.clientWidth - px(cs.getPropertyValue('--lab-vp-inset')) - px(cs.getPropertyValue('--lab-hud-l')) - px(cs.getPropertyValue('--lab-hud-r')) - padX;
+			const availH = strip ? el.clientHeight - padY : Infinity;
+			const scale = Math.max(MIN_SCALE, Math.min(1, availW / Math.max(1, inner.scrollWidth), availH / Math.max(1, inner.scrollHeight)));
+			if (scale < 1) inner.style.fontSize = `${px(getComputedStyle(inner).fontSize) * scale}px`;
+		};
+		fit();
+		const ro = new ResizeObserver(fit);
+		ro.observe(card);
+		ro.observe(inner);
+		return () => ro.disconnect();
+	}, [plate, body]);
+}
+
 export function FormulaPlate({ children, look = 'holo' }: { children: ReactNode; look?: Look }): React.JSX.Element {
 	const frame = useRef<SVGSVGElement>(null);
+	const plate = useRef<HTMLDivElement>(null);
+	const body = useRef<HTMLDivElement>(null);
+	useFitText(plate, body);
 	const [size, setSize] = useState({ w: 0, h: 0 });
 	useEffect(() => {
 		const el = frame.current;
@@ -66,7 +107,7 @@ export function FormulaPlate({ children, look = 'holo' }: { children: ReactNode;
 	}, []);
 	const { w, h } = size;
 	return (
-		<div className="lab-formula-plate" data-look={look}>
+		<div className="lab-formula-plate" data-look={look} ref={plate}>
 			<svg className="lab-plate-frame" ref={frame} aria-hidden="true">
 				{w > 0 &&
 					h > 0 &&
@@ -76,7 +117,9 @@ export function FormulaPlate({ children, look = 'holo' }: { children: ReactNode;
 						<HoloFrame w={w} h={h} />
 					))}
 			</svg>
-			<div className="lab-plate-body">{children}</div>
+			<div className="lab-plate-body" ref={body}>
+				{children}
+			</div>
 		</div>
 	);
 }

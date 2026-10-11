@@ -196,7 +196,8 @@ const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 
 /** Stable small number from a card id: the sky arrangement of a card never changes between visits. */
 const seedOf = (id: string) => ([...id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 997, 7) / 997) * 40;
 
-export function Background({ look = 'holo' }: { look?: Look }): React.JSX.Element {
+/** `inset`: CSS px of the stage's right edge covered by an open N-panel (Stage prop); galaxies stay in the rest. */
+export function Background({ look = 'holo', inset = 0 }: { look?: Look; inset?: number }): React.JSX.Element {
 	const pal = usePalette();
 	const reg = useStage();
 	const invalidate = useThree((s) => s.invalidate);
@@ -248,8 +249,6 @@ export function Background({ look = 'holo' }: { look?: Look }): React.JSX.Elemen
 		const dpr = gl.getPixelRatio();
 		const w = Math.max(1, Math.round(el.clientWidth * dpr));
 		const h = Math.max(1, Math.round(el.clientHeight * dpr));
-		// The stage element carries the N-panel inset (Stage sets --lab-vp-inset); galaxies stay in the free part.
-		const inset = parseFloat(el.style.getPropertyValue('--lab-vp-inset')) || 0;
 		if (pass.size.x === w && pass.size.y === h && pass.inset === inset) return;
 		pass.size.set(w, h);
 		pass.inset = inset;

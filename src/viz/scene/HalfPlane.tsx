@@ -44,7 +44,8 @@ export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
-	const base = p.opacity ?? 0.1;
+	// 0.18 (was 0.1 on the flat 6d background): over the holographic nebulae a 10 % tint no longer read as a side.
+	const base = p.opacity ?? 0.18;
 	const alpha = hot ? 2 * base : base;
 	const fill = useRef<MeshBasicMaterial>(null);
 	const group = useRef<Group>(null);

@@ -15,7 +15,7 @@ import { useLocale } from '../../i18n/react';
  * and the chevron toggle the sidebar; while it is open the scene is centered in the free part (Stage `inset`).
  * Imports Stage (three/drei): lives in a lesson's .impl chunk.
  */
-import { lazy, Suspense, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { V } from '../geom';
 import { createStage, type OverlayDef } from './handles';
 import { Icon, Overlays, SizeButtons } from './Header';
@@ -119,7 +119,13 @@ function useFramePad(root: React.RefObject<HTMLDivElement | null>, mode: '2d' | 
 
 export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
  const locale = useLocale();
-	const overlays = p.overlays ?? [];
+	// The holographic floor is engine furniture: every holo card can switch it off in Overlays, unless the scene
+	// declares its own `floor` flag (DEMO-FLOOR). Clay cards have no floor.
+	const declared = p.overlays ?? [];
+	const overlays = useMemo(
+		() => ((p.look ?? 'holo') === 'holo' && !declared.some((o) => o.id === 'floor') ? [...declared, { id: 'floor', label: t(locale, 'viewport.floor'), on: true }] : declared),
+		[declared, p.look, locale],
+	);
 	const rows = p.rows ?? [];
 	const hasPanel = rows.length > 0;
 	// One registry per card (mode, lesson and overlays of a mounted card never change): the stage, the N-panel, the

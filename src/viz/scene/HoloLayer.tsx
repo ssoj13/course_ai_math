@@ -9,11 +9,11 @@ import { Floor } from './Floor';
 import { InstrumentSync } from './InstrumentSync';
 import type { Look } from './look';
 
-export function HoloLayer({ look, floor, content }: { look: Look; floor: boolean; content: RefObject<Group | null> }): React.JSX.Element {
+export function HoloLayer({ look, floor, content, inset }: { look: Look; floor: boolean; content: RefObject<Group | null>; inset: number }): React.JSX.Element {
 	return (
 		<>
 			<InstrumentSync />
-			<Background look={look} />
+			<Background look={look} inset={inset} />
 			{floor && <Floor content={content} />}
 		</>
 	);
