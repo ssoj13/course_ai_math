@@ -651,8 +651,8 @@ print(s, np.dot(a, b), a @ b)          # 5.0 5.0 5.0
 na, nb = np.linalg.norm(a), np.linalg.norm(b)
 cos_t = (a @ b) / (na * nb)
 theta = np.degrees(np.arccos(np.clip(cos_t, -1, 1)))   # clip: rounding can give 1.0000000002
-print(theta)                              # 45.0
-print(na * nb * np.cos(np.radians(theta)))  # 5.000000000000001 — same number, rounded differently
+print(theta)                              # 45.00000000000001 (float rounding; the lesson prints round(theta, 6))
+print(na * nb * np.cos(np.radians(theta)))  # 5.0 — same number by another route
 
 # face 2b: the rectangle |a| x shadow(b on a)
 shadow = (a @ b) / na

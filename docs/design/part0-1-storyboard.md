@@ -24,7 +24,7 @@ Conventions used below. **Page template** (fixed order, every lesson): Hook → 
 - **Exercises:** 7², (−3)², √49, √(2²+2²)? (leave as √8 ≈ 2.83), plot (−2, 3).
 - **Quiz (misconception):** (−3)² = −9 (sign); √(a²) = a always (should be |a|); "a point and a pair of numbers are different things" (they are one thing seen two ways).
 - **Python:** `x = np.arange(-3, 4); x**2` and plot points with matplotlib (or a plain table if matplotlib is too heavy for the first cell — decide in the Pyodide spike).
-- **Machine:** `x*x` is one multiply; `sqrt` is a hardware instruction but ~10–20× slower and *not* needed to compare sizes — why CG code compares squared distances (`dist2 < r*r`).
+- **Machine:** `x*x` is one multiply; `sqrt` is a hardware instruction but several times slower than a multiply (roughly 3–10× on current CPUs) and *not* needed to compare sizes — why CG code compares squared distances (`dist2 < r*r`).
 - **Next question:** How far apart are two points?
 
 ### 0.3 — Distance and Pythagoras (2D → 3D → n-D)
