@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { add, angleArc, angleBetween, arcPoints, cross, dot, hatch, isRight, norm, normalize, project, rectOn, rightOf, scale, signedArea2, sub, to3 } from '../../src/viz/geom';
+import { add, angleArc, angleBetween, arcPoints, cross, dot, hatch, isRight, norm, normalize, project, rightOf, scale, signedArea2, sub, to3 } from '../../src/viz/geom';
 test('dot/norm/angle', () => {
 	expect(dot([1, 2], [3, 4])).toBe(11);
 	expect(norm([3, 4])).toBe(5);
@@ -149,10 +149,6 @@ test('rightOf: 3D uses (b - a) x normal, matches 2D with normal +z, null when no
 	expect(norm(rightOf([1, 2, 3], [4, 0, 1], [0, 1, 0])!)).toBeCloseTo(1);
 	expect(rightOf([0, 0, 0], [0, 0, 2], [0, 0, 5])).toBeNull();
 	expect(() => rightOf([0, 0, 0], [1, 0, 0])).toThrow(/normal/);
-});
-test('rectOn: corners a, b, b + h*side, a + h*side; negative h flips to the other side', () => {
-	expect(rectOn([0, 0], [2, 0], [0, -1], 2)).toEqual([[0, 0], [2, 0], [2, -2], [0, -2]]);
-	expect(rectOn([0, 0], [2, 0], [0, -1], -0.5)).toEqual([[0, 0], [2, 0], [2, 0.5], [0, 0.5]]);
 });
 test('isRight: within the tolerance in degrees; zero vectors are never right angles', () => {
 	expect(isRight([1, 0], [0, 3])).toBe(true);

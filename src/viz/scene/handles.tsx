@@ -6,12 +6,15 @@
  * registry once and provides it inside the View itself, and hands the same object to the overlay.
  * Text labels take the same route: scene objects register them, the overlay (`Labels`) renders them as DOM, and
  * LabelLayer (inside the View) calls `placeLabels` once per rendered frame with the camera of that frame.
- * Deliberately free of three/drei so the keyboard and label paths are testable in happy-dom.
+ * The registry also carries the per-stage state the ViewportCard chrome shares with the scene: the card's overlay
+ * flags (`useOverlay`, `Show`), what the pointer is over (`hover`, read by the status bar), the camera commands bound
+ * by the View (`nav`: Reset view, gizmo align), the gizmo's per-frame update and the draw-in progress (`reveal`).
+ * Deliberately free of three/drei so the keyboard, label, overlay and hover paths are testable in happy-dom.
  */
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 import type { V } from '../geom';
-import { roleVar, type Role } from '../palette';
+import { roleVar, type SceneRole } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitHandle, keyDelta, moved, pushAway } from './drag';
 
@@ -41,7 +44,9 @@ export interface LabelSpec {
 	lesson: string;
 	text: string;
 	/** Text color role (default `ink`). */
-	role?: Role;
+	role?: SceneRole;
+	/** Small text (axis ticks). */
+	small?: boolean;
 	/** Scene object/term id: the label switches to the hot color while that id is hot. */
 	hot?: string;
 	/** Anchor in data coordinates for the given store values; null hides the label (degenerate geometry). */
@@ -110,6 +115,86 @@ export interface StageReg {
 	pick(x: number, y: number, radius?: number): Draggable | null;
 	/** Applies a key press to `d`; false when the key does not move it (caller keeps the browser default). */
 	nudge(d: Draggable, key: string, shift: boolean): boolean;
+	/** The ViewportCard this stage belongs to (lesson, card id, declared overlays), or null for a bare Stage. */
+	readonly card: CardInfo | null;
+	/** What the pointer (or keyboard focus) is over, for the status bar. */
+	readonly hover: Hover;
+	/** Camera commands, bound by the View's navigation once its camera and controls exist; null before. */
+	nav: Nav | null;
+	/** Per-frame gizmo update with the camera quaternion [x, y, z, w], bound by the DOM gizmo; null without one. */
+	gizmo: ((q: readonly number[]) => void) | null;
+	/** Draw-in progress 0..1 read per frame by the primitives (1 = fully drawn; see DrawIn in view.tsx). */
+	reveal: number;
+}
+
+/** An overlay flag a card declares (Blender's Overlays popover): `on` is the default. */
+export interface OverlayDef {
+	id: string;
+	label: string;
+	on: boolean;
+}
+
+export interface CardInfo {
+	lesson: string;
+	id: string;
+	overlays: readonly OverlayDef[];
+}
+
+/** Store key of overlay `ov` of card `card`; flags live in the lesson store as 0/1 so every view can read them. */
+export const overlayKey = (card: string, ov: string): string => `ov:${card}:${ov}`;
+
+/** Whether overlay `def` of `card` is on in `vals` (absent = its default). */
+export function overlayOn(vals: Vals, card: string, def: OverlayDef): boolean {
+	const v = vals[overlayKey(card, def.id)];
+	return v === undefined ? def.on : v !== 0;
+}
+
+export interface HoverState {
+	/** Drag handle under the pointer (or focused by keyboard), e.g. `a:tip`. */
+	handle: string | null;
+	/** Scene object under the pointer, e.g. `a`. */
+	object: string | null;
+	/** N-panel field under the pointer (its row id). */
+	field: string | null;
+}
+
+export interface Hover {
+	get(): HoverState;
+	/** Merges `p`; notifies only on a real change (pointer handlers call this constantly). */
+	set(p: Partial<HoverState>): void;
+	/** Clears `kind` only if it still holds `id` (a late leave must not wipe a newer hover). */
+	clear(kind: keyof HoverState, id: string): void;
+	subscribe(cb: () => void): () => void;
+}
+
+export interface Nav {
+	reset(): void;
+	align(axis: 0 | 1 | 2, sign: 1 | -1): void;
+	/** Unit vector from the target toward the camera, for "click the facing bubble again = opposite view". */
+	viewDir(): readonly number[];
+	/** Requests a frame of the shared canvas (DOM chrome that needs the scene redrawn, e.g. a gizmo just mounted). */
+	redraw(): void;
+}
+
+function hoverStore(): Hover {
+	let st: HoverState = { handle: null, object: null, field: null };
+	const subs = new Set<() => void>();
+	const set = (p: Partial<HoverState>) => {
+		if (!(Object.keys(p) as (keyof HoverState)[]).some((k) => p[k] !== st[k])) return;
+		st = { ...st, ...p };
+		for (const cb of subs) cb();
+	};
+	return {
+		get: () => st,
+		set,
+		clear(kind, id) {
+			if (st[kind] === id) set({ [kind]: null });
+		},
+		subscribe(cb) {
+			subs.add(cb);
+			return () => void subs.delete(cb);
+		},
+	};
 }
 
 /** Writes every key of a move; values that did not change are skipped so a still pointer causes no re-render. */
@@ -121,10 +206,15 @@ export function writeMove(lesson: string, next: Record<string, number[]>): void 
 	}
 }
 
-export function createStage(mode: '2d' | '3d'): StageReg {
+export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): StageReg {
 	const handles = keyed<Draggable>('drag handle');
 	const reg: StageReg = {
 		mode,
+		card,
+		hover: hoverStore(),
+		nav: null,
+		gizmo: null,
+		reveal: 1,
 		list: handles.list,
 		subscribe: handles.subscribe,
 		add(d) {
@@ -221,10 +311,12 @@ function KeyHandle({ reg, d }: { reg: StageReg; d: Draggable }): React.JSX.Eleme
 				onFocus={() => {
 					setFocused(true);
 					hotOn(d.lesson, d.owner);
+					reg.hover.set({ handle: d.id });
 				}}
 				onBlur={() => {
 					setFocused(false);
 					hotOff(d.lesson, d.owner);
+					reg.hover.clear('handle', d.id);
 				}}
 				onKeyDown={(e) => {
 					if (reg.nudge(d, e.key, e.shiftKey)) e.preventDefault();
@@ -245,7 +337,7 @@ export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
 	const [owner] = useState(() => ({}));
 	const fns = useRef(spec);
 	fns.current = spec;
-	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.hot, spec.gap, spec.offset, Boolean(spec.away)]);
+	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.small, spec.hot, spec.gap, spec.offset, Boolean(spec.away)]);
 	useEffect(() => {
 		if (sig === null) return;
 		const s = fns.current!;
@@ -289,7 +381,11 @@ function LabelEl({ reg, s }: { reg: StageReg; s: LabelSpec }): React.JSX.Element
 		[reg, s.id],
 	);
 	return (
-		<span ref={ref} className={hot ? 'lab-label is-hot' : 'lab-label'} style={{ '--lab-label-c': roleVar(s.role ?? 'ink') } as React.CSSProperties}>
+		<span
+			ref={ref}
+			className={`lab-label${s.small ? ' is-sm' : ''}${hot ? ' is-hot' : ''}`}
+			style={{ '--lab-label-c': roleVar(s.role ?? 'ink') } as React.CSSProperties}
+		>
 			{s.text}
 		</span>
 	);
@@ -313,6 +409,9 @@ export function placeLabels(reg: StageReg): void {
 		const t = `translate(${+p[0].toFixed(1)}px, ${+p[1].toFixed(1)}px)`;
 		if (el.style.transform !== t) el.style.transform = t;
 		el.style.visibility = 'visible';
+		// Draw-in: labels fade in over the second half of the reveal, after the beams they name.
+		const o = reg.reveal >= 1 ? '' : String(Math.max(0, reg.reveal * 2 - 1));
+		if (el.style.opacity !== o) el.style.opacity = o;
 	}
 }
 
@@ -326,4 +425,80 @@ function labelPx(s: LabelSpec, vals: Vals, project: NonNullable<StageReg['projec
 	if (q) p = pushAway(p, q, s.gap ?? 0, [el.offsetWidth, el.offsetHeight]);
 	const o = s.offset;
 	return o ? [p[0] + o[0], p[1] + o[1]] : p;
+}
+
+/** Overlay flag `id` of the enclosing card; an undeclared id or a scene outside a ViewportCard is an authoring error. */
+export function useOverlay(id: string): boolean {
+	const reg = useStage();
+	const card = reg.card;
+	if (!card) throw new Error(`overlay "${id}": the scene is not inside a ViewportCard`);
+	const def = card.overlays.find((o) => o.id === id);
+	if (!def) throw new Error(`overlay "${id}" is not declared by card "${card.id}" (declared: ${card.overlays.map((o) => o.id).join(', ') || 'none'})`);
+	return useStore(lessonStore(card.lesson), (s) => overlayOn(s.vals, card.id, def));
+}
+
+/** Renders `children` only while overlay `ov` of the enclosing card is on (hides objects; never touches values). */
+export function Show({ ov, children }: { ov: string; children: ReactNode }): ReactNode {
+	return useOverlay(ov) ? children : null;
+}
+
+/**
+ * Hover priority of scene objects. In 2D everything lies in one plane, so the ray hits a beam, the shadow band under
+ * it and the fill it borders at the same distance and r3f's order is just scene order; the rank decides instead:
+ * the object a reader is most likely pointing at wins (a point over a beam over a guide line over an arc over a fill).
+ */
+export const HOVER_RANK = { fill: 0, arc: 1, guide: 2, beam: 3, point: 4 } as const;
+
+/** Minimal shape of an r3f pointer event (handles.tsx stays three-free). */
+interface HoverObj {
+	userData: Record<string, unknown>;
+	parent: HoverObj | null;
+}
+interface HoverEvent {
+	stopPropagation(): void;
+	intersections: readonly { object: HoverObj }[];
+}
+
+/** Rank of the hoverable group an intersected object belongs to (-1 when it is not part of one). */
+function rankOf(o: HoverObj | null): number {
+	for (let n = o; n; n = n.parent) if (typeof n.userData.hoverRank === 'number') return n.userData.hoverRank;
+	return -1;
+}
+
+/** r3f pointer handlers (and the rank tag) of a hoverable scene object; spread onto its group. */
+export interface HoverProps {
+	onPointerOver?: (e: HoverEvent) => void;
+	onPointerMove?: (e: HoverEvent) => void;
+	onPointerOut?: () => void;
+	userData?: { hoverRank: number };
+}
+
+/**
+ * Pointer handlers for scene object `id` (r3f events): hover lights it (hot, shared with formula and N-panel) and
+ * tells the status bar what is under the pointer. Among the objects under the pointer only the highest `rank` claims
+ * the hover (see HOVER_RANK); it stops propagation so nothing behind it competes. Re-claimed on move, so leaving a
+ * beam that lies over a band hands the hover back to the band.
+ */
+export function useHoverable(lesson: string, id: string | undefined, rank: number): HoverProps {
+	const reg = useStage();
+	return useMemo(() => {
+		if (id === undefined) return {};
+		const claim = (e: HoverEvent) => {
+			const top = Math.max(...e.intersections.map((i) => rankOf(i.object)));
+			if (rank < top) return;
+			e.stopPropagation();
+			if (reg.hover.get().object === id && lessonStore(lesson).getState().hot.has(id)) return;
+			hotOn(lesson, id);
+			reg.hover.set({ object: id });
+		};
+		return {
+			onPointerOver: claim,
+			onPointerMove: claim,
+			onPointerOut: () => {
+				hotOff(lesson, id);
+				reg.hover.clear('object', id);
+			},
+			userData: { hoverRank: rank },
+		};
+	}, [reg, lesson, id, rank]);
 }

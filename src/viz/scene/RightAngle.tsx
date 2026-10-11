@@ -9,10 +9,10 @@ import { useMemo, useRef } from 'react';
 import type { Group } from 'three';
 import { useStore } from 'zustand';
 import { add, isRight, norm, normalize, to3, type V } from '../geom';
-import { usePalette, type Role } from '../palette';
+import { STYLE, usePalette, type SceneRole } from '../palette';
 import { lessonStore } from '../store';
 import { usePos } from './handles';
-import { SLine, usePxScale } from './view';
+import { Stroke, usePxScale } from './view';
 
 export interface RightAngleProps {
 	lesson: string;
@@ -27,7 +27,7 @@ export interface RightAngleProps {
 	show?: boolean;
 	/** Tolerance in degrees for the automatic mode (default 0.5). */
 	tol?: number;
-	role?: Role;
+	role?: SceneRole;
 }
 
 export function RightAngle(p: RightAngleProps): React.JSX.Element {
@@ -45,10 +45,11 @@ export function RightAngle(p: RightAngleProps): React.JSX.Element {
 		return [a, add(a, b), b].map(to3);
 	}, [on, u, v]);
 	const ref = useRef<Group>(null);
-	usePxScale(ref, p.size ?? 12);
+	// Draw-in: the mark appears in the second half of the reveal (after the lines it sits between).
+	usePxScale(ref, (r) => (r < 0.5 ? 0 : (p.size ?? 12)));
 	return (
 		<group ref={ref} position={to3(at)} visible={pts !== null}>
-			{pts && <SLine points={pts} color={hot ? pal.hot : pal[p.role ?? 'muted']} lineWidth={1.5} renderOrder={1} />}
+			{pts && <Stroke points={pts} color={pal[p.role ?? 'muted']} hot={hot} width={STYLE.edge} halo={false} order={1} />}
 		</group>
 	);
 }

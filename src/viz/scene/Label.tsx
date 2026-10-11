@@ -5,7 +5,7 @@
  * per rendered frame, so it follows drags, orbiting and resizes. `pointer-events: none`; color from a palette role.
  */
 import type { V } from '../geom';
-import type { Role } from '../palette';
+import type { SceneRole } from '../palette';
 import { useLabel, usePos } from './handles';
 
 export interface LabelProps {
@@ -13,7 +13,7 @@ export interface LabelProps {
 	/** Literal point or store key (live). */
 	at: V | string;
 	children: string | number;
-	role?: Role;
+	role?: SceneRole;
 	/** Scene object/term id: the label turns hot with it. */
 	id?: string;
 	/** Screen offset in CSS px, y down, e.g. [10, -12] for up-right of an arrow tip. */

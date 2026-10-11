@@ -265,60 +265,613 @@
 }
 
 /*
- * Scene palette (src/viz/palette.ts reads these; WebGL needs concrete hex, so keep every value a literal #rrggbb).
- * Dark = :root, light = :root[data-theme='light'] (Starlight's own convention; it always sets data-theme).
- * a/b is the color-blind-safe blue/orange pair (Okabe-Ito), never red/green. Axes are red/green/blue-ish but scenes
- * always label them: color is never the only cue.
+ * Type (docs/design/visual-language.md): Atkinson Hyperlegible Next for prose, Inter for headings and the viewport
+ * chrome (the opsz axis turns Inter into Inter Display at heading sizes on its own), JetBrains Mono for every live
+ * number. Self-hosted @fontsource files through Astro's Fonts API (astro.config.mjs `fonts`, emitted by the Head
+ * override), which defines --lab-font-prose, --lab-font-ui and --lab-font-mono with metric-matched fallbacks.
  */
 :root {
-	--viz-vec-a: #56b4e9;
-	--viz-vec-b: #e69f00;
-	--viz-vec-c: #cc79a7;
-	--viz-axis-x: #ff6b6b;
-	--viz-axis-y: #5bd16f;
-	--viz-axis-z: #6b9bff;
-	--viz-grid: #4a4e59;
-	--viz-grid-minor: #2c2f37;
-	--viz-shadow: #000000;
-	--viz-hot: #f5c518;
-	--viz-hot-bg: #5a4a10; /* formula highlight background (CSS only, not a scene role) */
-	--viz-ink: #e8e9ee;
-	--viz-muted: #9a9ea9;
-	--viz-fill: #23262e;
+	--sl-font: var(--lab-font-prose);
+	--sl-font-mono: var(--lab-font-mono);
 }
-:root[data-theme='light'] {
-	--viz-vec-a: #0072b2;
-	--viz-vec-b: #d55e00;
-	--viz-vec-c: #8e3f7a;
-	--viz-axis-x: #c62828;
-	--viz-axis-y: #2e7d32;
-	--viz-axis-z: #1565c0;
-	--viz-grid: #b4b8c2;
-	--viz-grid-minor: #e1e3e8;
-	--viz-shadow: #1a1a1a;
-	--viz-hot: #c77700;
-	--viz-hot-bg: #fff1c2;
-	--viz-ink: #1b1c20;
-	--viz-muted: #5b5f6a;
-	--viz-fill: #eef0f4;
+h1#_top,
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6) {
+	font-family: var(--lab-font-ui);
+	letter-spacing: -0.015em;
+}
+h1#_top,
+.sl-markdown-content :is(h1, h2) {
+	font-weight: 680;
+	letter-spacing: -0.022em;
 }
 
-/* Scene stages (src/viz/scene/Stage.tsx). The shared canvas is fixed behind the article; each stage's View div
-   only marks where its scene is scissored in. The server-rendered .lab-scene-box (SceneIsland.astro) owns the size
-   and the stage fills it absolutely, so hydration cannot shift layout. */
+/*
+ * Viewport tokens (src/viz/palette.ts reads the roles; WebGL needs concrete hex, so every role is a literal #rrggbb).
+ * The viewport and its chrome are always dark, in both site themes (Ruling R): one background, colors calibrated
+ * once (contrast rules in tests/js/tokens.test.ts). Axis colors are Blender's; a/b are sky blue/orchid (orchid stays
+ * clear of the red X axis and of the orange selection); color is never the only cue (labels, hatch).
+ */
+:root {
+	--viz-bg-top: #3a3a3a;
+	--viz-bg-bottom: #282828;
+	--viz-chrome: #2b2b2b;
+	--viz-chrome-2: #232323;
+	--viz-field: #545454;
+	--viz-field-hover: #656565;
+	--viz-grid: #4a4a4a;
+	--viz-grid-minor: #3c3c3c;
+	--viz-ink: #e6e6e6;
+	--viz-muted: #9a9a9a;
+	--viz-axis-x: #ff3352;
+	--viz-axis-y: #8bdc00;
+	--viz-axis-z: #2890ff;
+	--viz-vec-a: #56b4e9;
+	--viz-vec-b: #e07bd0;
+	--viz-vec-c: #3dd6b0;
+	--viz-light: #ffe27a;
+	--viz-hot: #ffaa40;
+	/* Page-side formula term highlight: hot at 22 % (CSS only, not a scene role). */
+	--viz-hot-bg: color-mix(in srgb, var(--viz-hot) 22%, transparent);
+	--lab-vp-head: 28px;
+	--lab-vp-status: 22px;
+	--lab-vp-chips: 0px;
+	--lab-vp-panel: 200px;
+}
+
+/*
+ * ViewportCard (src/viz/scene/ViewportCard.tsx, frame in src/viz/SceneIsland.astro): header, viewport, N-panel,
+ * status bar. The server renders `.lab-vp-skel`, whose rows (28 px header, a 16:10 viewport spacer, the chip row
+ * under 720 px, 22 px status) fix the card's exact height before any script runs; the island fills the same box
+ * absolutely, so hydration cannot shift layout.
+ * Stacking: the shared canvas is `position: fixed; z-index: 0` and later in the DOM. Nothing here may create a
+ * stacking context around the card (no transform, filter, opacity, contain, container-type): the viewport
+ * background must stay BELOW the canvas, while chrome that overlaps the viewport (N-panel, gizmo, labels, popover,
+ * tooltips) is lifted ABOVE it with z-index 1..6 (below Starlight's header and menus).
+ */
+/* Starlight isolates `.main-pane` (TwoColumnContent.astro), which makes the whole article ONE stacking context below
+   the later, fixed canvas: no z-index inside could lift chrome above the scene (measured: grid lines over the N-panel
+   and tooltips). Pages with a viewport opt out, so the card's z-indexed chrome competes with the canvas directly. */
+.main-pane:has(.lab-vp) {
+	isolation: auto;
+}
 .lab-scene {
 	margin: 1.5rem 0;
 }
 .lab-scene figcaption {
 	font-size: var(--sl-text-sm);
 	color: var(--sl-color-gray-3);
-	margin-top: 0.4rem;
+	margin-top: 0.5rem;
 }
-.lab-scene-box {
+.lab-vp-frame {
 	position: relative;
-	aspect-ratio: 16 / 10;
-	border: 1px solid var(--sl-color-hairline-light);
+	border-radius: 8px;
+	box-shadow: 0 0 0 1px var(--viz-chrome-2), 0 10px 30px -18px rgb(0 0 0 / 0.65);
+	color-scheme: dark;
+	color: var(--viz-ink);
+	font: 400 12px/1.2 var(--lab-font-ui);
 }
+.lab-vp-skel {
+	display: grid;
+	grid-template-rows: var(--lab-vp-head) auto var(--lab-vp-chips) var(--lab-vp-status);
+}
+.lab-vp-skel > :nth-child(1) {
+	background: var(--viz-chrome);
+	border-radius: 8px 8px 0 0;
+}
+.lab-vp-skel > :nth-child(2) {
+	aspect-ratio: 16 / 10;
+	background: linear-gradient(var(--viz-bg-top), var(--viz-bg-bottom));
+}
+.lab-vp-skel > :nth-child(3) {
+	background: var(--viz-chrome-2);
+}
+.lab-vp-skel > :nth-child(4) {
+	background: var(--viz-chrome-2);
+	border-radius: 0 0 8px 8px;
+}
+.lab-vp-frame > astro-island {
+	position: absolute;
+	inset: 0;
+}
+@media (max-width: 719.98px) {
+	.lab-vp[data-panel] {
+		--lab-vp-chips: 38px;
+	}
+}
+
+.lab-vp-card {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	grid-template-rows: var(--lab-vp-head) minmax(0, 1fr) var(--lab-vp-chips) var(--lab-vp-status);
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-areas: 'head' 'body' 'chips' 'status';
+}
+.lab-vp-body {
+	grid-area: body;
+	position: relative;
+	background: linear-gradient(var(--viz-bg-top), var(--viz-bg-bottom));
+}
+
+/* Header (Blender's 3D-view header): flat buttons, segmented toggles, the scene name right-aligned. */
+.lab-vp-head {
+	grid-area: head;
+	position: relative;
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 4px 0 5px;
+	background: var(--viz-chrome);
+	border-bottom: 1px solid var(--viz-chrome-2);
+	border-radius: 8px 8px 0 0;
+	min-width: 0;
+}
+.lab-vp-seg {
+	display: inline-flex;
+	background: var(--viz-chrome-2);
+	border-radius: 5px;
+	padding: 1px;
+	gap: 1px;
+}
+.lab-vp-btn {
+	appearance: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 20px;
+	padding: 0 7px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--viz-ink);
+	font: 500 11.5px/1 var(--lab-font-ui);
+	white-space: nowrap;
+	cursor: pointer;
+}
+.lab-vp-tag {
+	display: inline-flex;
+	align-items: center;
+	height: 20px;
+	padding: 0 7px;
+	border-radius: 4px;
+	color: var(--viz-muted);
+	font: 600 11px/1 var(--lab-font-ui);
+	letter-spacing: 0.02em;
+}
+.lab-vp-tag.is-on {
+	background: var(--viz-field-hover);
+	color: var(--viz-ink);
+}
+.lab-vp-btn:hover:not(:disabled) {
+	background: var(--viz-field);
+}
+.lab-vp-btn[aria-pressed='true'] {
+	background: var(--viz-field-hover);
+}
+.lab-vp-btn:disabled {
+	color: var(--viz-muted);
+	cursor: default;
+}
+.lab-vp-btn:focus-visible,
+.lab-np-field:focus-visible,
+.lab-gizmo [role='button']:focus-visible {
+	outline: 1px solid var(--viz-ink);
+	outline-offset: 1px;
+}
+.lab-vp-btn svg {
+	width: 12px;
+	height: 12px;
+	flex: none;
+}
+.lab-vp-name {
+	margin-left: auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--viz-muted);
+	font: 400 11px/1 var(--lab-font-mono);
+	padding: 0 4px;
+}
+.lab-vp-pop-wrap {
+	position: relative;
+}
+.lab-vp-pop {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 5;
+	min-width: 170px;
+	padding: 4px;
+	background: var(--viz-chrome);
+	border: 1px solid var(--viz-field);
+	border-radius: 6px;
+	box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.7);
+}
+.lab-vp-pop-title {
+	color: var(--viz-muted);
+	font: 600 10px/1 var(--lab-font-ui);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	padding: 5px 6px 6px;
+}
+.lab-vp-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 24px;
+	padding: 0 6px;
+	border-radius: 4px;
+	cursor: pointer;
+}
+.lab-vp-check:hover {
+	background: var(--viz-field);
+}
+.lab-vp-check input {
+	appearance: none;
+	width: 14px;
+	height: 14px;
+	margin: 0;
+	border-radius: 3px;
+	background: var(--viz-field);
+	display: grid;
+	place-content: center;
+	cursor: pointer;
+}
+.lab-vp-check input:checked::before {
+	content: '';
+	width: 8px;
+	height: 5px;
+	border: solid var(--viz-ink);
+	border-width: 0 0 2px 2px;
+	transform: translateY(-1px) rotate(-45deg);
+}
+.lab-vp-check input:focus-visible {
+	outline: 1px solid var(--viz-ink);
+	outline-offset: 1px;
+}
+
+/* N-panel: Blender sidebar with region overlap (drawn over the right edge of the viewport; the scene is re-centred
+   in the free part via the camera's view offset). Under 720 px it becomes a scrollable row of chips under the
+   viewport, same DOM, same fields. */
+.lab-vp-panel {
+	grid-area: body;
+	justify-self: end;
+	position: relative;
+	z-index: 1;
+	width: var(--lab-vp-panel);
+	height: 100%;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 6px 8px 8px;
+	background: color-mix(in srgb, var(--viz-chrome) 94%, transparent);
+	border-left: 1px solid var(--viz-chrome-2);
+	scrollbar-width: thin;
+}
+.lab-vp-panel.is-closed {
+	display: none;
+}
+.lab-np-sep {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0 4px;
+	color: var(--viz-muted);
+	font: 600 10px/1 var(--lab-font-ui);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.lab-np-sep::after {
+	content: '';
+	flex: 1;
+	border-top: 1px solid var(--viz-field);
+	opacity: 0.6;
+}
+.lab-np-row {
+	display: grid;
+	grid-template-columns: 50px minmax(0, 1fr);
+	align-items: start;
+	gap: 6px;
+	padding: 1px 0;
+}
+.lab-np-label {
+	line-height: 20px;
+	text-align: right;
+	color: var(--viz-ink);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.lab-np-vec {
+	display: grid;
+	gap: 1px;
+}
+.lab-np-vec > .lab-np-field {
+	border-radius: 0;
+}
+.lab-np-vec > .lab-np-field:first-child {
+	border-radius: 4px 4px 0 0;
+}
+.lab-np-vec > .lab-np-field:last-child {
+	border-radius: 0 0 4px 4px;
+}
+.lab-np-field {
+	position: relative;
+	display: block;
+	height: 20px;
+	padding: 0 14px;
+	border-radius: 4px;
+	background: var(--viz-field);
+	color: var(--viz-ink);
+	font: 500 11.5px/20px var(--lab-font-mono);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+	white-space: nowrap;
+	cursor: ew-resize;
+	user-select: none;
+	touch-action: none;
+}
+.lab-np-field:hover {
+	background: var(--viz-field-hover);
+}
+.lab-np-vec > .lab-np-field {
+	padding-left: 18px;
+}
+.lab-np-ax {
+	position: absolute;
+	left: 6px;
+	font: 600 10.5px/20px var(--lab-font-ui);
+}
+/* Blender's step arrows appear on hover at the field ends. */
+.lab-np-step {
+	position: absolute;
+	top: 0;
+	width: 13px;
+	height: 20px;
+	display: none;
+	place-content: center;
+	color: var(--viz-ink);
+	font: 400 11px/20px var(--lab-font-ui);
+	cursor: pointer;
+}
+.lab-np-step[data-d='-1'] {
+	left: 0;
+}
+.lab-np-step[data-d='1'] {
+	right: 0;
+}
+.lab-np-field:hover > .lab-np-step {
+	display: grid;
+}
+.lab-np-vec .lab-np-field:hover > .lab-np-ax {
+	visibility: hidden;
+}
+.lab-np-input {
+	width: 100%;
+	height: 20px;
+	box-sizing: border-box;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 4px;
+	outline: 1px solid var(--viz-ink);
+	background: var(--viz-chrome-2);
+	color: var(--viz-ink);
+	font: 500 11.5px/20px var(--lab-font-mono);
+	text-align: left;
+}
+.lab-np-input[aria-invalid='true'] {
+	outline-color: var(--viz-axis-x);
+}
+.lab-np-err {
+	display: block;
+	margin-top: 2px;
+	color: var(--viz-axis-x);
+	font-size: 10.5px;
+}
+.lab-np-ro {
+	line-height: 20px;
+	padding: 0 4px;
+	border-radius: 4px;
+	text-align: right;
+	color: var(--viz-ink);
+	font: 400 11.5px/20px var(--lab-font-mono);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+/* Linked (hot): Blender's active outline, never a color change of the value itself. */
+.lab-np-row.is-hot .lab-np-field,
+.lab-np-row.is-hot .lab-np-ro {
+	box-shadow: 0 0 0 2px var(--viz-hot);
+}
+@media (max-width: 719.98px) {
+	.lab-vp-panel,
+	.lab-vp-panel.is-closed {
+		grid-area: chips;
+		justify-self: stretch;
+		width: auto;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 0 8px;
+		overflow-x: auto;
+		overflow-y: hidden;
+		background: var(--viz-chrome-2);
+		border: 0;
+		border-top: 1px solid var(--viz-chrome);
+	}
+	.lab-np-sep {
+		display: none;
+	}
+	.lab-np-row {
+		flex: none;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.lab-np-label {
+		text-align: left;
+	}
+	.lab-np-vec {
+		display: flex;
+		gap: 1px;
+	}
+	.lab-np-vec > .lab-np-field,
+	.lab-np-vec > .lab-np-field:first-child,
+	.lab-np-vec > .lab-np-field:last-child {
+		border-radius: 0;
+	}
+	.lab-np-vec > .lab-np-field:first-child {
+		border-radius: 4px 0 0 4px;
+	}
+	.lab-np-vec > .lab-np-field:last-child {
+		border-radius: 0 4px 4px 0;
+	}
+	.lab-np-field {
+		min-width: 46px;
+	}
+	.lab-vp-chev,
+	.lab-vp-name {
+		display: none;
+	}
+	.lab-vp-label {
+		display: none;
+	}
+}
+
+/* Status bar: what the pointer does here, like Blender's (mouse/key tokens drawn as small key caps). */
+.lab-vp-status {
+	grid-area: status;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	padding: 0 8px;
+	background: var(--viz-chrome-2);
+	border-top: 1px solid var(--viz-chrome);
+	border-radius: 0 0 8px 8px;
+	color: var(--viz-muted);
+	font: 400 11px/1 var(--lab-font-ui);
+	white-space: nowrap;
+	overflow: hidden;
+}
+.lab-vp-status > span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.lab-vp-status kbd {
+	display: inline-block;
+	padding: 1px 4px;
+	margin: 0 1px;
+	border-radius: 3px;
+	background: var(--viz-field);
+	color: var(--viz-ink);
+	font: 600 9.5px/1.3 var(--lab-font-ui);
+}
+
+/* Tooltips (500 ms, Blender-like): title, one line, and the formula term. */
+.lab-tip {
+	position: fixed;
+	z-index: 6;
+	max-width: 260px;
+	padding: 7px 9px;
+	background: var(--viz-chrome-2);
+	border: 1px solid var(--viz-field);
+	border-radius: 5px;
+	box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.7);
+	color: var(--viz-ink);
+	font: 400 12px/1.35 var(--lab-font-ui);
+	pointer-events: none;
+}
+.lab-tip b {
+	display: block;
+	font-weight: 600;
+}
+.lab-tip p {
+	margin: 2px 0 0;
+	color: var(--viz-muted);
+}
+.lab-tip .katex {
+	display: block;
+	margin-top: 5px;
+	font-size: 1.05em;
+}
+
+/* Navigation gizmo (3D, top right, left of an open N-panel) and the static XY corner (2D). */
+.lab-gizmo {
+	position: absolute;
+	top: 6px;
+	right: calc(6px + var(--lab-vp-inset, 0px));
+	width: 84px;
+	height: 84px;
+	border-radius: 50%;
+	touch-action: none;
+}
+.lab-gizmo svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+.lab-gizmo-bg {
+	fill: var(--viz-ink);
+	opacity: 0;
+	transition: opacity 0.12s;
+}
+.lab-gizmo:hover .lab-gizmo-bg {
+	opacity: 0.08;
+}
+.lab-gizmo [role='button'] {
+	cursor: pointer;
+	outline: none;
+}
+.lab-gizmo [role='button'] circle {
+	stroke-width: 1.5;
+}
+.lab-gizmo [role='button']:hover circle {
+	stroke: var(--viz-ink);
+}
+.lab-gizmo text {
+	font: 700 10.5px/1 var(--lab-font-ui);
+	text-anchor: middle;
+	dominant-baseline: central;
+	pointer-events: none;
+	user-select: none;
+}
+.lab-gizmo .is-neg text {
+	visibility: hidden;
+}
+.lab-gizmo .is-neg:hover text,
+.lab-gizmo .is-neg:focus-visible text {
+	visibility: visible;
+}
+.lab-xy {
+	position: absolute;
+	left: 8px;
+	bottom: 8px;
+	width: 38px;
+	height: 38px;
+	pointer-events: none;
+}
+.lab-xy text {
+	font: 700 9.5px/1 var(--lab-font-ui);
+	dominant-baseline: central;
+	text-anchor: middle;
+}
+@media (max-width: 719.98px) {
+	.lab-gizmo {
+		width: 66px;
+		height: 66px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.lab-gizmo-bg {
+		transition: none;
+	}
+}
+
+/* Scene stages (src/viz/scene/Stage.tsx). The shared canvas is fixed over the article; each stage's View div only
+   marks where its scene is scissored in. The stage fills the card's viewport cell absolutely. */
 .lab-stage {
 	position: absolute;
 	inset: 0;
@@ -361,19 +914,22 @@
 	/* Centered on the anchor; the per-frame `transform` carries the position and composes with `translate`. */
 	translate: -50% -50%;
 	visibility: hidden;
-	font-family: var(--sl-font-mono);
-	font-size: 13px;
-	line-height: 1;
-	letter-spacing: 0.02em;
+	font: 500 12px/1 var(--lab-font-mono);
+	letter-spacing: 0.01em;
 	/* Live numbers must not jitter sideways while a value changes under a drag. */
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 	color: var(--lab-label-c, var(--viz-ink));
-	/* A halo in the page background keeps the text readable over grid lines and fills. */
-	text-shadow: 0 0 3px var(--sl-color-bg), 0 0 3px var(--sl-color-bg);
+	/* A halo in the viewport background keeps the text readable over grid lines and fills. */
+	text-shadow: 0 0 3px var(--viz-bg-bottom), 0 0 3px var(--viz-bg-bottom), 0 0 1px var(--viz-bg-bottom);
 }
+.lab-label.is-sm {
+	font-size: 10.5px;
+	font-weight: 400;
+}
+/* Hot = attention, not meaning: the text keeps its own color and gains the orange outline glow. */
 .lab-label.is-hot {
-	color: var(--viz-hot);
+	text-shadow: 0 0 1px var(--viz-hot), 0 0 2px var(--viz-hot), 0 0 4px var(--viz-bg-bottom);
 }
 .lab-handle-key {
 	position: absolute;
@@ -393,7 +949,7 @@
 	height: 28px;
 	transform: translate(-50%, -50%);
 	border-radius: 50%;
-	outline: 2px solid var(--sl-color-text-accent);
+	outline: 2px solid var(--viz-ink);
 	outline-offset: 2px;
 	pointer-events: none;
 }
@@ -402,9 +958,17 @@
 }
 .lab-stage-nogl {
 	display: none;
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	padding: 1rem;
+	place-content: center;
+	text-align: center;
+	color: var(--viz-ink);
+	font: 400 13px/1.4 var(--lab-font-ui);
 }
 .lab-no-webgl .lab-stage-nogl {
-	display: block;
+	display: grid;
 }
 
 /* Linked formulas (Formula/Num): term highlight and scrub handles. */

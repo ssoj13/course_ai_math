@@ -8,9 +8,11 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
 import { sub, to3, type V } from '../geom';
+import { STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitRadius, moved, ndcToPx, rayPlane, worldPerPx } from './drag';
 import { placeLabels, useStage, writeMove, type Draggable } from './handles';
+import { DRAW_MS, reducedMotion, springProgress } from './motion';
 
 // Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
 // with dozens of pixel-sized objects must not allocate vectors and arrays for each of them.
@@ -40,15 +42,19 @@ export function wppAt(camera: Camera, p: V, hPx: number): number {
 }
 
 /**
- * Keeps `obj` (unit-sized geometry) `px` CSS pixels big wherever it is: pixel-stable heads, dots, glyphs and markers.
- * Runs per frame because orbiting (3D) and resizing change the scale without a React render.
+ * Keeps `obj` (unit-sized geometry) `px` CSS pixels big wherever it is: pixel-stable heads, dots and markers.
+ * Runs per frame because orbiting (3D) and resizing change the scale without a React render. `billboard` also turns
+ * it to face the camera (flat discs that read as Blender vertices from any orbit). `px` may be a function of the
+ * draw-in progress (`reg.reveal`).
  */
-export function usePxScale(obj: React.RefObject<Object3D | null>, px: number): void {
+export function usePxScale(obj: React.RefObject<Object3D | null>, px: number | ((reveal: number) => number), billboard = false): void {
 	const reg = useStage();
 	useFrame(({ camera }) => {
 		const o = obj.current;
 		if (!o || !reg.el) return;
-		o.scale.setScalar(px * wppVec(camera, o.getWorldPosition(pt), reg.el.clientHeight));
+		const size = typeof px === 'number' ? px : px(reg.reveal);
+		o.scale.setScalar(Math.max(size, 1e-6) * wppVec(camera, o.getWorldPosition(pt), reg.el.clientHeight));
+		if (billboard) o.quaternion.copy(camera.quaternion);
 	});
 }
 
@@ -101,6 +107,71 @@ type LineObj = React.ComponentRef<typeof Line>;
 
 /** drei `Line` props plus `dashPx`: dash and gap lengths in CSS pixels (drei's are world units). */
 export type SLineProps = ComponentProps<typeof Line> & { dashPx?: readonly [number, number] };
+
+/** Imperative handle of a Stroke: all of its lines share the same points. */
+export interface StrokeHandle {
+	/** Replaces the points of every line of the stroke (flat xyz list), e.g. per frame for a growing beam. */
+	setPositions(flat: number[]): void;
+	/** Geometry identity of the core line; drei rebuilds it when `points` change, which resets the positions. */
+	geometry(): object | null;
+}
+
+export interface StrokeProps {
+	points: SLineProps['points'];
+	color: string;
+	/** Linked/hovered: Blender's active outline (hot stroke `hotPad` px wider each side, behind) and a hot halo. */
+	hot?: boolean;
+	/** Core width in px (default the beam core, `STYLE.core`). */
+	width?: number;
+	/** Soft halo of the stroke's own color (beams); off for secondary lines. */
+	halo?: boolean;
+	dashPx?: readonly [number, number];
+	segments?: boolean;
+	/** Render order of the core; halo and outline go just below it. */
+	order?: number;
+	/** Core opacity (a shadow band is a translucent wide stroke). */
+	opacity?: number;
+}
+
+/**
+ * The scene's one stroke recipe (visual-language.md): halo (9 px at 14% of its own color), core, and when hot the
+ * Blender active outline behind the core plus a 30% hot halo; the object's own color never changes. Every line is
+ * transparent so the three layers sort by render order (three draws all opaque objects before transparent ones, so
+ * an opaque core would be painted over by its own halo); depth writes are off for the same reason.
+ */
+export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
+	{ points, color, hot = false, width = STYLE.core, halo = true, dashPx, segments, order = 2, opacity = 1 },
+	fwd,
+) {
+	const pal = usePalette();
+	const core = useRef<LineObj>(null);
+	const out = useRef<LineObj>(null);
+	const glow = useRef<LineObj>(null);
+	useImperativeHandle(fwd, () => ({
+		setPositions(flat) {
+			for (const l of [core.current, out.current, glow.current]) l?.geometry.setPositions(flat);
+		},
+		geometry: () => core.current?.geometry ?? null,
+	}));
+	const outW = width + 2 * STYLE.hotPad;
+	const common = { points, segments, dashPx, transparent: true, depthWrite: false };
+	return (
+		<>
+			{(halo || hot) && (
+				<SLine
+					ref={glow}
+					{...common}
+					color={hot ? pal.hot : color}
+					lineWidth={hot ? Math.max(STYLE.halo, outW + 6) : STYLE.halo}
+					opacity={hot ? STYLE.hotHaloA : STYLE.haloA}
+					renderOrder={order - 0.2}
+				/>
+			)}
+			{hot && <SLine ref={out} {...common} color={pal.hot} lineWidth={outW} renderOrder={order - 0.1} />}
+			<SLine ref={core} {...common} color={color} lineWidth={width} opacity={opacity} renderOrder={order} />
+		</>
+	);
+});
 
 /**
  * drei `Line` that stays pixel-true after a stage resize: LineMaterial converts `lineWidth` pixels with its
@@ -205,6 +276,7 @@ export function DragLayer(): null {
 				el.style.touchAction = 'none';
 				el.style.cursor = 'grabbing';
 				hotOn(d.lesson, d.owner);
+				reg.hover.set({ handle: d.id });
 				active = { d, start, p0, n, h0 };
 				const a = active;
 				const id = e.pointerId;
@@ -244,7 +316,10 @@ export function DragLayer(): null {
 					apply(); // a frame still pending at release must not swallow the final position
 					release();
 					// A mouse is still hovering the object (r3f pointerout clears it later); a finger has left.
-					if (ev.pointerType !== 'mouse') hotOff(a.d.lesson, a.d.owner);
+					if (ev.pointerType !== 'mouse') {
+						hotOff(a.d.lesson, a.d.owner);
+						reg.hover.clear('handle', a.d.id);
+					}
 				};
 				el.addEventListener('pointerup', end, opts);
 				el.addEventListener('pointercancel', end, opts);
@@ -255,8 +330,19 @@ export function DragLayer(): null {
 
 		on('pointermove', (e) => {
 			if (active || e.pointerType !== 'mouse') return;
-			const cursor = reg.pick(...local(e.clientX, e.clientY)) ? 'grab' : '';
+			const d = reg.pick(...local(e.clientX, e.clientY));
+			const cursor = d ? 'grab' : '';
 			if (el.style.cursor !== cursor) el.style.cursor = cursor;
+			reg.hover.set({ handle: d?.id ?? null });
+		});
+		// MMB orbits (3D) and pans (2D) like Blender; without this Chrome on Windows also starts its middle-click
+		// autoscroll and the page drifts under the drag (measured: 17 px after one MMB pan).
+		on('mousedown', (e) => {
+			if (e.button === 1) e.preventDefault();
+		});
+		// Leaving the stage clears what the status bar describes (r3f's pointerout covers objects, not handles).
+		on('pointerleave', () => {
+			if (!active) reg.hover.set({ handle: null });
 		});
 
 		const lockTouch = (e: TouchEvent) => {
@@ -287,4 +373,71 @@ export function LabelLayer(): null {
 	useEffect(() => reg.labels.subscribe(() => invalidate()), [reg, invalidate]);
 	useFrame(() => placeLabels(reg), 2);
 	return null;
+}
+
+/**
+ * Feeds the DOM navigation gizmo (Gizmo.tsx) the camera orientation of every rendered frame. Priority 2: after the
+ * View's render, like the labels, so gizmo and scene show the same frame.
+ */
+export function GizmoSync(): null {
+	const reg = useStage();
+	useFrame(({ camera }) => {
+		const q = camera.quaternion;
+		reg.gizmo?.([q.x, q.y, q.z, q.w]);
+	}, 2);
+	return null;
+}
+
+/**
+ * The one orchestrated moment of a lesson (visual-language.md "Motion"): the stage draws itself once, the first time
+ * it is substantially on screen. Drives `reg.reveal` 0 -> 1 with the shared spring over DRAW_MS; primitives read it
+ * per frame (beams grow from their tails, fills, points and labels fade in). Reduced motion: drawn at once.
+ * Runs at priority -1, before the primitives' frame callbacks read the value.
+ */
+export function DrawIn(): null {
+	const reg = useStage();
+	const invalidate = useThree((s) => s.invalidate);
+	const t0 = useRef<number | null>(null);
+	useLayoutEffect(() => {
+		const el = reg.el;
+		if (!el || reducedMotion() || typeof IntersectionObserver !== 'function') return;
+		reg.reveal = 0;
+		const io = new IntersectionObserver(
+			([e]) => {
+				if (!e?.isIntersecting) return;
+				io.disconnect();
+				t0.current = performance.now();
+				invalidate();
+			},
+			{ threshold: 0.4 },
+		);
+		io.observe(el);
+		return () => {
+			io.disconnect();
+			reg.reveal = 1;
+		};
+	}, [reg, invalidate]);
+	useFrame(() => {
+		if (t0.current === null || reg.reveal >= 1) return;
+		reg.reveal = springProgress(performance.now() - t0.current, DRAW_MS);
+		invalidate();
+	}, -1);
+	return null;
+}
+
+/**
+ * Calls `apply(reveal)` on frames where the draw-in progress changed (and once at 1 when it ends), for objects whose
+ * draw-in is a material or transform change rather than geometry.
+ */
+export function useReveal(apply: (reveal: number) => void): void {
+	const reg = useStage();
+	const fn = useRef(apply);
+	fn.current = apply;
+	const last = useRef(1);
+	useFrame(() => {
+		const r = reg.reveal;
+		if (r === last.current) return;
+		last.current = r;
+		fn.current(r);
+	});
 }

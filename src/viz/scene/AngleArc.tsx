@@ -1,6 +1,6 @@
 /**
  * The angle between two directions at a corner: a 1.5 px arc of world radius `r` plus a 10% filled sector
- * (visual-language.md), with an optional label on the bisector just outside the arc. `from` and `to` are DIRECTIONS
+ * (visual-language.md, STYLE), with an optional label on the bisector just outside the arc. Hot = outline on the arc. `from` and `to` are DIRECTIONS
  * from `at` (vectors, e.g. the store keys of a and b with `at` the origin), not points; the arc always takes the
  * shorter way, so it shows the unsigned angle in [0, 180] degrees.
  *
@@ -9,13 +9,13 @@
  * the label instead of throwing. Because any 3D pair can be dragged antiparallel, a 3D arc needs `normal` up front
  * (a loud authoring error at the first render rather than a crash at the reader's first 180-degree drag).
  */
-import { useLayoutEffect, useMemo } from 'react';
-import { DoubleSide } from 'three';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import { DoubleSide, type Group, type MeshBasicMaterial } from 'three';
 import { angleArc, to3, type V } from '../geom';
-import { usePalette, type Role } from '../palette';
-import { hotOff, hotOn, useHot } from '../store';
-import { useLabel, usePos, useStage } from './handles';
-import { SLine, useDynGeo, writeGeo } from './view';
+import { STYLE, usePalette, type SceneRole } from '../palette';
+import { useHot } from '../store';
+import { HOVER_RANK, useHoverable, useLabel, usePos, useStage } from './handles';
+import { Stroke, useDynGeo, useReveal, writeGeo } from './view';
 
 export interface AngleArcProps {
 	lesson: string;
@@ -32,7 +32,7 @@ export interface AngleArcProps {
 	label?: string | ((deg: number) => string);
 	/** 3D only (required there): picks the plane of a 180-degree arc; any vector not along the sides. */
 	normal?: V;
-	role?: Role;
+	role?: SceneRole;
 }
 
 const N = 32;
@@ -58,6 +58,7 @@ export function AngleArc(p: AngleArcProps): React.JSX.Element | null {
 		if (arc) writeGeo(geo, [c, ...arc.pts]);
 	}, [geo, arc, c]);
 	const deg = arc ? (arc.theta * 180) / Math.PI : 0;
+	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.arc);
 	const text = typeof p.label === 'function' ? p.label(deg) : p.label;
 	useLabel(
 		text === undefined
@@ -65,14 +66,28 @@ export function AngleArc(p: AngleArcProps): React.JSX.Element | null {
 			: { lesson: p.lesson, text, role: p.role ?? 'ink', hot: p.id, at: () => arc?.mid ?? null, away: () => c, gap: LABEL_GAP },
 	);
 	if (!arc || !line) return null;
-	const color = hot ? pal.hot : pal[p.role ?? 'ink'];
+	const color = pal[p.role ?? 'ink'];
 	return (
-		<group onPointerOver={() => hotOn(p.lesson, p.id)} onPointerOut={() => hotOff(p.lesson, p.id)}>
-			<mesh geometry={geo} frustumCulled={false} renderOrder={0}>
+		<ArcBody hover={hover} geo={geo} line={line} color={color} hot={hot} />
+	);
+}
+
+/** Sector + arc of an AngleArc; a separate component so the draw-in hook only exists while the arc is drawn. */
+function ArcBody(p: { hover: ReturnType<typeof useHoverable>; geo: React.ComponentProps<'mesh'>['geometry']; line: [number, number, number][]; color: string; hot: boolean }): React.JSX.Element {
+	const fill = useRef<MeshBasicMaterial>(null);
+	const group = useRef<Group>(null);
+	useReveal((r) => {
+		if (fill.current) fill.current.opacity = STYLE.sectorA * r;
+		if (group.current) group.current.visible = r > 0;
+	});
+	return (
+		<group ref={group} {...p.hover}>
+			<mesh geometry={p.geo} frustumCulled={false} renderOrder={0}>
 				<meshBasicMaterial
-					color={color}
+					ref={fill}
+					color={p.color}
 					transparent
-					opacity={hot ? 0.2 : 0.1}
+					opacity={STYLE.sectorA}
 					depthWrite={false}
 					side={DoubleSide}
 					polygonOffset
@@ -80,7 +95,7 @@ export function AngleArc(p: AngleArcProps): React.JSX.Element | null {
 					polygonOffsetUnits={1}
 				/>
 			</mesh>
-			<SLine points={line} color={color} lineWidth={hot ? 2.5 : 1.5} renderOrder={1} />
+			<Stroke points={p.line} color={p.color} hot={p.hot} width={STYLE.edge} halo={false} order={1} />
 		</group>
 	);
 }

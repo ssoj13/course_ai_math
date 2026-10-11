@@ -5,17 +5,15 @@
  * plain quad in the plane of a and b (area |a x b| has no sign). Collinear or zero vectors span no area and draw
  * nothing (no throw: a reader can drag into that). `Quad` here is also the drawing of AreaTile.
  */
-import { useLayoutEffect, useMemo } from 'react';
-import { DoubleSide } from 'three';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import { DoubleSide, type Group, type MeshBasicMaterial } from 'three';
 import { add, cross, hatch, norm, scale, signedArea2, to3, type V } from '../geom';
-import { usePalette, type Role } from '../palette';
-import { hotOff, hotOn, useHot } from '../store';
-import { useLabel, usePos } from './handles';
-import { SLine, useDynGeo, useWorldPx, writeGeo } from './view';
+import { STYLE, usePalette, type SceneRole } from '../palette';
+import { useHot } from '../store';
+import { HOVER_RANK, useHoverable, useLabel, usePos } from './handles';
+import { SLine, Stroke, useDynGeo, useReveal, useWorldPx, writeGeo } from './view';
 
 const QUAD_INDEX = [0, 1, 2, 0, 2, 3];
-// visual-language.md and the 0.5/1.4 lesson design: 1 px hatch lines every 6 px.
-const HATCH_PX = 6;
 const O2: V = [0, 0];
 const O3: V = [0, 0, 0];
 
@@ -25,7 +23,7 @@ export interface QuadProps {
 	o: V;
 	u: V;
 	v: V;
-	role: Role;
+	role: SceneRole;
 	/** Negative signed area: adds the hatch. */
 	neg: boolean;
 	/** Text at the center (overlay label), if any. */
@@ -33,9 +31,10 @@ export interface QuadProps {
 }
 
 /**
- * The parallelogram o + s*u + t*v: a 16% fill with a 1.5 px edge (visual-language.md), plus the hatch when `neg`.
- * The caller guarantees a non-degenerate shape. The fill is pushed back in depth (polygonOffset) so coplanar arrows
- * and lines drawn earlier keep their exact color instead of being tinted. Hover lights `id`.
+ * The parallelogram o + s*u + t*v: an 18% fill with a 1.5 px edge (visual-language.md, STYLE), plus the 45-degree
+ * hatch when `neg`. The caller guarantees a non-degenerate shape. The fill is pushed back in depth (polygonOffset) so
+ * coplanar arrows and lines keep their exact color instead of being tinted. Hover lights `id`: the edge gets the hot
+ * outline, the fill keeps its color. Draw-in: the whole shape fades in with the reveal.
  */
 export function Quad(p: QuadProps): React.JSX.Element {
 	const pal = usePalette();
@@ -47,17 +46,25 @@ export function Quad(p: QuadProps): React.JSX.Element {
 	}, [o, u, v]);
 	const geo = useDynGeo(4, QUAD_INDEX);
 	useLayoutEffect(() => writeGeo(geo, g.c), [geo, g]);
-	const step = useWorldPx(HATCH_PX, g.center);
+	const step = useWorldPx(STYLE.hatchPx, g.center);
 	const lines = useMemo(() => (p.neg && step ? hatch(o, u, v, step).map(to3) : null), [p.neg, step, o, u, v]);
 	useLabel(p.text === undefined ? null : { lesson: p.lesson, text: p.text, role: p.role, hot: p.id, at: () => g.center });
-	const color = hot ? pal.hot : pal[p.role];
+	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
+	const fill = useRef<MeshBasicMaterial>(null);
+	const group = useRef<Group>(null);
+	useReveal((r) => {
+		if (fill.current) fill.current.opacity = STYLE.fillA * r;
+		if (group.current) group.current.visible = r > 0;
+	});
+	const color = pal[p.role];
 	return (
-		<group onPointerOver={() => hotOn(p.lesson, p.id)} onPointerOut={() => hotOff(p.lesson, p.id)}>
+		<group ref={group} {...hover}>
 			<mesh geometry={geo} frustumCulled={false} renderOrder={0}>
 				<meshBasicMaterial
+					ref={fill}
 					color={color}
 					transparent
-					opacity={hot ? 0.32 : 0.16}
+					opacity={STYLE.fillA}
 					depthWrite={false}
 					side={DoubleSide}
 					polygonOffset
@@ -65,8 +72,10 @@ export function Quad(p: QuadProps): React.JSX.Element {
 					polygonOffsetUnits={1}
 				/>
 			</mesh>
-			<SLine points={g.edge} color={color} lineWidth={hot ? 2.5 : 1.5} renderOrder={1} />
-			{lines && lines.length > 0 && <SLine points={lines} segments color={color} lineWidth={1} renderOrder={1} />}
+			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} halo={false} order={1} />
+			{lines && lines.length > 0 && (
+				<SLine points={lines} segments color={color} lineWidth={STYLE.hatchW} transparent depthWrite={false} renderOrder={1} />
+			)}
 		</group>
 	);
 }
@@ -78,7 +87,7 @@ export interface ParallelogramProps {
 	b: V | string;
 	/** Corner the vectors start from (default: the origin). */
 	at?: V | string;
-	role: Role;
+	role: SceneRole;
 	/** Center text: fixed, or computed from the area (signed in 2D, |a x b| in 3D). */
 	label?: string | ((area: number) => string);
 }

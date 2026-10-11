@@ -111,6 +111,10 @@ export function to3(a: V): [number, number, number] {
 	throw new Error(`expected a 2D or 3D point, got ${a.length} components`);
 }
 
+/**
+ * 3D cross product a x b (right-handed): perpendicular to both, length |a||b| sin(theta) = the area of their
+ * parallelogram (Parallelogram's 3D area, AreaTile's outward side via `rightOf`). Other dimensions throw.
+ */
 export function cross(a: V, b: V): number[] {
 	if (a.length !== 3 || b.length !== 3) throw new Error('cross is 3D only');
 	return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -134,12 +138,6 @@ export function rightOf(a: V, b: V, normal?: V): number[] | null {
 	const ls = norm(s);
 	// Relative threshold: a normal almost along the segment leaves only rounding noise as the "side".
 	return ls === 0 || ls <= 1e-9 * l * norm(normal) ? null : scale(s, 1 / ls);
-}
-
-/** Corners [a, b, b + h*side, a + h*side] of the rectangle on base a->b; a negative `h` puts it on the other side. */
-export function rectOn(a: V, b: V, side: V, h: number): number[][] {
-	const off = scale(side, h);
-	return [[...a], [...b], add(b, off), add(a, off)];
 }
 
 /** True when u and v are within `tolDeg` degrees of perpendicular. Zero vectors have no angle, so never. */

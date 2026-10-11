@@ -1,18 +1,22 @@
 ---
 /**
- * Server-rendered frame for a client:only scene island: the caption is real HTML (the stage's accessible name,
- * and the fallback without JS or WebGL), and `.lab-scene-box` reserves the stage's exact box (aspect-ratio, or an
- * explicit `height`) before hydration, so mounting the scene causes no layout shift.
+ * Server-rendered frame of a ViewportCard (src/viz/scene/ViewportCard.tsx) around a client:only scene island. The
+ * caption is real HTML (the scene's accessible name, and the fallback without JS or WebGL). `.lab-vp-skel` paints the
+ * card's skeleton (header, dark viewport, chip row on phones, status bar) and fixes its exact height before any
+ * script runs: the 16:10 viewport comes from an aspect-ratio spacer and the bars are fixed px, so the island, which
+ * fills the same box absolutely, causes no layout shift. `panel` (default true) reserves the N-panel chip row under
+ * 720 px; it must match whether the card has N-panel rows (ViewportCard checks).
  */
 interface Props {
 	caption: string;
-	height?: string;
+	panel?: boolean;
 }
-const { caption, height } = Astro.props;
+const { caption, panel = true } = Astro.props;
 ---
 
-<figure class="lab-scene not-content">
-	<div class="lab-scene-box" style={height ? { height, aspectRatio: 'auto' } : undefined}>
+<figure class="lab-scene lab-vp not-content" data-panel={panel ? '' : undefined}>
+	<div class="lab-vp-frame">
+		<div class="lab-vp-skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 		<slot />
 	</div>
 	<figcaption>{caption}</figcaption>

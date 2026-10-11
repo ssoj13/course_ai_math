@@ -1,40 +1,25 @@
 /**
- * Spike A demo scenes (loaded lazily via engine.tsx): three stages in three separate React roots, all on lesson
- * `demo`. If the store or drei's View tunnel were duplicated per island, the boxes would not follow the slider
- * (engine.tsx, another chunk) or would not appear in the shared canvas.
- * Task 6 demo below: every scene primitive on the shared `a`, `b`, `u`, `v` values.
+ * Engine demo scenes (loaded lazily via engine.tsx): two ViewportCards, 2D and 3D, showing every element of the
+ * visual language on the shared `demo` store: header (2D/3D, Persp/Ortho, Overlays, Reset view), gizmo or XY
+ * corner, shader grid with ticks, beams with halos and hot outlines, labels, the angle arc, the projection shadow
+ * band with its drop line and right-angle mark, a square tile, a signed (hatched when negative) parallelogram, a
+ * point, the N-panel (vector fields, a number field, read-only rows, separators, tooltips) and the status bar.
  */
-import { dot, norm, project, scale, signedArea2, sub, type V } from '../geom';
-import { usePalette, type Role } from '../palette';
+import { cross, dot, norm, project, scale, signedArea2, sub, type V } from '../geom';
 import { AngleArc } from '../scene/AngleArc';
 import { AreaTile } from '../scene/AreaTile';
 import { Arrow } from '../scene/Arrow';
 import { Grid } from '../scene/Grid';
+import { Show, type OverlayDef } from '../scene/handles';
 import { Label } from '../scene/Label';
+import type { Row } from '../scene/NPanel';
 import { Parallelogram } from '../scene/Parallelogram';
 import { Point } from '../scene/Point';
 import { RightAngle } from '../scene/RightAngle';
 import { Segment } from '../scene/Segment';
-import { Stage } from '../scene/Stage';
+import type { StatusSpec } from '../scene/StatusBar';
+import { ViewportCard } from '../scene/ViewportCard';
 import { useVal } from '../store';
-
-function DemoBox({ mode, role }: { mode: '2d' | '3d'; role: Role }): React.JSX.Element {
-	const x = useVal('demo', 'x', 0);
-	const pal = usePalette();
-	return (
-		<Stage lesson="demo" mode={mode} extent={3}>
-			<mesh position={[x, 0, 0]}>
-				<boxGeometry args={[1, 1, 1]} />
-				<meshBasicMaterial color={pal[role]} />
-			</mesh>
-			{mode === '3d' && <gridHelper key={pal.grid + pal.gridMinor} args={[6, 6, pal.grid, pal.gridMinor]} />}
-		</Stage>
-	);
-}
-
-export const DemoBoxA = () => <DemoBox mode="2d" role="vecA" />;
-export const DemoBoxB = () => <DemoBox mode="2d" role="vecB" />;
-export const DemoBoxC = () => <DemoBox mode="3d" role="vecC" />;
 
 const O2: V = [0, 0];
 const O3: V = [0, 0, 0];
@@ -42,15 +27,18 @@ const UP: V = [0, 1, 0];
 const TIP: readonly [number, number] = [10, -12];
 // Label text is DOM, not KaTeX, so plain Unicode is right here.
 const deg = (d: number) => `θ ${d.toFixed(1)}°`;
-// A true minus sign (U+2212), matching the one in the bar label.
+const phi = (d: number) => `φ ${d.toFixed(1)}°`;
+// A true minus sign (U+2212), matching the N-panel fields.
 const num = (x: number) => x.toFixed(1).replace('-', '−');
+const angleOf = (a: V, b: V) => (norm(a) && norm(b) ? (Math.acos(Math.max(-1, Math.min(1, dot(a, b) / (norm(a) * norm(b))))) * 180) / Math.PI : 0);
+const vec = (vals: Record<string, unknown>, k: string) => vals[k] as V;
 
 const use2 = (k: string) => useVal<readonly number[]>('demo', k, O2);
 
 /**
- * Shadow of b on the line of a (the projection), the drop from b's tip and the right-angle mark at the foot.
- * Derived points are computed here from the store and passed as literals; projecting onto a zero `a` is undefined,
- * so nothing is drawn then.
+ * Shadow of b on the line of a (the projection) as a soft band, the dashed drop from b's tip and the right-angle mark
+ * at the foot. Derived points are computed here from the store and passed as literals; projecting onto a zero `a` is
+ * undefined, so nothing is drawn then.
  */
 function Projection(): React.JSX.Element | null {
 	const a = use2('a');
@@ -59,83 +47,132 @@ function Projection(): React.JSX.Element | null {
 	const foot = project(b, a);
 	return (
 		<>
-			<Segment lesson="demo" id="proj-drop" a={b} b={foot} dashed role="muted" />
-			<Segment lesson="demo" id="proj" a={O2} b={foot} role="vecC" />
+			<Segment lesson="demo" id="proj" a={O2} b={foot} band role="vecC" />
+			<Segment lesson="demo" id="drop" a={b} b={foot} dashed role="muted" />
 			{/* The mark sits in the corner toward the origin: along -a when the shadow points along a, else along a. */}
-			<RightAngle lesson="demo" id="proj-drop" at={foot} u={dot(a, b) >= 0 ? scale(a, -1) : a} v={sub(b, foot)} />
+			<RightAngle lesson="demo" id="drop" at={foot} u={dot(a, b) >= 0 ? scale(a, -1) : a} v={sub(b, foot)} />
 		</>
 	);
 }
 
-/** The triangle O, a, b may be dragged either way round; flip keeps its tiles outside it (see AreaTile). */
-const useFlip = () => signedArea2(use2('a'), use2('b')) < 0;
-
-function TileA(): React.JSX.Element {
-	return <AreaTile lesson="demo" id="sq-a" a={O2} b="a" role="vecA" flip={useFlip()} label={(s) => `|a|² ${num(s)}`} />;
+/** The triangle O, a, b may be dragged either way round; flip keeps the tile outside it (see AreaTile). */
+function SquareA(): React.JSX.Element {
+	const flip = signedArea2(use2('a'), use2('b')) < 0;
+	return <AreaTile lesson="demo" id="sqa" a={O2} b="a" role="vecA" flip={flip} label={(s) => `|a|² ${num(s)}`} />;
 }
 
-/** Task 6: grid, draggable a and b, the angle between them, b's projection onto a and the square on a. */
-export const DemoVec2D = () => (
-	<Stage lesson="demo" mode="2d" extent={4}>
-		<Grid extent={4} step={1} minor={0.5} />
-		<TileA />
-		<Segment lesson="demo" id="ab" a="a" b="b" dashed role="muted" />
-		<Projection />
-		<AngleArc lesson="demo" id="theta" at={O2} from="a" to="b" r={0.8} label={deg} />
+function Arc2D(): React.JSX.Element {
+	const r = useVal('demo', 'r', 0.8);
+	return <AngleArc lesson="demo" id="th" at={O2} from="a" to="b" r={r} label={deg} />;
+}
+
+const OV2: readonly OverlayDef[] = [
+	{ id: 'grid', label: 'Grid', on: true },
+	{ id: 'labels', label: 'Labels', on: true },
+	{ id: 'angle', label: 'Angle', on: true },
+	{ id: 'shadow', label: 'Shadow', on: true },
+	{ id: 'square', label: 'Square on a', on: true },
+	{ id: 'par', label: 'Parallelogram', on: false },
+];
+
+const XY = { min: -4, max: 4, step: 0.1 };
+const ROWS2: readonly Row[] = [
+	{ id: 'a', label: 'a', kind: 'vec', key: 'a', spec: XY, tip: { text: 'Vector a: drag its tip in the viewport or scrub here.', tex: String.raw`a = (a_x, a_y)` } },
+	{ id: 'b', label: 'b', kind: 'vec', key: 'b', spec: XY, tip: { text: 'Vector b.', tex: String.raw`b = (b_x, b_y)` } },
+	{ id: 'p', label: 'P', kind: 'vec', key: 'p', spec: XY },
+	{ id: 'th', label: 'θ', kind: 'ro', value: (v) => angleOf(vec(v, 'a'), vec(v, 'b')), fmt: (x) => `${x.toFixed(1)}°`, tip: { text: 'Angle between a and b.', tex: String.raw`\theta = \arccos\frac{a\cdot b}{\lvert a\rvert\,\lvert b\rvert}` } },
+	{ id: 'r', label: 'arc r', kind: 'num', key: 'r', spec: { min: 0.3, max: 2, step: 0.1 }, snap: 0.5, tip: { text: 'Radius of the angle arc (a plain number field).' } },
+	{ id: 'dot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'b')), group: 'Numbers', tip: { title: 'Dot product', text: 'Sum of products of matching components.', tex: String.raw`a\cdot b = a_x b_x + a_y b_y` } },
+	{ id: 'sqa', label: '|a|²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')) },
+	{ id: 'par', label: 'a×b', kind: 'ro', value: (v) => signedArea2(vec(v, 'a'), vec(v, 'b')), tip: { title: 'Signed area', text: 'Negative (hatched) when b is clockwise from a.', tex: String.raw`a_x b_y - a_y b_x` } },
+];
+
+const STATUS2: StatusSpec = {
+	hints: {
+		'a:tip': 'LMB drag the tip of a · arrows 0.1 · Shift 1.0',
+		'b:tip': 'LMB drag the tip of b · arrows 0.1 · Shift 1.0',
+		'p:pt': 'LMB drag P · arrows 0.1',
+		a: (v) => `Vector a = (${vec(v, 'a').map(num).join(', ')})`,
+		b: (v) => `Vector b = (${vec(v, 'b').map(num).join(', ')})`,
+		th: (v) => `Angle θ = ${angleOf(vec(v, 'a'), vec(v, 'b')).toFixed(1)}°`,
+		proj: 'Shadow of b on a · its length × |a| = a·b',
+		drop: 'Drop line from the tip of b · meets a at a right angle',
+		sqa: (v) => `|a|² = ${num(dot(vec(v, 'a'), vec(v, 'a')))}`,
+		par: (v) => `a×b = ${num(signedArea2(vec(v, 'a'), vec(v, 'b')))} · hatched = negative`,
+	},
+	state: (v) => (dot(vec(v, 'a'), vec(v, 'b')) === 0 && norm(vec(v, 'a')) > 0 && norm(vec(v, 'b')) > 0 ? 'a ⊥ b · a·b = 0' : null),
+};
+
+/** 2D: grid, draggable a and b, their angle, b's shadow on a, the square on a, the signed parallelogram, a point. */
+export const Demo2D = () => (
+	<ViewportCard lesson="demo" id="d2" name="DEMO-2D · Vectors" mode="2d" extent={4} overlays={OV2} rows={ROWS2} status={STATUS2} drawIn>
+		<Show ov="grid">
+			<Grid extent={4} step={1} minor={0.5} />
+		</Show>
+		<Show ov="square">
+			<SquareA />
+		</Show>
+		<Show ov="par">
+			<Parallelogram lesson="demo" id="par" a="a" b="b" role="vecC" label={(s) => num(s)} />
+		</Show>
+		<Show ov="shadow">
+			<Projection />
+		</Show>
+		<Show ov="angle">
+			<Arc2D />
+		</Show>
 		<Arrow lesson="demo" id="a" to="a" role="vecA" legs />
 		<Arrow lesson="demo" id="b" to="b" role="vecB" />
-		<Label lesson="demo" id="a" at="a" role="vecA" offset={TIP}>a</Label>
-		<Label lesson="demo" id="b" at="b" role="vecB" offset={TIP}>b</Label>
-		<Point lesson="demo" id="p" at="p" label="P" role="vecC" />
-	</Stage>
+		<Show ov="labels">
+			<Label lesson="demo" id="a" at="a" role="vecA" offset={TIP}>a</Label>
+			<Label lesson="demo" id="b" at="b" role="vecB" offset={TIP}>b</Label>
+		</Show>
+		<Point lesson="demo" id="p" at="p" label="P" role="light" />
+	</ViewportCard>
 );
 
-function CosineTiles(): React.JSX.Element {
-	const flip = useFlip();
-	return (
-		<>
-			<AreaTile lesson="demo" id="sq-a" a={O2} b="a" role="vecA" flip={flip} label={'a²'} />
-			<AreaTile lesson="demo" id="sq-b" a="b" b={O2} role="vecB" flip={flip} label={'b²'} />
-			<AreaTile lesson="demo" id="sq-c" a="a" b="b" role="vecC" flip={flip} label={'c²'} />
-		</>
-	);
-}
+const OV3: readonly OverlayDef[] = [
+	{ id: 'grid', label: 'Floor grid', on: true },
+	{ id: 'labels', label: 'Labels', on: true },
+	{ id: 'angle', label: 'Angle', on: true },
+	{ id: 'par', label: 'Parallelogram', on: true },
+];
 
-const corr = (v: Record<string, unknown>) => -2 * dot(v.a as V, v.b as V);
+const XYZ = { min: -3, max: 3, step: 0.1 };
+const ROWS3: readonly Row[] = [
+	{ id: 'u', label: 'u', kind: 'vec', key: 'u', spec: XYZ },
+	{ id: 'v', label: 'v', kind: 'vec', key: 'v', spec: XYZ },
+	{ id: 'phi', label: 'φ', kind: 'ro', value: (v) => angleOf(vec(v, 'u'), vec(v, 'v')), fmt: (x) => `${x.toFixed(1)}°` },
+	{ id: 'dot3', label: 'u·v', kind: 'ro', value: (v) => dot(vec(v, 'u'), vec(v, 'v')), group: 'Numbers' },
+	{ id: 'par3', label: '|u×v|', kind: 'ro', value: (v) => norm(cross(vec(v, 'u'), vec(v, 'v'))), tip: { title: 'Area', text: 'Area of the parallelogram of u and v.', tex: String.raw`\lvert u\times v\rvert` } },
+];
 
-/**
- * Law of cosines layout: squares on the three sides of the triangle O, a, b, and the correction -2 a.b as a signed
- * bar on a fixed 10-unit base (height = area / 10): it grows down (outward) past 90 degrees, up and hatched below.
- */
-export const DemoArea2D = () => (
-	<Stage lesson="demo" mode="2d" extent={6}>
-		<Grid extent={6} step={1} />
-		<CosineTiles />
-		<AreaTile lesson="demo" id="corr" a={[-5, -5]} b={[5, -5]} role="muted" signed area={corr} label={(s) => `−2a·b ${num(s)}`} />
-		<Arrow lesson="demo" id="a" to="a" role="vecA" />
-		<Arrow lesson="demo" id="b" to="b" role="vecB" />
-	</Stage>
-);
-
-/** Signed area: counter-clockwise a -> b is a plain tint, clockwise adds the hatch; collinear draws nothing. */
-export const DemoPar2D = () => (
-	<Stage lesson="demo" mode="2d" extent={4}>
-		<Grid extent={4} step={1} />
-		<Parallelogram lesson="demo" id="par" a="a" b="b" role="vecC" label={(s) => `${num(s)}`} />
-		<Arrow lesson="demo" id="a" to="a" role="vecA" />
-		<Arrow lesson="demo" id="b" to="b" role="vecB" />
-	</Stage>
-);
+const STATUS3: StatusSpec = {
+	hints: {
+		u: (v) => `Vector u = (${vec(v, 'u').map(num).join(', ')})`,
+		v: (v) => `Vector v = (${vec(v, 'v').map(num).join(', ')})`,
+		phi: (v) => `Angle φ = ${angleOf(vec(v, 'u'), vec(v, 'v')).toFixed(1)}°`,
+		par3: (v) => `|u×v| = ${num(norm(cross(vec(v, 'u'), vec(v, 'v'))))}`,
+	},
+};
 
 /** 3D: two arrows with legs, their angle (normal = up picks the plane at 180 degrees), their parallelogram, labels. */
-export const DemoVec3D = () => (
-	<Stage lesson="demo" mode="3d" extent={3}>
-		<Grid extent={3} step={1} />
-		<Parallelogram lesson="demo" id="par3" a="u" b="v" role="vecC" />
-		<AngleArc lesson="demo" id="phi" at={O3} from="u" to="v" r={0.7} normal={UP} label={deg} />
+export const Demo3D = () => (
+	<ViewportCard lesson="demo" id="d3" name="DEMO-3D · Vectors" mode="3d" extent={3} overlays={OV3} rows={ROWS3} status={STATUS3}>
+		<Show ov="grid">
+			<Grid extent={3} step={1} />
+		</Show>
+		<Show ov="par">
+			<Parallelogram lesson="demo" id="par3" a="u" b="v" role="vecC" />
+		</Show>
+		<Show ov="angle">
+			<AngleArc lesson="demo" id="phi" at={O3} from="u" to="v" r={0.7} normal={UP} label={phi} />
+		</Show>
 		<Arrow lesson="demo" id="u" to="u" role="vecA" legs />
 		<Arrow lesson="demo" id="v" to="v" role="vecB" legs />
-		<Label lesson="demo" id="u" at="u" role="vecA" offset={TIP}>u</Label>
-		<Label lesson="demo" id="v" at="v" role="vecB" offset={TIP}>v</Label>
-	</Stage>
+		<Show ov="labels">
+			<Label lesson="demo" id="u" at="u" role="vecA" offset={TIP}>u</Label>
+			<Label lesson="demo" id="v" at="v" role="vecB" offset={TIP}>v</Label>
+		</Show>
+	</ViewportCard>
 );

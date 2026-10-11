@@ -130,10 +130,16 @@ every `Stage` is a drei `<View>` living in its own Astro island. No `manualChunk
   `#4f7cff` (measured), so palette colors render as specified.
 - `FitView` refits from a ResizeObserver on the stage element: drei's View portal captures `size` once at mount
   (measured stale: 66 px box after 1280->900 px resize, expected 58.8). Ortho zoom = `min(w,h)/(2*extent)`.
-- No CLS: `SceneIsland.astro` renders `.lab-scene-box` (aspect-ratio 16/10, or an explicit `height`) with the border;
-  `.lab-stage` fills it absolutely, so hydration cannot change layout. Accessible name = the server `<figcaption>`
-  (Stage has no `caption` prop and no aria-label).
-- `.lab-stage-overlay` needs `z-index: 1`: the fixed canvas (z-index 0) is later in the DOM and would paint over labels.
+- No CLS: `SceneIsland.astro` renders the ViewportCard skeleton `.lab-vp-skel` (28 px header, a 16:10 aspect-ratio
+  spacer, the chip row under 720 px when `panel`, 22 px status) that fixes the card height before any script; the
+  island (`.lab-vp-card`) fills the same box absolutely. Accessible name = the server `<figcaption>`.
+- **Stacking (measured in 6d):** Starlight sets `isolation: isolate` on `.main-pane` (TwoColumnContent.astro), so the
+  whole article is ONE stacking context painted below the later, fixed canvas host: no z-index inside the article can
+  lift DOM above the scene (grid lines were drawn over the N-panel and tooltips; 6b/6c labels were in fact under the
+  canvas too). lab.css opts out with `.main-pane:has(.lab-vp) { isolation: auto }`; then viewport backgrounds (no
+  z-index) stay below the canvas and chrome that overlaps the viewport is lifted with z-index 1..6 (below Starlight's
+  header/menus). Never add transform/filter/opacity/contain/container-type around a card: each creates a stacking
+  context and puts the chrome back under the scene.
 - The WebGL drawing buffer is not preserved, so Views need no clear between frames.
 
 ### Lesson authoring pattern (islands)
@@ -171,9 +177,9 @@ Upstream / known console noise:
   creates `new THREE.Clock()`. three 0.182.0 does not warn (checked on unpkg), but we keep 0.186.1: downgrading four
   releases to silence a deprecation notice is worse than the notice. Revisit when r3f moves to `THREE.Timer`.
 - `favicon.svg` 404: there is no `public/` dir yet (predates Task 4).
-- [ ] Scene chunk `engine.impl.*.js` is 978 kB raw / 258 kB gz since Task 6c (three core is not tree-shaken under r3f's
-  `import * as THREE`; drei Line = three-stdlib Line2/LineMaterial added ~32 kB in 6b; 6c primitives + demo ~9 kB).
-  `chunkSizeWarningLimit: 985` in astro.config.mjs; the real gate is the per-page gzip budget of
+- [ ] Scene chunk `engine.impl.*.js` is 1009 kB raw / 269 kB gz since Task 6d (three core is not tree-shaken under
+  r3f's `import * as THREE`; drei Line = three-stdlib Line2/LineMaterial added ~32 kB in 6b; 6c primitives + demo ~9 kB;
+  6d chrome + drei Grid ~31 kB raw / 10 kB gz). `chunkSizeWarningLimit: 1015` in astro.config.mjs; the real gate is the per-page gzip budget of
   scripts/size-report.ts (Task 11; Ruling O: viz core <= 300 kB gz).
 
 ### Scene primitives and dragging (Task 6b)
@@ -200,8 +206,8 @@ Upstream / known console noise:
   helpers in view.tsx use module-level Vector3 temporaries (no allocation per object per frame).
 - `hotOn`/`hotOff` in store.ts are the only hot writers for single objects (write only on change; Formula uses hotOn).
   Arrow/Point/Segment `stopPropagation()` on pointerover so they win the hover over area fills underneath.
-- Axis letters are stroked line glyphs (no font, no network). `label` on Arrow/Point names the keyboard button only;
-  visible text is a separate `<Label>`.
+- Axis letters and tick numbers are DOM labels since 6d (self-hosted fonts now exist). `label` on Arrow/Point names
+  the keyboard button only; visible text is a separate `<Label>`.
 - Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6b-evidence/` (`cdp-drag.ts`, `final/`).
 - [ ] Default 3D camera (Stage) does not frame the whole `extent`: grid corners and the top of the y axis are cut off.
 
@@ -229,10 +235,87 @@ Upstream / known console noise:
 - Derived geometry (projection foot etc.) is computed in the lesson .tsx with `useVal` inside a child of Stage and passed
   as literals (see `Projection` in demo/engine.impl.tsx); guard zero vectors there (`project` throws on zero).
 - Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6c-evidence/` (`cdp-6c.ts`, `final/`).
-- [ ] Poly / moving rectangles / AngleArc `ticks` for the 0.5 lesson (design doc) are 6d/6e scope, not built here.
+- [ ] Poly / moving rectangles / AngleArc `ticks` for the 0.5 lesson (design doc) are 6e scope.
 
-### Palette (Task 5)
+### Palette and tokens (Task 5, revised in 6d)
 
-- Scene colors come from `usePalette()` (`src/viz/palette.ts`), never hex literals in components. Values are `--viz-*` vars in `lab.css` (dark `:root`, light `:root[data-theme='light']`); every value must be a literal `#rrggbb` because WebGL needs concrete colors. `--viz-hot-bg` is CSS-only (formula highlight).
-- Theme flips are observed by ONE module-level MutationObserver on `data-theme` (Starlight `dist/components/ThemeProvider.astro:13`, `ThemeSelect.astro:52`). `Stage` calls `invalidate()` on a new palette. Verified in headless Chrome: stage center pixels equal the CSS var values in both themes with no reload (`.superpowers/sdd/2026-10-10-engine-and-spikes/task-5-evidence/`).
+- Scene colors come from `usePalette()` (`src/viz/palette.ts`), never hex literals in components. Roles = the spec
+  table of docs/design/visual-language.md (`ROLE_VARS`: bgTop/bgBottom, chrome/chrome2, field/fieldHover,
+  grid/gridMinor, ink/muted, axisX/Y/Z (Blender), vecA/B/C, light, hot). Values are `--viz-*` vars in `lab.css`,
+  defined ONCE under `:root`: the viewport and its chrome are always dark in both site themes (Ruling R). Every value
+  is a literal `#rrggbb` (WebGL). `--viz-hot-bg` (formula highlight, hot at 22 %) is CSS-only. Primitives take
+  `SceneRole` (`STROKE_ROLES`), each >= 3:1 on both ends of the viewport gradient; ink/muted >= 4.5:1 on chrome
+  (`tests/js/tokens.test.ts` parses lab.css and computes WCAG contrast).
+- Non-color look = `STYLE` in palette.ts (core 2.5 px, halo 9 px @14 %, hot outline +2 px each side + 30 % hot halo,
+  edge 1.5 px, fill 18 %, sector 10 %, hatch 6 px / 1 px, head 14 px, point 4.5 + 1.5 px rim, band 6 px @35 %).
+  No private style constants in primitives.
+- The theme observer stays (page-side elements follow Starlight; a re-read on a flip is harmless).
 - Test order trap: after any `./dom` test loads, happy-dom's `localStorage` is read-only; `store.test.ts` uses `Object.defineProperty` for that reason.
+
+### Viewport chrome and visual language (Task 6d)
+
+Every scene is a `ViewportCard` (`src/viz/scene/ViewportCard.tsx`), mounted inside `<SceneIsland caption panel?>`:
+header (2D/3D tag, Persp/Ortho in 3D, `Overlays` popover, `Reset view`, scene name, sidebar chevron), the Stage
+(viewport), the N-panel (`NPanel.tsx`) and the status bar (`StatusBar.tsx`). Composition API:
+`<ViewportCard lesson id name mode extent center? overlays? rows? status? drawIn?>{scene}</ViewportCard>`.
+Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6d-evidence/`
+(`final.ts` + `cdp.ts` harness, `final/report.json`, screenshots; `exp*/` = gizmo experiments).
+
+- **One registry per card**: ViewportCard creates `createStage(mode, { lesson, id, overlays })` and passes it to Stage
+  (`reg` prop). It carries the card info (`useOverlay`/`<Show ov>`), `hover` (handle/object/field under the pointer,
+  for the status bar), `nav` (reset/align/viewDir/redraw, bound by Stage's Nav inside the View), `gizmo` (DOM gizmo
+  update, fed per frame by `GizmoSync`) and `reveal` (draw-in progress).
+- **Overlay flags** live in the lesson store as 0/1 under `ov:<card>:<flag>` (absent = the declared default), so the
+  scene (canvas React root) reads them like any value; toggling hides objects and never changes lesson values.
+- **N-panel rows** `{ id, label, kind: 'num'|'vec'|'ro', key?, spec?, snap?, value?, fmt?, visible?, group?, tip? }`:
+  fields use the ONE scrub engine (`startScrubDrag` in useScrub.ts + `scrubValue`/`keyStep`/`ctrlSnap`/`parseField`/
+  `fmtField` in scrub.ts; 4 px per step, Ctrl = `snap` targets or increment (default 10 steps), Shift = 1/10 step
+  re-based mid-drag, click or Enter = type (Enter commits, Esc reverts, blur keeps a valid value), arrows/PageUp).
+  Read-only rows hover like their scene object. Row ids are term ids (hover <-> hot <-> formula). `bool` rows and
+  `glyph` (lessons spec item 11) are not built: 6e (Toggle) / lesson scope.
+- **Desktop N-panel = Blender region overlap**: drawn over the right edge of the viewport (200 px, 94 % chrome); the
+  scene is re-centered in the free part with `camera.setViewOffset` (Stage `inset`), so labels, hit tests and raycasts
+  stay exact. Under 720 px (media query, = spec) the same DOM is a scrollable chip row under the viewport. Why overlap:
+  the Starlight content column is only 632 px at 1280 px (measured), a side column would leave a 432 px viewport.
+  `N` toggles it for the card under the pointer or holding focus.
+- **Navigation** (Stage `Nav`): 2D = wheel zoom (0.5x..8x of fit, relative zoom kept on resize), MMB/RMB pan, LMB on
+  empty space does nothing (handles own LMB); 3D = LMB/MMB orbit, Shift+MMB pan (three-stdlib OrbitControls swaps
+  ROTATE to pan with Shift), wheel dolly. MMB `mousedown` is prevented (Chrome's middle-click autoscroll moved the page
+  17 px per pan). Persp/Ortho switch hands the pose over (same direction, same apparent size). Reset view and gizmo
+  align = smooth view with the shared spring (`motion.ts`, VIEW_MS 250), cut under reduced motion, cancelled when the
+  reader grabs the view.
+- **Gizmo (fallback order recorded, measured in headless Chrome with several Views, `task-6d-evidence/exp*`):**
+  drei `GizmoHelper` + `GizmoViewport` FAIL inside a View of a shared canvas: its Hud renders after the Views without a
+  scissor into whatever viewport the last View set (the gizmo of stage B appeared in stage C), renderPriority 1 even
+  clears the whole canvas, and it sizes from the View's stale `size`. three `ViewHelper` renders correctly once
+  autoClear is off and `location` is fed from the stage rect, but its 128 px size, colors, black negative bubbles and
+  constant-speed animation are closure-private. Chosen: the third fallback, a DOM/SVG gizmo (`Gizmo.tsx`, pure
+  `gizmoLayout`), crisp, real font, keyboard buttons, Blender colors, hollow negatives, click again = opposite side.
+  2D shows the static `XYCorner`.
+- **Grid**: drei `Grid` shader (infinite, `followCamera`, pixel-thin AA lines; 2D no fade, 3D fades at 7 x extent),
+  `depthWrite` off; axes, ticks, tick numbers and axis letters are our primitives/labels. Verified at 0.5x..8x.
+- **Strokes**: `Stroke` (view.tsx) = halo + hot outline + core, all transparent so they sort by render order (three
+  draws opaque before transparent; an opaque core would be painted over by its own halo). Arrow heads are concave
+  triangles (2D) / cones (3D) with matching outline/halo heads; points are camera-facing discs with a dark rim.
+- **Hover priority**: in 2D everything is coplanar, so r3f's hit order is scene order; `useHoverable(lesson, id, rank)`
+  lets only the highest `HOVER_RANK` under the pointer claim hot/status (point > beam > guide > arc > fill) and
+  re-claims on move.
+- **Motion** (`motion.ts`, pure, unit-tested): critically damped `springStep` (exact, frame-rate independent, never
+  overshoots), `springProgress` (0..1, exactly 1 when settled), `omegaFor(ms)`, `lerpPose`/`axisPose`/`poseOf`.
+  Draw-in (`<ViewportCard drawIn>`, one per lesson): `reg.reveal` 0 -> 1 over DRAW_MS 600 when the stage is 40 %
+  visible: beams grow from their tails, fills/arcs fade, points/labels in the second half. Reduced motion: cuts.
+- **Fonts**: Astro Fonts API (`fonts` in astro.config.mjs, `fontProviders.local()`, variants parsed from the
+  @fontsource CSS by `src/lib/fonts.mjs`), emitted by `<Font>` in `src/components/overrides/Head.astro`; vars
+  `--lab-font-prose|ui|mono`. `display: 'optional'` + metric-matched fallbacks: with `swap` the late face re-wrapped
+  the intro paragraph (CLS 0.049); with optional, 3 cold loads had 0 shifts and the faces in use. No preload (the
+  local provider cannot filter preloads by subset).
+- Status bar hints: `status={{ hints: { [handleId|objectId]: string | (vals) => string|null }, idle?, state? }}`;
+  built-ins for any handle, field, the gizmo and idle navigation (`DEFAULT_HINTS`). Tooltips (`useTip`, 500 ms,
+  title + line + TeX via `renderStaticMath`) on N-panel rows and header buttons.
+- [ ] Indirect value changes are not yet eased on screen (keyboard nudges, typed values jump): needs a direct/indirect
+  write channel in the store; build it with 6e/7 (magnet catch, timeline steps, Poly tweens), reusing `springStep`.
+- [ ] Formula term tooltips (lessons spec) need a `tips` prop on Formula (Task 7 / lessons).
+- [ ] Grid tokens: `gridMinor` #3C3C3C is 1.03:1 on `vp-bg-top` #3A3A3A, so minor lines vanish in the upper half of
+  a viewport (spec values kept; designer to decide).
+- [ ] Wheel over a viewport zooms instead of scrolling the page (spec: "Wheel zoom"); consider Ctrl+wheel if readers
+  complain.

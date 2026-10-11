@@ -1,0 +1,16 @@
+---
+/**
+ * Starlight Head override: the stock head plus the self-hosted font faces of Astro's Fonts API (astro.config.mjs
+ * `fonts`): prose (Atkinson Hyperlegible Next), UI/headings (Inter) and numbers (JetBrains Mono). No preload: the
+ * faces are split into unicode-range subsets and the local provider cannot tell a preload filter which file is the
+ * latin one, so preloading would fetch every subset on every page. `display: 'optional'` plus metric-matched
+ * fallbacks keep the text still while the faces arrive (astro.config.mjs).
+ */
+import Default from '@astrojs/starlight/components/Head.astro';
+import { Font } from 'astro:assets';
+---
+
+<Default><slot /></Default>
+<Font cssVariable="--lab-font-prose" />
+<Font cssVariable="--lab-font-ui" />
+<Font cssVariable="--lab-font-mono" />

@@ -1,110 +1,122 @@
 /**
- * Coordinate grid: major lines every `step`, optional minor lines every `minor`, and axes in the axis colors with
- * letter labels, so color is never the only cue. 2D lies in the z = 0 plane; 3D lies on the floor (y = 0, y-up) and
- * adds a vertical y axis and a z axis. Drawn first and without depth writes, so anything coplanar draws on top.
- * Axis letters are stroked line glyphs: no font file, no network, and they recolor with the theme like everything else.
+ * Coordinate grid (visual-language.md): drei's `Grid` shader for the lines (infinite, anti-aliased, pixel-thin at
+ * any zoom; it follows the camera, so panning never reaches an edge), and our own primitives on top: axes in
+ * Blender's axis colors, tick marks and tick numbers in muted mono, and axis letters, so color is never the only cue.
+ * 2D lies in the z = 0 plane with "infinite" axes and no fade (a sheet of graph paper); 3D lies on the floor
+ * (y = 0, y-up), fades with distance like Blender's floor, and adds a vertical y axis and a z axis.
+ * Drawn first and without depth writes, so anything coplanar draws on top.
  */
-import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
-import { Vector3, type Group } from 'three';
-import { usePalette } from '../palette';
-import { useStage } from './handles';
-import { SLine, wppAt } from './view';
+import { Grid as ShaderGrid } from '@react-three/drei';
+import { useLayoutEffect, useMemo, useRef } from 'react';
+import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
+import { STYLE, usePalette } from '../palette';
+import { useLabel, useStage } from './handles';
+import { SLine, useWorldPx } from './view';
 
 export interface GridProps {
 	extent: number;
+	/** Major line spacing (also the tick spacing). */
 	step: number;
+	/** Optional minor line spacing. */
 	minor?: number;
 	axes?: boolean;
+	/** 2D only: tick marks and numbers on the axes within +-extent. */
+	ticks?: boolean;
 }
 
 type P3 = [number, number, number];
 
-const isMultiple = (v: number, s: number) => Math.abs(v / s - Math.round(v / s)) < 1e-6;
-
-/** Multiples of `step` within [-extent, extent], minus those `skip` rejects. Integer stepping avoids drift. */
-function ticks(extent: number, step: number, skip: (v: number) => boolean): number[] {
+/** Multiples of `step` within [-extent, extent] except 0; integer stepping avoids drift. */
+export function tickValues(extent: number, step: number): number[] {
 	const n = Math.floor(extent / step + 1e-9);
 	const out: number[] = [];
-	for (let i = -n; i <= n; i++) {
-		const v = Number((i * step).toFixed(10));
-		if (!skip(v)) out.push(v);
-	}
+	for (let i = -n; i <= n; i++) if (i !== 0) out.push(Number((i * step).toFixed(10)));
 	return out;
 }
 
-/** Segment endpoints for lines at `ts` in both directions of the grid plane. */
-function lines(ts: number[], e: number, is3d: boolean): P3[] {
-	return ts.flatMap((t): P3[] =>
-		is3d
-			? [[t, 0, -e], [t, 0, e], [-e, 0, t], [e, 0, t]]
-			: [[t, -e, 0], [t, e, 0], [-e, t, 0], [e, t, 0]],
-	);
+/** Tick number text: integers plain, otherwise one decimal; a true minus sign. */
+export const tickText = (v: number): string => (Number.isInteger(v) ? String(v) : v.toFixed(1)).replace('-', '−');
+
+// 2D axes reach far past any zoom-out limit (Stage clamps zoom), so they read as infinite lines.
+const FAR = 400;
+const TICK_PX = 5;
+
+function TickLabel({ lesson, at, offset, text }: { lesson: string; at: P3; offset: readonly [number, number]; text: string }): null {
+	useLabel({ lesson, text, role: 'muted', small: true, offset, at: () => at });
+	return null;
 }
 
-// Glyph strokes in a unit box centered on the origin (segment endpoint pairs).
-const GLYPH: Record<'x' | 'y' | 'z', P3[]> = {
-	x: [[-0.3, -0.5, 0], [0.3, 0.5, 0], [-0.3, 0.5, 0], [0.3, -0.5, 0]],
-	y: [[-0.3, 0.5, 0], [0, 0, 0], [0.3, 0.5, 0], [0, 0, 0], [0, 0, 0], [0, -0.5, 0]],
-	z: [[-0.3, 0.5, 0], [0.3, 0.5, 0], [0.3, 0.5, 0], [-0.3, -0.5, 0], [-0.3, -0.5, 0], [0.3, -0.5, 0]],
-};
-const GLYPH_PX = 11;
-const right = new Vector3();
-const up = new Vector3();
+function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' | 'z'; at: P3; offset: readonly [number, number] }): null {
+	const role = ch === 'x' ? 'axisX' : ch === 'y' ? 'axisY' : 'axisZ';
+	useLabel({ lesson, text: ch, role, offset, at: () => at });
+	return null;
+}
 
-/** An axis letter `GLYPH_PX` tall at world point `at`, shifted by `off` screen pixels and always facing the camera. */
-function Glyph({ ch, at, off, color }: { ch: 'x' | 'y' | 'z'; at: P3; off: [number, number]; color: string }): React.JSX.Element {
+export function Grid({ extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
-	const ref = useRef<Group>(null);
-	useFrame(({ camera }) => {
-		const g = ref.current;
-		if (!g || !reg.el) return;
-		const wpp = wppAt(camera, at, reg.el.clientHeight);
-		right.set(1, 0, 0).applyQuaternion(camera.quaternion);
-		up.set(0, 1, 0).applyQuaternion(camera.quaternion);
-		g.position.set(...at).addScaledVector(right, off[0] * wpp).addScaledVector(up, off[1] * wpp);
-		g.quaternion.copy(camera.quaternion);
-		g.scale.setScalar(GLYPH_PX * wpp);
-	});
-	return (
-		<group ref={ref}>
-			<SLine points={GLYPH[ch]} segments color={color} lineWidth={1.6} renderOrder={0} />
-		</group>
-	);
-}
-
-export function Grid({ extent: e, step, minor, axes = true }: GridProps): React.JSX.Element {
-	const { mode } = useStage();
 	const pal = usePalette();
-	const is3d = mode === '3d';
-	const g = useMemo(() => {
-		const major = lines(ticks(e, step, (v) => axes && v === 0), e, is3d);
-		const fine = minor ? lines(ticks(e, minor, (v) => isMultiple(v, step)), e, is3d) : [];
-		return { major, fine };
-	}, [e, step, minor, axes, is3d]);
-	const ax = useMemo(
-		() => ({
-			x: [[-e, 0, 0], [e, 0, 0]] as P3[],
-			y: [[0, -e, 0], [0, e, 0]] as P3[],
-			z: [[0, 0, -e], [0, 0, e]] as P3[],
-		}),
-		[e],
-	);
-	const back = { depthWrite: false, renderOrder: -1 };
+	const is3d = reg.mode === '3d';
+	// Tick numbers and axis letters are overlay labels, which read the stage's lesson store.
+	const lesson = reg.card?.lesson;
+	if (!lesson) throw new Error('Grid must be rendered inside a Stage');
+	const mesh = useRef<Mesh>(null);
+	// drei's material writes depth; the grid must never hide what is drawn on or under it.
+	useLayoutEffect(() => {
+		const m = mesh.current?.material as ShaderMaterial | undefined;
+		if (m) m.depthWrite = false;
+	}, []);
+	const ax = useMemo(() => {
+		const L = is3d ? e : e * FAR;
+		return { x: [[-L, 0, 0], [L, 0, 0]] as P3[], y: [[0, -L, 0], [0, L, 0]] as P3[], z: [[0, 0, -e], [0, 0, e]] as P3[] };
+	}, [e, is3d]);
+	const showTicks = axes && ticks && !is3d;
+	const tick = useWorldPx(TICK_PX, [0, 0, 0]);
+	const vals = useMemo(() => tickValues(e, step), [e, step]);
+	const tickSegs = useMemo(() => {
+		if (!showTicks || !tick) return null;
+		const h = tick / 2;
+		return vals.flatMap((v): P3[] => [[v, -h, 0], [v, h, 0], [-h, v, 0], [h, v, 0]]);
+	}, [showTicks, tick, vals]);
+	// Numbers on every tick up to five per half-axis, else on every second (or more) so they never crowd.
+	const every = Math.max(1, Math.ceil(vals.length / 2 / 5));
+	const labelled = showTicks ? vals.filter((v) => Math.round(Math.abs(v) / step) % every === 0) : [];
+	const flat = { transparent: true, depthWrite: false };
 	return (
 		<group>
-			{g.fine.length > 0 && <SLine points={g.fine} segments color={pal.gridMinor} lineWidth={1} {...back} renderOrder={-2} />}
-			{g.major.length > 0 && <SLine points={g.major} segments color={pal.grid} lineWidth={1} {...back} />}
+			<ShaderGrid
+				ref={mesh}
+				args={[2, 2]}
+				rotation={is3d ? [0, 0, 0] : [Math.PI / 2, 0, 0]}
+				infiniteGrid
+				followCamera
+				cellSize={minor ?? step}
+				sectionSize={step}
+				cellThickness={minor ? 1 : 0}
+				sectionThickness={1}
+				cellColor={pal.gridMinor}
+				sectionColor={pal.grid}
+				fadeDistance={is3d ? e * 7 : 1e4}
+				fadeStrength={is3d ? 1.6 : 0}
+				side={DoubleSide}
+				renderOrder={-3}
+			/>
 			{axes && (
 				<>
-					<SLine points={ax.x} color={pal.axisX} lineWidth={2} {...back} />
-					<SLine points={ax.y} color={pal.axisY} lineWidth={2} {...back} />
-					{is3d && <SLine points={ax.z} color={pal.axisZ} lineWidth={2} {...back} />}
+					<SLine points={ax.x} color={pal.axisX} lineWidth={STYLE.edge} {...flat} renderOrder={-1} />
+					<SLine points={ax.y} color={pal.axisY} lineWidth={STYLE.edge} {...flat} renderOrder={-1} />
+					{is3d && <SLine points={ax.z} color={pal.axisZ} lineWidth={STYLE.edge} {...flat} renderOrder={-1} />}
+					{tickSegs && <SLine points={tickSegs} segments color={pal.muted} lineWidth={1} {...flat} renderOrder={-1} />}
+					{labelled.map((v) => (
+						<TickLabel key={`x${v}`} lesson={lesson} at={[v, 0, 0]} offset={[0, 11]} text={tickText(v)} />
+					))}
+					{labelled.map((v) => (
+						<TickLabel key={`y${v}`} lesson={lesson} at={[0, v, 0]} offset={[-11, 0]} text={tickText(v)} />
+					))}
 					{/* 2D: letters sit inside the frame (extent reaches the nearer stage edge); 3D: just past the axis ends. */}
-					<Glyph ch="x" at={[e, 0, 0]} off={is3d ? [0, 12] : [-10, -13]} color={pal.axisX} />
+					<AxisLetter lesson={lesson} ch="x" at={[e, 0, 0]} offset={is3d ? [0, -12] : [-10, -12]} />
 					{/* 3D: the default camera frames the floor and cuts the top of the vertical axis, so its letter sits lower. */}
-					<Glyph ch="y" at={is3d ? [0, 0.8 * e, 0] : [0, e, 0]} off={is3d ? [12, 0] : [12, -10]} color={pal.axisY} />
-					{is3d && <Glyph ch="z" at={[0, 0, e]} off={[0, 12]} color={pal.axisZ} />}
+					<AxisLetter lesson={lesson} ch="y" at={is3d ? [0, 0.8 * e, 0] : [0, e, 0]} offset={is3d ? [12, 0] : [12, 10]} />
+					{is3d && <AxisLetter lesson={lesson} ch="z" at={[0, 0, e]} offset={[0, -12]} />}
 				</>
 			)}
 		</group>

@@ -1,6 +1,6 @@
 ---
 title: Engine test page
-description: Hidden page for Spike A - three scenes in three islands sharing one WebGL canvas and one lesson store.
+description: Hidden page for the scene engine - two ViewportCards (2D and 3D) in separate islands sharing one WebGL canvas and one lesson store.
 pagefind: false
 head:
   - tag: meta
@@ -8,28 +8,29 @@ head:
 ---
 
 import SceneIsland from '../../../viz/SceneIsland.astro';
-import { DemoArea2D, DemoBoxA, DemoBoxB, DemoBoxC, DemoDotFormula, DemoSlider, DemoFormula, DemoPar2D, DemoVec2D, DemoVec3D, DemoVecReadout } from '../../../viz/demo/engine';
+import { Demo2D, Demo3D, DemoDotFormula, DemoVecReadout } from '../../../viz/demo/engine';
 
-Three stages below live in three separate islands (separate React roots). The page must have exactly one
-`canvas`, and the slider (a fourth island) must move all three boxes.
+Every scene is a small DCC viewport: a header (view type, projection, Overlays, Reset view), the dark viewport with
+the navigation gizmo (3D) or the XY corner (2D), the N-panel of draggable number fields (press `N` over the card or
+use the chevron; on a phone it is the row of chips under the viewport) and a status bar that says what the pointer
+does. Hover anything: the scene object, its N-panel row and its formula term light up together.
 
-<SceneIsland caption="Stage A: 2D box at x">
-	<DemoBoxA client:only="react" />
+<SceneIsland caption="2D: vectors a and b, the angle between them, the shadow of b on a with its right angle, the square on a and a point P">
+	<Demo2D client:only="react" />
 </SceneIsland>
 
-<DemoSlider client:load />
+<DemoDotFormula client:load />
 
-A linked formula (DOM-only, server-rendered so it takes its space before hydration). Drag the underlined value or focus it and use the arrow keys:
+<DemoVecReadout client:load />
 
-<DemoFormula client:load />
-
-<SceneIsland caption="Stage B: 2D box at x">
-	<DemoBoxB client:only="react" />
-</SceneIsland>
+Drag b to point exactly opposite a: the angle arc becomes a semicircle and the label reads 180 degrees. Drag b onto
+the origin: the arc and its label disappear (a zero vector has no angle) and nothing else breaks. Turn on the
+parallelogram in Overlays and drag b clockwise of a: its signed area turns negative and the tile is hatched.
 
 ## Scroll filler
 
-The next stage sits two screens below, so scrolling must keep every box aligned with its slot.
+The next card sits further down, so scrolling must keep every scene aligned with its slot, and on a phone a swipe
+that starts on empty grid scrolls the page while a swipe that starts on a tip drags it.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vectors are arrows with a length and a direction; a
 dot product multiplies matching components and adds them up. In a shader this is `dot(N, L)`, the cosine of
@@ -44,63 +45,11 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra.
 
-Est eros bibendum elit, nec luctus magna felis sollicitudin mauris. Integer in mauris eu nibh euismod gravida.
-Duis ac tellus et risus vulputate vehicula. Donec lobortis risus a elit. Etiam tempor.
-
-Ut ullamcorper, ligula eu tempor congue, eros est euismod turpis, id tincidunt sapien risus a quam. Maecenas
-fermentum consequat mi. Donec fermentum. Pellentesque malesuada nulla a mi.
-
-Duis sapien sem, aliquet nec, commodo eget, consequat quis, neque. Aliquam faucibus, elit ut dictum aliquet,
-felis nisl adipiscing sapien, sed malesuada diam lacus eget erat. Cras mollis scelerisque nunc.
-
-Nullam arcu. Aliquam consequat. Curabitur augue lorem, dapibus quis, laoreet et, pretium ac, nisi. Aenean
-magna nisl, mollis quis, molestie eu, feugiat in, orci. In hac habitasse platea dictumst.
-
-Fusce convallis, mauris imperdiet gravida bibendum, nisl turpis suscipit mauris, sed placerat ipsum urna sed
-risus. In convallis tellus a mauris. Curabitur non elit ut libero tristique sodales. Mauris a lacus.
-
-Donec mattis semper leo. In hac habitasse platea dictumst. Vivamus facilisis diam at odio. Mauris dictum,
-nisi eget consequat elementum, lacus ligula molestie metus, non feugiat orci magna ac sem.
-
-Donec turpis. Donec vitae metus. Morbi tristique neque eu mauris. Quisque gravida ipsum non sapien. Proin
-turpis lacus, scelerisque vitae, elementum at, lobortis ac, quam. Aliquam dictum eleifend risus.
-
-In hac habitasse platea dictumst. Etiam sit amet diam. Suspendisse odio. Suspendisse nunc. In semper bibendum
-libero. Proin nonummy, lacus eget pulvinar lacinia, pede felis dignissim leo, at vehicula lacus leo sed lacus.
-
-<SceneIsland caption="Stage C: 3D box at x (drag to orbit)">
-	<DemoBoxC client:only="react" />
+<SceneIsland caption="3D: vectors u and v with component legs, their angle and parallelogram (drag a tip to move it, drag elsewhere to orbit, click the gizmo to align the view)">
+	<Demo3D client:only="react" />
 </SceneIsland>
 
-## Draggable vectors
-
-Drag the tip of $a$ or $b$ (or the point P), or press Tab to reach their hidden buttons and use the arrow keys
-(Shift moves by 1). On a phone, a swipe that starts on empty grid scrolls the page; a swipe that starts on a tip drags it.
-
-<SceneIsland caption="2D: vectors a and b, the angle between them, the shadow of b on a with its right angle, and the square on a">
-	<DemoVec2D client:only="react" />
-</SceneIsland>
-
-<DemoVecReadout client:load />
-
-<DemoDotFormula client:load />
-
-Drag b to point exactly opposite a: the angle arc becomes a semicircle and the label reads 180 degrees. Drag b onto
-the origin: the arc and its label disappear (a zero vector has no angle) and nothing else breaks.
-
-<SceneIsland caption="Law of cosines layout: squares on the three sides of the triangle 0, a, b and the signed correction -2 a.b as a bar (hatched when negative)">
-	<DemoArea2D client:only="react" />
-</SceneIsland>
-
-<SceneIsland caption="Signed area of the parallelogram of a and b: plain tint when b is counter-clockwise from a, hatched when clockwise">
-	<DemoPar2D client:only="react" />
-</SceneIsland>
-
-<SceneIsland caption="3D: vectors u and v with component legs, their angle and parallelogram (drag a tip to move it, drag elsewhere to orbit)">
-	<DemoVec3D client:only="react" />
-</SceneIsland>
-
-Tail paragraph so the last stage can be scrolled to the middle of a phone screen. In 3D, PageUp and PageDown move a
+Tail paragraph so the last card can be scrolled to the middle of a phone screen. In 3D, PageUp and PageDown move a
 focused tip along z.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna
