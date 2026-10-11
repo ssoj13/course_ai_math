@@ -1,15 +1,14 @@
 # Batch report: 0.4 unit circle (worktree branch worktree-agent-aaf61909e9890eaef)
 
-## Resume note (paused by coordinator, 2026-10-11)
-- State: all four scenes, EN + RU pages, dictionary, tests done; last gates run after the final code change:
-  `bun test tests/js` 383 pass / 0 fail; `bun run check` 0/0/0; `bun run build` 0 warnings, 39 pages;
-  renderer chunk ViewportCard 268,106 B gz (raw 1,005,446).
-- The last edit (shadow bands -> solid beams in UC-1/UC-3) is built but NOT re-screenshotted. To resume:
-  1. `bunx astro preview --port 4512`; `node <scratchpad>/uc/shots.mjs <out>`; look at UC-1/UC-3 at 1280/360 EN/RU.
-  2. Copy final screenshots into this folder (`batch-unit-circle-evidence/`), finish this report, commit as non-WIP.
-  3. RU stamp is current (EN unchanged since `bun run i18n:stamp`); restamp if EN prose changes.
-- Scripts used (scratchpad `uc/`): shots.mjs (cards + controls per locale/width), interact.mjs (snap buttons,
-  timeline, unroll, keyboard handle), drag.mjs (real mouse drags located by the grab cursor), overflow.mjs.
+## Status (final, resumed after pause)
+- Merged feat/engine bc3ee66 (conflicts: ui.ts kept every namespace; untranslated.json lists only pages without a RU
+  file). RU page gained the "Карта терминов" + `<LessonMap />` section; restamped.
+- Gates after the merge: `bun test tests/js` 589 pass / 0 fail; `bun run check` 0 errors / 0 warnings / 0 hints
+  (bun 1.4.3); `bun run build` 43 pages, 0 warnings; renderer chunk ViewportCard 267,653 B gz (raw 1,004,017);
+  elk worker 431,125 B gz (lazy, under 600 kB).
+- Final screenshot pass EN/RU at 1280/360: `batch-unit-circle-evidence/` (main checkout), `report.json` there.
+  No horizontal scroll; console: THREE.Clock warning and the known favicon 404 only. Shadow bars now visible.
+- Scripts (session scratchpad `uc/`): shots.mjs, interact.mjs, drag.mjs, overflow.mjs.
 
 ## Scenes delivered vs required (storyboard §2 0.4, completion map row 0.4)
 - UC-1 shadows: P dragged by angle (atan2, unwrap, 1° steps, magnet 3° on multiples of 30/45 incl. 360), cos/sin
@@ -35,6 +34,6 @@
 - Keyboard handle (arrows), snap buttons, timeline sweep, unroll at 360 → challenges complete.
 
 ## Open items
-- [ ] Re-screenshot after the bar change; copy evidence here.
-- [ ] Phone (360) scenes are small; UC-3 graph labels overlap guide lines at 360 (engine framing / label overlay).
+- [ ] Phone (360) scenes are small; UC-3 value labels overlap dashed curves/guides, UC-4 P/Q labels crowd the arcs and
+  the diagonal at 360 (labels have no backing plate; engine label placement treats only ticks/labels as obstacles).
 - [ ] UC-2 unroll is a straight blend between exact ends (lengths exact at roll 0 and 1 only); documented in math.ts.
