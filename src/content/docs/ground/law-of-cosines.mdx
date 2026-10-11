@@ -3,4 +3,395 @@ title: "The law of cosines"
 description: "Pythagoras plus a correction term for a corner that is not square; two-bone IK."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Distance and Pythagoras](lesson:pythagoras) (squares on the sides, $c^2 = a^2 + b^2$ for a square
+corner) and [Angles, radians and the unit circle](lesson:unit-circle) (cos is the shadow of a length-1 stick).
+
+## Two sticks and a gap
+
+Two sticks, one of length $a = 3$ and one of length $b = 4$, joined at one end. Open them to an angle $\theta$.
+How long is the gap $c$ between their free ends?
+
+You have rigged this. The upper arm and the forearm are the sticks, the elbow is the joint, and the gap is the
+distance from shoulder to wrist. Every two-bone IK solver in Maya, Houdini or a game engine answers this
+question many times per frame, and the formula it uses is the one on this page. Most people who have used
+that solver have never seen the formula's name.
+
+## Start with what already works
+
+At $\theta = 90^\circ$ the sticks make a square corner, and the last two lessons answer the question:
+$c^2 = a^2 + b^2 = 9 + 16 = 25$, so $c = 5$.
+
+Now close the sticks a little, to $\theta = 60^\circ$. Measure the gap: $c \approx 3.61$, and $c^2 = 13$.
+Pythagoras promised $25$. Twelve units of area are missing. Where did they go?
+
+## The missing rectangles
+
+{/* scene: LC-0 — the missing rectangles: squares built outward on a, b, c; the shadow of b on a, the strip a × (b cos θ) cut from a² and the strip b × (a cos θ) cut from b²; the leftovers lean, turn and land inside c² (timeline); at 90° both strips vanish, past 90° they turn hatched and are added */}
+
+Build the three squares on the sides, as in the Pythagoras lesson: $a^2 = 9$ on side $a$, $b^2 = 16$ on side
+$b$, $c^2 = 13$ on side $c$. The two small ones are too big by 12 in total. Here is where the 12 is hiding.
+
+**Step 1: the shadow.** Shine a light straight down onto side $a$. Side $b$ casts a shadow on it. How long is
+that shadow? The unit circle lesson says: a stick of length 1 at angle $\theta$ has an x shadow of $\cos\theta$.
+A stick of length $b$ has a shadow $b$ times as long:
+
+$$
+\text{shadow of } b \text{ on } a = b\cos\theta = 4 \cdot 0.5 = 2
+$$
+
+**Step 2: cut a strip.** Off the square on $a$, cut a strip as wide as that shadow. The strip is $a$ tall and
+$b\cos\theta$ wide, so its area is
+
+$$
+a \cdot (b\cos\theta) = 3 \cdot 2 = 6
+$$
+
+**Step 3: the other strip.** Now light side $b$ instead. Side $a$ casts a shadow of length $a\cos\theta = 3 \cdot 0.5 = 1.5$
+on it. Cut a strip of that width off the square on $b$: it is $b$ tall and $a\cos\theta$ wide, area
+
+$$
+b \cdot (a\cos\theta) = 4 \cdot 1.5 = 6
+$$
+
+The same number. Two rectangles with different shapes, 3 by 2 and 4 by 1.5, and the same area, because
+both are $a \cdot b \cdot \cos\theta$ with the factors in a different order. (They are the same *shape* only
+when $a = b$.)
+
+**Step 4: count.** Two strips of 6 make 12. That is exactly what was missing: $25 - 12 = 13 = c^2$. What is
+left of the two squares after the strips are cut fits exactly into the square on $c$. In the scene you can
+watch the leftovers do it: each leftover rectangle leans into a parallelogram (same base, same height, same
+area), turns a quarter turn around the corner, and leans back upright inside $c^2$. This is Euclid's own
+proof, extended from the square corner to any corner.
+
+So for a corner that is not square, the rule is:
+
+$$
+c^2 = a^2 + b^2 - 2\,ab\cos\theta
+$$
+
+This is the **law of cosines**: Pythagoras, minus two strips. Each strip is a side times the shadow of the other
+side on it.
+
+## The formula, line by line
+
+The symbols: $a$ and $b$ are the two sides that meet at the corner, $\theta$ is the angle *between them*, and
+$c$ is the side *opposite* $\theta$, the gap. Get this pairing right and the rest is arithmetic. With
+$a = 3$, $b = 4$, $\theta = 60^\circ$:
+
+$$
+\begin{aligned}
+\cos 60^\circ &= 0.5 \\
+2\,ab\cos\theta &= 2 \cdot 3 \cdot 4 \cdot 0.5 = 12 \\
+c^2 &= 9 + 16 - 12 = 13 \\
+c &= \sqrt{13} \approx 3.61
+\end{aligned}
+$$
+
+A misconception to name: "the law of cosines needs a right angle somewhere." It needs none. It works for every
+triangle. When the corner *is* square, $\cos 90^\circ = 0$, the correction term is $2 \cdot 3 \cdot 4 \cdot 0 = 0$,
+and the formula *becomes* Pythagoras. Pythagoras is not a different law; it is this law at one angle.
+
+## Correction term
+
+{/* scene: LC-1 — the ledger: a² and b² stack up, the correction −2ab cos θ is a signed band, c² is the result; sweep θ from 0° to 180° and read c continuously; at 90° the band vanishes and the caption reads "= Pythagoras" */}
+
+Keep $a = 3$ and $b = 4$ and sweep the angle. The term $-2ab\cos\theta$ is the only thing that changes.
+
+| $\theta$ | $\cos\theta$ | $-2ab\cos\theta$ | $c^2$ | $c$ |
+|---|---|---|---|---|
+| $0^\circ$ | $1$ | $-24$ | $1$ | $1$ |
+| $60^\circ$ | $0.5$ | $-12$ | $13$ | $3.61$ |
+| $90^\circ$ | $0$ | $0$ | $25$ | $5$ |
+| $120^\circ$ | $-0.5$ | $+12$ | $37$ | $6.08$ |
+| $180^\circ$ | $-1$ | $+24$ | $49$ | $7$ |
+
+Read the two ends first. At $\theta = 0^\circ$ the sticks lie on top of each other and the gap is the difference
+of their lengths: $c = |a - b| = 1$. At $\theta = 180^\circ$ they point opposite ways and the gap is the sum:
+$c = a + b = 7$. Everything else is in between, and $c$ can never exceed $a + b$ (the triangle inequality: you
+cannot be farther from the shoulder than the two bones laid straight).
+
+Now the sign, which is the part people get backwards.
+
+- **Sharp corner, $\theta$ below $90^\circ$:** $\cos\theta$ is positive, the strips are real, the term
+  *subtracts*, and $c$ is *shorter* than $\sqrt{a^2 + b^2}$.
+- **Square corner:** the shadow has length zero, the strips vanish, Pythagoras.
+- **Wide corner, $\theta$ above $90^\circ$:** $\cos\theta$ is negative, so the shadow points *backwards*,
+  past the corner. The strip now has negative area (hatched in the scene), and subtracting a negative strip
+  means *adding*. $c$ is *longer* than $\sqrt{a^2 + b^2}$: at $120^\circ$, $c^2 = 25 + 12 = 37$.
+
+So the correction is not "always a subtraction". It is a signed quantity, and its sign is the sign of
+$\cos\theta$, which the unit circle lesson placed on the left half of the circle for wide angles.
+
+## The same result from algebra
+
+{/* scene: LC-2 — the algebraic proof timeline: drop the height from A onto the line of a, name CD = b cos θ, AD = b sin θ, DB = a − b cos θ; Pythagoras on the right triangle ADB; expand; cos² + sin² = 1 collapses two terms into b² */}
+
+If scissors feel like a trick, here is the formula coming out of symbols. The triangle has corner $C$ where
+$a$ and $b$ meet at angle $\theta$; side $a$ runs from $C$ to $B$, side $b$ from $C$ to $A$, and $c$ is $AB$.
+
+Drop a perpendicular from $A$ onto the line of side $a$. Call its foot $D$. Now there *are* right angles,
+and three new lengths, all from the unit circle:
+
+$$
+CD = b\cos\theta, \qquad AD = b\sin\theta, \qquad DB = a - b\cos\theta
+$$
+
+$CD$ is the shadow of $b$ on $a$ (the same shadow as above). $AD$ is the height. $DB$ is what is left of side $a$
+after the shadow. With our numbers: $CD = 2$, $AD = 4 \cdot 0.866 = 3.464$, $DB = 3 - 2 = 1$.
+
+Triangle $ADB$ has a square corner at $D$, so Pythagoras applies to it:
+
+$$
+c^2 = DB^2 + AD^2 = (a - b\cos\theta)^2 + (b\sin\theta)^2
+$$
+
+Check with numbers before expanding: $1^2 + 3.464^2 = 1 + 12 = 13$. Correct. Now expand the first square,
+$(a - b\cos\theta)^2 = a^2 - 2ab\cos\theta + b^2\cos^2\theta$:
+
+$$
+\begin{aligned}
+c^2 &= a^2 - 2ab\cos\theta + b^2\cos^2\theta + b^2\sin^2\theta \\
+    &= a^2 + b^2\,(\cos^2\theta + \sin^2\theta) - 2ab\cos\theta \\
+    &= a^2 + b^2 - 2ab\cos\theta
+\end{aligned}
+$$
+
+The last step uses $\cos^2\theta + \sin^2\theta = 1$, which is nothing but "the unit-circle point is at
+distance 1" ($x^2 + y^2 = 1$). The middle term, $-2ab\cos\theta$, fell out of expanding the square; it is the
+two strips of the first scene, written as algebra.
+
+If $\theta$ is wider than $90^\circ$, $b\cos\theta$ is negative and $D$ lands *behind* $C$, so $DB$ is longer
+than $a$. The derivation does not change a single line; the signs take care of themselves.
+
+## Solving for the angle
+
+The formula has four quantities. Given three sides, you can turn it around and find the angle:
+
+$$
+\cos\theta = \frac{a^2 + b^2 - c^2}{2ab}
+$$
+
+Example: an equilateral triangle, $a = b = c = 1$. Then $\cos\theta = (1 + 1 - 1) / 2 = 0.5$, and
+$\theta = \arccos(0.5) = 60^\circ$. As it should be: three equal sides, three equal corners, $180^\circ / 3$.
+
+This turned-around form is the one your rig runs.
+
+## Two-bone IK: the law of cosines in your rig
+
+{/* scene: LC-3 — two-bone IK: drag the hand target; the elbow angle is solved with exactly this formula; the raw acos argument and the clamped one are shown live; out of reach pins the arm straight with a dashed gap */}
+
+A shoulder at the origin, an upper arm of length $L_1 = 2$, a forearm of length $L_2 = 1.5$, and a hand target.
+The solver must choose the elbow angle $\varphi$ so that the hand reaches the target. Three lengths in, one
+angle out: that is the turned-around law of cosines with $a = L_1$, $b = L_2$ and $c = d$, the distance from
+shoulder to target.
+
+Put the target at $(2.5, 1.5)$. First the distance, by Pythagoras: $d^2 = 2.5^2 + 1.5^2 = 6.25 + 2.25 = 8.5$,
+so $d \approx 2.92$. Then the elbow:
+
+$$
+\cos\varphi = \frac{L_1^2 + L_2^2 - d^2}{2\,L_1 L_2} = \frac{4 + 2.25 - 8.5}{6} = \frac{-2.25}{6} = -0.375
+$$
+
+$\varphi = \arccos(-0.375) \approx 112^\circ$. A negative cosine, so the elbow is bent past square, which is
+right: the hand is farther away than the $\sqrt{4 + 2.25} = 2.5$ a square elbow would reach.
+
+Move the target to distance $d = 2.5$ exactly, say $(2.5, 0)$: $\cos\varphi = (6.25 - 6.25) / 6 = 0$ and
+$\varphi = 90^\circ$. The strips vanish, the elbow is square. That is the Pythagoras case inside the rig.
+
+### Why every solver clamps
+
+Now drag the target out of reach, to $d = 4$:
+
+$$
+\cos\varphi = \frac{6.25 - 16}{6} = -1.625
+$$
+
+No angle has a cosine of $-1.625$; the unit circle lesson said cos lives between $-1$ and $1$. Ask a library for
+$\arccos(-1.625)$ and it returns NaN, and a NaN in a bone's rotation makes the bone vanish from the viewport.
+So every solver **clamps** the cosine into $[-1, 1]$ first. Clamped to $-1$, $\varphi = 180^\circ$: the arm
+points straight at the target and stops short, which is exactly what you see when you drag an IK handle too far.
+The other end: a target closer than $|L_1 - L_2| = 0.5$, say $d = 0.3$, gives $\cos\varphi = (6.25 - 0.09) / 6 = 1.027$,
+clamped to $1$, $\varphi = 0^\circ$, the arm folded flat.
+
+```python
+d   = length(hand - shoulder)
+c   = (L1*L1 + L2*L2 - d*d) / (2*L1*L2)
+c   = clamp(c, -1.0, 1.0)      # out of reach -> 180°, too close -> 0°, never NaN
+phi = acos(c)                  # elbow angle, radians
+```
+
+The solver needs one more angle to place the elbow, the shoulder's offset from the shoulder-to-target line,
+and it is the same law with the sides relabelled: $\cos\beta = (L_1^2 + d^2 - L_2^2) / (2 L_1 d)$. The last
+bit of information, whether the elbow bends to the left or the right of that line, is not in the formula at
+all; that is what a pole vector is for.
+
+> **Say it simpler.** Pythagoras, plus a fix-up for a corner that is not square. The fix-up is two strips,
+> each a side times the shadow of the other side; it is bigger when the corner is sharper, zero at a square
+> corner, and negative (it adds) when the corner is wide.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "a = b = 1. Compared with θ = 90°, the gap c at θ = 120° is…",
+      options: [
+        "smaller, because the correction always subtracts",
+        "the same, because a and b did not change",
+        "bigger: cos 120° is negative, so the strips are added",
+        "zero"
+      ],
+      answer: 2,
+      explain: "At 90°: c² = 1 + 1 − 0 = 2, c ≈ 1.41. At 120°: cos = −0.5, so c² = 2 − 2·(−0.5) = 3, c ≈ 1.73. A wide corner makes the strips negative, and subtracting a negative adds."
+    },
+    {
+      q: "In Python, np.cos(60) is the number to plug into the law of cosines for θ = 60°.",
+      options: [
+        "True, NumPy works in degrees like Maya",
+        "True, as long as the three sides are measured in the same unit as each other",
+        "False: np.cos takes radians; use np.cos(np.radians(60))",
+        "False: the law of cosines does not use cos"
+      ],
+      answer: 2,
+      explain: "np.cos(60) is the cosine of 60 radians, about −0.95, which would make c far too long. Convert first: np.radians(60) ≈ 1.047, and np.cos of that is 0.5."
+    },
+    {
+      q: "The law of cosines only works if one angle of the triangle is 90°.",
+      options: [
+        "True, it is a rearranged Pythagoras",
+        "False: it works for every triangle, and at 90° it reduces to Pythagoras",
+        "True, otherwise the correction term is undefined and the whole formula fails",
+        "False, it works only when no angle is 90°"
+      ],
+      answer: 1,
+      explain: "Pythagoras is the special case θ = 90°, where cos θ = 0 kills the correction term. For every other angle the term is simply nonzero. The law needs no right angle anywhere."
+    },
+    {
+      q: "In c² = a² + b² − 2ab cos θ, which angle is θ?",
+      options: [
+        "The angle opposite side a",
+        "The largest angle of the triangle",
+        "The angle between a and b, opposite side c",
+        "Any of the three angles, the formula is symmetric"
+      ],
+      answer: 2,
+      explain: "θ is the corner where a and b meet, and c is the side across from it. Swap the roles and you compute a different side; the formula is not symmetric in which side is c."
+    },
+    {
+      q: "Two bones of length 2 and 1.5, target at distance 4. The elbow angle is…",
+      options: [
+        "about 150°, a nearly straight arm that still reaches the target",
+        "undefined (cos φ = −1.625); a solver clamps it and gives 180°",
+        "exactly 90°",
+        "about 112°"
+      ],
+      answer: 1,
+      explain: "cos φ = (4 + 2.25 − 16) / 6 = −1.625, outside [−1, 1]: no triangle exists because 4 > 2 + 1.5. acos would return NaN; the solver clamps to −1, φ = 180°, and the arm points straight at the target without reaching it."
+    },
+    {
+      q: "The two strips a × (b cos θ) and b × (a cos θ) have…",
+      options: [
+        "the same area and the same shape",
+        "different areas unless θ = 45°",
+        "the same area; the same shape only when a = b",
+        "the same shape but different areas, since the factors are swapped"
+      ],
+      answer: 2,
+      explain: "Both areas are a·b·cos θ, the same product with the factors in a different order. The shapes are a-by-(b cos θ) and b-by-(a cos θ), which coincide only when a = b."
+    },
+    {
+      q: "If cos θ is positive, then c is…",
+      options: [
+        "shorter than √(a² + b²)",
+        "longer than √(a² + b²), because the strips always add",
+        "equal to √(a² + b²) for every angle",
+        "equal to a + b"
+      ],
+      answer: 0,
+      explain: "A positive cos θ means a sharp corner: the strips are real and get subtracted, so c² < a² + b². Longer than √(a² + b²) needs a wide corner (negative cos θ); a + b is reached only at 180°."
+    }
+  ]}
+/>
+
+## By hand
+
+1. $a = 3$, $b = 4$, $\theta = 90^\circ$. Find $c$.
+2. $a = 3$, $b = 4$, $\theta = 60^\circ$. Find $c^2$, $c$, and the area of one strip.
+3. $a = 3$, $b = 4$, $\theta = 120^\circ$. Find $c$.
+4. $a = b = 1$, $c = 1$. Find $\theta$.
+5. Bones $L_1 = 2$, $L_2 = 1.5$, target at distance $d = 2.5$. Find the elbow angle $\varphi$.
+6. Same bones, target at $d = 0.3$. What does the solver do?
+
+<details>
+<summary>Answers</summary>
+
+1. $\cos 90^\circ = 0$, so $c^2 = 9 + 16 = 25$ and $c = 5$. Pythagoras.
+2. $c^2 = 9 + 16 - 2 \cdot 3 \cdot 4 \cdot 0.5 = 25 - 12 = 13$, $c \approx 3.61$. One strip: $3 \cdot (4 \cdot 0.5) = 6$. Two strips: $12 = 25 - 13$.
+3. $\cos 120^\circ = -0.5$, so $c^2 = 25 - 2 \cdot 12 \cdot (-0.5) = 25 + 12 = 37$, $c \approx 6.08$. The strips are $-6$ each and get added.
+4. $\cos\theta = (1 + 1 - 1) / (2 \cdot 1 \cdot 1) = 0.5$, so $\theta = 60^\circ$.
+5. $\cos\varphi = (4 + 2.25 - 6.25) / 6 = 0$, so $\varphi = 90^\circ$.
+6. $\cos\varphi = (6.25 - 0.09) / 6 = 1.027$, outside $[-1, 1]$: the target is closer than $|L_1 - L_2| = 0.5$. The solver clamps to $1$ and gives $\varphi = 0^\circ$, the arm folded.
+
+</details>
+
+## In NumPy
+
+```python
+import numpy as np
+
+def law_of_cosines(a, b, theta_deg):
+    th = np.radians(theta_deg)
+    return np.sqrt(a*a + b*b - 2*a*b*np.cos(th))
+
+print(law_of_cosines(3, 4, 90))   # 5.0  (Pythagoras)
+print(law_of_cosines(3, 4, 60))   # 3.605...
+print(law_of_cosines(3, 4, 120))  # 6.082...
+
+# the two strips: a * (b cos th) and b * (a cos th) are the same number
+a, b, th = 3.0, 4.0, np.radians(60)
+print(a * (b*np.cos(th)), b * (a*np.cos(th)))   # 6.0 6.0
+print(a*a + b*b - 2*6.0)                        # 13.0 = c^2
+
+# sweep theta: c grows from |a - b| to a + b
+for deg in (0, 30, 60, 90, 120, 150, 180):
+    print(f"{deg:4d}°  c = {law_of_cosines(3, 4, deg):.3f}")
+
+# two-bone IK: three lengths in, one angle out, clamp before acos
+def elbow_deg(L1, L2, d):
+    c = (L1*L1 + L2*L2 - d*d) / (2*L1*L2)
+    return np.degrees(np.arccos(np.clip(c, -1.0, 1.0)))
+
+print(elbow_deg(2, 1.5, 2.5))     # 90.0
+print(elbow_deg(2, 1.5, 4.0))     # 180.0 (out of reach, clamped)
+print(np.arccos(-1.625))          # nan -> what happens without the clamp
+```
+
+<details>
+<summary>Machine layer: acos, rounding and the clamp</summary>
+
+The clamp is not only for targets that are truly out of reach. Put the hand *exactly* at full stretch,
+$d = L_1 + L_2$. On paper $\cos\varphi = -1$ exactly. In fp32 the three squares and the division each round,
+and the result can land at $-1.0000001$. `acos` of that is NaN, and the bone disappears for one frame, at the one
+pose the animator cares about most. Every production solver clamps for this reason, and so should any code you
+write that feeds `acos` or `asin` a computed value.
+
+A second, quieter problem lives near the same ends. The slope of `acos` is infinite at $\pm 1$: near a straight or
+a folded arm, a tiny rounding error in the cosine becomes a large error in the angle. At $\cos\varphi = -0.99999$
+the angle is $179.74^\circ$; at $-0.9999$ it is $179.19^\circ$. One digit in the fifth place moved the elbow half a
+degree. Solvers that need stability at full extension use `atan2` on the height and the shadow instead, which has no
+such cliff.
+
+</details>
+
+## What this opens
+
+Look at the strip one more time. Its area is $a$ times the shadow of $b$ on $a$, that is $|a|\,(b\cos\theta)$.
+The lesson on [the dot product](lesson:dot-product) gives that product a name, $a \cdot b$, and shows a way to
+compute it from coordinates alone, with no angle in sight. Then the law of cosines reads
+$|a - b|^2 = |a|^2 + |b|^2 - 2\,a \cdot b$: Pythagoras with two rectangles cut out.
+
+But first the sticks themselves. They have a length and a direction, and we have been treating them as
+"sides". The next lesson, [A vector: an arrow and a list of numbers](lesson:vector), treats them as arrows
+everywhere.
