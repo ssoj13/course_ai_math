@@ -3,4 +3,292 @@ title: "Angles, radians and the unit circle"
 description: "cos and sin are the shadows of a point on the unit circle."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Distance and Pythagoras](lesson:pythagoras) (the unit circle is "all points at distance 1") and
+[Squares, roots and the plane](lesson:squares-and-plane) (a point is two coordinates).
+
+## How do we describe a direction with numbers?
+
+The last lesson ended with a tie: $(5, 0)$ and $(3, 4)$ are both 5 units from the origin. Distance cannot tell
+them apart. What *does* tell them apart is the direction they point in. A compass heading, a Maya `rotateZ`,
+the angle of a light: all of these are one number, an angle. This lesson turns that one number into two
+coordinates, and the two coordinates are cos and sin.
+
+## An angle is an amount of turn
+
+Stand at the origin facing along the positive x axis (to the right). Turn counter-clockwise. How much you
+turned is the **angle**. A full turn brings you back where you started; we call it $360$ degrees, written
+$360^\circ$. Half a turn is $180^\circ$ and leaves you facing left. A quarter turn is $90^\circ$, facing up.
+
+Two conventions fixed here and kept for the whole course: angles start from the positive x axis, and positive
+angles turn counter-clockwise (toward positive y). This is the math convention, and it is also what a positive
+`rotateZ` does in a y-up viewport seen from the front.
+
+## The unit circle
+
+Take every point whose distance from the origin is exactly 1. Together they form a circle of radius 1 around
+the origin: the **unit circle**. By the distance formula, a point $(x, y)$ is on it when
+
+$$
+x^2 + y^2 = 1
+$$
+
+That is Pythagoras with hypotenuse 1: the two legs' squares add up to one tile of area.
+
+Now put the angle on the circle. Start at $(1, 0)$, the point on the circle straight to the right. Turn by
+$\theta$ degrees counter-clockwise, sliding along the circle. You land on one point. Its coordinates are the
+two numbers we are after:
+
+$$
+(\cos\theta,\ \sin\theta) = \text{the point on the unit circle at angle } \theta
+$$
+
+**cos θ is the x coordinate** of that point, **sin θ is the y coordinate**. That is the definition. There is
+no triangle to memorize and no "opposite over hypotenuse" to recite; those are the same thing in older clothing.
+
+{/* scene: 0.4-1 — a point on the unit circle; scrub θ (drag the point or the number in "θ = 60°"): cos θ is the dashed x-shadow, sin θ the y-shadow, both linked to the formula terms and table cells; a degrees/radians toggle unrolls the arc onto a ruler */}
+
+Think of it as shadows. Shine a light straight down from above: the point's shadow on the x axis lands at
+$\cos\theta$. Shine a light from the right: the shadow on the y axis lands at $\sin\theta$. The two dashed legs
+from the point to the axes, the ones you met in the first lesson, *are* cos and sin.
+
+Work through $\theta = 60^\circ$. The point on the circle sits at $(0.5, 0.866)$. So $\cos 60^\circ = 0.5$ and
+$\sin 60^\circ = 0.866$. Check that it is really on the circle: $0.5^2 + 0.866^2 \approx 0.25 + 0.75 = 1$. It is
+($0.866$ is the rounded value of $\sqrt{3}/2$, whose square is exactly $0.75$).
+
+Now the easy ones, which you should be able to read off the picture without any table:
+
+- $\theta = 0^\circ$: no turn, the point is $(1, 0)$. So $\cos 0^\circ = 1$, $\sin 0^\circ = 0$.
+- $\theta = 90^\circ$: a quarter turn, the point is straight up at $(0, 1)$. So $\cos 90^\circ = 0$, $\sin 90^\circ = 1$.
+- $\theta = 180^\circ$: half a turn, the point is $(-1, 0)$. So $\cos 180^\circ = -1$, $\sin 180^\circ = 0$.
+- $\theta = 270^\circ$: three quarters, the point is straight down at $(0, -1)$. So $\cos 270^\circ = 0$, $\sin 270^\circ = -1$.
+
+### Past 90°: the shadow flips
+
+Take $\theta = 120^\circ$. That is a third of a turn, past straight up, leaning left. The point is at
+$(-0.5, 0.866)$. So $\cos 120^\circ = -0.5$: negative. The x shadow now falls on the *left* of the origin.
+Nothing exotic happened; a coordinate went negative because the point is on that side.
+
+This is worth saying plainly, because "cos of an obtuse angle is positive" is a common mistake: **for angles
+between $90^\circ$ and $270^\circ$, cos is negative**, because the point is on the left half of the circle.
+Similarly sin is negative between $180^\circ$ and $360^\circ$, the bottom half.
+
+### Why cos can never exceed 1
+
+cos is the x coordinate of a point that is exactly 1 unit from the origin. A point at distance 1 cannot have an
+x coordinate of 1.3, any more than a vertex can be farther from the origin along x than it is in total.
+So $-1 \le \cos\theta \le 1$ and the same for sin, always. If a calculation hands you $\cos\theta = 1.3$, it is
+wrong; if it hands you $1.0000001$, rounding happened (the law of cosines lesson shows where that bites).
+
+## Radians: an angle measured as arc length
+
+Degrees are a convention: someone decided a full turn is 360 parts. Radians measure the turn by something
+the circle itself provides: the **length of the arc** you slid along, on the unit circle.
+
+The full unit circle has circumference $2\pi \approx 6.283$. So a full turn is $2\pi$ radians. Half a turn is
+$\pi \approx 3.142$ radians, a quarter is $\pi/2 \approx 1.571$. One radian is the angle whose arc is exactly as
+long as the radius: about $57.3^\circ$.
+
+To convert, scale by $\pi / 180$:
+
+$$
+\text{radians} = \text{degrees} \cdot \frac{\pi}{180}
+$$
+
+For $60^\circ$: $60 \cdot 3.14159 / 180 = 1.0472$ radians. And back the other way: $1.0472 \cdot 180 / 3.14159 = 60^\circ$.
+
+"Radians are harder" is the usual reaction. They are not harder, they are more honest: a radian is measured as
+a length on the unit circle, so arc length on a circle of radius $r$ is simply $r \cdot \theta$ with no conversion factor, and for small
+angles $\sin\theta \approx \theta$ (try $\theta = 0.1$: $\sin 0.1 = 0.0998$). Every formula in calculus and
+every shader function assumes radians for exactly this reason.
+
+### The trap: cos(60) is not cos 60°
+
+Every math library you will ever call, `np.cos`, `math.cos`, GLSL `cos`, VEX `cos`, takes **radians**.
+`np.cos(60)` is the cosine of 60 *radians*, which is about $-0.952$, nowhere near $0.5$. Maya's channel box shows
+degrees; VEX and shaders want radians. The bridge is `np.radians(60)` (or `radians()` in VEX), and if a cosine
+ever looks random, this is the first thing to check.
+
+## Unrolling the circle: the cos and sin curves
+
+Now let $\theta$ run from $0^\circ$ to $360^\circ$ and plot $\cos\theta$ against $\theta$. You get a wave that
+starts at 1, crosses 0 at $90^\circ$, bottoms out at $-1$ at $180^\circ$, and comes back to 1 at $360^\circ$.
+$\sin\theta$ is the same wave shifted a quarter turn: it starts at 0, peaks at 1 at $90^\circ$, is 0 again at
+$180^\circ$, hits $-1$ at $270^\circ$.
+
+{/* scene: 0.4-2 — the circle on the left, the cos and sin curves on the right; drag on either, the other follows; the negative cos past 90° is visible as the x-shadow flipping to the left */}
+
+You have seen these curves in the Graph Editor: `sin(time)` is the oscillation that makes a buoy bob or a wing
+flap. Each frame is a point sliding around the unit circle, and the curve is its y shadow laid out over time.
+cos is the x shadow. Together they trace the circle; apart, they are two waves out of step by $90^\circ$.
+
+## Special angles
+
+A short table worth knowing by heart, because these angles show up in every rig, every snap setting and every
+proof in this course. Exact values first, decimals after.
+
+| $\theta$ | radians | $\cos\theta$ | $\sin\theta$ |
+|---|---|---|---|
+| $0^\circ$ | $0$ | $1$ | $0$ |
+| $30^\circ$ | $\pi/6 \approx 0.524$ | $\sqrt{3}/2 \approx 0.866$ | $1/2 = 0.5$ |
+| $45^\circ$ | $\pi/4 \approx 0.785$ | $\sqrt{2}/2 \approx 0.707$ | $\sqrt{2}/2 \approx 0.707$ |
+| $60^\circ$ | $\pi/3 \approx 1.047$ | $1/2 = 0.5$ | $\sqrt{3}/2 \approx 0.866$ |
+| $90^\circ$ | $\pi/2 \approx 1.571$ | $0$ | $1$ |
+| $120^\circ$ | $2\pi/3 \approx 2.094$ | $-1/2 = -0.5$ | $\sqrt{3}/2 \approx 0.866$ |
+| $180^\circ$ | $\pi \approx 3.142$ | $-1$ | $0$ |
+
+{/* scene: 0.4-3 — special angles with snap: the point snaps to 0, 30, 45, 60, 90, 120, 180 and the table row lights up */}
+
+Notice $45^\circ$: cos and sin are equal, because the point sits on the diagonal, as far along x as along y.
+Check Pythagoras: $0.707^2 + 0.707^2 \approx 0.5 + 0.5 = 1$. And notice $30^\circ$ and $60^\circ$ swap their
+values. The point at $60^\circ$ is $30^\circ$ short of the y axis, exactly as the point at $30^\circ$ is $30^\circ$
+past the x axis: the two points are mirror images across the $45^\circ$ diagonal, and mirroring across that diagonal
+swaps x and y.
+
+## Going back: from a point to its angle
+
+Sometimes you have the point and want the angle. A vertex at $(x, y)$, a velocity, a joint's child position:
+which direction is that? The function is `atan2(y, x)`, and it returns the angle whose cos and sin point that way.
+
+Two details that cause bugs. First, the argument order is **y first, then x** in C, C++, Python, NumPy, VEX and
+HLSL (GLSL spells it `atan(y, x)`; spreadsheets swap the order). Second, the result is in radians, in the range
+from $-\pi$ (excluded) to $\pi$ (included), that is $-180^\circ$ to $180^\circ$.
+
+Examples: `atan2(0.866, 0.5)` gives $1.047$ radians, which is $60^\circ$. `atan2(1, -1)` gives $2.356$ radians,
+which is $135^\circ$: the point $(-1, 1)$ is up and left, three eighths of a turn. `atan2(-1, 0)` gives $-1.571$
+radians, $-90^\circ$: the point $(0, -1)$ is straight down, a quarter turn *clockwise*, which is the same direction
+as $270^\circ$ counter-clockwise.
+
+> **Say it simpler.** cos θ is how much of a length-1 arrow points along x; sin θ is how much points along y.
+> A radian is the arc you slid along the unit circle. Libraries want radians; artists type degrees.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "Can cos θ be bigger than 1 for some angle θ?",
+      options: [
+        "Yes, for angles over 360°",
+        "Yes, for very small angles",
+        "No: it is the x coordinate of a point at distance 1 from the origin",
+        "Yes, in radians but not in degrees"
+      ],
+      answer: 2,
+      explain: "A point on the unit circle is exactly 1 unit from the origin, so neither coordinate can exceed 1 in size. cos and sin always lie between −1 and 1, in any unit."
+    },
+    {
+      q: "The sign of cos 120° is…",
+      options: [
+        "positive, because 120° is less than 180°",
+        "zero, because 120° is past 90°",
+        "positive, because any angle smaller than 180° stays on the upper half of the circle",
+        "negative, because the point is on the left half of the circle"
+      ],
+      answer: 3,
+      explain: "At 120° the point is at (−0.5, 0.866). Its x coordinate, cos 120°, is −0.5. For every angle between 90° and 270° the point is on the left, so cos is negative."
+    },
+    {
+      q: "In NumPy, np.cos(60) returns…",
+      options: [
+        "0.5, the cosine of 60 degrees",
+        "the cosine of 60 radians, about −0.95",
+        "an error, because 60 is outside the valid input range",
+        "0.866, the sine of 60 degrees"
+      ],
+      answer: 1,
+      explain: "Every math library takes radians. 60 radians is about 9.5 full turns plus a bit, and its cosine is about −0.952. For 60 degrees write np.cos(np.radians(60))."
+    },
+    {
+      q: "A radian is…",
+      options: [
+        "the angle whose arc on the unit circle has length 1",
+        "one 360th of a turn, like a degree but harder to type and read",
+        "a unit used only in computer graphics",
+        "a 100th of a right angle"
+      ],
+      answer: 0,
+      explain: "Radians measure an angle by the arc length it cuts on a circle of radius 1. A full turn is 2π radians because the unit circle's circumference is 2π. Nothing about it is harder, and arc length on any circle becomes r·θ."
+    },
+    {
+      q: "Which angle puts the unit-circle point at (0, −1)?",
+      options: [
+        "90°",
+        "180°, because that is the opposite of the start",
+        "270° (equivalently −90°)",
+        "360°"
+      ],
+      answer: 2,
+      explain: "Straight down is three quarters of a counter-clockwise turn, 270°, or a quarter turn clockwise, −90°. cos is 0 and sin is −1 there."
+    }
+  ]}
+/>
+
+## By hand
+
+1. $\cos 60^\circ$
+2. $\sin 90^\circ$
+3. $180^\circ$ in radians
+4. $\cos 120^\circ$
+5. Which $\theta$ gives $(\cos\theta, \sin\theta) = (0, -1)$?
+6. $45^\circ$ in radians, and the coordinates of the point at $45^\circ$.
+
+<details>
+<summary>Answers</summary>
+
+1. $\cos 60^\circ = 0.5$. The point at $60^\circ$ is $(0.5, 0.866)$; cos is its x coordinate.
+2. $\sin 90^\circ = 1$. The point is straight up at $(0, 1)$.
+3. $180 \cdot \pi / 180 = \pi \approx 3.1416$ radians. Half the circumference of the unit circle.
+4. $\cos 120^\circ = -0.5$. The point is $(-0.5, 0.866)$, on the left half.
+5. $\theta = 270^\circ$, or equivalently $-90^\circ$ ($3\pi/2$ or $-\pi/2$ radians).
+6. $\pi/4 \approx 0.785$ radians. The point is $(0.707, 0.707)$, on the diagonal; check $0.5 + 0.5 = 1$.
+
+</details>
+
+## In NumPy
+
+```python
+import numpy as np
+
+th = np.radians(60)                       # degrees -> radians: 1.0471975511965976
+x, y = np.cos(th), np.sin(th)             # the point on the unit circle at 60°
+print(x, y)                               # 0.5000000000000001 0.8660254037844386
+# That trailing 1 is floating-point rounding: cos(π/3) is exactly 0.5, but π/3 is not
+# exactly representable. Every result below is rounded to 6 decimals for that reason.
+print(round(x**2 + y**2, 6))              # 1.0 -> on the circle
+
+print(round(np.cos(60), 6))               # -0.952413: cosine of 60 RADIANS (the trap)
+
+to_deg = lambda rad: round(np.degrees(rad), 6)
+print(to_deg(np.arctan2(y, x)))           # 60.0: back from the point to the angle (y first!)
+print(to_deg(np.arctan2(1, -1)))          # 135.0
+print(to_deg(np.arctan2(-1, 0)))          # -90.0 (same direction as 270°)
+
+for deg in (0, 30, 45, 60, 90, 120, 180): # the special-angles table
+    r = np.radians(deg)
+    print(f"{deg:4d}° {r:6.3f} rad  cos={np.cos(r):7.3f}  sin={np.sin(r):6.3f}")
+```
+
+<details>
+<summary>Machine layer: how a GPU computes sin, and when it cannot</summary>
+
+There is no sine circuit that reads a sine off a circle. A library `sin` does two things: **range reduction**,
+which subtracts whole multiples of $2\pi$ until the angle is small (that is why the result for 60 radians is a
+perfectly good number, just not the one you wanted), and then a **polynomial approximation** of the sine on that
+small range, a handful of multiplies and adds. CUDA offers fast versions (`__sinf`, which runs on the hardware
+special function unit), and GLSL `sin` on most GPUs already is that fast path: both skip most of the reduction
+and are accurate only for modest angles. Old games used a lookup table of a few hundred values and interpolated.
+
+The practical consequence: precision collapses for huge angles. An angle of $10^6$ radians stored in fp32 has an
+absolute error of up to about $0.03$ radians before `sin` even runs (the spacing of fp32 numbers near $10^6$ is
+$0.0625$), because fp32 keeps only about 7 significant digits.
+`sin(time)` with `time` in seconds counting up for hours drifts the same way. Wrap the angle (`fmod` by $2\pi$)
+*before* it grows, and keep accumulated angles in a variable that is reset, not in a running total.
+
+</details>
+
+## What this opens
+
+Pythagoras needs a square corner. cos and sin let us measure any corner. Put the two together and the next
+lesson, [The law of cosines](lesson:law-of-cosines), answers: what if the triangle has no right angle?

@@ -3,4 +3,286 @@ title: "Distance and Pythagoras"
 description: "Distance between points in 2D, 3D and any number of dimensions."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Squares, roots and the plane](lesson:squares-and-plane) (a square is an area, a root undoes it,
+a point is two readings on two rulers).
+
+## How far apart are two points?
+
+Two points on the Maya grid plane (ignore height for now): $P = (1, 2)$ and $Q = (4, 6)$. You call `distance(P, Q)` or
+`length(Q - P)` and get a number. This lesson is about what that function computes, why it has squares
+inside, and why the same formula keeps working when the points have 3 coordinates, or 4, or 4096.
+
+## Walk east, then north
+
+Start at $P = (1, 2)$. To reach $Q = (4, 6)$ you can walk along the grid: first east along x, then north
+along y.
+
+How far east? From $x = 1$ to $x = 4$: that is $4 - 1 = 3$. Call it $dx = 3$.
+
+How far north? From $y = 2$ to $y = 6$: that is $6 - 2 = 4$. Call it $dy = 4$.
+
+The grid walk is $3 + 4 = 7$ units long. That is the **Manhattan distance**: the length of a trip on city
+streets. But a straight line from $P$ to $Q$ is shorter than the grid walk, the way a flight is shorter than
+the drive. The question is: how much shorter?
+
+{/* scene: 0.3-1 — drag P and Q: the right triangle with legs dx, dy appears; a square is built on each leg and on the hypotenuse, with the three areas dx², dy², c² as live numbers linked to the formula terms */}
+
+Look at the picture. The east leg, the north leg and the straight line form a triangle with a square corner
+where the legs meet. The straight line is the longest side, the **hypotenuse**. Our question is: given the
+two legs, how long is the hypotenuse?
+
+## Pythagoras: the squares on the legs fill the square on the hypotenuse
+
+Build a square on each side of the triangle, pointing outward. Three squares. Their areas are $dx^2$, $dy^2$
+and $c^2$, where $c$ is the length of the hypotenuse.
+
+Pythagoras' theorem says the two small areas add up to the big one:
+
+$$
+c^2 = dx^2 + dy^2
+$$
+
+With our numbers: $dx^2 = 3^2 = 9$ and $dy^2 = 4^2 = 16$. So $c^2 = 9 + 16 = 25$, and $c = \sqrt{25} = 5$.
+The straight line is 5 units long. The grid walk was 7. Flying saves two units.
+
+Read the formula as areas, not as symbols: a 9-tile square plus a 16-tile square has exactly as many tiles as
+a 25-tile square. That is the whole theorem. The length comes out at the end with a root, because the root
+turns an area back into a side.
+
+### Why it is true
+
+Take the right triangle with legs $a$ and $b$ and hypotenuse $c$. Make four copies. Arrange them inside a big
+square of side $a + b$, each copy with its right angle sitting in one corner of the big square. The four hypotenuses now
+fence off a tilted square in the middle, of side $c$.
+
+{/* scene: 0.3-2 — dissection proof as a timeline: four copies of the triangle rearrange inside an (a+b)² square; step and scrub; a² + b² = c² without algebra */}
+
+Count the big square's area two ways.
+
+As one square: $(a + b)^2$.
+
+As pieces: four triangles plus the tilted square. Each triangle has area $\tfrac{1}{2} a b$ (half a rectangle
+$a$ by $b$), so the four together are $2ab$. Plus the middle square, $c^2$. Total: $2ab + c^2$.
+
+Now slide the four triangles into a different arrangement inside the same big square: two of them make an
+$a \times b$ rectangle in one corner, the other two make another rectangle in the opposite corner. What is left
+uncovered is now two squares, one of side $a$ and one of side $b$. Same four triangles, same big square, so the
+uncovered area is the same: $a^2 + b^2 = c^2$.
+
+With $a = 3$, $b = 4$: the big square has side 7 and area 49. Four triangles take $4 \cdot 6 = 24$. What is
+left is $49 - 24 = 25$. Arranged one way it is the square on the hypotenuse, $c^2 = 25$; arranged the other
+way it is $9 + 16$. No algebra was needed, only moving paper.
+
+## The distance formula
+
+Put it together. For two points $P = (x_1, y_1)$ and $Q = (x_2, y_2)$:
+
+$$
+d = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}
+$$
+
+Read it in steps: subtract the coordinates to get the legs, square each leg, add the squares, take the root.
+Line by line for $P = (1, 2)$, $Q = (4, 6)$:
+
+$$
+\begin{aligned}
+x_2 - x_1 &= 4 - 1 = 3 \\
+y_2 - y_1 &= 6 - 2 = 4 \\
+3^2 + 4^2 &= 9 + 16 = 25 \\
+d &= \sqrt{25} = 5
+\end{aligned}
+$$
+
+### The sign of a leg does not matter
+
+What if you subtract the other way round, $Q$ from $P$? Then $dx = 1 - 4 = -3$ and $dy = 2 - 6 = -4$.
+Squares forget the sign: $(-3)^2 = 9$ and $(-4)^2 = 16$, the same 25, the same $d = 5$. The distance from $P$
+to $Q$ equals the distance from $Q$ to $P$, and the formula knows it without being told. This is the first
+payoff of "squares forget the sign" from the previous lesson.
+
+### A common wrong shortcut
+
+People in a hurry write $\sqrt{a^2 + b^2} = a + b$. It is not true. For $a = 3$, $b = 4$: the left side is
+$\sqrt{25} = 5$, the right side is $7$. The root of a sum is not the sum of the roots. The grid walk (7) and the
+flight (5) are different numbers, and the formula is the one that tells them apart.
+
+## 3D: the same thing twice
+
+Now the points have three coordinates: $P = (1, 1, 1)$ and $Q = (2, 3, 3)$. The legs are
+$dx = 2 - 1 = 1$, $dy = 3 - 1 = 2$, $dz = 3 - 1 = 2$.
+
+{/* scene: 0.3-3 — 3D with orbit: the floor diagonal first, then straight up; the formula grows to three terms */}
+
+Picture a room. Walk across the floor: that is the 2D problem, with legs $dx$ and $dy$. The floor diagonal
+$f$ satisfies $f^2 = dx^2 + dy^2 = 1 + 4 = 5$. Now go up by $dz$. The floor diagonal and the vertical leg
+form a *new* right triangle, standing upright, and its hypotenuse is the straight line from $P$ to $Q$.
+Pythagoras again:
+
+$$
+d^2 = f^2 + dz^2 = (dx^2 + dy^2) + dz^2
+$$
+
+So $d^2 = 5 + 4 = 9$ and $d = 3$. Two uses of Pythagoras, one after the other, give a formula with three
+squares under the root:
+
+$$
+d = \sqrt{dx^2 + dy^2 + dz^2}
+$$
+
+This is `length(Q - P)` in a shader and `distance()` in VEX. Nothing new happened in 3D except that one more
+square joined the sum.
+
+## n dimensions: nothing changes except the count
+
+An embedding in a language model has 4096 coordinates. A gray-scale image of 28 by 28 pixels is a point
+with 784 coordinates. How far apart are two of those?
+
+The same formula, with more terms in the sum:
+
+$$
+d = \sqrt{(q_1 - p_1)^2 + (q_2 - p_2)^2 + \cdots + (q_n - p_n)^2}
+$$
+
+A 4D example you can do by hand: $P = (0, 0, 0, 0)$ and $Q = (1, 0, 2, 2)$. The legs are $1, 0, 2, 2$.
+Squares: $1, 0, 4, 4$. Sum: $9$. Root: $d = 3$.
+
+{/* scene: 0.3-4 — n-D: a row of difference numbers, each squared, summed, rooted; "nothing changes except the count" */}
+
+Here is the misconception to drop: "in four or more dimensions I cannot picture the triangle, so the
+formula must need some geometry I do not have." It needs none. The 3D derivation was "Pythagoras on the
+floor, then Pythagoras standing up." The 4D derivation is the same with one more step, and so on. You do not
+need to see the room; you need to square, add and root. Numbers do not care how many of them there are.
+
+> **Say it simpler.** Walk east, then north. The straight path is shorter, and Pythagoras says exactly how much:
+> square each leg, add, take the root. Three legs, four legs, four thousand legs: same recipe.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "P = (1, 2), Q = (4, 6). The distance between them is…",
+      options: [
+        "7, the sum of the two legs",
+        "3.5, half the sum of the legs",
+        "25",
+        "5"
+      ],
+      answer: 3,
+      explain: "Legs 3 and 4; squares 9 and 16; sum 25; root 5. The sum of the legs (7) is the Manhattan distance, the length of the grid walk, not the straight line. 25 is the squared distance."
+    },
+    {
+      q: "Is √(a² + b²) equal to a + b?",
+      options: [
+        "Yes, the root cancels the squares one by one",
+        "No; for a = 3, b = 4 the left side is 5 and the right side is 7",
+        "Only when a and b are both positive",
+        "Yes, as long as a and b are whole numbers"
+      ],
+      answer: 1,
+      explain: "The root of a sum is not the sum of the roots. √(9 + 16) = √25 = 5, while 3 + 4 = 7. The two are equal only when one of the legs is zero (and the other is not negative)."
+    },
+    {
+      q: "You compute dx = x₂ − x₁ but accidentally swap the points, getting dx = −3 instead of 3. The distance…",
+      options: [
+        "is unchanged, because the leg is squared",
+        "comes out negative and must be fixed",
+        "is off by 6, twice the leg",
+        "becomes undefined because of the root of a negative"
+      ],
+      answer: 0,
+      explain: "(−3)² = 9 = 3². Squares forget the sign, so the distance from P to Q equals the distance from Q to P, and nothing under the root is ever negative."
+    },
+    {
+      q: "Two 4096-dimensional embeddings. To find their distance you need…",
+      options: [
+        "a 4096-dimensional picture of the triangle",
+        "the same formula: square each difference, add, take the root",
+        "a different formula for every number of dimensions, derived separately each time",
+        "to project the vectors to 3D first"
+      ],
+      answer: 1,
+      explain: "The 3D derivation was Pythagoras on the floor, then Pythagoras standing up. Each extra dimension is one more step of the same kind. No picture is required, only square, add, root."
+    },
+    {
+      q: "Which point is farther from the origin: (5, 0) or (3, 4)?",
+      options: [
+        "(5, 0), because 5 is its biggest coordinate",
+        "(3, 4), because 3 + 4 = 7 is bigger than 5",
+        "They are equally far",
+        "It depends on the direction of the axes"
+      ],
+      answer: 2,
+      explain: "(5, 0): √(25 + 0) = 5. (3, 4): √(9 + 16) = √25 = 5. A tie. Neither the biggest coordinate nor the sum of coordinates is the distance."
+    }
+  ]}
+/>
+
+## By hand
+
+1. Distance from $(0, 0)$ to $(3, 4)$.
+2. Distance from $(1, 2)$ to $(4, 6)$.
+3. Distance from $(1, 1, 1)$ to $(2, 3, 3)$.
+4. Which is farther from the origin, $(5, 0)$ or $(3, 4)$?
+5. Manhattan and straight-line distance from $(0, 0)$ to $(1, 1)$.
+
+<details>
+<summary>Answers</summary>
+
+1. Legs 3 and 4. $9 + 16 = 25$, $\sqrt{25} = 5$.
+2. Legs $4 - 1 = 3$ and $6 - 2 = 4$. Same squares, same answer: $5$.
+3. Legs $1, 2, 2$. Squares $1, 4, 4$. Sum $9$. $\sqrt{9} = 3$.
+4. $(5, 0)$: $\sqrt{25 + 0} = 5$. $(3, 4)$: $\sqrt{9 + 16} = 5$. A tie. Many different points sit at the same distance; the next lesson is about all the points at distance 1.
+5. Manhattan: $1 + 1 = 2$. Straight: $\sqrt{1 + 1} = \sqrt{2} \approx 1.414$. The diagonal of a unit square.
+
+</details>
+
+## In NumPy
+
+```python
+import numpy as np
+
+p = np.array([1.0, 2.0])
+q = np.array([4.0, 6.0])
+
+legs = q - p                          # [3. 4.]
+print(legs, legs**2)                  # [3. 4.] [ 9. 16.]
+d_manual = np.sqrt((legs**2).sum())   # square, add, root
+d_numpy = np.linalg.norm(q - p)       # the library's name for the same thing
+print(d_manual, d_numpy)              # 5.0 5.0
+
+print(np.abs(legs).sum())             # 7.0 -> Manhattan distance, the grid walk
+
+# 3D and 4D: the same two lines, nothing else changes
+p3, q3 = np.array([1.0, 1.0, 1.0]), np.array([2.0, 3.0, 3.0])
+print(np.linalg.norm(q3 - p3))        # 3.0
+p4, q4 = np.zeros(4), np.array([1.0, 0.0, 2.0, 2.0])
+print(np.linalg.norm(q4 - p4))        # 3.0
+```
+
+<details>
+<summary>Machine layer: hypot, overflow and squared comparisons</summary>
+
+`np.hypot(a, b)` and C's `std::hypot` compute $\sqrt{a^2 + b^2}$ without ever forming $a^2$ in memory.
+Why bother? Because squaring can overflow when the legs do not. In fp64 the largest number is about
+$1.8 \times 10^{308}$, so a leg of $10^{200}$ has a square of $10^{400}$: infinity. In fp32 the limit is about
+$3.4 \times 10^{38}$, so legs above about $1.8 \times 10^{19}$ already break. The same happens at the small end: a
+leg of $10^{-200}$ squares to zero (underflow), and the distance between two nearby points comes out as 0.
+`hypot` rescales by the larger leg first, computes $\sqrt{1 + (b/a)^2}$ and scales back.
+
+For most CG code the legs are world units and nothing overflows. The habit that does matter every day is the one
+from the last lesson: when you only need to *compare* distances, compare the squared sums and skip the root.
+Sorting neighbours by `dist2` gives the same order as sorting by `dist`.
+
+The half-precision version of this story (a sum of 100 squares overflowing fp16 at 65504) waits for the lesson on
+[Length, Σ notation and normalization](lesson:length).
+
+</details>
+
+## What this opens
+
+Distance says *how far*, not *which way*. $(5, 0)$ and $(3, 4)$ are both 5 units from the origin, and the distance
+formula cannot tell them apart. To describe a direction with numbers we need the unit circle:
+[Angles, radians and the unit circle](lesson:unit-circle).

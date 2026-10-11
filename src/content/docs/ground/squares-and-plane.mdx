@@ -3,4 +3,246 @@ title: "Squares, roots and the plane"
 description: "A square is an area, a root undoes it, a point is two readings on two rulers."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** nothing. This is the ground floor. Everything else in the course stands on three ideas from
+this page: a square is an area, a root undoes a square, and a point is two numbers.
+
+## Why do we call x² a "square"?
+
+You have typed `x * x` thousands of times. You have also typed `dist2 < r * r` to avoid a square root.
+This lesson asks a question most of us skipped at school: why is `x * x` called the *square* of x,
+and what does that name buy us?
+
+The answer is a picture, and the picture comes back in every lesson of this course: in Pythagoras, in the length
+of a vector, in the variance of a dataset, in the loss of a neural network. Squares are areas. Once you see that,
+"why are there squares everywhere in machine learning" stops being a mystery.
+
+## A square is an area
+
+Take a number. Call it $x$. Draw a square whose side has length $x$. The area of that square is $x \cdot x$,
+and we write it $x^2$.
+
+$$
+x^2 = x \cdot x
+$$
+
+A concrete example. Let $x = 3$. The square has side 3. Fill it with unit tiles (tiles of side 1): you get
+3 rows of 3 tiles, so 9 tiles. The area is 9, and $3^2 = 3 \cdot 3 = 9$. The number and the picture agree.
+
+One more: $x = 7$ gives $7^2 = 49$. Forty-nine unit tiles, 7 by 7.
+
+{/* scene: 0.G-1 — scrub x in "x² = ?": a literal square of side x grows on the grid, the area readout is the formula value; drag x negative, the square stays and the area stays positive */}
+
+Now a case that surprises people. Let $x = 0.5$. Then $x^2 = 0.5 \cdot 0.5 = 0.25$. The number $0.25$ is
+*smaller* than $0.5$. Squaring does not always make a number bigger: between 0 and 1 it makes it smaller. The picture
+explains it: a square with a side of half a tile covers a quarter of a tile.
+
+### Squares forget the sign
+
+What is $(-3)^2$? It is $(-3) \cdot (-3)$. A negative times a negative is a positive, so $(-3)^2 = 9$.
+The same 9 as $3^2$.
+
+In the picture: a side of "length $-3$" is a side of length 3 drawn in the other direction. Same square,
+same area. The square does not remember which way you drew the side. We will say it like this from now on:
+**squares forget the sign**. In a few lessons this is the reason a distance is never negative.
+
+A trap that bites in code. In Python, `-3**2` is `-9`, not `9`, because `**` binds tighter than the minus sign:
+Python reads it as `-(3**2)`. The square of $-3$ is `(-3)**2`, with the parentheses. Mathematically $-3^2$ means
+the same thing as Python says: minus the square of 3. The notation and the language agree; it is our eyes that
+glue the minus to the 3.
+
+## The root undoes the square
+
+Now go backwards. You know the area of a square. What is its side?
+
+The area is 49. The side is the number whose square is 49. That is 7, because $7^2 = 49$. We write this with
+the root sign: $\sqrt{49} = 7$.
+
+$$
+\sqrt{A} = \text{the side of a square whose area is } A
+$$
+
+{/* scene: 0.G-3 — scrub the area, the side appears: the root as the inverse of the square */}
+
+Three things to know about the root.
+
+**Most roots are not round numbers.** $\sqrt{2}$ is about $1.4142$, because $1.4142^2 = 1.99996$, just short of 2.
+No decimal hits 2 exactly. That is normal, and a computer is happy with the approximation. Do not expect
+roots to be pretty; expect squares to be.
+
+**The root is never negative.** Both $7^2 = 49$ and $(-7)^2 = 49$. So which one is $\sqrt{49}$? By agreement,
+the root sign always means the non-negative one: $\sqrt{49} = 7$. A side length is a length.
+
+**Root of a square.** Because squares forget the sign, $\sqrt{a^2}$ is not always $a$. Try $a = -3$:
+$a^2 = 9$ and $\sqrt{9} = 3$, which is not $-3$. The correct statement is
+
+$$
+\sqrt{a^2} = |a|
+$$
+
+where $|a|$ is the absolute value, "$a$ with its sign thrown away". $|{-3}| = 3$ and $|3| = 3$. This looks like a
+small point; it is the reason the length of a vector is positive even when every coordinate is negative.
+
+## The plane: two rulers, one point
+
+Now the second idea. A number line is a ruler: each number is a place on it, and each place is a number.
+Zero is where you put the start of the ruler.
+
+Lay a second ruler across the first, at a right angle, with their zeros touching. The crossing is the
+**origin**. The first ruler is the **x axis**, the second is the **y axis**. Together they make the **plane**.
+
+Any place on the plane is now two readings: how far along the x ruler, and how far along the y ruler.
+We write them as a pair in parentheses, x first: $(x, y)$. The pair is called the **coordinates** of the
+**point**.
+
+{/* scene: 0.G-2 — number line, then the plane: drag a point, (x, y) updates in the formula and in a 2-row table; the two dashed legs to the axes light up with the matching coordinate */}
+
+An example. The point $(-2, 3)$. Start at the origin. Walk 2 units in the negative x direction (left).
+Then walk 3 units in the positive y direction (up). You are at $(-2, 3)$. If you drop a line from the point
+straight down to the x axis, it lands on $-2$. If you drop a line sideways to the y axis, it lands on $3$.
+The two dashed "legs" from a point to the axes *are* its coordinates, drawn.
+
+You have seen this ten thousand times: the Maya viewport grid with the world origin at its center,
+`@P.x` and `@P.y` in a Houdini wrangle, a 2D UV coordinate. The math word for "where is this vertex"
+is "what are its coordinates".
+
+One convention to fix now. In this course the y axis points **up**, as in a Maya viewport or a math
+textbook. Screen, image and UV coordinates often put y pointing **down** (row 0 at the top). Both are
+fine; the formulas in this course never depend on it, but the pictures do, so we say it once here.
+
+### A point and a pair of numbers are one thing
+
+Here is a misconception to defuse before it grows. People think of "the point" as the real thing and
+"the coordinates" as a description of it, as if they could disagree. They cannot. Once the two rulers are
+fixed, the point $(-2, 3)$ and the pair of numbers $-2, 3$ are the same object seen two ways: one as a dot
+on a grid, one as two numbers in memory. Drag the dot and the numbers change; edit the numbers and the dot moves.
+There is nothing in between.
+
+This matters because the whole course lives on that bridge. A vector will be an arrow *and* a list of numbers.
+A matrix will be a transformation *and* a grid of numbers. Every time, the picture and the numbers are one thing.
+
+### Squares of coordinates
+
+One last step, so the next lesson can begin without a run-up. Take the point $(-2, 3)$ and square each
+coordinate:
+
+$$
+(-2)^2 = 4, \qquad 3^2 = 9
+$$
+
+Two squares: one with area 4 built on the x leg, one with area 9 built on the y leg. Their total area is
+$4 + 9 = 13$. Keep that number in mind. The next lesson shows what $\sqrt{13}$ measures.
+
+> **Say it simpler.** $x^2$ is the area of a square of side $x$. $\sqrt{A}$ is the side of a square of area
+> $A$. A point is two readings on two rulers, and the readings and the dot are the same thing.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "What is (−3)²?",
+      options: [
+        "9",
+        "−9, because the minus sign is kept",
+        "−6, because squaring doubles the number",
+        "6"
+      ],
+      answer: 0,
+      explain: "(−3)² = (−3)·(−3) = 9. A negative times a negative is positive. Squares forget the sign. (In Python, -3**2 is −9 only because of operator precedence: it means −(3²).)"
+    },
+    {
+      q: "For any number a, what is √(a²)?",
+      options: [
+        "a",
+        "|a|, the absolute value of a",
+        "a² divided by a",
+        "±a, both signs at once, since both square to a²"
+      ],
+      answer: 1,
+      explain: "Squaring throws the sign away, and the root sign always returns the non-negative value. For a = −3: a² = 9, √9 = 3 = |−3|, not −3."
+    },
+    {
+      q: "A point on the plane and its pair of coordinates (x, y) are…",
+      options: [
+        "two different things that usually agree but can drift apart",
+        "related only when x and y are whole numbers",
+        "the same thing only at the origin",
+        "the same thing seen two ways, once the axes are fixed"
+      ],
+      answer: 3,
+      explain: "Once the two rulers are fixed, the point IS the pair of readings. Drag the dot and the numbers change; edit the numbers and the dot moves. There is nothing in between."
+    },
+    {
+      q: "Which statement about squaring is true?",
+      options: [
+        "x² is always bigger than x",
+        "x² is always smaller than x",
+        "x² is never smaller than 0",
+        "x² has the same sign as x"
+      ],
+      answer: 2,
+      explain: "An area is never negative: x² ≥ 0 for every x. It is not always bigger than x: 0.5² = 0.25, which is smaller than 0.5."
+    }
+  ]}
+/>
+
+## By hand
+
+Work these on paper before opening the answers.
+
+1. $7^2$
+2. $(-3)^2$
+3. $\sqrt{49}$
+4. $\sqrt{2^2 + 2^2}$ (leave it as a root, then estimate)
+5. Plot $(-2, 3)$ and read its two legs to the axes.
+
+<details>
+<summary>Answers</summary>
+
+1. $7^2 = 49$.
+2. $(-3)^2 = 9$. The sign is forgotten.
+3. $\sqrt{49} = 7$. Not $-7$: the root sign means the non-negative side.
+4. $2^2 + 2^2 = 4 + 4 = 8$, so the answer is $\sqrt{8} \approx 2.83$ (check: $2.83^2 = 8.01$). Not a round number, and that is fine.
+5. Two units left of the origin, three up. The leg down to the x axis lands on $-2$; the leg sideways to the y axis lands on $3$.
+
+</details>
+
+## In NumPy
+
+```python
+import numpy as np
+
+x = np.arange(-3, 4)          # -3, -2, -1, 0, 1, 2, 3
+print(x)
+print(x**2)                   # 9 4 1 0 1 4 9  -> squares forget the sign
+
+print(np.sqrt(49.0))          # 7.0
+print(np.sqrt(2.0))           # 1.4142135623730951 (its square is 2.0000000000000004)
+print(np.sqrt((-3.0)**2))     # 3.0 = |-3|, not -3
+print(-3**2, (-3)**2)         # -9 9  -> precedence trap
+
+p = np.array([-2.0, 3.0])     # a point as two numbers
+print(p[0]**2 + p[1]**2)      # 13.0 -> next lesson
+```
+
+<details>
+<summary>Machine layer: why CG code compares squared distances</summary>
+
+`x * x` is one multiply: a single instruction, about as cheap as an add. `sqrt` is also a hardware
+instruction on every modern CPU and GPU, but it is a slower one, several times the cost of a multiply (roughly
+3 to 10 times on current CPUs), and it cannot be pipelined as freely.
+
+Here is the trick everyone in CG uses without naming it. Squaring keeps order: if $0 \le a \le b$ then
+$a^2 \le b^2$, and the other way round. So to ask "is this point closer than $r$?" you never need the root:
+compare the squared distance with $r^2$ instead. That is the `dist2 < r * r` you have written in every
+spatial query, culling test and particle solver. One multiply instead of one square root, and, apart from points
+within a rounding error of the boundary, the answer is the same.
+
+</details>
+
+## What this opens
+
+Two points on the plane, $(1, 2)$ and $(4, 6)$. How far apart are they? The squares on the legs are the whole
+answer; the next lesson, [Distance and Pythagoras](lesson:pythagoras), shows why.
