@@ -7,7 +7,7 @@ selected, and a light whose brightness *is* a dot product. The course's thesis s
 from that world. Signature illustrations: `signature-illustrations.md` (everything is light, shadows and areas).
 
 **v3 (2026-10-10): the viewport's rendering is "holographic"** — the user's chosen look, reference image
-`refs/holo-style-ref.png`, reproduced **as is**: a deep-space background (stars, faint nebulae) with a vignette,
+`refs/holo-style-ref.png`, reproduced **as is**: a deep-space background (starfield, colourful nebulae and spiral galaxies as in the reference) with a vignette,
 geometry as glowing light filaments, translucent glass faces with a fine inner grid and brighter edges, technical rulers
 and dials as HUD instruments at the sides, measurement arrows and tick marks along measured sides, a framed glowing
 formula plate, and in 3D a dark reflective floor the figure floats above. A secondary **clay** look (`refs/clay-style-ref.png`:
@@ -219,8 +219,10 @@ Chosen: **additive halos** — `Stroke` gains a second glow layer and `AdditiveB
 ### Background: starfield + nebula + vignette, per View, static
 
 - One `Background` object per Stage, drawn first (`renderOrder` −10, `depthWrite` off): a fullscreen quad in the View with a
-  tiny shader: vertical gradient `vp-bg-top`→`vp-bg-bottom`, radial vignette to `vignette`, 2–3 nebula blobs (`nebula-a/b`,
-  smooth radial falloff, max alpha 0.18, positions and radii from a per-scene seed) and stars = `star` with a hash
+  tiny shader: vertical gradient `vp-bg-top`→`vp-bg-bottom`, radial vignette to `vignette`, nebulae and 1–2 spiral galaxies
+  (`nebula-a/b` plus magenta/blue highlights, as bright and colourful as in the reference image; procedural spiral arms
+  in the shader or a small compressed texture atlas, positions/radii from a per-scene seed; match the reference by side-by-side
+  screenshot, not by a fixed alpha cap) and stars = `star` with a hash
   per cell (3 density layers, ~0.3 % of pixels, alpha 0.25..0.9, 1–2 px). No texture, no noise octaves, no time uniform:
   it is **static** (a twinkle would be idle animation; the reference is a still). Cost: one quad, ≈ 20 ALU per pixel.
   The quad follows the camera (fixed to the View's NDC), so zoom/orbit never moves the stars (they are "infinitely far").

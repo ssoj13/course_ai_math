@@ -110,8 +110,9 @@ tick law, dimension layout), tests, demo.
    the mirror floor, instruments) and DEMO-CLAY (unit tiles 3×3 and a 2×2×2 cube); CDP screenshots at 1280 and 360 px.
 Gates: `bun test tests/js`, `bun run check`, `bun run build` 0 warnings, viz-core ≤ 300 kB gz (today 272 kB; the
 budget for 6h is ≤ 18 kB gz: shaders are inline strings, RoundedBoxGeometry ≈ 2 kB, matcap is an asset not JS; no
-postprocessing, no MeshReflectorMaterial, no ContactShadows — if the size report exceeds 290 kB, drop the Instruments
-dial first and report). Commit: `feat(viz): holographic viewport — space background, glow filaments, glass faces, rulers,
+postprocessing, no MeshReflectorMaterial, no ContactShadows — if the size report would exceed the budget, nothing from the
+reference is dropped: stop and report the numbers so the controller asks the user (raise the budget or lazy-load the
+holo layer)). Commit: `feat(viz): holographic viewport — space background, glow filaments, glass faces, rulers,
 instruments, formula plate, mirror floor, clay solids`.
 
 ### Task 6g: Bilingual site (en + ru), same as vllm_en
