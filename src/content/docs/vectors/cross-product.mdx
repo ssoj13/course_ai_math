@@ -82,7 +82,7 @@ This number is the **signed area** of the parallelogram spanned by $\mathbf{a}$ 
 
 The sign is the **orientation**: positive when turning from $\mathbf{a}$ to $\mathbf{b}$ is counter-clockwise, negative when clockwise, zero when they are on one line. $(1, 3)$ and $(2, 0)$ in the other order give $1 \cdot 0 - 3 \cdot 2 = -6$: same shape, clockwise turn, negative. This is the "dependence meter" of [lesson 1.6](lesson:basis): zero area means the two arrows span only a line.
 
-{/* scene: 1.8-2 — 2D signed area aₓb_y − a_ybₓ: positive when counter-clockwise, the sign shown as the parallelogram tint (orientation); hatched when negative */}
+{/* scene: 1.8-2 — 2D signed area a_x b_y − a_y b_x: positive when counter-clockwise, the sign shown as the parallelogram tint (orientation); hatched when negative */}
 
 **Misconception to drop:** "the cross product exists in 2D as a vector." In 2D it is a single signed number; the vector version needs three dimensions.
 
@@ -112,7 +112,7 @@ The same logic builds tangent frames: given a normal $\mathbf{N}$ and a tangent 
       q: "How do a × b and b × a compare?",
       options: [
         "They are equal, like the dot product, because multiplication of components commutes",
-        "They are perpendicular to each other",
+        "They are perpendicular to each other, because swapping the inputs turns the result by 90°",
         "They have the same length and point in opposite directions",
         "They have different lengths"
       ],
@@ -122,8 +122,8 @@ The same logic builds tangent frames: given a normal $\mathbf{N}$ and a tangent 
     {
       q: "The cross product of two 2D vectors a = (ax, ay) and b = (bx, by)…",
       options: [
-        "survives as one signed number, ax·by − ay·bx, the signed area of their parallelogram",
-        "is a 2D vector perpendicular to both",
+        "survives as one signed number, ax·by − ay·bx",
+        "is a 2D vector perpendicular to both, the 2D version of the right-hand rule",
         "is undefined, so 2D code never uses it",
         "is the same as their dot product"
       ],
@@ -133,7 +133,7 @@ The same logic builds tangent frames: given a normal $\mathbf{N}$ and a tangent 
     {
       q: "The cross product of two parallel vectors is…",
       options: [
-        "undefined, like dividing by zero, so the call must be guarded before it is made",
+        "undefined, like dividing by zero",
         "a unit vector along their common line",
         "the sum of the two vectors",
         "the zero vector, because the parallelogram they span has zero area"

@@ -20,7 +20,7 @@
         { "slug": "vector", "title": "A vector: an arrow and a list of numbers", "short": "What a vector is", "summary": "Point vs direction, components, the vector between two points." },
         { "slug": "vector-arithmetic", "title": "Adding, scaling and linear combinations", "short": "Linear combinations", "summary": "Head-to-tail addition, scaling, blend shapes as linear combinations." },
         { "slug": "length", "title": "Length, Σ notation and normalization", "short": "Length and normalization", "summary": "Pythagoras over all components; unit vectors." },
-        { "slug": "dot-product", "title": "The dot product, derived from the law of cosines", "short": "The dot product", "summary": "Σ aᵢbᵢ = |a||b| cos θ, and what its sign means." },
+        { "slug": "dot-product", "title": "The dot product, derived from the law of cosines", "short": "The dot product", "summary": "Multiply matching components and add them up: a·b = |a||b| cos θ, and what its sign means." },
         { "slug": "projection", "title": "Projection: shadows on an axis", "short": "Projection", "summary": "Shadows on a line; for perpendicular unit axes, coordinates are dot products with the axes." },
         { "slug": "basis", "title": "Basis, span, independence and dimension", "short": "Basis and span", "summary": "Rulers for space; orthonormal change of basis." },
         { "slug": "cosine-similarity", "title": "Cosine similarity and embeddings", "short": "Cosine similarity", "summary": "Meaning as direction: comparing embeddings." },
