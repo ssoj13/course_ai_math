@@ -264,3 +264,386 @@ All React (`src/viz/`), TypeScript strict, props are plain data; every id string
 7. **Machine layer continuity:** 0.G (squared-distance comparisons) → 0.3 (`hypot`) → 1.3 (fp16 overflow, fp32 accumulation) → 1.4 (FMA, summation order) forms a single thread that lands in branch Q; name it as a thread in the roadmap so the "zoom down" promise is visible from lesson one.
 
 Sources consulted for library claims: [drei View docs](https://drei.docs.pmnd.rs/portals/view), [KaTeX supported functions (HTML extension)](https://katex.org/docs/supported.html), [Pyodide loading packages](https://pyodide.org/en/stable/usage/loading-packages.html), [Starlight CSS guide](https://starlight.astro.build/guides/css-and-tailwind/), [Chromium WebGL context limit review](https://codereview.chromium.org/14217005/), [Mozilla bug 1748592 (per-platform limits)](https://bugzilla.mozilla.org/show_bug.cgi?id=1748592), [WebKit max-active-contexts test](https://webkit.googlesource.com/WebKit/+/master/LayoutTests/webgl/max-active-contexts-oldest-context-lost-expected.txt).
+
+
+## 7. Scenes for 0.G and 0.2 (squares are areas; powers)
+
+Status: scene design for implementation (2026-10-10). Same precision as `lessons-law-of-cosines-dot-product.md` §1;
+all conventions of its §0 apply (store/ids/derive, `fmt`, drag/snap/keyboard, ViewportCard layout, motion, challenge
+boxes, visual language v2). Lesson 0.2 was added to the curriculum after §2 above was written (user request: "a square is
+an area — show it, maybe as a 3D widget; explain fractional and negative powers too"); its prose is
+`src/content/docs/ground/powers.mdx`, and the slot ids below are the `{/* scene: ... */}` comments in
+`squares-and-plane.mdx` (0.G-1..3) and `powers.mdx` (0.2-1..5).
+
+### 7.1 Shared primitive: `TileGrid` (new)
+
+Every scene in this section draws the same object: a square (or cube) of side `x` filled with unit tiles. It is built
+once as `scene/TileGrid.tsx` and configured, never re-implemented per scene.
+
+- Props: `{ id, side: number | valKey, dims: 2 | 3, origin?: V (default [0,0] / [0,0,0]), role, label?: boolean,
+  count?: boolean, negative?: 'mirror' }`. `side` is the length `x`; the square spans `[0, x]` on both axes (y-up; in 3D
+  the cube spans `[0, x]` on x, y, z).
+- Geometry: one `InstancedMesh` of unit quads (2D) or unit boxes (3D), `ceil(x)` per axis, max 16 per axis (extent 4
+  needs ≤ 16; 3D ≤ 4096 instances, one draw call). Tile `(i, j[, k])` is scaled to `min(1, x − i) × min(1, x − j)
+  [× min(1, x − k)]` and anchored at its low corner, so partial tiles are clipped exactly and the union of tiles IS the
+  square/cube (no second fill). Instance count and matrices are rebuilt from the store in `useFrame` only when `x`
+  changes (`moved` check, no allocation per frame: one shared `Object3D` temporary).
+- Look: fill 18% of `role` + 1.5 px edges per tile (edges as one `SLine` segment list, pixel-stable), outer edge 2.5 px
+  beam + halo (the square's outline reads as "a shape", the tiles as "the count"). Whole tiles 18%, partial tiles 28%
+  (darker, "cut", same convention as LC-0's strips). 3D: unlit `MeshBasicMaterial` with the 18% fill and
+  `polygonOffset` so edges stay visible; faces facing the camera at 18%, side faces at 12% (depth cue without lighting).
+- `count`: the number of whole tiles and the partial area are derived in `derive(vals)`: `whole = floor(x)^dims`,
+  `area = x^dims`, `partial = area − whole`; these three are store-derived values with ids `whole`, `area`, `partial`
+  (N-panel rows + formula terms).
+- `negative: 'mirror'`: for `x < 0` the square is drawn on `[x, 0]` (mirrored through the origin on both axes), same
+  tiles, same count: 0.G-1 uses it to show "squares forget the sign". Default (0.2) throws on `x < 0` (0.2's scrubs never
+  go negative; a thrown error is a design bug, not a reader state).
+- `label`: a `Label` at the centre with the area (`fmt` 2 decimals; integer side → integer area without decimals).
+- Hover (hot): outline on the whole square (never per tile); hovering lights the `area` term.
+- Degenerate: `x === 0` draws nothing, labels read `0`; count rows read `0`.
+
+Other primitives used here, all existing unless marked: `Stage`, `ViewportCard` (Header, NPanel, StatusBar, Gizmo),
+`Grid`, `Segment`, `Point`, `Arrow`, `AreaTile`, `RightAngle`, `Label`, `Formula` (`\t{}`, `\s{}`), `Num`;
+`Timeline`, `NumTable`, `Toggle` and the Challenge card are the Task 7 contracts (planned, not yet in `src/viz`);
+`FnCurve` (new, 0.2-5 only): a pixel-stable polyline of `y = f(x)` sampled at N points on an interval, built on `SLine`.
+
+### 7.2 Store `squares-and-plane` (0.G)
+
+| key | type | initial | range / step | written by |
+|---|---|---|---|---|
+| `x` | number | 3 | [−4, 4] / 0.1 | `\s{x}` scrub (prose and formula), N-panel field, side handle drag (0.G-1) |
+| `A` | number | 9 | [0, 16] / 0.25 | N-panel field `A` and `\s{A}` in 0.G-3; writes `x = sqrt(A)` (0.G-3 owns the direction A → x) |
+| `P` | [x, y] | [−2, 3] | stage extent, snap 0.1 | point drag (0.G-2), two N-panel fields |
+
+Derived: `x2 = x·x`, `ax = |x|`, `whole = floor(|x|)^2`, `partial = x2 − whole`, `sqrtA = sqrt(A)`, `px = P[0]`,
+`py = P[1]`, `px2 = px²`, `py2 = py²`, `sum = px2 + py2`.
+Rule: 0.G-1 writes `x`, and `A` follows (`A = x2` is re-written by the same `set`); 0.G-3 writes `A`, and `x` follows
+(`x = sqrt(A)`, never negative). One `set` call per interaction updates both keys so no scene ever sees them disagree.
+
+### 7.3 Scene 0.G-1 — "Why is x² called a square?" (lead scene, draws itself on first view)
+
+**Purpose.** The number `x²` is the count of unit tiles in a square of side `x`. Aha: the tiles ARE the number; a
+side of 2.5 has partial tiles and the formula still gives the exact area; a negative side draws the same square on the
+other side of the origin and the area stays positive (squares forget the sign).
+
+**Stage.** 2D, `extent = 4.5` (x = ±4 → the square reaches ±4, 10% margin), centred `[0, 0]`. Grid step 1, axes on
+(axisX/axisY, so "negative x" is visibly a direction).
+
+**Objects.**
+
+| id | primitive | geometry | role / fill | label | drag |
+|---|---|---|---|---|---|
+| `sq` | TileGrid | `side = x`, `dims = 2`, `negative = 'mirror'`, `count` | vecA 18% (partials 28%) | `x² = 9` centred | — |
+| `side` | Segment (beam) + Point handle at `[x, 0]` | `[0, 0] → [x, 0]` | vecA | `x = 3.0` under the segment (negative: left of the origin) | handle: x only, writes `x = clamp(snap(px), −4, 4)` |
+| `o` | Point | `[0, 0]` | ink | `0` | — |
+
+**ViewportCard.** Header: `2D` · `Ortho` · `Overlays ▾` (grid on, tiles on, labels on, axes on) · `Reset view` ·
+`0.G-1 · Square`. N-panel rows: `x` E [−4, 4; 0.1; Ctrl snaps to 0.5] · separator AREA · `x2` R (`x²`) · `whole` R
+(`whole tiles`) · `partial` R (`partial area`, hidden while `partial === 0`). Status bar: over the handle — "LMB drag
+the side · x can be negative"; over the square — "x² = 9 · 9 whole tiles"; idle — "Wheel zoom · MMB pan · N panel".
+
+**Formula.** `\t{x2}{x^2} = \s{x} \cdot \s{x} = \s{x2}`; a second line while `partial > 0`:
+`= \t{whole}{\s{whole}} \text{ whole tiles} + \t{partial}{\s{partial}}`.
+
+**Hover map.** `x`: side beam + handle + `\s{x}` + field. `x2`: square outline + its label + `x^2` + `\s{x2}` + row.
+`whole`: the whole tiles brighten to 28%, the partials dim to 10%. `partial`: the reverse.
+
+**Edge cases.** `x = 0`: no tiles, side segment zero-length, label `x² = 0`. `x = −3`: square on `[−3, 0]²`, label
+`x² = 9` (positive), side label `x = −3.0` to the left; N-panel `x2` reads `9.00`. Non-integer: `x = 2.5` → 4 whole +
+2.25 partial, `x2 = 6.25`.
+
+**Challenges.** 1. "Make the square hold exactly 16 tiles." Success: `|x| === 4`. 2. "Make the area positive with a
+negative side." Success: `x < 0` (card: "the square is drawn to the left and down; its area is still x²").
+
+**Motion.** First view: the side grows from the origin (300 ms), then the tiles fill row by row (300 ms); reduced motion:
+the final state at once. Drags 1:1.
+
+### 7.4 Scene 0.G-2 — Two rulers, one point
+
+**Purpose.** A point is two readings; the two dashed legs are its coordinates, drawn. Aha: drag the dot and the numbers
+change; type the numbers and the dot moves; there is nothing in between.
+
+**Stage.** 2D, `extent = 5`, centred `[0, 0]`, grid step 1, axes on with tick labels every 1 (muted mono).
+
+**Objects.** `P` Point (ink, 6 px, label `(−2, 3)` updated live, drag: free, snap 0.1); `legx` Segment dashed `P → [px, 0]`
+(axisX colour, label `x = −2.0` at the foot); `legy` Segment dashed `P → [0, py]` (axisY colour, label `y = 3.0`);
+`footx`, `footy` Point small (muted) at the feet; `rtx`, `rty` RightAngle at the feet (muted).
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, axes, legs, labels) · `Reset view` · `0.G-2 · Point`.
+N-panel: `px` E [−4.5, 4.5; 0.1] · `py` E · separator SQUARES · `px2` R (`x²`) · `py2` R (`y²`) · `sum` R (`x² + y²`).
+Status: over P — "LMB drag P · arrows nudge 0.1 · Shift 1.0"; over a leg — "x leg: the x coordinate, −2.0";
+idle — "Drag P or type x, y in the N panel".
+
+**Formula.** `P = (\s{px},\; \s{py})`; second line (the hand-off to 0.3): `\t{px2}{x^2} + \t{py2}{y^2} = \s{px2} + \s{py2}
+= \s{sum}` — shown dim until the reader hovers a SQUARES row.
+
+**Hover map.** `px`: leg x + foot + its label + `\s{px}` + field; `py` likewise; `px2`/`py2`: the leg brightens and a
+transient AreaTile (axis colour, 18%) is drawn on the leg for as long as the hover lasts; `sum`: both tiles.
+
+**NumTable** (2 rows: `x`, `y`; 1 column: value) under the formula: the "two readings" view, cells carry `px`/`py`.
+
+**Edge cases.** `P` on an axis: one leg has zero length, its label reads `0.0`, its foot coincides with P. `P` at the
+origin: both.
+
+**Challenges.** 1. "Put P at (−2, 3) by typing, not dragging." Success: `px === −2 && py === 3` (any route; the hint
+says the N panel). 2. "Make x² + y² equal 13 with a different point." Success: `sum === 13 && !(px === −2 && py === 3)`
+(e.g. (3, 2), (2, −3)).
+
+### 7.5 Scene 0.G-3 — The root undoes the square
+
+**Purpose.** Reverse the direction: the reader sets the AREA, and the side appears. Aha: most areas give an ugly side
+(√2 = 1.4142…); the side is never negative.
+
+**Stage.** Same as 0.G-1 (`extent = 4.5`), axes off. Reuses `TileGrid` with `side = sqrtA` — the same square as 0.G-1,
+here driven by `A`.
+
+**Objects.** `sq` TileGrid (`side = sqrtA`, vecB 18%, label `A = 9`); `side` Segment beam `[0, 0] → [sqrtA, 0]`,
+vecB, label `√A = 3.0`, no handle (the side is the OUTPUT here; the status bar says so); `o` Point.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` · `Reset view` · `0.G-3 · Root`. N-panel: `A` E [0, 16; 0.25;
+Ctrl snaps to perfect squares 0, 1, 4, 9, 16] · separator SIDE · `sqrtA` R (`√A`, 4 decimals here, so √2 shows
+`1.4142`) · `check` R (`(√A)²`, 2 decimals, reads `2.00` for A = 2, i.e. the root squared returns the area).
+Status: over the square — "Scrub A in the N panel · the side follows"; over the side — "√A = 1.4142 · output, not a
+handle"; idle — "Ctrl-drag A snaps to perfect squares".
+
+**Formula.** `\t{sqrtA}{\sqrt{\s{A}}} = \s{sqrtA}` and `\t{check}{(\sqrt{A})^2} = \s{check}`.
+
+**Edge cases.** `A = 0`: side 0, nothing drawn, `sqrtA` reads `0`. `A = 2`: tiles 1 whole + 1 partial, `sqrtA` 1.4142,
+`check` 2.00.
+
+**Challenges.** 1. "Find an area whose side is a whole number, other than 9." Success: `Number.isInteger(sqrtA) && A !== 9
+&& A > 0`. 2. "Make the side exactly 1.5." Success: `A === 2.25`.
+
+### 7.6 Store `powers` (0.2)
+
+| key | type | initial | range / step | written by |
+|---|---|---|---|---|
+| `x` | number | 3 | [0, 4] / 0.1 | `\s{x}`, N-panel field, side handle (0.2-1, 0.2-2), `A`/`V` fields (0.2-4, through the root) |
+| `n` | number (int) | 2 | 1..3 / 1 | power slider (0.2-2), N-panel field (integer steps), keys 1/2/3 |
+| `k` | number (int) | 3 | −3..3 / 1 | Timeline `ladder` (0.2-3), N-panel field |
+| `base` | number | 2 | [1.5, 4] / 0.5 | N-panel field (0.2-3 only; a separate key so the ladder base does not fight the side `x` of the other scenes) |
+| `A` | number | 9 | [0, 16] / 0.25 | N-panel field + `\s{A}` (0.2-1, 0.2-4 2D) |
+| `V` | number | 27 | [0, 64] / 1 | N-panel field + `\s{V}` (0.2-4 3D) |
+| `dim` | number (2/3) | 2 | toggle | Toggle `2D / 3D` (0.2-4) |
+| `g` | number | 2.2 | [0.2, 5] / 0.1 | `\s{g}`, N-panel field (0.2-5); presets 2.2, 1/2.2, 8, 32 as buttons |
+| `step` timeline | `ladder` 0..6 | 0 | | Timeline (0.2-3); `k = 3 − step` |
+
+Derived (`derive(vals)`): `x1 = x`, `x2 = x²`, `x3 = x³`, `xn = x^n`, `whole = floor(x)^n`, `partial = xn − whole`,
+`sqrtA = sqrt(A)`, `cbrtV = cbrt(V)`, ladder: `pow_k = base^k` for `k ∈ [−3, 3]` (seven values, ids `p3 … pm3`),
+`half = base^(k) / base` (the next rung, shown as the "divide by base" annotation), curve: `y(t) = t^g` sampled at 65
+points on [0, 1], `y_half = 0.5^g`. `A` and `x` (and `V` and `x`) are kept consistent by one `set` as in 7.2: writing `x`
+writes `A = x²` and `V = x³`; writing `A` writes `x = sqrt(A)` and `V = x³`; writing `V` writes `x = cbrt(V)` and `A = x²`.
+
+### 7.7 Scene 0.2-1 — "A square is an area" (lead scene of 0.2)
+
+**Purpose.** Same square as 0.G-1 (the lesson says "the same tiles"), now with the root field next to it: the N-panel
+has `x` AND `A`, and either one drives the other. Aha: the two fields are one fact read in two directions (x → x²
+forward, √ backward); `x = 2.5` shows 4 whole tiles, two half strips and a quarter.
+
+**Stage.** 2D, `extent = 4.5`, centred `[2, 2]` (the square lives in the positive quadrant in 0.2: no negative sides),
+grid step 1, axes on.
+
+**Objects.** `sq` TileGrid (`side = x`, vecA, `count`, label `x² = 9`); `side` Segment beam + handle at `[x, 0]`
+(label `x = 3.0`; drag: x only, `clamp(snap, 0, 4)`); `top` Segment (thin, muted) `[0, x] → [x, x]` with label `x`
+(the second factor, so the reader sees x·x, not x alone); `o` Point.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, tiles, labels, axes) · `Reset view` · `0.2-1 · Square`.
+N-panel: `x` E [0, 4; 0.1; Ctrl 0.5] · `A` E [0, 16; 0.25; Ctrl perfect squares] (label `x² = A`, with a `√`
+glyph prefix on the field: typing here runs the root) · separator TILES · `whole` R · `partial` R (hidden when 0).
+Status: over the handle — "LMB drag the side · or type A in the N panel"; over the square — "x² = 6.25 · 4 whole tiles +
+2.25"; over the `A` field — "Type an area: the side becomes √A"; idle — "Wheel zoom · MMB pan · N panel".
+
+**Formula.** `\t{x2}{x^2} = \s{x} \cdot \s{x} = \s{x2}` · second line `\s{x} = \t{sqrtA}{\sqrt{\s{A}}}` (always visible:
+it is the lesson's point). Scrubbing `\s{A}` in the formula writes `A` (root direction).
+
+**Hover map.** as 0.G-1; `A`/`sqrtA`: the outline + the `A` field + the second formula line.
+
+**Edge cases.** `x = 0`: nothing, `A = 0`. `A = 2` typed: `x = 1.4142`, tiles 1 whole + 1 partial (`partial = 1.00`
+because 2 − 1 = 1; shown as `1.00`). Values typed outside range clamp (16 → x = 4).
+
+**Challenges.** 1. "Make the square hold exactly 4 whole tiles and nothing else." Success: `x === 2`. 2. "Type an area
+whose side is not a whole number, then read the side." Success: `!Number.isInteger(x) && lastWriter === 'A'` (the
+store records which key the last `set` came from; the Challenge reads it). 3. "Get 6.25 without typing it." Success:
+`A === 6.25 && lastWriter === 'x'`.
+
+**Motion.** First view: the side grows (300 ms) then the tiles fill (300 ms); reduced motion: cut. Drags and scrubs 1:1.
+
+### 7.8 Scene 0.2-2 — The 3D widget: segment → square → cube
+
+**Purpose.** `x¹`, `x²`, `x³` are a length, an area, a volume. The reader morphs one object through the three with
+the power slider `n`, and orbits the cube. Aha: the cube is layers of the square (27 = 3 layers of 9); the count of unit
+pieces is `x^n` for every n; a side of 2.5 gives partial cubes.
+
+**Stage.** 3D, `extent = 4.5`, camera default from `[7, 5.5, 7]` looking at `[1.5, 1.5, 1.5]` (fits x = 4 with margin;
+AGENTS.md's open item on default 3D framing applies — set the camera explicitly here). Grid on the ground plane y = 0,
+step 1; axes on (axisX/axisY/axisZ) with the gizmo top-right. Orbit on drag (OrbitControls, damping off); `touch-action`
+rule as the engine does.
+
+**Objects.** `obj` TileGrid with `dims = n` mapped as: `n = 1` → a row of unit segments on the x axis drawn as flat
+tiles of height 0.12 (so a "length" is still visible in 3D) — implemented as `dims = 2` with `side = x` on x and a fixed
+0.12 on y, count `floor(x)`; `n = 2` → `dims = 2` square on the ground plane (x, z), count `floor(x)²`; `n = 3` → `dims = 3`
+cube, count `floor(x)³`. All three are one component with a `dims`/`thin` prop; the morph between them is a vertex
+tween of the instances (180 ms spring; reduced motion: cut). Role vecA. `side` Segment beam along x with handle (drag:
+along the x axis in world space via `rayPlane` on the ground plane, writes `x`); `edges` labels: `x` on each visible
+edge of the current shape (1, 2 or 3 labels). Label at the centre of the top face: `x³ = 27`.
+
+**ViewportCard.** Header `3D` (2D disabled) · `Persp` · `Overlays ▾` (grid, axes, edge labels, unit edges) · `Reset
+view` · `0.2-2 · Cube`. N-panel: `x` E [0, 4; 0.1] · `n` E (integer field 1..3, shown as three radio-like chips
+`x¹ x² x³`, keys 1/2/3) · separator COUNT · `xn` R (`xⁿ`, label changes with n: `x¹`, `x²`, `x³`) · `whole` R
+(`whole pieces`) · `partial` R (hidden when 0) · separator LAYERS (only when `n = 3`) · `layers` R (`floor(x)` layers of
+`floor(x)²`). Status: over the handle — "LMB drag along x"; over the shape — "x³ = 27 · 3 layers of 9"; idle — "LMB
+orbit · Wheel zoom · 1/2/3 switch the power". 360 px: tap-to-interact overlay.
+
+**Formula.** `\t{xn}{x^{\s{n}}} = \s{xn}` with `n` scrubbable (1..3); below it, the expansion for the current n:
+`n = 3`: `= \s{x} \cdot \s{x} \cdot \s{x}`; `n = 2`: two factors; `n = 1`: `= \s{x}`.
+
+**Timeline `power`** (3 steps, optional view of the same slider): 0 "A stick of length x: x¹." 1 "Sweep it sideways by x:
+a square, x² tiles." 2 "Lift the square by x: a cube, x³ unit cubes, floor(x) layers of floor(x)²."
+
+**Hover map.** `x`: the side beam + every edge label + field. `xn`: the whole shape outlined + centre label + term.
+`whole`/`partial` as in 7.3. `layers`: the cube's layers separate by 0.08 (exploded view) for the duration of the hover
+(spring; cut under reduced motion).
+
+**Edge cases.** `x = 0`: nothing drawn, counts 0. `x = 2.5`, `n = 3`: 8 whole cubes, partial = 7.625, `xn = 15.625`.
+Orbit under the ground plane is clamped (`maxPolarAngle = 0.49π`) so the grid never flips.
+
+**Challenges.** 1. "Make 27 unit cubes." Success: `n === 3 && x === 3`. 2. "Find a side whose cube is smaller than
+its square." Success: `n === 3 && x > 0 && x < 1` (card: "between 0 and 1, more copies make it smaller").
+3. "Show that the cube is layers of the square: hover LAYERS at x = 3." Success: `hot has 'layers' && x === 3`.
+
+### 7.9 Scene 0.2-3 — The ladder of powers
+
+**Purpose.** The exponent walks from 3 down to −3 on ONE strip: each rung divides by the base, so x⁰ is one tile and
+x⁻¹ is a fraction of a tile. Aha: nothing special happens at 0 or at the first negative rung; the division just
+continues; for base 2 the tiles halve seven times.
+
+**Stage.** 2D, `extent = 5` horizontally (wide: the strip of seven rungs spans ~ 12 units at base 2; the stage uses a
+16:10 viewport with `extent` measured on the horizontal axis, centre `[0, 1]`), grid step 1, axes off.
+
+**Objects.** Seven rung groups, ids `p3, p2, p1, p0, pm1, pm2, pm3`, laid left to right with 0.6 gap; each rung is a
+TileGrid-like bar: `pow_k` unit tiles in a row (at base 2: 8, 4, 2, 1 tiles), and for negative k a single tile with a
+`pow_k` fraction filled (½, ¼, ⅛ of a tile, filled from the left, darker 28%, rest of the tile outlined). Above each rung
+a `Label` `2³ = 8` (`\s{base}^{k} = \s{pow_k}`); between rungs an `Arrow` (muted, short, pointing right-down) with the
+label `÷ 2`. Rungs with `k > 3 − step` are dim (opacity 0.35); the current rung has the hot outline. For non-integer base
+(e.g. 2.5) rungs hold partial tiles (2.5³ = 15.625 tiles: 15 whole + 0.625) — the same TileGrid clipping in one row.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, labels, arrows) · `Reset view` · `0.2-3 · Ladder`.
+N-panel: `base` E [1.5, 4; 0.5] · `k` E (integer −3..3; the Timeline mirrors it) · separator RUNGS · `p3 … pm3` R
+(seven rows, `2³ … 2⁻³`, 3 decimals for negative k) . Status: over a rung — "2⁻¹ = 0.5 · half a tile"; over an arrow —
+"One step down divides by 2"; idle — "◀ ▶ step the ladder · base in the N panel".
+
+**Formula.** `\t{cur}{\s{base}^{\s{k}}} = \s{pow_k}` with a second line that shows the division from the rung above:
+`= \t{prev}{\s{base}^{k+1}} / \s{base} = \s{prevval} / \s{base}` (the ids `prev`/`prevval` resolve to the rung above the
+current one; at `k = 3` the second line is hidden).
+
+**Timeline `ladder`** (7 steps; `k = 3 − step`; tiles of the next rung appear by splitting the previous rung's tiles in
+half — a vertex tween of the instance matrices, 180 ms; reduced motion: cut).
+
+| step | k | text |
+|---|---|---|
+| 0 | 3 | "2³ = 8: three copies of 2 multiplied. Eight tiles." |
+| 1 | 2 | "One rung down: divide by 2. 2² = 4." |
+| 2 | 1 | "Again: 2¹ = 2." |
+| 3 | 0 | "Again: 2 / 2 = 1. So 2⁰ = 1 — one tile. Not zero: there is a tile here." |
+| 4 | −1 | "Keep going: 1 / 2 = 0.5. 2⁻¹ is half a tile. The minus sign says 'divide', not 'negative'." |
+| 5 | −2 | "0.5 / 2 = 0.25: a quarter tile. 2⁻² = 1/2²." |
+| 6 | −3 | "An eighth. The ladder never stops; it just moves into fractions. Change the base in the N panel: 3⁰ is also one tile." |
+
+**Hover map.** `pK`: rung + its label + its N-panel row; `base`: every rung's label base + field; `cur`: the current rung.
+
+**Edge cases.** `base = 1.5`: rungs 3.375, 2.25, 1.5, 1, 0.667, 0.444, 0.296 — partial tiles everywhere; the labels use
+3 decimals. The base is never 0 or 1 (range starts at 1.5) so every rung is distinct and the ladder is honest. `base = 4`:
+64 tiles on rung 3 → the rung wraps to rows of 16 (TileGrid `wrap = 16`).
+
+**Challenges.** 1. "Reach one tile." Success: `k === 0`. 2. "Find the rung that is a quarter tile at base 2." Success:
+`base === 2 && k === −2`. 3. "Make the x⁰ rung still read 1 with a different base." Success: `k === 0 && base !== 2`.
+
+### 7.10 Scene 0.2-4 — Fractional power: area → side, volume → edge
+
+**Purpose.** `x^½` is the side of a square of area A; `x^⅓` is the edge of a cube of volume V. The reader scrubs the
+AREA (or VOLUME) and watches the side follow. Aha: the forward direction (0.2-1/0.2-2) and the backward direction are the
+same object; the root is the power whose "copies" must multiply back to the input.
+
+**Stage.** `dim` toggle: 2D (`extent = 4.5`, centred `[2, 2]`) or 3D (as 0.2-2). One ViewportCard with the `2D/3D` header
+toggle (this is the one scene in 0.2 where the header toggle is live).
+
+**Objects.** `sq` TileGrid (`side = sqrtA` in 2D, vecB; `side = cbrtV`, `dims = 3` in 3D), centre label `A = 9` / `V = 27`;
+`side` Segment beam along x, **no handle** (output), label `A^{1/2} = 3.0` / `V^{1/3} = 3.0`; `o` Point.
+
+**ViewportCard.** Header `2D ◧ 3D ◫` (live) · `Ortho`/`Persp` follows · `Overlays ▾` · `Reset view` · `0.2-4 · Root`.
+N-panel: 2D: `A` E [0, 16; 0.25; Ctrl perfect squares] · separator SIDE · `sqrtA` R (`A^½`, 4 decimals) · `check2` R
+(`(A^½)²`, 2 decimals). 3D: `V` E [0, 64; 1; Ctrl perfect cubes 0, 1, 8, 27, 64] · separator EDGE · `cbrtV` R (`V^⅓`,
+4 decimals) · `check3` R (`(V^⅓)³`). Status: over the shape — "Scrub A · the side is A^½"; over the side — "Output: the
+root"; idle — "2D / 3D in the header · Ctrl-drag snaps to perfect squares / cubes".
+
+**Formula.** 2D: `\t{sqrtA}{\s{A}^{1/2}} = \sqrt{\s{A}} = \s{sqrtA}`, then `\t{check2}{(\s{sqrtA})^2} = \s{check2}`.
+3D: `\t{cbrtV}{\s{V}^{1/3}} = \s{cbrtV}`, then `\t{check3}{(\s{cbrtV})^3} = \s{check3}`. The check line is the lesson's
+"the copies multiply back" argument as numbers.
+
+**Hover map.** `A`/`V`: shape outline + field + `\s{}`; `sqrtA`/`cbrtV`: the side beam + its label + the SIDE/EDGE row;
+`check2`/`check3`: the whole shape (it IS the check).
+
+**Edge cases.** `A = 0`/`V = 0`: nothing drawn, roots 0. `V = 2`: edge 1.2599, one whole cube + partial 1.00. Switching
+`dim` keeps `x` (the shared key) so the 3D edge equals the 2D side the reader just set: `A = 6.25` → `x = 2.5` →
+`V = 15.625` shown on switch.
+
+**Challenges.** 1. "Find a volume whose edge is a whole number, other than 27." Success: `dim === 3 &&
+Number.isInteger(cbrtV) && V !== 27 && V > 0`. 2. "Set the area so the edge in 3D is 2." Success: `A === 4 && dim === 3`
+(the reader must switch views and read `V = 8`).
+
+### 7.11 Scene 0.2-5 — pow curves (gamma and specular)
+
+**Purpose.** For a base between 0 and 1, a bigger exponent makes a SMALLER number. One curve `y = x^g` on [0, 1] with a
+scrubbable `g`: at 2.2 it is the gamma curve, at 1/2.2 its inverse, at 32 the specular lobe that is black except near 1.
+Aha: `g = 1` is the diagonal; `g` and `1/g` mirror across it (encode then decode returns the diagonal).
+
+**Stage.** 2D, `extent = 0.6`, centred `[0.5, 0.5]` (the unit square fills the viewport with margin), grid step 0.1
+(minor) / 0.5 (major), axes on with labels `0`, `0.5`, `1`.
+
+**Objects.** `curve` FnCurve `y = t^g`, 65 samples, vecA beam; `diag` Segment `[0,0] → [1,1]` dashed muted (the `g = 1`
+reference); `inv` FnCurve `y = t^{1/g}`, vecB, 1.5 px (shown when Overlay "inverse" is on, default on); `pt` Point on the
+curve at `t = 0.5` with a dashed drop to both axes and label `0.5^{g} = 0.2176`; `pt` drag: along x only, writes
+`t` (store key `t` [0, 1] / 0.01) — the readout follows `t^g`.
+
+**ViewportCard.** Header `2D` · `Ortho` · `Overlays ▾` (grid, diagonal, inverse curve, drop lines) · `Reset view` ·
+`0.2-5 · pow`. N-panel: `g` E [0.2, 5; 0.1] with four preset chips under it: `2.2`, `1/2.2`, `8`, `32` (presets beyond the
+field range, 8 and 32, are allowed: the field range is the scrub range, presets set the value directly and the field shows
+it) · `t` E [0, 1; 0.01] · separator VALUES · `y` R (`t^g`, 4 decimals) · `y_inv` R (`(t^g)^{1/g}`, 4 decimals: reads back
+`t`). Status: over the curve — "y = x^2.2 · below the diagonal: darker"; over the point — "LMB drag along x"; idle —
+"Presets: 2.2 gamma · 1/2.2 decode · 8 / 32 specular".
+
+**Formula.** `\t{y}{\s{t}^{\s{g}}} = \s{y}` and `\t{y_inv}{(\s{t}^{\s{g}})^{1/\s{g}}} = \s{y_inv}`.
+
+**Hover map.** `g`: the curve + field + `\s{g}`; `y`: the point, its drops, the readout; `y_inv`: the inverse curve and
+the mirrored point on it (drawn only during the hover).
+
+**Edge cases.** `g = 32`, `t = 0.5`: `y` reads `0.0000` (true value 2.3e−10; the 4-decimal `fmt` shows `0.0000`, the
+status bar shows the scientific form `2.3e-10` so no reader thinks it is exactly zero). `t = 0`, `g = 0.2`: `0^0.2 = 0`;
+`t = 1`: every curve passes through 1. `g` never reaches 0 (range starts at 0.2), so `0^0` never appears here; the prose
+owns that warning.
+
+**Challenges.** 1. "Make the two curves coincide." Success: `g === 1`. 2. "Find g where 0.5 becomes 0.25." Success:
+`g === 2 && t === 0.5`. 3. "Make the highlight: find the smallest preset where y(0.5) shows 0.0000." Success:
+`g >= 14 && t === 0.5` (32 is the preset that does it; the card says a highlight needs a cosine very close to 1).
+
+### 7.12 Reduced motion, 360 px, a11y (all scenes)
+
+- `prefers-reduced-motion: reduce`: the tile fill-in, the layer explode, the segment → square → cube morph, the ladder
+  splitting and every spring are hard cuts; the "draws itself" moment of 0.G-1 and 0.2-1 is skipped.
+- 360 px: every card keeps 16:10; N-panel → chip row (ids unchanged); 0.2-3's wide strip scrolls inside the viewport
+  with MMB/two-finger pan, and `Reset view` recentres; 3D scenes get the tap-to-interact overlay.
+- Keyboard: every handle has its DragKeys button; the power chips (0.2-2) and presets (0.2-5) are buttons; Timelines are
+  range inputs; every challenge is reachable by typing values in N-panel fields alone.
+- Every scene's accessible name is the server `<figcaption>` from `SceneIsland`; live values are in the N-panel rows
+  (DOM), so a screen reader gets the numbers without the canvas.
+
+### 7.13 What the engine must add for this section
+
+| item | status | needed by |
+|---|---|---|
+| `TileGrid` (instanced unit tiles/cubes, exact clipping, whole/partial count, mirror, wrap, thin mode) | new, `scene/TileGrid.tsx` | all |
+| `FnCurve` (sampled polyline on `SLine`) | new, small | 0.2-5 |
+| Store `lastWriter` (which key the last `set` wrote) | new, one field in `lessonStore` | 0.2-1 challenges |
+| Explicit 3D camera position per Stage (AGENTS.md open item) | engine fix | 0.2-2, 0.2-4 |
+| `Timeline`, `NumTable`, `Toggle`, Challenge card | Task 7 contracts (planned) | 0.2-2, 0.2-3, 0.G-2, 0.2-4, all |
+| N-panel preset chips under a field; integer "radio chip" field | NPanel addition | 0.2-2, 0.2-5 |
