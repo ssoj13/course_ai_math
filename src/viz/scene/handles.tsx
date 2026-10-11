@@ -218,6 +218,11 @@ export interface Hover {
 
 export interface Nav {
 	reset(): void;
+	/**
+	 * Smooth view to View All of the current figure from direction `dir` (target -> camera), which becomes the home
+	 * direction until Reset view: a scene whose timeline turns the picture (the DotUnit's front view) frames it so.
+	 */
+	frame(dir: readonly [number, number, number]): void;
 	align(axis: 0 | 1 | 2, sign: 1 | -1): void;
 	/** Unit vector from the target toward the camera, for "click the facing bubble again = opposite view". */
 	viewDir(): readonly number[];

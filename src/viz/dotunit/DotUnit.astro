@@ -1,0 +1,26 @@
+---
+/**
+ * Server wrapper of the DotUnit scenes (docs/design/intro-and-dotunit.md §5): resolves the page locale, the translated
+ * caption and the N-panel rows (the same array the card renders, for the phone chip reservation), ships the client
+ * dictionary slices and mounts the scene island plus its DOM controls. Pages use `<DotUnit kind="..." />`.
+ * `parts` picks the controls under the unit card (the 1.4 teaser shows only the timeline and the formula).
+ */
+import { pageLocale, t } from '../../i18n/ui';
+import UiStrings from '../../components/UiStrings.astro';
+import SceneIsland from '../SceneIsland.astro';
+import { DotUnitScene, DotUnitControls, type UnitPart } from './dotunit';
+import { unitRows } from './dotunit.rows';
+
+interface Props {
+	kind: 'unit';
+	/** Caption variant: the intro's "whole course in ten seconds", the 1.4 teaser, or the plain card. */
+	caption?: 'intro' | 'teaser' | 'plain';
+	parts?: readonly UnitPart[];
+}
+const locale = pageLocale(Astro);
+const { kind, caption = 'plain', parts } = Astro.props;
+const captions = { intro: t(locale, 'du.capIntro'), teaser: t(locale, 'du.capTeaser'), plain: t(locale, 'du.capUnit') };
+---
+<UiStrings ns={['viewport', 'gizmo', 'status', 'linked', 'du']} />
+{kind === 'unit' && <SceneIsland caption={captions[caption]} rows={unitRows(locale)}><DotUnitScene locale={locale} client:only="react" /></SceneIsland>}
+{kind === 'unit' && <DotUnitControls locale={locale} parts={parts} client:load />}

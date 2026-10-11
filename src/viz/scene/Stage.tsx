@@ -164,6 +164,8 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 	const ortho = camera instanceof OrthoCam;
 	/** Figure bounds captured by the last home view (null: frame the extent, e.g. nothing drawn yet). */
 	const homeBox = useRef<Box3 | null>(null);
+	/** Direction (target -> camera) of the 3D home view: the three-quarter view, or the one a scene asked for (`nav.frame`). */
+	const homeDir = useRef<typeof HOME_DIR>(HOME_DIR);
 	/** End of the settling period (performance.now()), 0 before the first frame; -1 once the reader took over. */
 	const settle = useRef(0);
 	/**
@@ -185,7 +187,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 		return Math.min(base * HOME_2D[1], Math.max(base * HOME_2D[0], z));
 	};
 	/** 3D fit in the view left free by the N-panel. */
-	const fit3dFor = (box: Box3, width: number, height: number) => fit3d(boundsOf(box), HOME_DIR, width - inset, height, TAN, partsOf.get(box), gizmoCorner(reg.el));
+	const fit3dFor = (box: Box3, width: number, height: number) => fit3d(boundsOf(box), homeDir.current, width - inset, height, TAN, partsOf.get(box), gizmoCorner(reg.el));
 	/** Measures the figure (View All) without applying it; null when nothing is drawn yet. */
 	const figure = (): Box3 | null => {
 		const root = content.current, parts: Part[] = [];
@@ -208,7 +210,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 			return poseOf([f.cx, f.cy, 10], target, fitZoom(width, height));
 		}
 		// Same three-quarter direction as before. Without a figure: the sphere of radius FRAME_3D * extent.
-		const dir = HOME_DIR;
+		const dir = homeDir.current;
 		const c: readonly number[] = box ? fit3dFor(box, width, height).target : [0, 0, 0];
 		const fitD = box ? fit3dFor(box, width, height).dist : fitDistance(FRAME_3D * e, Math.max(1, width - inset), height);
 		const d = Math.min(e * DIST_3D[1], Math.max(e * DIST_3D[0], fitD));
@@ -306,6 +308,15 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 	useLayoutEffect(() => {
 		reg.nav = {
 			reset: () => {
+				homeDir.current = HOME_DIR;
+				measure();
+				go(home());
+				atHome.current = true;
+			},
+			frame: (dir) => {
+				const l = Math.hypot(dir[0], dir[1], dir[2]);
+				if (!(l > 0)) throw new Error('nav.frame needs a nonzero direction');
+				homeDir.current = [dir[0] / l, dir[1] / l, dir[2] / l];
 				measure();
 				go(home());
 				atHome.current = true;

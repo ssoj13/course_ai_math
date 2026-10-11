@@ -97,7 +97,7 @@ test('a bare Stage registry has no card: useOverlay says so', () => {
 test('gizmo: keyboard buttons keep focus while the bubbles re-stack by depth; Enter aligns', () => {
 	const reg = createStage('3d', { lesson: 'gz1', id: 'c', overlays: [] });
 	const calls: string[] = [];
-	reg.nav = { reset() {}, align: (a, s) => void calls.push(`${a},${s}`), viewDir: () => [0, 0, 1], redraw() {} };
+	reg.nav = { reset() {}, frame() {}, align: (a, s) => void calls.push(`${a},${s}`), viewDir: () => [0, 0, 1], redraw() {} };
 	const host = mount(<Gizmo reg={reg} />);
 	const keys = [...host.querySelectorAll<HTMLButtonElement>('.lab-gizmo-keys button')];
 	expect(keys.map((k) => k.getAttribute('aria-label'))).toEqual(['Right view (+X)', 'Top view (+Y)', 'Front view (+Z)', 'Left view (−X)', 'Bottom view (−Y)', 'Back view (−Z)']);
