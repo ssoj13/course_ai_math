@@ -4,6 +4,14 @@ description: "Pythagoras plus a correction term for a corner that is not square;
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { LawScene, LawControls, LawDetail, LawDetailControls } from '../../../viz/lessons/law-of-cosines';
+import { rowsFor } from '../../../viz/lessons/law-of-cosines.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'hud', 'status', 'challenge', 'linked']} />
 
 **Built on:** [Distance and Pythagoras](lesson:pythagoras) (squares on the sides, $c^2 = a^2 + b^2$ for a square
 corner) and [Angles, radians and the unit circle](lesson:unit-circle) (cos is the shadow of a length-1 stick).
@@ -29,7 +37,14 @@ Pythagoras promised $25$. Twelve units of area are missing. Where did they go?
 
 ## The missing rectangles
 
-{/* scene: LC-0 — the missing rectangles: squares built outward on a, b, c; the shadow of b on a, the strip a × (b cos θ) cut from a² and the strip b × (a cos θ) cut from b²; the leftovers lean, turn and land inside c² (timeline); at 90° both strips vanish, past 90° they turn hatched and are added */}
+<SceneIsland caption="LC-0 · Missing rectangles: shear, rigid turn and signed area balance." rows={rowsFor(0, locale)} hud formula formulaHeight={100}>
+  <LawScene scene={0} locale={locale} client:only="react" />
+</SceneIsland>
+<LawDetailControls locale={locale} client:load />
+<SceneIsland caption="LC-0 · Selected piece in detail; the same timeline and geometry.">
+  <LawDetail locale={locale} client:only="react" />
+</SceneIsland>
+<LawControls scene={0} locale={locale} client:load />
 
 Build the three squares on the sides, as in the Pythagoras lesson: $a^2 = 9$ on side $a$, $b^2 = 16$ on side
 $b$, $c^2 = 13$ on side $c$. The two small ones are too big by 12 in total. Here is where the 12 is hiding.
@@ -39,7 +54,10 @@ that shadow? The unit circle lesson says: a stick of length 1 at angle $\theta$ 
 A stick of length $b$ has a shadow $b$ times as long:
 
 $$
-\text{shadow of } b \text{ on } a = b\cos\theta = 4 \cdot 0.5 = 2
+\begin{aligned}
+\text{shadow of } b \text{ on } a &= b\cos\theta \\
+&= 4 \cdot 0.5 = 2
+\end{aligned}
 $$
 
 **Step 2: cut a strip.** Off the square on $a$, cut a strip as wide as that shadow. The strip is $a$ tall and
@@ -57,8 +75,7 @@ b \cdot (a\cos\theta) = 4 \cdot 1.5 = 6
 $$
 
 The same number. Two rectangles with different shapes, 3 by 2 and 4 by 1.5, and the same area, because
-both are $a \cdot b \cdot \cos\theta$ with the factors in a different order. (They are the same *shape* only
-when $a = b$.)
+both are $a \cdot b \cdot \cos\theta$ with the factors in a different order. For a nonflat angle with nonzero strips, they have the same shape only when $a = b$. At 0° or 180°, a rotation can also make them coincide for unequal sides.
 
 **Step 4: count.** Two strips of 6 make 12. That is exactly what was missing: $25 - 12 = 13 = c^2$. What is
 left of the two squares after the strips are cut fits exactly into the square on $c$. With numbers: the square
@@ -66,8 +83,7 @@ on $a$ minus its strip leaves $9 - 6 = 3$, the square on $b$ minus its strip lea
 $3 + 10 = 13 = c^2$. The square on $c$ splits into two rectangles of exactly those areas along the line of the
 height dropped from $C$. In the scene you can watch the leftovers do it: each leftover rectangle leans into a
 parallelogram (same base, same height, same area), turns a quarter turn around the far end of its side ($B$ for
-the leftover of $a$, $A$ for the leftover of $b$), and leans back upright inside $c^2$. This is Euclid's own
-proof, extended from the square corner to any corner.
+the leftover of $a$, $A$ for the leftover of $b$), and leans back upright inside $c^2$. The shear and rigid turn preserve area. With signed remainders this accounting also covers obtuse and flattened triangles.
 
 So for a corner that is not square, the rule is:
 
@@ -77,6 +93,8 @@ $$
 
 This is the **law of cosines**: Pythagoras, minus two strips. Each strip is a side times the shadow of the other
 side on it.
+
+For some acute triangles, a shadow extends beyond the side: b cos θ > a makes DB negative. The leftover is a signed debt (hatched), not a negative ordinary area. Obtuse θ instead makes the shadow negative and DB longer than a. Zero remainders keep their numeric label.
 
 ## The formula, line by line
 
@@ -99,7 +117,10 @@ and the formula *becomes* Pythagoras. Pythagoras is not a different law; it is t
 
 ## Correction term
 
-{/* scene: LC-1 — the ledger: a² and b² stack up, the correction −2ab cos θ is a signed band, c² is the result; sweep θ from 0° to 180° and read c continuously; at 90° the band vanishes and the caption reads "= Pythagoras" */}
+<SceneIsland caption="LC-1 · The balance a² + b² − 2ab cos θ = c²." rows={rowsFor(1, locale)} hud formula formulaHeight={100}>
+  <LawScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<LawControls scene={1} locale={locale} client:load />
 
 Keep $a = 3$ and $b = 4$ and sweep the angle. The term $-2ab\cos\theta$ is the only thing that changes.
 
@@ -132,34 +153,51 @@ past $90^\circ$ sits on the left half of the circle.
 
 ## The same result from algebra
 
-{/* scene: LC-2 — the algebraic proof timeline: drop the height from A onto the line of a, name CD = b cos θ, AD = b sin θ, DB = a − b cos θ; Pythagoras on the right triangle ADB; expand; cos² + sin² = 1 collapses two terms into b² */}
+<SceneIsland caption="LC-2 · A step-by-step proof using Pythagoras." rows={rowsFor(2, locale)} hud formula formulaHeight={100}>
+  <LawScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<LawDetailControls proof locale={locale} client:load />
+<SceneIsland caption="LC-2 · Selected proof tile in detail; the same geometry and fade.">
+  <LawDetail proof locale={locale} client:only="react" />
+</SceneIsland>
+<LawControls scene={2} locale={locale} client:load />
 
 If scissors feel like a trick, here is the formula coming out of symbols. The triangle has corner $C$ where
 $a$ and $b$ meet at angle $\theta$; side $a$ runs from $C$ to $B$, side $b$ from $C$ to $A$, and $c$ is $AB$.
 
 Drop a perpendicular from $A$ onto the line of side $a$. Call its foot $D$. Now there *are* right angles,
-and three new lengths, all from the unit circle:
+and three signed quantities from the unit circle (ordinary lengths use their absolute values):
 
 $$
-CD = b\cos\theta, \qquad AD = b\sin\theta, \qquad DB = a - b\cos\theta
+\begin{aligned}
+CD &= b\cos\theta \\
+AD &= b\sin\theta \\
+DB &= a - b\cos\theta
+\end{aligned}
 $$
 
 $CD$ is the shadow of $b$ on $a$ (the same shadow as above). $AD$ is the height. $DB$ is what is left of side $a$
-after the shadow. With our numbers: $CD = 2$, $AD = 4 \cdot 0.866 = 3.464$, $DB = 3 - 2 = 1$.
+after the shadow. With our numbers: $CD = 2$, $AD = 4\sin60^\circ = 2\sqrt{3} \approx 3.464$, $DB = 3 - 2 = 1$.
 
 Triangle $ADB$ has a square corner at $D$, so Pythagoras applies to it:
 
 $$
-c^2 = DB^2 + AD^2 = (a - b\cos\theta)^2 + (b\sin\theta)^2
+\begin{aligned}
+c^2 &= DB^2 + AD^2 \\
+&= (a - b\cos\theta)^2 \\
+&\quad + (b\sin\theta)^2
+\end{aligned}
 $$
 
-Check with numbers before expanding: $1^2 + 3.464^2 = 1 + 12 = 13$. Correct. Now expand the first square,
+Check with numbers before expanding: $1^2 + (2\sqrt{3})^2 = 1 + 12 = 13$. Correct. Now expand the first square,
 $(a - b\cos\theta)^2 = a^2 - 2ab\cos\theta + b^2\cos^2\theta$:
 
 $$
 \begin{aligned}
-c^2 &= a^2 - 2ab\cos\theta + b^2\cos^2\theta + b^2\sin^2\theta \\
-    &= a^2 + b^2\,(\cos^2\theta + \sin^2\theta) - 2ab\cos\theta \\
+c^2 &= a^2 - 2ab\cos\theta \\
+&\quad + b^2\cos^2\theta + b^2\sin^2\theta \\
+&= a^2 + b^2\,(\cos^2\theta + \sin^2\theta) \\
+&\quad - 2ab\cos\theta \\
     &= a^2 + b^2 - 2ab\cos\theta
 \end{aligned}
 $$
@@ -182,11 +220,14 @@ $$
 Example: an equilateral triangle, $a = b = c = 1$. Then $\cos\theta = (1 + 1 - 1) / 2 = 0.5$, and
 $\theta = \arccos(0.5) = 60^\circ$. As it should be: three equal sides, three equal corners, $180^\circ / 3$.
 
-This turned-around form is the one your rig runs.
+Here a and b must be positive, and the three lengths must satisfy the triangle inequality. The 0° and 180° cases are flattened boundaries. This is the angle formula used below.
 
 ## Two-bone IK: the law of cosines in your rig
 
-{/* scene: LC-3 — two-bone IK: drag the hand target; the elbow angle is solved with exactly this formula; the raw acos argument and the clamped one are shown live; out of reach pins the arm straight with a dashed gap */}
+<SceneIsland caption="LC-3 · Two-bone IK: target, elbow and cosine clamp." rows={rowsFor(3, locale)} hud>
+  <LawScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<LawControls scene={3} locale={locale} client:load />
 
 A shoulder at the origin, an upper arm of length $L_1 = 2$, a forearm of length $L_2 = 1.5$, and a hand target.
 The solver must choose the elbow angle $\varphi$ so that the hand reaches the target. Three lengths in, one
@@ -197,7 +238,11 @@ Put the target at $(2.5, 1.5)$. First the distance, by Pythagoras: $d^2 = 2.5^2 
 so $d \approx 2.92$. Then the elbow:
 
 $$
-\cos\varphi = \frac{L_1^2 + L_2^2 - d^2}{2\,L_1 L_2} = \frac{4 + 2.25 - 8.5}{6} = \frac{-2.25}{6} = -0.375
+\begin{aligned}
+\cos\varphi &= \frac{L_1^2 + L_2^2 - d^2}{2\,L_1 L_2} \\
+&= \frac{4 + 2.25 - 8.5}{6} \\
+&= \frac{-2.25}{6} = -0.375
+\end{aligned}
 $$
 
 $\varphi = \arccos(-0.375) \approx 112^\circ$. A negative cosine, so the elbow is opened wider than a square
@@ -207,7 +252,7 @@ farther away than the $\sqrt{4 + 2.25} = 2.5$ that a square elbow would reach.
 Move the target to distance $d = 2.5$ exactly, say $(2.5, 0)$: $\cos\varphi = (6.25 - 6.25) / 6 = 0$ and
 $\varphi = 90^\circ$. The strips vanish, the elbow is square. That is the Pythagoras case inside the rig.
 
-### Why every solver clamps
+### Why this solver clamps
 
 Now drag the target out of reach, to $d = 4$:
 
@@ -215,11 +260,9 @@ $$
 \cos\varphi = \frac{6.25 - 16}{6} = -1.625
 $$
 
-No angle has a cosine of $-1.625$; the unit circle lesson said cos lives between $-1$ and $1$. Ask a library for
-$\arccos(-1.625)$ and it returns NaN, and a NaN in a bone's rotation makes the bone vanish from the viewport.
-So every solver **clamps** the cosine into $[-1, 1]$ first. Clamped to $-1$, $\varphi = 180^\circ$: the arm
-points straight at the target and stops short, which is exactly what you see when you drag an IK handle too far.
-The other end: a target closer than $|L_1 - L_2| = 0.5$, say $d = 0.3$, gives $\cos\varphi = (6.25 - 0.09) / 6 = 1.027$,
+No angle has a cosine of $-1.625$. Our solver clamps a finite computed cosine into $[-1, 1]$. NumPy `np.arccos` returns NaN outside that interval; Python `math.acos` raises a domain error. Warning delivery depends on the runtime. At $-1$, $\varphi = 180^\circ$: this solver holds the arm straight and stops short. Other rigs may use stretch or soft-IK policies.
+
+The other end: a target closer than $|L_1 - L_2| = 0.5$, say $d = 0.3$, gives $\cos\varphi = (6.25 - 0.09) / 6 \approx 1.027$,
 clamped to $1$, $\varphi = 0^\circ$, the arm folded flat.
 
 ```python
@@ -229,7 +272,7 @@ L1, L2 = 2.0, 1.5
 shoulder, hand = np.array([0.0, 0.0]), np.array([2.5, 1.5])
 d   = np.linalg.norm(hand - shoulder)
 c   = (L1*L1 + L2*L2 - d*d) / (2*L1*L2)
-c   = np.clip(c, -1.0, 1.0)      # out of reach -> 180°, too close -> 0°, never NaN
+c   = np.clip(c, -1.0, 1.0)      # finite positive bone lengths: out of reach -> 180°, too close -> 0°
 phi = np.arccos(c)               # elbow angle, radians
 print(round(d, 4), round(c, 4), round(np.degrees(phi), 2))   # 2.9155 -0.375 112.02
 ```
@@ -237,7 +280,7 @@ print(round(d, 4), round(c, 4), round(np.degrees(phi), 2))   # 2.9155 -0.375 112
 The solver needs one more angle to place the elbow, the shoulder's offset from the shoulder-to-target line,
 and it is the same law with the sides relabelled: $\cos\beta = (L_1^2 + d^2 - L_2^2) / (2 L_1 d)$. The last
 bit of information, whether the elbow bends to the left or the right of that line, is not in the formula at
-all; that is what a pole vector is for.
+all; that is what a pole vector is for. At d = 0 the shoulder formula would divide by zero: this scene explicitly chooses the +x direction and a zero shoulder offset. The elbow angle here is the interior angle, not a DCC joint rotation channel. Clamp does not repair NaN inputs or zero bone lengths.
 
 > **Say it simpler.** Pythagoras, plus a fix-up for a corner that is not square. The fix-up is two strips,
 > each a side times the shadow of the other side; it is bigger when the corner is sharper, zero at a square
@@ -300,10 +343,10 @@ all; that is what a pole vector is for.
         "about 112°"
       ],
       answer: 1,
-      explain: "cos φ = (4 + 2.25 − 16) / 6 = −1.625, outside [−1, 1]: no triangle exists because 4 > 2 + 1.5. acos would return NaN; the solver clamps to −1, φ = 180°, and the arm points straight at the target without reaching it."
+      explain: "cos φ = (4 + 2.25 − 16) / 6 = −1.625, outside [−1, 1]: no triangle exists because 4 > 2 + 1.5. NumPy arccos would return NaN; this solver clamps to −1, φ = 180°, and the arm points straight at the target without reaching it."
     },
     {
-      q: "The two strips a × (b cos θ) and b × (a cos θ) have…",
+      q: "For 0° < θ < 90°, the two strips a × (b cos θ) and b × (a cos θ) have…",
       options: [
         "the same area and the same shape",
         "different areas unless θ = 45°",
@@ -344,7 +387,7 @@ all; that is what a pole vector is for.
 3. $\cos 120^\circ = -0.5$, so $c^2 = 25 - 2 \cdot 12 \cdot (-0.5) = 25 + 12 = 37$, $c \approx 6.08$. The strips are $-6$ each and get added.
 4. $\cos\theta = (1 + 1 - 1) / (2 \cdot 1 \cdot 1) = 0.5$, so $\theta = 60^\circ$.
 5. $\cos\varphi = (4 + 2.25 - 6.25) / 6 = 0$, so $\varphi = 90^\circ$.
-6. $\cos\varphi = (6.25 - 0.09) / 6 = 1.027$, outside $[-1, 1]$: the target is closer than $|L_1 - L_2| = 0.5$. The solver clamps to $1$ and gives $\varphi = 0^\circ$, the arm folded.
+6. $\cos\varphi = (6.25 - 0.09) / 6 \approx 1.027$, outside $[-1, 1]$: the target is closer than $|L_1 - L_2| = 0.5$. The solver clamps to $1$ and gives $\varphi = 0^\circ$, the arm folded.
 
 </details>
 
@@ -377,7 +420,7 @@ def elbow_deg(L1, L2, d):
 
 print(elbow_deg(2, 1.5, 2.5))     # 90.0
 print(elbow_deg(2, 1.5, 4.0))     # 180.0 (out of reach, clamped)
-print(np.arccos(-1.625))          # nan (plus a RuntimeWarning) -> what happens without the clamp
+print(np.arccos(-1.625))          # nan; warning delivery depends on runtime and error policy
 ```
 
 <details>
@@ -385,15 +428,12 @@ print(np.arccos(-1.625))          # nan (plus a RuntimeWarning) -> what happens 
 
 The clamp is not only for targets that are truly out of reach. Put the hand *exactly* at full stretch,
 $d = L_1 + L_2$. On paper $\cos\varphi = -1$ exactly. In fp32 the three squares and the division each round,
-and the result can land at $-1.0000001$. `acos` of that is NaN, and the bone disappears for one frame, at the one
-pose the animator cares about most. Every production solver clamps for this reason, and so should any code you
-write that feeds `acos` or `asin` a computed value.
+and the result can land at $-1.0000001$. Guard finite inputs and positive lengths, then clamp the computed cosine before passing it to `acos`. This does not correct inaccurate inputs or choose a reach policy for every rig.
 
 A second, quieter problem lives near the same ends. The slope of `acos` is infinite at $\pm 1$: near a straight or
 a folded arm, a tiny rounding error in the cosine becomes a large error in the angle. At $\cos\varphi = -0.99999$
-the angle is $179.74^\circ$; at $-0.9999$ it is $179.19^\circ$. A change of $0.00009$ in the cosine moved the elbow
-by more than half a degree. Solvers that need stability at full extension use `atan2` on the height and the shadow instead, which has no
-such cliff.
+the angle is approximately $179.74^\circ$; at $-0.9999$ it is approximately $179.19^\circ$. A change of $0.00009$ in the cosine moved the elbow
+by more than half a degree. An `atan2` formulation using independently computed height and shadow can help. Reconstructing height from the same inaccurate cosine does not recover lost precision. The simple squared-length expression above can also suffer cancellation near equal sides and zero angle; it is teaching code, not a universal robust solver.
 
 </details>
 

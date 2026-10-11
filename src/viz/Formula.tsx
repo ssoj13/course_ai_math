@@ -5,7 +5,7 @@ import { hotOff, hotOn, lessonStore, type Val } from './store';
 import { renderLinked, showVal, texText, type Derived } from './tex';
 import { keyStep, scrubValue, type ScrubSpec } from './scrub';
 import { startScrubDrag } from './useScrub';
-import type { Marks } from './marks';
+import { markClass, type Marks } from './marks';
 import { useTip, type Tip } from './scene/NPanel';
 
 export interface FormulaProps {
@@ -33,12 +33,18 @@ class Markup extends Component<MarkupProps,object,Focus> {
  decorate() {
   const el=this.root.current; if(!el)return;
   const {config:p,vals,hot}=this.props;
-  el.querySelectorAll<HTMLElement>('[data-t]').forEach(h=>{
-   const k=h.dataset.t!,m=p.marks?.[k];
-   h.classList.toggle('is-hot',hot.has(k));h.classList.toggle('is-struck',Boolean(m?.struck));
+  // Explicit authored mark wrappers are independent of semantic term IDs and KaTeX internals.
+  el.querySelectorAll<HTMLElement>('[data-t],[data-m]').forEach(h=>{
+   const k=h.dataset.m??h.dataset.t!,m=p.marks?.[k];
+   h.classList.toggle('is-hot',Boolean(h.dataset.t&&hot.has(h.dataset.t)));
+   h.classList.toggle('is-struck',Boolean(m?.struck));
+   h.classList.toggle('is-dim',Boolean(m?.dim));
    h.classList.toggle('is-hidden',Boolean(m?.hidden));
-   h.setAttribute('aria-hidden',String(Boolean(m?.hidden)));
-   h.tabIndex=m?.hidden?-1:0;
+  });
+  el.querySelectorAll<HTMLElement>('[data-t],[data-m]').forEach(h=>{
+   const hidden=Boolean(h.closest('.is-hidden'));
+   h.setAttribute('aria-hidden',String(hidden));
+   if(h.dataset.t)h.tabIndex=hidden?-1:0;
   });
   el.querySelectorAll<HTMLElement>('[data-s]').forEach(h=>{
    const k=h.dataset.s!,spec=p.scrub?.[k],v=vals[k];
@@ -70,8 +76,8 @@ class Markup extends Component<MarkupProps,object,Focus> {
    const spec=p.scrub?.[k];if(!spec||typeof vals[k]!=='number')return tag;
    const chars=Math.max(...[spec.min,spec.max,0].map(n=>p.fmt?.[k]?texText(showVal(k,n,p.fmt)).length:n.toFixed(2).length));
    return '<span'+attrs+' style="min-width:'+(chars*.6)+'em;display:inline-block;text-align:right">';
-  }).replace(/<span([^>]*data-t="([^"]+)"[^>]*)>/g,(_tag,attrs,k)=>{
-   const m=p.marks?.[k],classes=(m?.hidden?' is-hidden':'')+(m?.struck?' is-struck':'');
+  }).replace(/<span([^>]*data-(?:t|m)="([^"]+)"[^>]*)>/g,(_tag,attrs,k)=>{
+   const classes=markClass(p.marks?.[k]);
    return '<span'+attrs.replace(/class="([^"]*)"/,(_s:string,c:string)=>'class="'+c+classes+'"')+'>';
   });
   return <span ref={this.root} dangerouslySetInnerHTML={{__html:html}}/>;

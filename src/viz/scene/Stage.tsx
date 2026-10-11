@@ -211,7 +211,9 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 		if (inset > 0) camera.setViewOffset(width, height, inset / 2, 0, width, height);
 		else camera.clearViewOffset();
 		if (camera instanceof OrthoCam || camera instanceof PerspCam) camera.updateProjectionMatrix();
-		pose.current = current();
+		// A DOM box may exist before the first measured-size home handoff. Do not
+		// turn OrbitControls' default origin target into an established reader pose.
+		if (pose.current) pose.current = current();
 		invalidate();
 	};
 	useLayoutEffect(refit, [w, h, inset, camera, controls, e]);

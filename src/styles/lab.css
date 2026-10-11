@@ -403,7 +403,12 @@ h1#_top,
 }
 .lab-vp-skel {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	grid-template-rows: var(--lab-vp-head) auto var(--lab-vp-chips) var(--lab-vp-status);
+}
+.lab-vp-skel > i {
+	width: 100%;
+	min-width: 0;
 }
 .lab-vp-skel > :nth-child(1) {
 	background: var(--viz-chrome);
@@ -1212,10 +1217,15 @@ h1#_top,
 .lab-field-cell { display: inline-block; padding: 6px; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; }
 .lab-field-cell.is-lg .lab-np-row { min-height: 48px; grid-template-columns: minmax(100px, auto) 64px; gap: 8px; }
 .lab-field-cell .lab-np-ro { min-height: 28px; }
+/* LC SSR uses wide TeX until its measured narrow layout hydrates. Keep every term scrollable. */
+[data-lc-controls] .lab-formula { max-width:100%; overflow-x:auto; }
 .lab-formula-stack { display:grid; grid-template-columns:minmax(0,1fr); }
 .lab-formula-stack > span { grid-area:1 / 1; min-width:0; }
 .lab-formula-reserve { visibility:hidden; pointer-events:none; overflow:hidden; }
 .lab-formula .is-hidden, .lab-num-table .is-hidden { visibility: hidden; pointer-events: none; }
+.lab-formula [data-t], .lab-formula [data-m] { transition: opacity 180ms; }
+.lab-formula .is-dim { opacity: .35; }
+@media (prefers-reduced-motion: reduce) { .lab-formula [data-t], .lab-formula [data-m] { transition: none; } }
 .lab-formula .is-struck, .lab-num-table .is-struck { text-decoration: line-through; text-decoration-thickness: 2px; }
 .lab-num-table { font-family: var(--lab-font-mono); font-variant-numeric: tabular-nums; border-collapse: collapse; width: 100%; }
 .lab-num-table td,.lab-num-table th { padding: .35rem .6rem; text-align: right; border-bottom: 1px solid var(--sl-color-gray-5); }

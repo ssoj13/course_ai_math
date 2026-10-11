@@ -13,6 +13,8 @@ import {lerpVertices,polygonInfo} from './polygon';
 type Vals=LessonState['vals'];
 export interface PolyProps {
  lesson:string;id:string;timeline?:string;step?:number;
+ /** Reader-controlled fractional placement; supplied positions bypass the internal clock. */
+ position?:number;
  pts:(vals:Vals,step:number)=>V[];
  /** Explicit pure path, including fractional placements for area-preserving shears/rigid turns. */
  path?:(vals:Vals,from:number,to:number,progress:number)=>V[];
@@ -21,7 +23,8 @@ export interface PolyProps {
 }
 export function Poly(p:PolyProps):React.JSX.Element {
  assertSubject(useContext(LookCtx),true);
- const vals=useVals(p.lesson),timeline=useStep(p.lesson,p.timeline??'cut'),step=p.step??timeline;
+ const vals=useVals(p.lesson),timeline=useStep(p.lesson,p.timeline??'cut'),step=p.position??p.step??timeline;
+ if(!Number.isFinite(step))throw new Error('Poly position must be finite');
  const timelinePhases=useStep(p.lesson,(p.timeline??'cut')+':phases');
  const countPhases=p.phases??Math.max(1,timelinePhases);
  if(!Number.isInteger(countPhases)||countPhases<1)throw new Error('Poly phases must be a positive integer');
@@ -33,11 +36,16 @@ export function Poly(p:PolyProps):React.JSX.Element {
  polygonInfo(target);
  useLayoutEffect(()=>{
   const old=last.current;last.current={vals,step};
-  if(old.step!==step&&!reducedMotion()){
+  if(p.position!==undefined){motion.current=null;shown.current=target;position.current=step;setPoints(target)}
+  else if(old.step!==step&&!reducedMotion()){
    motion.current={start:performance.now(),from:position.current,to:step,pts:shown.current,duration:SPRING_MS*countPhases};
    invalidate();
+  }else if(old.vals!==vals&&motion.current&&p.path&&!reducedMotion()){
+   // A direct value write reshapes the current placement without restarting its clock.
+   const next=p.path(vals,position.current,position.current,0);
+   shown.current=next;setPoints(next);invalidate();
   }else if(old.vals!==vals||old.step!==step){motion.current=null;shown.current=target;position.current=step;setPoints(target)}
- },[vals,step]);
+ },[vals,step,p.position]);
  useFrame(()=>{
   const m=motion.current;if(!m)return;
   const elapsed=performance.now()-m.start,n=m.duration/SPRING_MS;

@@ -23,6 +23,11 @@ function mount(el: ReactElement): HTMLElement {
 }
 afterEach(() => {
 	for (const r of roots.splice(0)) act(() => r.unmount());
+	// Fixture stores outlive React roots; stop their springs before another test replaces rAF.
+	for (const id of ['wm', 'mv-key', 'mv-drag', 'np-ease']) {
+		const state = lessonStore(id).getState();
+		state.setMany({ ...state.vals }, 'cut');
+	}
 	document.body.innerHTML = '';
 });
 const fire = (el: Element, ev: Event) => act(() => void el.dispatchEvent(ev));
