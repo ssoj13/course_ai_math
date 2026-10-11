@@ -104,7 +104,7 @@ Derived (one `derive(vals)`, all signed):
 
 | id | primitive | geometry (CCW triangle, outward = `cw(edge)`) | role / fill | label | drag |
 |---|---|---|---|---|---|
-| `C`, `B`, `A` | Point | `[0,0]`, `[a,0]`, `[b cos, b sin]` | ink | `C`, `B`, `A` | `B`: x only, writes `a = clamp(snap(x), 0.5, 4)`; `A`: polar, writes `b = clamp(hypot, 0.5, 4)`, `th = magnet(deg(atan2), targets)` clamped to [0, 180] (y < 0 folds to 0) |
+| `C`, `B`, `A` | Point | `[0,0]`, `[a,0]`, `[b cos, b sin]` | ink | `C`, `B`, `A` | `B`: x only, writes `a = clamp(snap(x), 0.5, 4)`; `A`: polar, writes `b = clamp(hypot, 0.5, 4)`, `th = magnet(deg(atan2), targets)` clamped to [0, 180] (y < 0 clamps to the nearer end: x < 0 → 180°, else 0°, so A stays continuous under the pointer at both ends; ruling 2026-10-11) |
 | `a`, `b`, `c` | Segment (beam) | C→B, C→A, B→A | vecA, vecB, vecC | `a`, `b`, `c` on the outward side, offset 0.35 | — |
 | `th` | AngleArc | at C, a→b, r = 0.6, sector 10%, ticks at magnet targets | ink | `θ = 60°` on the bisector | — |
 | `rt` | RightAngle | at C when `th === 90` | ink | — | — |
