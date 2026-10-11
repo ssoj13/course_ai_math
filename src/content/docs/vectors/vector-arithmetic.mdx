@@ -3,4 +3,214 @@ title: "Adding, scaling and linear combinations"
 description: "Head-to-tail addition, scaling, blend shapes as linear combinations."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [A vector: an arrow and a list of numbers](lesson:vector)
+
+A particle has velocity `v`. Every frame your solver does `v += gravity * dt`. A blend-shape node takes a base face and adds `0.5 * smile + 0.25 * jawOpen`. Both lines use the only two operations vectors have: add two arrows, and scale an arrow by a number. Everything else in this part of the course, and most of a neural network, is built from these two.
+
+## 1. Adding: chain the walks
+
+To add two vectors, walk the first, then walk the second from where you stopped. The sum is the arrow from where you started to where you ended. In components, that is just adding slot by slot:
+
+$$
+a + b = (a_x + b_x,\; a_y + b_y)
+$$
+
+Example. $a = (1, 2)$ and $b = (3, -1)$:
+
+$$
+a + b = (1 + 3,\; 2 + (-1)) = (4, 1)
+$$
+
+Walk 1 right and 2 up, then 3 right and 1 down; you end at $(4, 1)$. Draw both orders, "a then b" and "b then a", and you get the two halves of a parallelogram; the sum is its diagonal. The order does not matter: $a + b = b + a$.
+
+{/* scene: 1.2-1 — drag a and b; the sum is drawn as "walk a then b" and as the parallelogram diagonal; the table shows each aₓ + bₓ pair */}
+
+**Misconception to drop:** "the length of $a + b$ is the length of $a$ plus the length of $b$". Only when the arrows point the same way. $(3, 0)$ and $(0, 4)$ have lengths 3 and 4; their sum $(3, 4)$ has length 5, not 7. Walking east and then north is shorter than the sum of the two legs; that is Pythagoras again.
+
+## 2. Scaling: same direction, new length
+
+To scale a vector by a number $s$, multiply every component by $s$:
+
+$$
+s \cdot a = (s\,a_x,\; s\,a_y)
+$$
+
+Example. $3 \cdot (2, -1) = (6, -3)$: three times as long, same direction. $0.5 \cdot (2, -1) = (1, -0.5)$: half as long. A plain number used this way is called a **scalar**, because it scales.
+
+A negative scalar turns the arrow around: $-1 \cdot (2, -1) = (-2, 1)$ points the opposite way. Scaling never tilts an arrow. The only thing a negative sign can do to the direction is flip it.
+
+{/* scene: 1.2-2 — scrub s in s·a; the arrow stretches, a negative s flips it, the components scale in the table */}
+
+**Misconception to drop:** "scaling can change the direction". It can only keep it or reverse it.
+
+## 3. Subtracting is adding the flipped arrow
+
+$a - b$ means $a + (-1) \cdot b$: walk $a$, then walk $b$ backwards. With $a = (1, 2)$ and $b = (3, -1)$:
+
+$$
+a - b = (1 - 3,\; 2 - (-1)) = (-2, 3)
+$$
+
+Geometrically $a - b$ is the arrow from the tip of $b$ to the tip of $a$, the same "destination minus start" rule as in [lesson 1.1](lesson:vector). The arrow from $a$ to $b$ is $b - a$.
+
+**Misconception to drop:** "$a - b$ is the arrow from $a$ to $b$". It is the arrow from $b$ to $a$. The second letter is where you start.
+
+## 4. Linear combinations
+
+Scale a few vectors and add them up: that is a **linear combination**.
+
+$$
+s \cdot a + t \cdot b
+$$
+
+Example. With $a = (1, 2)$, $b = (3, -1)$, $s = 2$, $t = -1$:
+
+$$
+2a - b = (2, 4) + (-3, 1) = (-1, 5)
+$$
+
+Now scrub $s$ and $t$ freely and watch where the tip of $s a + t b$ lands. Stamp every point you reach. With two arrows that do not lie on one line, the stamps fill the whole plane: every point is some $s a + t b$. That filled region has a name, **span**, which [lesson 1.6](lesson:basis) gives it.
+
+{/* scene: 1.2-3 — two scrubs s, t for s·a + t·b; a "paint" toggle stamps every reached point so the plane fills (span preview) */}
+
+A special case you already use every day. Take the two axis arrows $(1, 0)$ and $(0, 1)$. Which $s$ and $t$ give $(3, 4)$?
+
+$$
+s \cdot (1, 0) + t \cdot (0, 1) = (s, t) = (3, 4) \quad\Rightarrow\quad s = 3,\; t = 4
+$$
+
+The components of a vector are exactly its coefficients along the axis arrows. We will see this again as "coordinates are shadows" in [lesson 1.5](lesson:projection).
+
+Coefficients can be any numbers: negative, zero, fractional. There is no rule that they must be positive or add up to 1 (that extra rule gives a *convex* combination, a different thing).
+
+{/* scene: 1.2-4 — 3D version with three vectors and three scrubs */}
+
+## 5. Blend shapes are linear combinations
+
+A blend shape target is stored as a **delta**: for each vertex, the vector from the base position to the target position. The deformer computes
+
+$$
+P' = P_{\text{base}} + w_1\,\Delta_1 + w_2\,\Delta_2 + \cdots
+$$
+
+which is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P = (1.0, 0.5)$, smile delta $\Delta_1 = (0.2, 0.3)$, jaw delta $\Delta_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
+
+$$
+P' = (1.0, 0.5) + 0.5\,(0.2, 0.3) + 0.25\,(0.0, -0.4) = (1.0 + 0.1 + 0.0,\; 0.5 + 0.15 - 0.1) = (1.1, 0.55)
+$$
+
+Every vertex of the face does this with its own deltas and the same weights. The sliders you drag in the Shape Editor are the $w_i$.
+
+The physics line is the same shape: `v += g * dt` is $v' = v + dt \cdot g$. With $v = (2, 0)$, $g = (0, -9.8)$ and $dt = 0.1$: $v' = (2, 0) + (0, -0.98) = (2, -0.98)$.
+
+> **Say it simpler.** Adding = chaining the walks. Scaling = same direction, different length (negative = turn around). A linear combination = "some of this arrow plus some of that one".
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "a = (3, 0) and b = (0, 4). The length of a + b is…",
+      options: [
+        "7, because the lengths of the two arrows simply add together",
+        "5, because a + b = (3, 4) and its length is √(9 + 16)",
+        "1, the difference of the lengths",
+        "12, the product of the lengths"
+      ],
+      answer: 1,
+      explain: "a + b = (3, 4), length 5. Lengths only add when the arrows point the same way; walking east then north is shorter than 3 + 4."
+    },
+    {
+      q: "Multiplying a vector by −2…",
+      options: [
+        "doubles its length and keeps its direction",
+        "doubles its length and reverses its direction",
+        "rotates it by 90 degrees and also doubles its length",
+        "halves it and reverses its direction"
+      ],
+      answer: 1,
+      explain: "Scaling multiplies every component. The size 2 doubles the length; the minus sign flips the arrow. Scaling can never tilt a vector."
+    },
+    {
+      q: "With a = (1, 2) and b = (3, −1), the vector a − b = (−2, 3) is the arrow…",
+      options: [
+        "from the tip of a to the tip of b",
+        "from the tip of b to the tip of a",
+        "from the origin to the midpoint of a and b",
+        "from the tip of a back to the origin"
+      ],
+      answer: 1,
+      explain: "Destination minus start: a − b starts at b and ends at a. The arrow from a to b is b − a = (2, −3)."
+    },
+    {
+      q: "In the linear combination s·a + t·b, the coefficients s and t…",
+      options: [
+        "must be positive",
+        "must add up to 1, like blend-shape weights usually do",
+        "can be any numbers, including negative and zero",
+        "must be whole numbers"
+      ],
+      answer: 2,
+      explain: "A linear combination allows any scalars. The extra rules (positive, summing to 1) define a convex combination, which is a special case, not the definition."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. $(1, 2) + (3, -1)$
+2. $3 \cdot (2, -1)$
+3. $2a - b$ for $a = (1, 2)$, $b = (3, -1)$
+4. Find $s$ and $t$ such that $s \cdot (1, 0) + t \cdot (0, 1) = (3, 4)$.
+5. A vertex has base position $(0, 1, 0)$ and one delta $(0, 0.5, 0.2)$ at weight $0.4$. Where is it?
+
+<details>
+<summary>Answers</summary>
+
+1. $(4, 1)$.
+2. $(6, -3)$.
+3. $(2, 4) - (3, -1) = (-1, 5)$.
+4. $s = 3$, $t = 4$: the components are the coefficients along the axes.
+5. $(0, 1, 0) + 0.4\,(0, 0.5, 0.2) = (0,\; 1.2,\; 0.08)$.
+
+</details>
+
+## Python
+
+NumPy applies `+`, `-` and `*` by a scalar component by component, for arrays of any length. The code for 2 components and for 4096 is the same line.
+
+```python
+import numpy as np
+
+a = np.array([1., 2.])
+b = np.array([3., -1.])
+print(a + b)            # [4. 1.]
+print(3 * np.array([2., -1.]))   # [ 6. -3.]
+print(a - b)            # [-2.  3.]   from the tip of b to the tip of a
+
+s, t = 2.0, -1.0
+print(s * a + t * b)    # [-1.  5.]
+
+# blend shape: base + sum of weight * delta, one vertex
+base = np.array([1.0, 0.5])
+deltas = np.array([[0.2, 0.3], [0.0, -0.4]])   # one row per target
+w = np.array([0.5, 0.25])
+print(base + w[0] * deltas[0] + w[1] * deltas[1])   # [1.1  0.55]
+
+# the same thing works for 4096 components without changing the code
+big = np.ones(4096)
+print((2 * big + 3 * big)[:3])   # [5. 5. 5.]
+```
+
+<details>
+<summary>Machine layer: why adding vectors is cheap</summary>
+
+A CPU does not add the components one after another. A SIMD instruction such as `_mm_add_ps` adds four `float32` lanes in one instruction; AVX does eight; a GPU `vec4` add is one instruction per thread. Adding two 4-component vectors is one instruction. Adding two vectors of a million components is a loop of about 125 000 AVX instructions, not a million. "Vectorized" NumPy code is fast because it hands this loop to compiled code that uses these lanes.
+
+</details>
+
+## What this opens
+
+We can add and stretch arrows. We still cannot say how *long* an arrow is once it has more than three components. That is [Length, Σ notation and normalization](lesson:length).
