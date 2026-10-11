@@ -33,6 +33,15 @@ describe('law of cosines signed construction',()=>{
   expect(moveB(INITIAL,[-99,0],'key').set.a).toBe(.5);
   expect(moveA({...INITIAL,th:90},[.1,0],'key').set.th).toBeLessThan(90);
  });
+ test('a pointer below CB clamps θ to the nearer end instead of flipping the triangle',()=>{
+  for(const src of ['drag','key'] as const){
+   expect(moveA({...INITIAL,th:180},[0,-.01],src).set.th).toBe(180);
+   expect(moveA({...INITIAL,th:0},[0,-.01],src).set.th).toBe(0);
+  }
+  expect(moveA({...INITIAL,th:180},[1,-.5],'drag').set.th).toBe(180);
+  expect(moveA({...INITIAL,th:0},[-1,-.5],'drag').set.th).toBe(0);
+  expect(moveA({...INITIAL,th:170},[0,0],'drag').set.th).toBe(170);
+ });
 });
 test('IK preserves two bone lengths and finite values for all reach boundaries',()=>{
  for(const [l1,l2] of [[2,1.5],[1,3],[2,2]])for(const d of [0,.3,Math.abs(l1-l2),2.5,l1+l2,8])for(const ik_flip of [0,1]){

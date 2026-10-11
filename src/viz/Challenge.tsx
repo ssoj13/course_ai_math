@@ -12,11 +12,13 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import { challengeKey, markSolved, readSolved } from '../lib/challenges';
 import { lessonStore, type LessonState } from './store';
+import { rich } from './rich';
 
 export interface ChallengeProps {
 	lesson: string;
 	/** 1-based number within the lesson (part of the progress key). */
 	n: number;
+	/** Task text; `text`, `hint` and `success` may carry the inline markup of rich.tsx (`**bold**`, `*em*`). */
 	text: string;
 	/** Hints, revealed together behind one disclosure. */
 	hint?: readonly string[];
@@ -56,14 +58,14 @@ export function Challenge(p: ChallengeProps): React.JSX.Element {
 					<span>{t(locale, done ? 'challenge.done' : 'challenge.notYet')}</span>
 				</span>
 			</header>
-			<p className="lab-ch-text">{p.text}</p>
-			{done && p.success && <p className="lab-ch-success">{p.success}</p>}
+			<p className="lab-ch-text">{rich(p.text)}</p>
+			{done && p.success && <p className="lab-ch-success">{rich(p.success)}</p>}
 			{p.hint && p.hint.length > 0 && (
 				<details className="lab-ch-hint">
 					<summary>{t(locale, p.hint.length > 1 ? 'challenge.hints' : 'challenge.hint')}</summary>
 					<ol>
 						{p.hint.map((h) => (
-							<li key={h}>{h}</li>
+							<li key={h}>{rich(h)}</li>
 						))}
 					</ol>
 				</details>

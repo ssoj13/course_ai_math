@@ -102,6 +102,10 @@ for(const locale of ['en','ru'] as const)test('LC review regressions: live prose
   expect(host.querySelector('[data-timeline="cut"] p strong')!.textContent).toBe('a');
   expect(text('cut')).not.toContain('*');
   expect(host.querySelector<HTMLInputElement>('[data-timeline="cut"] input')!.getAttribute('aria-valuetext')).not.toContain('*');
+  // Challenge 4 carries *em* markup: rendered as an element in the card, never as asterisks.
+  const ch4=host.querySelector('[data-lc-controls="0"] .lab-challenge:nth-of-type(4) .lab-ch-text')!;
+  expect(ch4.querySelector('em')!.textContent).toBe(en?'look':'выглядели');
+  expect(ch4.textContent).not.toContain('*');
   // Proof step 5 lights both leg tiles through the virtual `legs` focus.
   await act(async()=>store.getState().setStep('proof',5));
   for(const id of ['rest2','rise2'])expect(store.getState().hot.has(id)).toBe(true);

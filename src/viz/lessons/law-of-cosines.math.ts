@@ -96,13 +96,16 @@ export function solveIK(v: Vals) {
 }
 
 /**
- * Vertex A drag: polar, writes b (radius, grid snapped) and θ (angle, magnet). A keyboard step is smaller than the
- * magnet zone, so for `src === 'key'` the current θ is passed as `from`: the magnet then only catches steps that
- * move toward a target (AGENTS.md "Magnet" trap). A caught θ is listed in `ease` so the glyph glides onto it.
+ * Vertex A drag: polar, writes b (radius, grid snapped) and θ (angle, magnet). θ is an unsigned interior angle, so a
+ * pointer below the line CB (y < 0) clamps to the nearer end, 180° for x < 0 and 0° otherwise: A stays continuous
+ * under the cursor at both ends instead of flipping the triangle on a one-pixel overshoot (controller ruling on
+ * audit M-3). A keyboard step is smaller than the magnet zone, so for `src === 'key'` the current θ is passed as
+ * `from`: the magnet then only catches steps that move toward a target (AGENTS.md "Magnet" trap). A caught θ is
+ * listed in `ease` so the glyph glides onto it.
  */
 export const moveA: NonNullable<Draggable['move']> = (v, raw, src) => {
 	const A = derive(v).A, x = A[0] + raw[0], y = A[1] + raw[1];
-	const angle = clamp(Math.atan2(y, x) * 180 / Math.PI, 0, 180);
+	const angle = y < 0 ? (x < 0 ? 180 : 0) : clamp(Math.atan2(y, x) * 180 / Math.PI, 0, 180);
 	const th = magnet(angle, MAGNETS, 2.5, src === 'key' ? v.th as number : undefined);
 	return { set: { b: clamp(snap(Math.hypot(x, y)), .5, 4), th }, ease: th !== angle ? ['th'] : [] };
 };

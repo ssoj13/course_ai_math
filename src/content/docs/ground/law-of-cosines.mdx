@@ -73,9 +73,9 @@ $$
 
 The same number. Two rectangles with different shapes, 3 by 2 and 4 by 1.5, and the same area, because
 both are $a \cdot b \cdot \cos\theta$ with the factors in a different order. They have the same *shape* only when
-$a = b$: then both are $a$ by $a\cos\theta$. (The flat angles are the one exception: at $0^\circ$ the shadow of
-each stick is its full length, so the strips are $a$ by $b$ and $b$ by $a$, the same rectangle turned on its side
-whatever $a$ and $b$ are.)
+$a = b$: then both are $a$ by $a\cos\theta$. (The flat angles, $0^\circ$ and $180^\circ$, are the one exception:
+there the shadow of each stick is its full length, with a minus sign at $180^\circ$, so the strips are $a$ by $b$ and
+$b$ by $a$, the same rectangle turned on its side whatever $a$ and $b$ are.)
 
 **Step 4: count.** Two strips of 6 make 12. That is exactly what was missing: $25 - 12 = 13 = c^2$. What is
 left of the two squares after the strips are cut fits exactly into the square on $c$. With numbers: the square
@@ -86,7 +86,7 @@ parallelogram (same base, same height, same area), turns a quarter turn around t
 the leftover of $a$, $A$ for the leftover of $b$), and leans back upright inside $c^2$. Leaning keeps the base and
 the height, turning keeps everything, so each leftover arrives with its area intact: $3$ and $10$ go in, $3 + 10 = 13$
 comes out. The same bookkeeping works for a wide corner, where a strip counts as *negative* area and a leftover is
-then bigger than its square; the ledger section below walks through $\theta = 120^\circ$ with numbers.
+then bigger than its square; the section *Correction term* below walks through $\theta = 120^\circ$ with numbers.
 
 So for a corner that is not square, the rule is:
 
@@ -98,12 +98,13 @@ This is the **law of cosines**: Pythagoras, minus two strips. Each strip is a si
 side on it.
 
 One more case, because the scene will show it as soon as you drag the vertices. Take a short side and a long one at
-a sharp angle: $a = 1$, $b = 4$, $\theta = 30^\circ$. The shadow of $b$ on $a$ is $b\cos\theta = 4 \cdot 0.866 \approx 3.46$,
+a sharp angle: $a = 1$, $b = 4$, $\theta = 30^\circ$. The shadow of $b$ on $a$ is $b\cos\theta = 4 \cdot 0.866 \approx 3.464$,
 longer than side $a = 1$ itself. The strip is wider than the square it is cut from, so what is left,
-$DB = a - b\cos\theta \approx -2.46$, is *negative*: the scene draws that leftover hatched, as a debt. Nothing has
-gone wrong. The angle $\theta$ at $C$ is sharp, but the angle at $B$ is then wide, and the sum still works out with
-the signs: $1 \cdot (-2.46) + 4 \cdot (4 - 0.866) \approx -2.46 + 12.54 = 10.07 = c^2$. (A wide $\theta$ is the
-other direction: the shadow itself is negative and $DB$ is longer than $a$.)
+$DB = a - b\cos\theta \approx -2.464$, is *negative*: the scene draws that leftover hatched, as a debt. Nothing has
+gone wrong. The angle $\theta$ at $C$ is sharp, but the angle at $B$ is then wide, and the two leftovers still add
+up to $c^2$ with their signs. The other leftover is $b \cdot EA$, where $EA = b - a\cos\theta = 4 - 0.866$ is what
+the shadow of $a$ leaves of side $b$: $1 \cdot (-2.464) + 4 \cdot 3.134 \approx -2.464 + 12.536 = 10.072 \approx c^2$.
+(A wide $\theta$ is the other direction: the shadow itself is negative and $DB$ is longer than $a$.)
 
 ## The formula, line by line
 

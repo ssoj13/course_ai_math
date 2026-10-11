@@ -81,11 +81,14 @@ export function LawFormula({ scene, compact = false }: { scene: Scene; compact?:
 			tex={aligned([tex`\t{a}{a=\s{a}},\;\t{b}{b=\s{b}},\;\t{th}{\theta=\s{th}}`, tex`\t{c}{c=\s{c}},\;\t{c2}{c^2=\s{c2}}`])}
 			scrub={SCRUB} derived={derived} fmt={formats} />;
 	}
+	// A negative live value after a minus or a dot is parenthesised (audit M-2): "− 2·(−6.00)", not "− 2·−6.00".
+	const z = derive(v);
+	const signed = (key: 'strip_a' | 'cos') => (z[key] < 0 ? tex`(\s{${key}})` : tex`\s{${key}}`);
 	const cut = [
 		row('cut-0', tex`\t{c2}{c^2}=\t{R1}{a\cdot DB}+\t{R2}{b\cdot EA}`),
 		row('cut-1', tex`=(\t{a2}{a^2}-\t{strip_a}{a\cdot\t{p}{b\cos\theta}})+(\t{b2}{b^2}-\t{strip_b}{b\cdot\t{q}{a\cos\theta}})`),
 		row('cut-2', tex`=\t{a2}{a^2}+\t{b2}{b^2}\t{corr}{-2ab\cos\theta}`),
-		row('cut-3', tex`\s{c2}=\s{a2}+\s{b2}-2\cdot\s{strip_a}`),
+		row('cut-3', tex`\s{c2}=\s{a2}+\s{b2}-2\cdot${signed('strip_a')}`),
 		row('cut-4', tex`\t{ab}{\mathbf{a}\cdot\mathbf{b}}=\t{strip_a}{\lvert\mathbf{a}\rvert\,(b\cos\theta)}=\s{strip_a}`),
 	];
 	const proof = [
@@ -105,14 +108,14 @@ export function LawFormula({ scene, compact = false }: { scene: Scene; compact?:
 		];
 	const ledger = [
 		tex`\t{c2}{c^2}=\t{a2}{a^2}+\t{b2}{b^2}\t{corr}{-2ab\cos\theta}`,
-		tex`\s{c2}=\s{a2}+\s{b2}\t{corr}{-2\cdot\s{a}\cdot\s{b}\cdot\s{cos}}`,
+		tex`\s{c2}=\s{a2}+\s{b2}\t{corr}{-2\cdot\s{a}\cdot\s{b}\cdot${signed('cos')}}`,
 		tex`\t{c}{c=\s{c}},\quad\t{th}{\theta=\s{th}},\;\cos\theta=\s{cos}`,
 	];
-	const ledgerNarrow = [ledger[0], tex`\s{c2}=\s{a2}+\s{b2}`, tex`\t{corr}{-2\cdot\s{a}\cdot\s{b}\cdot\s{cos}}`, tex`\t{c}{c=\s{c}},\quad\t{th}{\theta=\s{th}}`, tex`\cos\theta=\s{cos}`];
+	const ledgerNarrow = [ledger[0], tex`\s{c2}=\s{a2}+\s{b2}`, tex`\t{corr}{-2\cdot\s{a}\cdot\s{b}\cdot${signed('cos')}}`, tex`\t{c}{c=\s{c}},\quad\t{th}{\theta=\s{th}}`, tex`\cos\theta=\s{cos}`];
 	return <Formula lesson={LESSON} block label={t(locale, 'lc.derivation')}
 		tex={aligned(scene === 0 ? cut : scene === 2 ? proof : ledger)}
 		texNarrow={aligned(scene === 1 ? ledgerNarrow : narrow)}
-		marks={marksFor(scene, step, v.th as number)} derived={derived} fmt={formats} scrub={SCRUB}
+		marks={marksFor(scene, step, z.th)} derived={derived} fmt={formats} scrub={SCRUB}
 		tips={{
 			corr: { text: t(locale, 'lc.corrTip'), tex: '-2ab\\cos\\theta' },
 			p: { text: t(locale, 'lc.pTip') },
