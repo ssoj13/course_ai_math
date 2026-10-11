@@ -1,11 +1,12 @@
 ---
 title: "Расстояние и Пифагор"
 description: "Расстояние между точками в 2D, 3D и в любом числе измерений."
-translatedFrom: 58f4a4f076e8271f237cd516ba065226bec52bb1
+translatedFrom: 457dc643367b704f936ca23207ae56ce90e9e28c
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
 import UiStrings from '../../../../components/UiStrings.astro';
+import LessonMap from '../../../../components/LessonMap.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { PythagorasScene, PythagorasControls, PythagorasND } from '../../../../viz/lessons/pythagoras';
 import { rowsFor } from '../../../../viz/lessons/pythagoras.rows';
@@ -365,3 +366,7 @@ print(np.hypot(legs[0], legs[1])) # 1.414213562373095e+200
 Расстояние говорит *как далеко*, но не *в какую сторону*. И $(5, 0)$, и $(3, 4)$ — в 5 единицах от начала
 координат, и формула расстояния не может их различить. Чтобы описать направление числами, нам нужна единичная
 окружность: [Углы, радианы и единичная окружность](lesson:unit-circle).
+
+## Карта терминов
+
+<LessonMap />
