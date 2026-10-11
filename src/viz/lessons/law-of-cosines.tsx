@@ -75,7 +75,8 @@ function SemanticLinks(){
    sq_a:['a2'],a2:['sq_a'],sq_b:['b2'],b2:['sq_b'],sq_c:['c2'],c2:['sq_c'],
    p:['drop_a','D'],q:['drop_b','E'],strip_a:['p'],strip_b:['q'],
    th:['cos'],corr:['strip_a','strip_b','p','q'],ab:['strip_a'],
-   R1c:['R1'],R2c:['R2'],cosphi:['cosraw','l1','l2','d'],
+   R1c:['R1'],R2c:['R2'],cosraw:['cosphi'],cosphi:['cosraw','l1','l2','d'],
+   cosc:['clamp'],ident:['bcos2','bsin2'],rise2:['bsin2'],bsin2:['rise2'],
    clamp:['cosc','gap','reach_max'],hand:['ik_hand'],ik_hand:['hand'],
    l1:['ik_l1'],ik_l1:['l1'],l2:['ik_l2'],ik_l2:['l2']
   };
@@ -153,10 +154,17 @@ function Controls({scene}:{scene:0|1|2|3}){
  const locale=useLocale(),v=useVals(LESSON),z=derive(v),ik=solveIK(v);
  const w=(en:string,ru:string)=>words(locale,en,ru);
  const cut=useStep(LESSON,'cut'),proof=useStep(LESSON,'proof');
- const cutTexts=(locale==='ru'?CUT_RU:CUT_EN).map((text,i)=>text+
+ const cutIntro=w(`Three squares: a² + b² = ${fmt(z.a2)} + ${fmt(z.b2)} = ${fmt(z.pyth)}; c² = ${fmt(z.c2)}. `,`Три квадрата: a² + b² = ${fmt(z.a2)} + ${fmt(z.b2)} = ${fmt(z.pyth)}; c² = ${fmt(z.c2)}. `)+
+  (z.th===90?w('The correction is zero: Pythagoras applies.','Поправка нулевая: действует теорема Пифагора.'):
+   z.corr<0?w(`Subtract ${fmt(-z.corr)} units of area. Where does this correction come from?`,`Вычитаем ${fmt(-z.corr)} единиц площади. Откуда берётся эта поправка?`):
+   w(`Add ${fmt(z.corr)} units of area: subtracting negative strips adds area.`,`Прибавляем ${fmt(z.corr)} единиц площади: вычитание отрицательных полос добавляет площадь.`));
+ const proofIntro=w(`Sides a and b meet at C with θ = ${fmtAngle(z.th)}°. `,`Стороны a и b сходятся в C под углом θ = ${fmtAngle(z.th)}°. `)+
+  (z.th===90?w('This is a right angle, so Pythagoras already applies.','Это прямой угол, поэтому теорема Пифагора уже применима.'):
+   w('This included angle is not right. Drop a height to build right triangles.','Этот угол не прямой. Опустим высоту, чтобы получить прямоугольные треугольники.'));
+ const cutTexts=(locale==='ru'?CUT_RU:CUT_EN).map((text,i)=>(i===0?cutIntro:text)+
   (i===4&&(z.R1<0||z.R2<0)?w(' Here a strip is wider than its square: the hatched leftover is a signed debt.',' Здесь полоса шире квадрата: заштрихованный остаток означает долг.'): '')+
   (i>=5&&i<=9&&z.degenerate?w(' c = 0: there is no square on c; move A to continue.',' c = 0: квадрата на c нет; переместите A.'): ''));
- const proofTexts=(locale==='ru'?PROOF_RU:PROOF_EN).map((text,i)=>text+
+ const proofTexts=(locale==='ru'?PROOF_RU:PROOF_EN).map((text,i)=>(i===0?proofIntro:text)+
   (i===2&&z.th===90?w(' The shadow is zero; D sits on C.',' Тень нулевая, D совпадает с C.'): '')+
   (i===4&&(z.th===0||z.th===180)?w(' Flattened case: AD = 0; the identity still holds.',' Вырожденный случай: AD = 0, равенство сохраняется.'): ''));
  const challenges:Omit<ChallengeProps,'lesson'>[]=scene===0?[
@@ -207,7 +215,7 @@ function DetailControls({proof=false}:{proof?:boolean}){
    {options.map(([label],i)=><option key={label} value={i} disabled={!available(i)}>{label}</option>)}
   </select></label>{' '}
   <button type="button" onClick={()=>store.getState().set(key+'_fit',((store.getState().vals[key+'_fit'] as number)??0)+1)}>{w('Fit selected piece','Вписать фрагмент')}</button>
-  <p aria-live="polite">{proof&&step<4?w('Tiles appear at the Pythagoras step (5 / 10). ','Плитки появляются на шаге Пифагора (5 / 10). '):''}{options[selected][0]+' = '+fmt(values[selected])+'. '+(!available(selected)?w('This piece is hidden at the current step.','На текущем шаге этот фрагмент скрыт.'):values[selected]===0?w('Zero value: no filled shape or shadow.','Нулевое значение: заливки или тени нет.'):w('The same signed area as the overview.','Та же площадь со знаком, что на общем виде.'))}</p>
+  <p aria-live="polite">{proof&&step<4?w('Tiles appear at the Pythagoras step (5 / 10). ','Плитки появляются на шаге Пифагора (5 / 10). '):''}{options[selected][0]+' = '+fmt(values[selected])+'. '+(!available(selected)?w('This piece is hidden at the current step.','На текущем шаге этот фрагмент скрыт.'):!proof&&selected>=9?(values[selected]===0?w('Zero signed projection length: the shadow has zero length.','Нулевая длина проекции со знаком: длина тени равна нулю.'):w('The same signed projection length as the overview.','Та же длина проекции со знаком, что на общем виде.')):values[selected]===0?w('Zero signed area: no filled shape.','Нулевая площадь со знаком: заливки нет.'):w('The same signed area as the overview.','Та же площадь со знаком, что на общем виде.'))}</p>
  </section>;
 }
 export const LawDetailControls=localized(DetailControls);

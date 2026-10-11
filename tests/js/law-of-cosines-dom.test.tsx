@@ -4,7 +4,9 @@ import { createRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { expect,test } from 'bun:test';
 import { Formula } from '../../src/viz/Formula';
-import { LawFormula, LawControls, marksFor } from '../../src/viz/lessons/law-of-cosines';
+import { LawFormula, LawControls, LawDetailControls, marksFor } from '../../src/viz/lessons/law-of-cosines';
+import { NPanel } from '../../src/viz/scene/NPanel';
+import { rowsFor } from '../../src/viz/lessons/law-of-cosines.rows';
 import { lessonStore } from '../../src/viz/store';
 import { INITIAL, LESSON } from '../../src/viz/lessons/law-of-cosines.math';
 test('actual KaTeX mark wrappers preserve semantic occurrences, ancestor hiding and accessible dim',async()=>{
@@ -73,4 +75,55 @@ test('every actual formula renders both layouts and stage marks',()=>{
  expect(marksFor(2,4,60)['leg-rest'].dim).toBe(true);
  expect(marksFor(2,8,60).ident.struck).toBe(true);
  expect(marksFor(0,10,90).corr.dim).toBe(true);
+});
+
+for(const locale of ['en','ru'] as const)test('LC review regressions: live prose, row aliases and length/area readouts '+locale,async()=>{
+ // Other DOM fixtures install a synchronous rAF; these text/link assertions do not advance animation time.
+ const raf=globalThis.requestAnimationFrame,cancel=globalThis.cancelAnimationFrame;
+ let frame=0;globalThis.requestAnimationFrame=()=>++frame;globalThis.cancelAnimationFrame=()=>{};
+ const host=document.createElement('div');document.body.append(host);const root=createRoot(host),store=lessonStore(LESSON);
+ store.getState().setMany(INITIAL);store.getState().setStep('cut',0);store.getState().setStep('proof',0);store.getState().setHot([]);
+ const text=(id:string)=>host.querySelector('[data-timeline="'+id+'"] p')!.textContent!;
+ try{
+  await act(async()=>root.render(<><LawControls scene={0} locale={locale}/><LawControls scene={2} locale={locale}/><LawControls scene={3} locale={locale}/><LawDetailControls locale={locale}/><NPanel lesson={LESSON} rows={rowsFor(3,locale)}/><NPanel lesson={LESSON} rows={rowsFor(2,locale)}/></>));
+  expect(text('cut')).toContain('9.00 + 16.00 = 25.00; c² = 13.00');
+  expect(text('cut')).toContain(locale==='en'?'Subtract 12.00':'Вычитаем 12.00');
+  await act(async()=>store.getState().set('th',90));
+  expect(text('cut')).toContain('c² = 25.00');
+  expect(text('cut')).toContain(locale==='en'?'correction is zero':'Поправка нулевая');
+  expect(text('proof')).toContain(locale==='en'?'This is a right angle':'Это прямой угол');
+  await act(async()=>store.getState().setMany({a:2,b:4,th:120}));
+  expect(text('cut')).toContain('4.00 + 16.00 = 20.00; c² = 28.00');
+  expect(text('cut')).toContain(locale==='en'?'Add 8.00':'Прибавляем 8.00');
+  expect(text('proof')).toContain('θ = 120°');
+  await act(async()=>store.getState().setStep('proof',7));
+  for(const id of ['ident','bcos2','bsin2','rise2'])expect(store.getState().hot.has(id)).toBe(true);
+  expect(store.getState().hotSource).toBe('guide');
+  for(const [id,targets] of [['cosraw',['cosphi','l1','l2','d','ik_l1','ik_l2']],['cosc',['clamp','gap','reach_max']],['rise2',['bsin2']]] as const){
+   const row=host.querySelector<HTMLElement>('.lab-np-row[data-id="'+id+'"]')!;
+   for(const event of ['pointerover','focusin']){
+    await act(async()=>row.dispatchEvent(new Event(event,{bubbles:true})));
+    for(const target of targets)expect(store.getState().hot.has(target)).toBe(true);
+    expect(store.getState().hotSource).toBe('interaction');
+    await act(async()=>row.dispatchEvent(new Event(event==='pointerover'?'pointerout':'focusout',{bubbles:true})));
+    expect(store.getState().hotSource).toBe('guide');expect(store.getState().hot.has('ident')).toBe(true);
+   }
+  }
+  const term=host.querySelector<HTMLElement>('[data-t="bsin2"]')!;
+  await act(async()=>term.focus());expect(store.getState().hot.has('rise2')).toBe(true);expect(store.getState().hotSource).toBe('interaction');
+  await act(async()=>term.blur());
+  await act(async()=>store.getState().setStep('cut',3));
+  const readout=()=>host.querySelector('[data-lc-detail-controls] [aria-live]')!.textContent!;
+  for(const part of [9,10]){
+   await act(async()=>store.getState().set('detail_part',part));
+   expect(readout()).toContain(locale==='en'?'signed projection length':'длина проекции со знаком');
+   expect(readout()).not.toContain(locale==='en'?'signed area':'площадь со знаком');
+  }
+  await act(async()=>store.getState().set('th',90));
+  expect(readout()).toContain(locale==='en'?'Zero signed projection length':'Нулевая длина проекции');
+  await act(async()=>store.getState().set('detail_part',0));
+  expect(readout()).toContain(locale==='en'?'signed area':'площадь со знаком');
+  await act(async()=>store.getState().setMany({a:3,b:3,th:0}));
+  expect(readout()).toContain(locale==='en'?'Zero signed area':'Нулевая площадь со знаком');
+ }finally{await act(async()=>root.unmount());store.getState().setMany(INITIAL);host.remove();globalThis.requestAnimationFrame=raf;globalThis.cancelAnimationFrame=cancel}
 });
