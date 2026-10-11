@@ -4,8 +4,16 @@ description: "Distance between points in 2D, 3D and any number of dimensions."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { PythagorasScene, PythagorasControls, PythagorasND } from '../../../viz/lessons/pythagoras';
+import { rowsFor } from '../../../viz/lessons/pythagoras.rows';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'pt']} />
 
 **Built on:** [Squares, roots and the plane](lesson:squares-and-plane) (a square is an area, a root undoes it,
 a point is two readings on two rulers) · [Powers](lesson:powers) (the root is the power $1/2$).
@@ -29,7 +37,13 @@ The grid walk is $3 + 4 = 7$ units long. That is the **Manhattan distance**: the
 streets. But a straight line from $P$ to $Q$ is shorter than the grid walk, the way a flight is shorter than
 the drive. The question is: how much shorter?
 
-{/* scene: 0.3-1 — drag P and Q: the right triangle with legs dx, dy appears; a square is built on each leg and on the hypotenuse, with the three areas dx², dy², c² as live numbers linked to the formula terms */}
+Drag $P$ and $Q$ (or type them in the panel). The east leg is blue, the north leg pink, the straight line teal.
+On each of the three sides a square is drawn, pointing outward, with its area written inside.
+
+<SceneIsland caption="0.3-1 · Two points, the grid walk (east leg, then north leg) and the straight line, with a square on each side." rows={rowsFor(1, locale)}>
+  <PythagorasScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<PythagorasControls scene={1} locale={locale} client:load />
 
 Look at the picture. The east leg, the north leg and the straight line form a triangle with a square corner
 where the legs meet. The straight line is the longest side, the **hypotenuse**. Our question is: given the
@@ -37,8 +51,9 @@ two legs, how long is the hypotenuse?
 
 ## Pythagoras: the squares on the legs fill the square on the hypotenuse
 
-Build a square on each side of the triangle, pointing outward. Three squares. Their areas are $dx^2$, $dy^2$
-and $c^2$, where $c$ is the length of the hypotenuse.
+Build a square on each side of the triangle, pointing outward: the picture above already did. Three squares. Their
+areas are $dx^2$, $dy^2$ and $c^2$, where $c$ is the length of the hypotenuse (in the scene it is called $d$, for
+distance). Hover a square in the scene or a term in the formula: both light up together.
 
 Pythagoras' theorem says the two small areas add up to the big one:
 
@@ -59,7 +74,14 @@ Take the right triangle with legs $a$ and $b$ and hypotenuse $c$. Make four copi
 square of side $a + b$, each copy with its right angle sitting in one corner of the big square. The four hypotenuses now
 fence off a tilted square in the middle, of side $c$.
 
-{/* scene: 0.3-2 — dissection proof as a timeline: four copies of the triangle rearrange inside an (a+b)² square; step and scrub; a² + b² = c² without algebra */}
+Step through the proof below with Next and Back, or drag the step slider. The pieces only slide: none of them turns
+or changes shape, so no area is created or lost. Change $a$ and $b$ in the panel and the whole proof is redrawn
+for the new triangle.
+
+<SceneIsland caption="0.3-2 · Four copies of the triangle inside a square of side a + b: the uncovered area is c² before the slide and a² + b² after it." rows={rowsFor(2, locale)}>
+  <PythagorasScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<PythagorasControls scene={2} locale={locale} client:load />
 
 Count the big square's area two ways.
 
@@ -69,7 +91,7 @@ As pieces: four triangles plus the tilted square. Each triangle has area $\tfrac
 $a$ by $b$), so the four together are $2ab$. Plus the middle square, $c^2$. Total: $2ab + c^2$.
 
 Now slide the four triangles into a different arrangement inside the same big square: two of them make an
-$a \times b$ rectangle in one corner, the other two make another rectangle in the opposite corner. What is left
+$a \times b$ rectangle in one corner, the other two make a $b \times a$ rectangle in the opposite corner. What is left
 uncovered is now two squares, one of side $a$ and one of side $b$. Same four triangles, same big square, so the
 uncovered area is the same: $a^2 + b^2 = c^2$.
 
@@ -112,18 +134,17 @@ flight (5) are different numbers, and the formula is the one that tells them apa
 
 ## 3D: the same thing twice
 
-Now the points have three coordinates: $P = (1, 1, 1)$ and $Q = (2, 3, 3)$. The legs are
-$dx = 2 - 1 = 1$, $dy = 3 - 1 = 2$, $dz = 3 - 1 = 2$.
+Now the points have three coordinates. Maya and Houdini are y-up: x and z run across the floor, y is the height.
+Take $P = (0, 0, 0)$ and $Q = (1, 2, 2)$. The legs are $dx = 1 - 0 = 1$, $dy = 2 - 0 = 2$ (up) and
+$dz = 2 - 0 = 2$.
 
-{/* scene: 0.3-3 — 3D with orbit: the floor diagonal first, then straight up; the formula grows to three terms */}
-
-Picture a room. Walk across the floor: that is the 2D problem, with legs $dx$ and $dy$. The floor diagonal
-$f$ satisfies $f^2 = dx^2 + dy^2 = 1 + 4 = 5$. Now go up by $dz$. The floor diagonal and the vertical leg
-form a *new* right triangle, standing upright, and its hypotenuse is the straight line from $P$ to $Q$.
-Pythagoras again:
+Picture a room: the box with opposite corners $P$ and $Q$. Walk across the floor: that is the 2D problem, with
+legs $dx$ and $dz$. The floor diagonal $f$ satisfies $f^2 = dx^2 + dz^2 = 1 + 4 = 5$. Now go up by $dy$. The floor
+diagonal and the vertical leg form a *new* right triangle, standing upright, and its hypotenuse is the straight line
+from $P$ to $Q$. Pythagoras again:
 
 $$
-d^2 = f^2 + dz^2 = (dx^2 + dy^2) + dz^2
+d^2 = f^2 + dy^2 = (dx^2 + dz^2) + dy^2
 $$
 
 So $d^2 = 5 + 4 = 9$ and $d = 3$. Two uses of Pythagoras, one after the other, give a formula with three
@@ -133,8 +154,18 @@ $$
 d = \sqrt{dx^2 + dy^2 + dz^2}
 $$
 
+Step through it in 3D. Orbit the view by dragging empty space: the floor triangle lies flat, the second triangle
+stands upright, and both right angles stay square from every side. Drag $P$ and $Q$ (with a point focused, PageUp
+and PageDown move it along z).
+
+<SceneIsland caption="0.3-3 · The box between P and Q: the floor diagonal first (dx, dz), then straight up (dy); two right triangles, two uses of Pythagoras." rows={rowsFor(3, locale)}>
+  <PythagorasScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<PythagorasControls scene={3} locale={locale} client:load />
+
 This is `length(Q - P)` in a shader and `distance()` in VEX. Nothing new happened in 3D except that one more
-square joined the sum.
+square joined the sum. The order of the legs does not matter either: going up first and across the floor second
+gives the same three squares.
 
 ## n dimensions: nothing changes except the count
 
@@ -144,18 +175,46 @@ with 784 coordinates. How far apart are two of those?
 The same formula, with more terms in the sum:
 
 $$
-d = \sqrt{(q_1 - p_1)^2 + (q_2 - p_2)^2 + \cdots + (q_n - p_n)^2}
+\begin{aligned}
+d^2 &= (q_1 - p_1)^2 + (q_2 - p_2)^2 \\
+&\quad + \cdots + (q_n - p_n)^2 \\
+d &= \sqrt{d^2}
+\end{aligned}
 $$
 
 A 4D example you can do by hand: $P = (0, 0, 0, 0)$ and $Q = (1, 0, 2, 2)$. The legs are $1, 0, 2, 2$.
 Squares: $1, 0, 4, 4$. Sum: $9$. Root: $d = 3$.
 
-{/* scene: 0.3-4 — n-D: a row of difference numbers, each squared, summed, rooted; "nothing changes except the count" */}
+No picture this time, only the numbers, because no picture is needed. Below, $P$ and $Q$ are lists of numbers:
+scrub any of them (drag sideways, or focus one and use the arrow keys), and change the number of dimensions $n$
+with the buttons. Each row of the table is one dimension: the difference and its square. The sum at the bottom is
+$d^2$, its root is $d$. Going from 4 to 5 dimensions adds one row and one term, and nothing else changes.
+
+<PythagorasND locale={locale} client:load />
 
 Here is the misconception to drop: "in four or more dimensions I cannot picture the triangle, so the
 formula must need some geometry I do not have." It needs none. The 3D derivation was "Pythagoras on the
 floor, then Pythagoras standing up." The 4D derivation is the same with one more step, and so on. You do not
 need to see the room; you need to square, add and root. Numbers do not care how many of them there are.
+
+## Compare squares, skip the root
+
+You already know the habit from the previous lesson: CG code writes `dist2 < r * r` instead of
+`length(d) < r`. Now you can see why it is safe. Both $d$ and $r$ are lengths, never negative, and for numbers
+that are not negative the bigger number always has the bigger square. So $d < r$ and $d^2 < r^2$ ask the same
+question. The squared version needs no root: in 3D it is three multiplies and two adds.
+
+Drag $X$ around the circle and change $r$. The first line of the formula compares the squares, the second compares
+the lengths: they always give the same answer, inside, on the circle or outside.
+
+<SceneIsland caption="0.3-5 · Inside, on or outside the circle: d² against r² gives the same answer as d against r, without a root." rows={rowsFor(5, locale)}>
+  <PythagorasScene scene={5} locale={locale} client:only="react" />
+</SceneIsland>
+<PythagorasControls scene={5} locale={locale} client:load />
+
+The same trick sorts neighbours: sorting by $d^2$ gives the same order as sorting by $d$. It breaks only when a sign
+can sneak in: $-3 < 2$, but $(-3)^2 = 9 > 4 = 2^2$. Compare squares only of numbers that are never negative, like
+lengths.
 
 > **Say it simpler.** Walk east, then north. The straight path is shorter, and Pythagoras says exactly how much:
 > square each leg, add, take the root. Three legs, four legs, four thousand legs: same recipe.
@@ -277,6 +336,20 @@ $1.8 \times 10^{308}$, so a leg of $10^{200}$ has a square of $10^{400}$: infini
 $3.4 \times 10^{38}$, so legs above about $1.8 \times 10^{19}$ already break. The same happens at the small end: a
 leg of $10^{-200}$ squares to zero (underflow), and the distance between two nearby points comes out as 0.
 `hypot` rescales by the larger leg first, computes $\sqrt{1 + (b/a)^2}$ and scales back.
+The plain recipe, and `np.linalg.norm` too, square first and lose the answer:
+
+<PyCell>
+
+```python
+import numpy as np
+
+legs = np.array([1e200, 1e200])
+print(np.sqrt((legs**2).sum()))   # inf: each square overflowed
+print(np.linalg.norm(legs))       # inf: norm squares as well
+print(np.hypot(legs[0], legs[1])) # 1.414213562373095e+200
+```
+
+</PyCell>
 
 For most CG code the legs are world units and nothing overflows. The habit that does matter every day is the one
 from the last lesson: when you only need to *compare* distances, compare the squared sums and skip the root.
