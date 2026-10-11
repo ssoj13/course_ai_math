@@ -21,7 +21,7 @@ gentle, step-by-step explanations. Explain via CG analogies (N·L, xforms, Graph
 
 ## Decisions (2026-10-10)
 
-- Language: **English** (chat with the user stays Russian).
+- Language: **bilingual like vllm_en**: English at the root, Russian under `/ru/` (plan Task 6g); chat stays Russian.
 - Hosting: **GitHub Pages** (static; no server-side code).
 - Python: **Pyodide** in-browser cells (lazy, on click) **and Colab** notebooks; one notebook source.
 - Statistics/probability module: **mandatory**, incl. "why squares everywhere" (see below).

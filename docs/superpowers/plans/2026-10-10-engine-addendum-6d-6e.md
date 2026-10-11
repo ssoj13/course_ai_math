@@ -53,6 +53,19 @@ Arrow leg ids `${id}:x|y|z`; Toggle (role switch, writes 0/1). Pure helpers unit
 LitSphere verified by CDP pixel sampling (brightness at the probe = max(0, N·L) within 1/255).
 Gates as above. Commit: `feat(viz): lesson primitives — custom drag mapping, magnet, half-plane, lit sphere, ledger, challenge, circle, toggle`.
 
+### Task 6g: Bilingual site (en + ru), same as vllm_en
+
+User requirement (task.md): two languages from the start, like the other courses: English at the root, Russian under `/ru/`.
+Port, do not reinvent: `C:\projects\projects.rust.cg\cgprojs\vllm_en` AGENTS.md "Bilingual site" section and its files —
+`src/lib/course-rules.mjs` (LOCALES, STARLIGHT_LOCALES, asLocale/fromStarlight, splitLocale), course.ts `loc()/href()/
+pageHref()/moduleHref()` with locale, remark-lesson-links locale from the file path, `src/i18n/{ui.ts,core.ts}` + `UiStrings`
+(client code imports only core.ts), `src/content/i18n/{en,ru}.json`, course.json `ru` titles/summaries, i18n tests
+(`i18n-keys`, `i18n-sync`). Every UI string in the engine goes through it: ViewportCard header/Overlays, status-bar hints
+(mouse + touch), N-panel, gizmo labels, Quiz, LessonDone, Colab badge, no-WebGL notice. Untranslated ru pages = Starlight
+fallback (English body + notice). Russian lesson text is a separate translation pass per lesson after its English text is
+reviewed (faithful: same facts, numbers, examples). Gates as above, plus the ported i18n tests.
+Commit: `feat(i18n): bilingual site — English root, Russian under /ru/, engine UI strings`.
+
 ### Task 6f: Viewport size modes — enlarge 2× and full screen
 
 User requirement (task.md): every scene window can be enlarged two times and expanded to the whole screen, immediately.
@@ -80,7 +93,7 @@ Blender analogue: Ctrl+Space "Toggle Maximize Area" and Ctrl+Alt+Space "Toggle F
    drawn at the new size (pixel sample), returning to normal restores the layout with 0 layout-shift entries, 360 px works.
 Gates as above. Commit: `feat(viz): viewport size modes — enlarge 2x and full screen`.
 
-Execution order (ledger Ruling N/P): 6c → 6d → 6e → 6f → 7 → lessons law-of-cosines + dot-product → merge to main + deploy → 8 → 9 → 10 → 11.
+Execution order (ledger Ruling N/P): 6c → 6d → 6e → 6g → 6f → 7 → lessons law-of-cosines + dot-product → merge to main + deploy → 8 → 9 → 10 → 11.
 
 ## Illustration roadmap (user requirements, task.md) — scheduled with the sections that use them
 
