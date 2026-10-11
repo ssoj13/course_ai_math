@@ -63,11 +63,14 @@ function Derivation() {
 	const v = useVals(LESSON), z = derive(v), step = useStep(LESSON, 'derive'), labels = useOverlay('labels'), legs = useOverlay('legs');
 	const fade = { a: v.fade_a as number, b: v.fade_b as number };
 	const square = (key: 'sq_a' | 'sq_b' | 'sq_amb') => (vals: Vals) => derive(vals)[key]!;
-	const sqLabel = (text: string, key: 'na2' | 'nb2' | 'namb2') => (labels ? (vals: Vals) => text + ' = ' + fmt(derive(vals)[key]) : undefined);
+	// A cancelled square (step 6) keeps its outline but drops its label: the struck pair is gone from the equation, and its
+	// label would sit on top of the rectangle's label inside the square on a.
+	const strike = v.strike as number;
+	const sqLabel = (text: string, key: 'na2' | 'nb2' | 'namb2', gone = false) => (labels && !gone ? (vals: Vals) => text + ' = ' + fmt(derive(vals)[key]) : undefined);
 	return <>
 		<Show ov="squares">{step >= 1 && <>
-			{z.sq_a && <Poly lesson={LESSON} id="na2" timeline="derive" pts={square('sq_a')} role="vecA" fill={tileFill(fade.a)} label={sqLabel('|a|²', 'na2')} />}
-			{z.sq_b && <Poly lesson={LESSON} id="nb2" timeline="derive" pts={square('sq_b')} role="vecB" fill={tileFill(fade.b)} label={sqLabel('|b|²', 'nb2')} />}
+			{z.sq_a && <Poly lesson={LESSON} id="na2" timeline="derive" pts={square('sq_a')} role="vecA" fill={tileFill(fade.a)} label={sqLabel('|a|²', 'na2', strike >= 1)} />}
+			{z.sq_b && <Poly lesson={LESSON} id="nb2" timeline="derive" pts={square('sq_b')} role="vecB" fill={tileFill(fade.b)} label={sqLabel('|b|²', 'nb2', strike >= 2)} />}
 			{z.sq_amb && <Poly lesson={LESSON} id="namb2" timeline="derive" pts={square('sq_amb')} role="vecC" label={sqLabel('|a − b|²', 'namb2')} />}
 		</>}</Show>
 		<Show ov="rect">{z.rectPts && <>
@@ -164,10 +167,13 @@ function Explorer3() {
 // ---------------------------------------------------------------------------------------------------------------
 // DP-4: the lamp.
 
-/** The highest point of the terminator circle (world y up): its label sits on the ring, never inside the sphere. */
-function termTop(term: ReturnType<typeof lamp>['term']): V {
-	const n = term.n, up = [-n[1] * n[0], 1 - n[1] * n[1], -n[1] * n[2]], len = norm(up);
-	const dir = len > 1e-9 ? scale(up, 1 / len) : [1, 0, 0];
+/**
+ * The lowest point of the terminator circle (world y down): the label sits on the ring, never inside the sphere, and away
+ * from the lamp's own label (the lamp is usually above the sphere).
+ */
+function termLow(term: ReturnType<typeof lamp>['term']): V {
+	const n = term.n, down = [n[1] * n[0], n[1] * n[1] - 1, n[1] * n[2]], len = norm(down);
+	const dir = len > 1e-9 ? scale(down, 1 / len) : [1, 0, 0];
 	return add(scale(n, norm(term.c) + 0.01), scale(dir, term.r));
 }
 
@@ -181,7 +187,7 @@ function Lamp() {
 			{/* The horizon of the point light, lifted 0.01 off the surface so the dashes are not half-buried. */}
 			<Circle lesson={LESSON} id="term" center={(vals) => { const term = lamp(vals).term; return scale(term.n, norm(term.c) + 0.01); }}
 				r={(vals) => lamp(vals).term.r} normal={(vals) => lamp(vals).term.n} role={onTerm ? 'hot' : 'muted'} dashPx={[7, 5]} />
-			<Show ov="labels"><Label lesson={LESSON} id="term" at={termTop(z.term)} role="muted" offset={[0, -12]}>N·L = 0</Label></Show>
+			<Show ov="labels"><Label lesson={LESSON} id="term" at={termLow(z.term)} role="muted" offset={[0, 12]}>N·L = 0</Label></Show>
 		</Show>
 		<Show ov="normal"><Arrow lesson={LESSON} id="N" from={z.P} to={tipN} role="vecB" />
 			<Show ov="labels"><Label lesson={LESSON} id="N" at={tipN} role="vecB" offset={TIP}>N</Label></Show>

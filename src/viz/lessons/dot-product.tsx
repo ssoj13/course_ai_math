@@ -119,13 +119,16 @@ export function DotFormula({ scene, compact = false }: { scene: Scene; compact?:
 	if (scene === 2) {
 		const z = derive(v);
 		if (compact) return <Formula {...common} label={t(locale, 'dp.signFormula')} tex={tex`\t{dot}{${A}\cdot ${B}}=\s{dot},\;\t{th}{\theta=\s{th}}`} />;
-		const lines = [
-			tex`\t{dot}{${A}\cdot ${B}}=\t{sum}{\s{a1}\cdot ${signed('b1', z.b1)}+\s{a2}\cdot ${signed('b2', z.b2)}}=\s{dot}`,
-			tex`\t{rhs}{${abs(A)}\,${abs(B)}\cos\theta}=\s{na}\cdot\s{nb}\cdot ${signed('cosT', z.cosT)}=\s{rhs}`,
-			tex`\t{rect}{${abs(A)}\cdot(${abs(B)}\cos\theta)}=\s{na}\cdot ${signed('shadow', z.shadow)}=\s{rect}`,
-			tex`\t{th}{\theta=\s{th}}`,
+		// Each route as [definition = live inputs, = result]; phones put the result on its own line.
+		const routes = [
+			[tex`\t{dot}{${A}\cdot ${B}}=\t{sum}{\s{a1}\cdot ${signed('b1', z.b1)}+\s{a2}\cdot ${signed('b2', z.b2)}}`, tex`=\s{dot}`],
+			[tex`\t{rhs}{${abs(A)}\,${abs(B)}\cos\theta}=\s{na}\cdot\s{nb}\cdot ${signed('cosT', z.cosT)}`, tex`=\s{rhs}`],
+			[tex`\t{rect}{${abs(A)}\cdot(${abs(B)}\cos\theta)}=\s{na}\cdot ${signed('shadow', z.shadow)}`, tex`=\s{rect}`],
 		];
-		return <Formula {...common} block label={t(locale, 'dp.signFormula')} tex={aligned(lines)}
+		const angle = tex`\t{th}{\theta=\s{th}}`;
+		const lines = [...routes.map(([l, r]) => l + r), angle];
+		const narrow = [...routes.flatMap(([l, r]) => [l, tex`\quad${r}`]), angle];
+		return <Formula {...common} block label={t(locale, 'dp.signFormula')} tex={aligned(lines)} texNarrow={aligned(narrow)}
 			tips={{ shadow: { text: t(locale, 'dp.shadowTip') }, rect: { text: t(locale, 'dp.rectTip') } }} />;
 	}
 	if (scene === 3) {
@@ -275,8 +278,9 @@ function Comp3Table() {
 function SignWord({ id, text, active }: { id: string; text: string; active: boolean }) {
 	const hot = useHot(LESSON, id);
 	return <span data-t={id} data-active={active ? '' : undefined} tabIndex={0}
-		style={{ padding: '.15rem .5rem', borderRadius: 4, border: '1px solid var(--sl-color-gray-5)', fontFamily: 'var(--lab-font-mono)', fontWeight: active ? 700 : 400,
-			background: active ? 'var(--sl-color-gray-6)' : undefined, outline: hot ? '1px solid var(--viz-hot)' : undefined }}
+		// The strip is drawn in the viewport's dark chrome in both site themes, so the word uses the viz tokens too.
+		style={{ padding: '.15rem .5rem', borderRadius: 4, border: '1px solid var(--viz-chrome-2)', fontFamily: 'var(--lab-font-mono)', fontWeight: active ? 700 : 400,
+			background: active ? 'var(--viz-field-hover)' : 'transparent', color: 'var(--viz-ink)', outline: hot ? '1px solid var(--viz-hot)' : undefined }}
 		onPointerEnter={() => hotOn(LESSON, id)} onPointerLeave={() => hotOff(LESSON, id)} onFocus={() => hotOn(LESSON, id)} onBlur={() => hotOff(LESSON, id)}>{text}</span>;
 }
 
@@ -284,7 +288,7 @@ function FacesStrip() {
 	const locale = useLocale(), z = derive(useVals(LESSON));
 	const sign = z.dot > 1e-9 ? 'pos' : z.dot < -1e-9 ? 'neg' : 'zero';
 	// The cells are N-panel fields, drawn in the viewport's dark chrome (their colours are calibrated for it).
-	return <div className="not-content" data-dp-faces="" style={{ background: 'var(--viz-chrome)', color: 'var(--viz-ink)', padding: '.6rem', borderRadius: 6 }}>
+	return <div className="not-content" data-dp-faces="" style={{ background: 'var(--viz-chrome)', color: 'var(--viz-ink)', padding: '.4rem', borderRadius: 6 }}>
 		<div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
 			{facesFor(locale).map((r) => <FieldCell key={r.id} lesson={LESSON} row={r} size="lg" />)}
 		</div>
@@ -403,7 +407,14 @@ function Controls({ scene }: { scene: Scene }) {
 		{/* Links and the strike clock are lesson-wide; they mount once, with the lead scene's controls. */}
 		{scene === 1 && <><SemanticLinks /><StrikeClock /></>}
 		{scene === 1 && <Timeline lesson={LESSON} id="derive" steps={STEP_KEYS.map((key, i) => ({ id: String(i), text: t(locale, key), focus: STEP_FOCUS[i] }))} />}
-		<DotFormula scene={scene} />
+		{scene === 1
+			? <div style={{ position: 'relative' }}>
+				{/* The hidden lines keep their space (no layout shift when they appear); until the first one does, the
+				    empty box says what will fill it instead of looking broken. */}
+				{step < 2 && <p data-dp-later="" style={{ position: 'absolute', inset: '0 0 auto 0', margin: 0, color: 'var(--sl-color-gray-3)' }}>{t(locale, 'dp.formulaLater')}</p>}
+				<DotFormula scene={1} />
+			</div>
+			: <DotFormula scene={scene} />}
 		{scene === 1 && <CompTable />}
 		{scene === 2 && <FacesStrip />}
 		{scene === 3 && <><Comp3Table /><CodeTabs /></>}
