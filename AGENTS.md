@@ -404,3 +404,20 @@ screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a 
   the 2D demo, `cls-probe.ts`; excluded from CLS by hadRecentInput but an entry): Task 7 should anchor `\s{}` numbers.
 - [ ] Point sizes (DP-4 "sun glyph, larger", LC-0 small feet D/E/F, LC-3 larger joint) and the `nl_light` typed-value
   clamp (outside the sphere) are lesson-task scope (Point `size`, a row-level constraint).
+
+## Whole-course execution (2026-10-11)
+
+The operator has resumed and authorized full-course implementation. Historical pending Plan 1/repository approval and
+pause notes above and in HANDOFF are not current blockers. The executable
+[course completion map](docs/superpowers/plans/2026-10-11-course-completion.md) covers all **98 entries** (76 spine,
+A1–A10, Q1–Q12), every named scene, bilingual content/UI, Python/Colab, term maps, machine depth, verification and release.
+
+- [x] Whole-course completion/acceptance map written; no curriculum or required scene removed.
+- [ ] Execute its prerequisite phases and lesson batches; record evidence per lesson and scene before marking complete.
+- [ ] Preserve every chosen holo reference element, including miniature galaxy panels and the planet/ring instrument;
+  adapt layout and measure cost instead of silently dropping elements.
+- [ ] Complete all required defects even if a review iteration cap is reached; change diagnosis/reviewer, not scope.
+
+Add real lesson content and scenes with manifest entries; do not substitute syllabus stubs for a completed course.
+Powers prose and reviewed scene contracts were integrated into feat/engine at `0dca77d`; all 13 English lessons remain
+subject to the map's full acceptance contract. Interactive powers scenes are not yet implemented.
