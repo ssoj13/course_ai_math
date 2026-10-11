@@ -155,6 +155,7 @@
 	}
 	.lab-formula-plate > .lab-plate-body {
 		width: 100%;
+		text-align: center;
 	}
 }
 /* Clay studio: labels are dark ink on the light backdrop, without the hologram glow. */

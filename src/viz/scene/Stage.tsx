@@ -209,8 +209,6 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content, pad, fl
 	const anim = useRef<{ from: Pose; to: Pose; t0: number } | null>(null);
 
 	const ortho = camera instanceof OrthoCam;
-	// The free area is the stage minus the overlaid N-panel; both views fit their content into it.
-	const fw = Math.max(1, w - inset);
 	// Read by frame callbacks and late layout effects: the latest props, not those of the render that bound them.
 	const padRef = useRef(pad);
 	padRef.current = pad;
