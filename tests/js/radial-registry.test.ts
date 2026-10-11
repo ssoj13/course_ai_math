@@ -1,0 +1,25 @@
+import {expect,test} from 'bun:test';
+import '../../src/i18n/ui';
+import {lessonStore} from '../../src/viz/store';
+import {createStage,clampMove,type Draggable} from '../../src/viz/scene/handles';
+import {rowRanges} from '../../src/viz/scene/NPanel';
+import {ROWSLAMP,moveLight,moveP,lightLink,probeLink} from '../../src/viz/demo/engine.rows';
+test('actual lamp registry preserves requested radial direction through ROWSLAMP ranges',()=>{
+ const lesson='registry-'+Math.random(),s=lessonStore(lesson,{nl_light:[3,1.5,-1.2],nl_pt:[0,1.5,0]},{groups:[lightLink,probeLink]});
+ const reg=createStage('3d',{lesson,id:'lamp',overlays:[],ranges:rowRanges(ROWSLAMP('en'))});
+ const light:Draggable={id:'light',owner:'light',label:'light',lesson,keys:['nl_light'],at:v=>v.nl_light as number[],move:moveLight};
+ reg.apply(light,s.getState().vals,[100,50,25],'drag');
+ expect(s.getState().vals.nl_light).toEqual([103,51.5,23.8]);
+ expect(s.getState().shown.nl_light).toEqual(s.getState().vals.nl_light);
+ const prior=s.getState().vals.nl_light as number[];
+ reg.nudge(light,'ArrowRight',false);
+ expect(s.getState().vals.nl_light).toEqual([103.1,51.5,23.8]);
+ reg.apply(light,s.getState().vals,(s.getState().vals.nl_light as number[]).map(x=>-x),'drag');
+ const zero=s.getState().vals.nl_light as number[];
+ expect(Math.hypot(...zero)).toBeCloseTo(1.8,12);expect(zero[1]/zero[0]).toBeCloseTo(51.5/103.1,12);
+ const probe:Draggable={...light,id:'probe',keys:['nl_pt'],at:v=>v.nl_pt as number[],move:moveP};
+ reg.apply(probe,s.getState().vals,[100,50,25],'drag');expect(Math.hypot(...s.getState().vals.nl_pt as number[])).toBeCloseTo(1.5,12);
+ expect(prior.every(Number.isFinite)).toBe(true);
+ expect(clampMove({v:[8,4,-6]},{v:{min:-4,max:4}}).v).toEqual([4,4,-4]);
+ expect(clampMove({v:[8,4,-6]},{v:{min:-4,max:4}},['v']).v).toEqual([4,2,-3]);
+});

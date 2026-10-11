@@ -1,0 +1,25 @@
+import './dom';
+import {afterEach,expect,test} from 'bun:test';
+import {act} from 'react';
+import {createRoot,type Root} from 'react-dom/client';
+import {Timeline} from '../../src/viz/Timeline';
+import {hotOn,hotOff,lessonStore} from '../../src/viz/store';
+import '../../src/i18n/ui';
+const roots:Root[]=[];
+afterEach(()=>{for(const r of roots.splice(0))act(()=>r.unmount());document.body.innerHTML=''});
+test('timeline guide restores after hover, follows current step, and arbitrates mounted owners per lesson',()=>{
+ const lesson='guide-'+Math.random(),store=lessonStore(lesson),other=lessonStore(lesson+'other');
+ const host=document.createElement('div');document.body.append(host);const root=createRoot(host);roots.push(root);
+ const a=[{id:'a',text:'a',focus:'a'},{id:'b',text:'b',focus:'b'}],b=[{id:'c',text:'c',focus:'c'},{id:'d',text:'d',focus:'d'}];
+ const render=(second=true,steps=a)=>act(()=>root.render(<><Timeline lesson={lesson} id="a" steps={steps}/>{second&&<Timeline lesson={lesson} id="b" steps={b}/>}<Timeline lesson={lesson+'other'} id="a" steps={b}/></>));
+ const hot=()=>[...store.getState().hot];render();expect(hot()).toEqual(['a']);expect([...other.getState().hot]).toEqual(['c']);
+ act(()=>hotOn(lesson,'hover'));expect(hot()).toEqual(['hover']);act(()=>hotOff(lesson,'hover'));expect(hot()).toEqual(['a']);
+ act(()=>hotOn(lesson,'hover'));act(()=>store.getState().setStep('a',1));expect(hot()).toEqual(['hover']);
+ act(()=>hotOff(lesson,'hover'));expect(hot()).toEqual(['b']);
+ act(()=>store.getState().setStep('a',0));expect(hot()).toEqual(['a']);
+ act(()=>store.getState().setStep('b',1));expect(hot()).toEqual(['d']);
+ render(false);expect(hot()).toEqual(['a']);
+ render(false,[{id:'new',text:'new',focus:'new'}]);expect(hot()).toEqual(['new']);
+ act(()=>hotOn(lesson,'pointer'));act(()=>root.render(null));expect(hot()).toEqual(['pointer']);
+ act(()=>hotOff(lesson,'pointer'));expect(hot()).toEqual([]);
+});

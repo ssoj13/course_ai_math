@@ -279,13 +279,14 @@ function scaleInto(v: readonly number[], r: Range): number | null {
  * component (a drag slides along the range edge). A vector key listed in `caught` (the mapping's `ease`: a magnet
  * caught it onto a direction, e.g. exactly perpendicular) is scaled uniformly instead: a component-wise clip would
  * bend the caught direction (a·b would no longer be 0 at the range edge), scaling keeps it with every component inside.
+ * Declared radial keys bypass this box entirely: their shared store resolver owns the geometric constraint.
  */
-export function clampMove(set: Record<string, Val>, ranges: Readonly<Record<string, Range>> | undefined, caught: readonly string[] = []): Record<string, Val> {
+export function clampMove(set: Record<string, Val>, ranges: Readonly<Record<string, Range>> | undefined, caught: readonly string[] = [], radial: ReadonlySet<string> = new Set()): Record<string, Val> {
 	if (!ranges) return set;
 	return Object.fromEntries(
 		Object.entries(set).map(([k, v]) => {
 			const r = ranges[k];
-			if (!r) return [k, v];
+			if (!r || radial.has(k)) return [k, v];
 			if (typeof v === 'number') return [k, clamp1(v, r)];
 			const s = caught.includes(k) ? scaleInto(v, r) : null;
 			return [k, s === null ? v.map((x) => clamp1(x, r)) : s === 1 ? v : v.map((x) => x * s)];
@@ -335,7 +336,7 @@ export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): St
 		},
 		apply(d, vals, raw, src) {
 			const m: Move = d.move ? d.move(vals, raw, src) : { set: moved(vals, d.keys, raw) };
-			writeMove(d.lesson, clampMove(m.set, card?.ranges, m.ease), src === 'key' ? 'ease' : 'cut', m.ease);
+			writeMove(d.lesson, clampMove(m.set, card?.ranges, m.ease, lessonStore(d.lesson).getState().radialKeys), src === 'key' ? 'ease' : 'cut', m.ease);
 		},
 	};
 	return reg;

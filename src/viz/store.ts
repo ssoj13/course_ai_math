@@ -31,6 +31,8 @@ export interface LessonState {
 	/** What scenes draw: equal to `vals` except while an eased write is in flight. */
 	shown: Readonly<Record<string, Val>>;
 	hot: ReadonlySet<string>;
+	/** Keys whose shared radial resolver replaces ordinary per-component box bounds. */
+	radialKeys: ReadonlySet<string>;
 	step: Readonly<Record<string, number>>;
 	set(key: string, v: Val, how?: WriteHow): void;
 	setMany(patch: Record<string, Val>, how?: WriteHow, ease?: readonly string[]): void;
@@ -146,6 +148,7 @@ export function lessonStore(lesson: string, init: Record<string, Val> = {}, link
   const start = () => {if(eases.size&&!running){running=true;loop(performance.now())}};
   const store=createStore<LessonState>()((set,get)=>({
    vals:initial, shown:initial, hot:new Set(), step:initialStep,
+   radialKeys:new Set(groups.filter(g=>g.rangePolicy==='radial').flatMap(g=>g.keys)),
    set:(key,v,how='cut')=>get().setMany({[key]:v},how),
    setMany:(input,how='cut',ease=[])=>{
     for(const v of Object.values(input))finite(v);
@@ -171,10 +174,12 @@ export function lessonStore(lesson: string, init: Record<string, Val> = {}, link
     for(const [key,v] of Object.entries(patch)){
      const old=vals[key];
      const equal=typeof v==='number'?old===v:Array.isArray(old)&&old.length===v.length&&v.every((n,i)=>old[i]===n);
-     if(equal)continue;
-     changed=true;vals[key]=v;
      const from=shown[key];
-     if(modes[key]!=='ease'||reducedMotion()||!sameShape(from,v)){eases.delete(key);shown[key]=v}
+     const cut=modes[key]!=='ease'||reducedMotion()||!sameShape(from,v);
+     const drawnEqual=typeof v==='number'?from===v:Array.isArray(from)&&from.length===v.length&&v.every((n,i)=>from[i]===n);
+     if(equal&&(!cut||(drawnEqual&&!eases.has(key))))continue;
+     changed=true;vals[key]=v;
+     if(cut){eases.delete(key);shown[key]=v}
      else {
       const cur=eases.get(key);
       eases.set(key,{x:cur?cur.x:asVec(from),v:cur?cur.v:asVec(from).map(()=>0),to:asVec(v),scalar:typeof v==='number'});

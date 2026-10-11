@@ -12,5 +12,5 @@ export function radialLink(key:string,radius:number,mode:'surface'|'outside',ini
   const len=Math.hypot(...v),target=mode==='surface'||n<radius?radius:n;
   return Math.abs(target-len)<1e-12?[...v]:v.map(x=>x*target/len);
  };
- return {keys:[key],canonical:key,resolve:(input,current)=>({[key]:normalize(input[key],current[key])}),shown:vals=>({[key]:normalize(vals[key],initial)})};
+ return {keys:[key],canonical:key,rangePolicy:'radial',resolve:(input,current)=>({[key]:normalize(input[key],current[key])}),shown:vals=>({[key]:normalize(vals[key],initial)})};
 }

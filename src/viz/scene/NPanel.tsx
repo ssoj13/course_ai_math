@@ -141,6 +141,8 @@ export function useTip(): { bind: (tip: Tip | undefined) => React.HTMLAttributes
 }
 
 interface FieldProps {
+ /** A declared store radial constraint replaces component box bounds. */
+ radial?: boolean;
 	value: number;
 	spec: ScrubSpec;
 	snap?: number | readonly number[];
@@ -158,6 +160,21 @@ interface FieldProps {
 /** A Blender number field: drag to scrub, click/Enter to type, arrows to step. */
 function NumField(p: FieldProps): React.JSX.Element {
  const locale = useLocale();
+ // Keep the common bounded engine unchanged. Radial components have a zero-origin unbounded grid.
+ const radialSnap=(v:number,step=p.spec.step)=>Math.sign(v)*scrubValue(Math.abs(v),0,{min:0,max:Infinity,step});
+ const nextKey=(key:string)=>{
+  if(!p.radial)return keyStep(p.get(),key,p.spec);
+  const delta=keyStep(0,key,{min:-10*p.spec.step,max:10*p.spec.step,step:p.spec.step});
+  if(delta===null)return null;
+  const value=radialSnap(p.get()+delta);return Number.isFinite(value)?value:null;
+ };
+ const parse=(text:string)=>{
+  if(!p.radial)return parseField(text,p.spec);
+  const syntax=parseField(text,{min:0,max:Infinity,step:p.spec.step});if(!syntax.ok)return syntax;
+  const clean=text.trim().replace(/−/g,'-'),negative=clean.startsWith('-');
+  const value=parseField(negative?clean.slice(1):clean,{min:0,max:Infinity,step:p.spec.step});
+  return value.ok&&Number.isFinite(value.v)?{ok:true as const,v:negative?-value.v:value.v}:{ok:false as const,err:'finite number required'};
+ };
 	const [edit, setEdit] = useState<{ text: string; err: string | null } | null>(null);
 	const errId = useId();
 	const input = useRef<HTMLInputElement>(null);
@@ -176,7 +193,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 	}, [edit !== null]);
 	const open = () => setEdit({ text: fmtField(p.get(), p.spec.step).replace('−', '-'), err: null });
 	const commit = (text: string) => {
-		const r = parseField(text, p.spec);
+		const r = parse(text);
 		if (!r.ok) {
 			setEdit({ text, err: t(locale, 'viewport.numberError') });
 			return false;
@@ -223,16 +240,16 @@ function NumField(p: FieldProps): React.JSX.Element {
 			</span>
 		);
 	}
-	const step = (d: number) => p.set(keyStep(p.get(), d > 0 ? 'ArrowRight' : 'ArrowLeft', p.spec) ?? p.get(), 'ease');
+	const step = (d: number) => p.set(nextKey(d > 0 ? 'ArrowRight' : 'ArrowLeft') ?? p.get(), 'ease');
 	return (
 		<span
 			ref={field}
 			className="lab-np-field"
-			role="slider"
+			role={p.radial ? "spinbutton" : "slider"}
 			tabIndex={0}
 			aria-label={p.label}
-			aria-valuemin={p.spec.min}
-			aria-valuemax={p.spec.max}
+			aria-valuemin={p.radial ? undefined : p.spec.min}
+			aria-valuemax={p.radial ? undefined : p.spec.max}
 			aria-valuenow={p.value}
 			aria-valuetext={shown}
 			onPointerDown={(e) => {
@@ -271,7 +288,13 @@ function NumField(p: FieldProps): React.JSX.Element {
 						}
 						if (ev.shiftKey !== base.fine) base = { v0: p.get(), dx0: dx, fine: ev.shiftKey };
 						const spec = base.fine ? { ...p.spec, step: p.spec.step / 10 } : p.spec;
-						const v = scrubValue(base.v0, dx - base.dx0, spec, PX_PER_STEP);
+						if(p.radial){
+       const value=radialSnap(base.v0+Math.round((dx-base.dx0)/PX_PER_STEP)*spec.step,spec.step);
+       const targets=p.snap??p.spec.step*10;
+       const snapped=!ev.ctrlKey?value:typeof targets==='number'?radialSnap(value,targets):targets.reduce((best,t)=>Math.abs(t-value)<Math.abs(best-value)?t:best,targets[0]);
+       return Number.isFinite(snapped)?snapped:null;
+      }
+      const v = scrubValue(base.v0, dx - base.dx0, spec, PX_PER_STEP);
 						return ev.ctrlKey ? ctrlSnap(v, p.snap ?? p.spec.step * 10, p.spec) : v;
 					},
 					// A cancelled gesture is never a click (the loop has already restored the value).
@@ -286,7 +309,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 					open();
 					return;
 				}
-				const next = keyStep(p.get(), e.key, p.spec);
+				const next = nextKey(e.key);
 				if (next === null) return;
 				e.preventDefault();
 				if (next !== p.get()) p.set(next, 'ease');
@@ -328,7 +351,7 @@ function RowView({ lesson, row, vals, hot, reg, tip, size='sm' }: { lesson: stri
 		);
 	} else if (row.kind === 'num') {
 		if (typeof raw !== 'number') throw new Error(`N-panel row "${row.id}": store key "${row.key}" is not a number`);
-		body = <NumField checkpoint={() => store.getState().checkpoint([row.key!])} value={raw} spec={row.spec!} snap={row.snap} label={row.label} fmt={row.fmt} get={() => live() as number} set={(v, how) => store.getState().set(row.key!, v, how)} />;
+		body = <NumField radial={store.getState().radialKeys.has(row.key!)} checkpoint={() => store.getState().checkpoint([row.key!])} value={raw} spec={row.spec!} snap={row.snap} label={row.label} fmt={row.fmt} get={() => live() as number} set={(v, how) => store.getState().set(row.key!, v, how)} />;
 	} else if (row.kind === 'bool') {
 		if (raw !== 0 && raw !== 1) throw new Error(`N-panel row "${row.id}": store key "${row.key}" must hold 0 or 1, got ${String(raw)}`);
 		body = (
@@ -345,6 +368,7 @@ function RowView({ lesson, row, vals, hot, reg, tip, size='sm' }: { lesson: stri
 				{vec.map((x, i) => (
 					<NumField
 						key={i}
+      radial={store.getState().radialKeys.has(row.key!)}
 						checkpoint={() => store.getState().checkpoint([row.key!])}
 						value={x}
 						spec={row.spec!}
@@ -397,7 +421,7 @@ function RowView({ lesson, row, vals, hot, reg, tip, size='sm' }: { lesson: stri
 export function FieldCell({lesson,row,size='lg'}:{lesson:string;row:Row;size?:'sm'|'lg'}):React.JSX.Element {
  checkRow(row);
  const store=lessonStore(lesson),vals=useStore(store,s=>s.vals),hot=useStore(store,s=>s.hot.has(row.id)),tip=useTip();
- return <div className={'lab-field-cell is-'+size}><RowView lesson={lesson} row={row} vals={vals} hot={hot} tip={tip.bind} size={size}/>{tip.node}</div>;
+ return <div className={'lab-field-cell not-content is-'+size}><RowView lesson={lesson} row={row} vals={vals} hot={hot} tip={tip.bind} size={size}/>{tip.node}</div>;
 }
 
 /** The chip geometry of chips.ts as the CSS variables lab.css reads under 720 px (one source for model and layout). */

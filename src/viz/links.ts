@@ -4,6 +4,8 @@ export type Values = Readonly<Record<string, Val>>;
 export interface LinkGroup {
  keys: readonly string[];
  canonical: string;
+ /** Radial geometry owns magnitude/direction constraints; component boxes are not mathematical bounds. */
+ rangePolicy?: 'radial';
  resolve(input: Readonly<Record<string, Val>>, current: Values): Record<string, Val>;
  shown(values: Values): Record<string, Val>;
 }
