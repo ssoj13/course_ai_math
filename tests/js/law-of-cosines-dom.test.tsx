@@ -86,16 +86,25 @@ for(const locale of ['en','ru'] as const)test('LC review regressions: live prose
  const text=(id:string)=>host.querySelector('[data-timeline="'+id+'"] p')!.textContent!;
  try{
   await act(async()=>root.render(<><LawControls scene={0} locale={locale}/><LawControls scene={2} locale={locale}/><LawControls scene={3} locale={locale}/><LawDetailControls locale={locale}/><NPanel lesson={LESSON} rows={rowsFor(3,locale)}/><NPanel lesson={LESSON} rows={rowsFor(2,locale)}/></>));
-  expect(text('cut')).toContain('9.00 + 16.00 = 25.00; c² = 13.00');
-  expect(text('cut')).toContain(locale==='en'?'Subtract 12.00':'Вычитаем 12.00');
+  const en=locale==='en';
+  expect(text('cut')).toContain(en?'9.00 + 16.00 = 25.00, and c² = 13.00':'9.00 + 16.00 = 25.00, а c² = 13.00');
+  expect(text('cut')).toContain(en?'12.00 units of area are missing':'Не хватает 12.00 единиц площади');
   await act(async()=>store.getState().set('th',90));
   expect(text('cut')).toContain('c² = 25.00');
-  expect(text('cut')).toContain(locale==='en'?'correction is zero':'Поправка нулевая');
-  expect(text('proof')).toContain(locale==='en'?'This is a right angle':'Это прямой угол');
+  expect(text('cut')).toContain(en?'nothing is missing':'ничего не пропало');
+  expect(text('proof')).toContain(en?'The corner is square':'Угол прямой');
   await act(async()=>store.getState().setMany({a:2,b:4,th:120}));
-  expect(text('cut')).toContain('4.00 + 16.00 = 20.00; c² = 28.00');
-  expect(text('cut')).toContain(locale==='en'?'Add 8.00':'Прибавляем 8.00');
+  expect(text('cut')).toContain(en?'4.00 + 16.00 = 20.00, and c² = 28.00':'4.00 + 16.00 = 20.00, а c² = 28.00');
+  expect(text('cut')).toContain(en?'bigger than a² + b² by 8.00':'больше, чем a² + b², на 8.00');
   expect(text('proof')).toContain('θ = 120°');
+  // E-1: dictionary markup renders as elements, never as literal asterisks.
+  await act(async()=>store.getState().setStep('cut',11));
+  expect(host.querySelector('[data-timeline="cut"] p strong')!.textContent).toBe('a');
+  expect(text('cut')).not.toContain('*');
+  expect(host.querySelector<HTMLInputElement>('[data-timeline="cut"] input')!.getAttribute('aria-valuetext')).not.toContain('*');
+  // Proof step 5 lights both leg tiles through the virtual `legs` focus.
+  await act(async()=>store.getState().setStep('proof',5));
+  for(const id of ['rest2','rise2'])expect(store.getState().hot.has(id)).toBe(true);
   await act(async()=>store.getState().setStep('proof',7));
   for(const id of ['ident','bcos2','bsin2','rise2'])expect(store.getState().hot.has(id)).toBe(true);
   expect(store.getState().hotSource).toBe('guide');
