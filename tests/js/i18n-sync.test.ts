@@ -5,6 +5,7 @@
 //   - the set of <UiLabel k="…"/> keys (widget labels quoted in prose; a set, because Russian word order may move them),
 //   - <Quiz>: number of questions, answer indices and option counts,
 //   - fenced code blocks (code and comments in code stay English by project rule),
+//   - inline and display math expressions, in order,
 //   - MEASURED / MEASURED[...] placeholder ids,
 //   - the set of lesson:/page: link targets (slug level; #anchors are per language).
 // A missing Russian file is allowed only when its content id is listed in src/i18n/untranslated.json, and a listed
@@ -106,9 +107,9 @@ interface Fingerprint {
 	links: string[];
 }
 
-function fingerprint(file: string): Fingerprint {
+function fingerprint(file: string, source = readFileSync(file, 'utf8')): Fingerprint {
 	const where = relative(ROOT, file).replaceAll('\\', '/');
-	const { frontmatter, body, bodyLine } = splitFrontmatter(readFileSync(file, 'utf8'));
+	const { frontmatter, body, bodyLine } = splitFrontmatter(source);
 	const { fences, prose } = extractFences(body, bodyLine);
 	const imps = imports(prose);
 	const names = new Set(imps.flatMap((i) => i.names));
@@ -167,20 +168,26 @@ test('untranslated.json lists exactly the English pages without a Russian file',
 	if (errors.length) throw new Error(`src/i18n/untranslated.json:\n${errors.map((e) => `  ${e}`).join('\n')}`);
 });
 
+/** The production page-parity verdict; fixtures inject source text through the same path. */
+function comparePages(enFile: string, ruFile: string, read = (file: string) => readFileSync(file, 'utf8')): string[] {
+	const en = fingerprint(enFile, read(enFile));
+	const ru = fingerprint(ruFile, read(ruFile));
+	return [
+		...diffList('imports', en.imports, ru.imports, false),
+		...diffList('components (order and data props)', en.components, ru.components, true),
+		...diffList(`<${UI_LABEL}> keys`, en.labels, ru.labels, false),
+		...diffList('fenced code blocks', en.code, ru.code, true),
+		...diffList('math expressions', en.math, ru.math, true),
+		...diffList('MEASURED placeholders', en.measured, ru.measured, true),
+		...diffList('lesson:/page: link targets', en.links, ru.links, false),
+	];
+}
+
 test('Russian pages keep the structure of their English originals', () => {
 	const report: string[] = [];
 	const pairs = ruIds.filter((id) => enIds.includes(id));
 	for (const id of pairs) {
-		const en = fingerprint(join(DOCS, `${id}.mdx`));
-		const ru = fingerprint(join(LOCALE_DOCS, `${id}.mdx`));
-		const lines = [
-			...diffList('imports', en.imports, ru.imports, false),
-			...diffList('components (order and data props)', en.components, ru.components, true),
-			...diffList(`<${UI_LABEL}> keys`, en.labels, ru.labels, false),
-			...diffList('fenced code blocks', en.code, ru.code, true),
-			...diffList('MEASURED placeholders', en.measured, ru.measured, true),
-			...diffList('lesson:/page: link targets', en.links, ru.links, false),
-		];
+		const lines = comparePages(join(DOCS, `${id}.mdx`), join(LOCALE_DOCS, `${id}.mdx`));
 		if (lines.length) report.push(`${LOCALE}/${id}.mdx vs ${id}.mdx`, ...lines);
 	}
 	expect(pairs.length).toBe(ruIds.length); // Infrastructure stage: all bodies may honestly remain fallback.
@@ -257,9 +264,29 @@ test('blobSha equals `git hash-object` on the real English pages', () => {
 	expect(out.stdout.trim().split(/\r?\n/)).toEqual(files.map((f) => blobSha(readFileSync(f, 'utf8'))));
 });
 
-test('math sync catches changed TeX and ignores translated prose and code examples',()=>{
- const en='A vector $a\\cdot b$.\n$$\nx^2+y^2\n$$\n\x60$ignored$\x60';
- const ru='Вектор $a\\cdot b$.\n$$\nx^2+y^2\n$$\n\x60$другое$\x60';
- expect(mathExpressions(en)).toEqual(mathExpressions(ru));
- expect(mathExpressions(ru.replace('y^2','y^3'))).not.toEqual(mathExpressions(en));
+test('real page-parity verdict allows translated prose but rejects changed inline or display TeX', () => {
+	const enFile = join(DOCS, 'fixture.mdx');
+	const ruFile = join(LOCALE_DOCS, 'fixture.mdx');
+	const en = '---\ntitle: Lesson\n---\nA vector $a\\cdot b$.\n$$\nx^2+y^2\n$$\n\x60$ignored$\x60\n';
+	const ru = '---\ntitle: Урок\n---\nВектор $a\\cdot b$.\n$$\nx^2+y^2\n$$\n\x60$другое$\x60\n';
+	const verdict = (body: string) => {
+		const stamped = writeStamp(body, blobSha(en));
+		expect(staleness('fixture', stamped, en, () => true)).toBeUndefined();
+		return comparePages(enFile, ruFile, file => {
+			if (file === enFile) return en;
+			if (file === ruFile) return stamped;
+			throw new Error('unexpected fixture path: ' + file);
+		});
+	};
+	expect(verdict(ru)).toEqual([]);
+	expect(verdict(ru.replace('a\\cdot b', 'a+b'))).toEqual([
+		'  math expressions: 2 in en, 2 in ru; 1 position(s) differ',
+		'    #1 en: $a\\cdot b$',
+		'    #1 ru: $a+b$',
+	]);
+	expect(verdict(ru.replace('y^2', 'y^3'))).toEqual([
+		'  math expressions: 2 in en, 2 in ru; 1 position(s) differ',
+		'    #2 en: $$\nx^2+y^2\n$$',
+		'    #2 ru: $$\nx^2+y^3\n$$',
+	]);
 });
