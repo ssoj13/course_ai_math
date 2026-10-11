@@ -260,10 +260,10 @@ print(round(x**2 + y**2, 6))              # 1.0 -> on the circle
 
 print(round(np.cos(60), 6))               # -0.952413: cosine of 60 RADIANS (the trap)
 
-deg = lambda rad: round(np.degrees(rad), 6)
-print(deg(np.arctan2(y, x)))              # 60.0: back from the point to the angle (y first!)
-print(deg(np.arctan2(1, -1)))             # 135.0
-print(deg(np.arctan2(-1, 0)))             # -90.0 (same direction as 270°)
+to_deg = lambda rad: round(np.degrees(rad), 6)
+print(to_deg(np.arctan2(y, x)))           # 60.0: back from the point to the angle (y first!)
+print(to_deg(np.arctan2(1, -1)))          # 135.0
+print(to_deg(np.arctan2(-1, 0)))          # -90.0 (same direction as 270°)
 
 for deg in (0, 30, 45, 60, 90, 120, 180): # the special-angles table
     r = np.radians(deg)
