@@ -36,6 +36,7 @@ Resolve inherited contradictions without reducing scope:
 
 - Bun **1.4.3**, on-demand SceneHost, lazy SSR-safe entries, 300 kB gzip viz-core budget, and plain-wheel page scrolling supersede older plan text.
 - The standalone powers lesson is **0.2**; keep **0.G** for ground. Part 0/1 now has 13 entries. Derive progress totals from the manifest.
+- The **Start here** module (`start`: 0.0a `why-this-course`, 0.0b `how-it-connects`, added 2026-10-11) precedes Part 0 in the manifest and the sidebar; its scenes INTRO-1..3 and the procedural DotUnit system are specified in [intro-and-dotunit.md](../../design/intro-and-dotunit.md), which also owns the DotUnit presets reused by 1.4, 2.2, 2.4, 3.6/3.7 and attention.
 - General inverse/change of basis links point to **2.9**, not the old 2.7. Eigenvectors follow matrices at **2.11**.
 - Old “Plan 1 of 2” and “not yet Tensor/autodiff” describe sequencing only. This map includes the complete numeric core and all later lessons.
 - Exact holo reference and “remove nothing” override automatic low-power/mobile removal or a fallback that drops dials. Reflow/reposition instruments, offer explicit reader controls, and measure. Do not silently omit galaxies, stars, floor, or instruments.
@@ -100,6 +101,13 @@ These are dependency batches, not a reduced release scope. Independently impleme
 ## Lesson acceptance register
 
 All rows are initially open. “Deliverable” means real interactive content plus C1–C9, including a Python notebook and term/machine depth. The curriculum's prerequisite edges remain binding; the prerequisite-phase table specifies implementation grouping.
+
+### Start here
+
+| ID   | Interactive and pedagogic deliverable                                                                                                                                                                                      | Specific correctness evidence                                                                                                                                                                           |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.0a | Why this course (EN + RU prose landed 2026-10-11): what a model computes with dated multiply-add counts, CG bridges table, spine sentence, parts with outcomes, uses, why, how to use, honest expectations, quiz; INTRO-1 DotUnit playing its `unit` timeline | Multiply-add figures trace to Kaplan et al. 2020 (2N per token) and the GPT-2 small / Llama 3 8B parameter counts; INTRO-1 step 8 stack top and projection bar top agree within 1 px; RU stamped and parity-checked |
+| 0.0b | How it all connects (EN + RU prose landed 2026-10-11): two faces of a·b with a = (3, 1, 2), b = (1, 2, −1); INTRO-2 zoom ladder with dive-in; INTRO-3 einsum playground; NumPy cell with the same numbers               | Every rung shows 3 at the documented cell; dive from a rung-5 cell lands on the rung-1 tile; `einsum` core equals NumPy fixtures to 1e-12; LOD/instancing budget per the spec §1.4–1.5                   |
 
 ### Part 0 — Ground
 
@@ -271,6 +279,9 @@ The detailed [LC/DP scene specification](../../design/lessons-law-of-cosines-dot
 
 | Scene ID         | Owner lessons          | Required visible behavior and evidence                                                                                                                                                       |
 | ---------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INTRO-1          | 0.0a, 1.4 teaser       | The DotUnit (`i,i->` preset, two faces, timeline `unit` steps 0–9): shadow × \|a\| and the tile stack end on the same number; hover of a tile lights its table cell, formula term and code line; drags never reset the timeline          |
+| INTRO-2          | 0.0b                   | Zoom ladder: five rungs over live presets (tile, DotUnit, matmul cube, layer cube, attention cubes), fixed camera timeline, click-to-dive and Escape to climb; the number 3 visible at the documented cell of every rung                |
+| INTRO-3          | 0.0b, 3.7              | Einsum playground: `parseEinsum`/`layoutEinsum` presets, index sliders 1..8, LOD 8/32/64 with the cap message, summed axis named in the status bar; ≥ 55 fps at ≤ 20 000 instances on the reference iGPU                                 |
 | LC-0 / S1        | 0.5                    | 12-step missing-rectangles dissection: actual polygon placement, equal-area shear/rotation, signed obtuse treatment; every step area-checked and reversible; a=b,c=0 hides undefined pieces  |
 | LC-1             | 0.5                    | Shared triangle and signed correction ledger sweep from 0 to 180 degrees; exact Pythagoras state and consistent cross-scene hover                                                            |
 | LC-2             | 0.5                    | 10-step algebra proof with highlights/marks tied to geometry; dragging never resets timeline; correct projected-foot/sign conditions                                                         |
@@ -302,7 +313,7 @@ Tensor road “time”/nested axes and D4–D6 are representations of extra inpu
 
 | Requirement from task/notes                    | Implementation coverage                                                           | Acceptance evidence                                                                                         |
 | ---------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Whole coherent program                         | 77 spine entries (1.9 DFT added 2026-10-11) + A1–A10 + Q1–Q12; all rows above                                | Compare manifest IDs to this register and CURRICULUM; no missing/duplicate entry                            |
+| Whole coherent program                         | 2 Start-here pages (0.0a/0.0b, 2026-10-11) + 77 spine entries (1.9 DFT added 2026-10-11) + A1–A10 + Q1–Q12; all rows above | Compare manifest IDs to this register and CURRICULUM; no missing/duplicate entry                            |
 | Gentle explanations for CG/VFX reader          | C2/C4, IK, N·L, object/world basis, blend shapes, Graph Editor, tensors as images | Editorial review of every symbol/example; actionable challenges and explanation feedback                    |
 | Mind maps everywhere                           | C6, P3, 8.8, 10.6                                                                 | Course roadmap + per-lesson map + genealogy + depth + glossary + flashcards; one source graph               |
 | Every number linked                            | C3, Task 7, core, S3/S4/B2/10.6                                                   | Cross-view hover/focus and actual value provenance assertions                                               |

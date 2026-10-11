@@ -380,6 +380,12 @@ Implemented (Task 9, 2026-10-11):
 - [ ] Brittle `Function.toString()` comparison in `tests/js/i18n-course.test.ts:37`.
 - [ ] Clean leftover worktrees/branches (with operator approval).
 - [ ] Covers: regenerate to exact geometry or accept drafts (user decision).
+- [x] "Start here" module (`start`: `why-this-course`, `how-it-connects`; EN + RU prose; terms `model`, `parameter`,
+  `multiply-add`) precedes Ground in course.json (2026-10-11). Scenes INTRO-1..3 are `{/* scene: … */}` slots; the
+  procedural DotUnit system (`scene = f(einsum spec, values)`, presets for 1.4/2.2/2.4/3.6/3.7/attention, zoom ladder)
+  is specified in `docs/design/intro-and-dotunit.md`. Trap: terms.json enforces course order on `built-on`/`is-a`
+  edges, so terms introduced in `start` must be roots (later terms may point at them, not the reverse).
+- [ ] Build INTRO-1..3 and the DotUnit core (`src/core/tensor.ts`, `src/viz/dotunit/`) per that spec.
 
 ## Changelog
 
