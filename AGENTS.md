@@ -306,6 +306,35 @@ Implemented (Task 9, 2026-10-11):
 - Pyodide/wasm has no FP exception flags: NumPy prints `nan` for `arccos(-1.625)` without the `RuntimeWarning`, and
   fp32 `np.dot` sums differ from desktop BLAS. Lesson comments promising either describe desktop Python only.
 
+### Tensor core (`src/core`, completion map P5)
+
+Three-free, DOM-free; import from `src/core` (index re-exports errors/dtype/tensor/einsum). It enters a page bundle
+only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over NumPy fixtures
+(`python -I scripts/tensor-fixtures.py` -> `tests/fixtures/tensor/core.json`).
+- `Tensor {data: Float64Array|Float32Array, shape, strides, offset, writable}`; strides/offset in ELEMENTS (NumPy
+  bytes / itemsize). The constructor checks every reachable element lies in `data`. Views share `data`: `slice`
+  (NumPy basic slicing, negative steps), `transpose(axes?)`, `reshape` (contiguous only, one -1; a non-contiguous view
+  goes through `contiguous()` explicitly), `expandDims`, `squeeze`, `broadcastTo` (stride 0, read-only).
+  `contiguous` returns the SAME tensor when already contiguous and writable: never use it to get a private copy.
+- `tensor(nested)`, `zeros`, `full`, `arange`, `rand(shape, {seed, range=[-3,3], step?})` over `mulberry32(seed)`
+  (bit-exact Python port in the fixture script); `flat`/`toNested` read logical order; `item()` for one element.
+- Elementwise `add/sub/mul/div/zip/map` with NumPy broadcasting (plain numbers are weak scalars: no f32->f64
+  promotion). Reductions `sum/mean/max {axis, keepdims, arith, order}`; empty max/mean throw; NaN propagates in max.
+- Accumulation (`dtype.ts`): default fp64 arithmetic and `sequential` order whatever the storage; `arith: 'fp32'` =
+  `Math.fround` on every operand, product and partial sum; `order: 'pairwise'` = bottom-up adjacent pairs, odd node
+  carried (`sumSteps` lists the exact merges). `fp16/bf16/int8` ids throw `DtypeError` until Branch Q passes an
+  `Arith {id, round}` object. Result storage is f32 only if every operand is f32.
+- `parseEinsum(op, arity?)` -> kept/summed letters; `planEinsum(op, shapes | {letter: extent})` -> `Plan` (outShape,
+  sumShape, `sumLen` = shaft length, cells); `einsum(op | plan, ...tensors, opts?)` reads through strides (transposes
+  are never materialized); `products(plan, ts, cell)` = the tiles of one cell; `explain(plan, cell, ts?, opts)` =
+  per term the operand indices/values/product plus the merges with partial values (`value` equals the einsum element
+  bit for bit). Grammar = course subset: explicit `->`, a-z only, no ellipsis/traces/whitespace, >= 1 operand (the
+  DotUnit passes arity 2); an outer product has a shaft of length 1. Summed letters flatten row-major (last innermost).
+  `matmul` (NumPy: 1-D promotion, broadcast batch) and `dot` (1-D -> number) are einsum wrappers.
+- Typed errors (`errors.ts`): `SpecError {op, token, pos}`, `ShapeError`, `IndexError`, `DtypeError`, all
+  `CoreError` with `code`; nothing is silently repaired. Fixture example of order: ten 0.1 sum to 0.9999999999999999
+  (fp64), 1.0000001 (fp32 sequential), 1.0 (fp32 pairwise).
+
 ## Authoring rules
 
 - Math in prose: `$a\cdot b$` inline; display math fenced (`$$` on its own lines; a one-line `$$x$$` is inline).
@@ -385,7 +414,8 @@ Implemented (Task 9, 2026-10-11):
   procedural DotUnit system (`scene = f(einsum spec, values)`, presets for 1.4/2.2/2.4/3.6/3.7/attention, zoom ladder)
   is specified in `docs/design/intro-and-dotunit.md`. Trap: terms.json enforces course order on `built-on`/`is-a`
   edges, so terms introduced in `start` must be roots (later terms may point at them, not the reverse).
-- [ ] Build INTRO-1..3 and the DotUnit core (`src/core/tensor.ts`, `src/viz/dotunit/`) per that spec.
+- [x] Tensor core `src/core` (einsum plan/explain, fp32/pairwise, NumPy fixtures).
+- [ ] Build INTRO-1..3 and the DotUnit (`src/viz/dotunit/`: `layoutEinsum`, LOD, Tiles) per that spec, on `Plan`.
 
 ## Changelog
 
