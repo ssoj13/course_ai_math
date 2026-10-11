@@ -26,7 +26,7 @@ test('visual-language.md values (spec table)', () => {
 	expect(lc([p.axisX, p.axisY, p.axisZ])).toEqual(['#ff3352', '#8bdc00', '#2890ff']);
 	expect(lc([p.vecA, p.vecB, p.vecC, p.light, p.hot])).toEqual(['#56b4e9', '#e07bd0', '#3dd6b0', '#ffe27a', '#ffaa40']);
 	expect(lc([p.bgTop, p.bgBottom, p.chrome, p.chrome2, p.field, p.fieldHover])).toEqual(['#3a3a3a', '#282828', '#2b2b2b', '#232323', '#545454', '#656565']);
-	expect(lc([p.grid, p.gridMinor, p.ink, p.muted])).toEqual(['#4a4a4a', '#3c3c3c', '#e6e6e6', '#9a9a9a']);
+	expect(lc([p.grid, p.gridMinor, p.ink, p.muted])).toEqual(['#4a4a4a', '#444444', '#e6e6e6', '#9a9a9a']);
 });
 
 test('contrast: WCAG ratio', () => {
@@ -49,6 +49,13 @@ test('chrome text (ink, muted) is >= 4.5:1 on chrome and chrome-2; field text (i
 	for (const bg of ['field', 'fieldHover'] as const) expect(contrast(p.ink, p[bg])).toBeGreaterThanOrEqual(4.5);
 });
 
+test('grid: minor lines visible but quiet on both ends of the gradient, majors stronger than minors', () => {
+	const p = pal();
+	for (const bg of [p.bgTop, p.bgBottom]) expect(contrast(p.gridMinor, bg)).toBeGreaterThanOrEqual(1.15);
+	expect(contrast(p.gridMinor, p.bgTop)).toBeLessThan(1.3);
+	expect(contrast(p.grid, p.bgTop)).toBeGreaterThan(contrast(p.gridMinor, p.bgTop));
+});
+
 test('style tokens: the stroke recipe of visual-language.md', () => {
 	expect(STYLE.core).toBe(2.5);
 	expect(STYLE.halo).toBe(9);
@@ -59,5 +66,5 @@ test('style tokens: the stroke recipe of visual-language.md', () => {
 	expect(STYLE.edge).toBe(1.5);
 	expect(STYLE.hatchPx).toBe(6);
 	expect(STYLE.sectorA).toBe(0.1);
-	expect(STYLE.pointR + STYLE.rim).toBe(6);
+	expect([STYLE.pointR * 2, STYLE.rim]).toEqual([6, 1.5]);
 });

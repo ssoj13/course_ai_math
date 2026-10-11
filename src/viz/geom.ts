@@ -205,3 +205,14 @@ export function hatch(o: V, u: V, v: V, step: number): number[][] {
 	}
 	return out;
 }
+
+/** Axis tick positions (Grid): multiples of `step` within [-extent, extent] except 0; integer stepping avoids drift. */
+export function tickValues(extent: number, step: number): number[] {
+	const n = Math.floor(extent / step + 1e-9);
+	const out: number[] = [];
+	for (let i = -n; i <= n; i++) if (i !== 0) out.push(Number((i * step).toFixed(10)));
+	return out;
+}
+
+/** Tick number text: integers plain, otherwise one decimal; a true minus sign. */
+export const tickText = (v: number): string => (Number.isInteger(v) ? String(v) : v.toFixed(1)).replace('-', '−');

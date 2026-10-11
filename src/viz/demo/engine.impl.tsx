@@ -1,11 +1,11 @@
 /**
- * Engine demo scenes (loaded lazily via engine.tsx): two ViewportCards, 2D and 3D, showing every element of the
- * visual language on the shared `demo` store: header (2D/3D, Persp/Ortho, Overlays, Reset view), gizmo or XY
- * corner, shader grid with ticks, beams with halos and hot outlines, labels, the angle arc, the projection shadow
- * band with its drop line and right-angle mark, a square tile, a signed (hatched when negative) parallelogram, a
+ * Engine demo scenes (loaded lazily via engine.tsx): three ViewportCards on the shared `demo` store showing every
+ * element of the visual language: header (2D/3D, Persp/Ortho, Overlays, Reset view), gizmo or XY corner, shader grid
+ * with ticks, beams with halos and hot outlines, labels, the angle arc, the projection shadow band with its drop line
+ * and right-angle mark, square tiles, the signed area bar and the signed parallelogram (hatched when negative), a
  * point, the N-panel (vector fields, a number field, read-only rows, separators, tooltips) and the status bar.
  */
-import { cross, dot, norm, project, scale, signedArea2, sub, type V } from '../geom';
+import { angleBetween, cross, dot, isRight, norm, project, scale, signedArea2, sub, type V } from '../geom';
 import { AngleArc } from '../scene/AngleArc';
 import { AreaTile } from '../scene/AreaTile';
 import { Arrow } from '../scene/Arrow';
@@ -26,11 +26,12 @@ const O3: V = [0, 0, 0];
 const UP: V = [0, 1, 0];
 const TIP: readonly [number, number] = [10, -12];
 // Label text is DOM, not KaTeX, so plain Unicode is right here.
-const deg = (d: number) => `θ ${d.toFixed(1)}°`;
-const phi = (d: number) => `φ ${d.toFixed(1)}°`;
+// The arc label carries only the number (the N-panel row says θ), so it fits inside the wedge between the beams.
+const deg = (d: number) => `${d.toFixed(1)}°`;
 // A true minus sign (U+2212), matching the N-panel fields.
 const num = (x: number) => x.toFixed(1).replace('-', '−');
-const angleOf = (a: V, b: V) => (norm(a) && norm(b) ? (Math.acos(Math.max(-1, Math.min(1, dot(a, b) / (norm(a) * norm(b))))) * 180) / Math.PI : 0);
+/** Angle in degrees, 0 for a zero vector (a reader can drag a tip onto the origin; angleBetween throws there). */
+const angleOf = (a: V, b: V) => (norm(a) && norm(b) ? (angleBetween(a, b) * 180) / Math.PI : 0);
 const vec = (vals: Record<string, unknown>, k: string) => vals[k] as V;
 
 const use2 = (k: string) => useVal<readonly number[]>('demo', k, O2);
@@ -62,7 +63,7 @@ function SquareA(): React.JSX.Element {
 }
 
 function Arc2D(): React.JSX.Element {
-	const r = useVal('demo', 'r', 0.8);
+	const r = useVal('demo', 'r', 0.6);
 	return <AngleArc lesson="demo" id="th" at={O2} from="a" to="b" r={r} label={deg} />;
 }
 
@@ -72,7 +73,7 @@ const OV2: readonly OverlayDef[] = [
 	{ id: 'angle', label: 'Angle', on: true },
 	{ id: 'shadow', label: 'Shadow', on: true },
 	{ id: 'square', label: 'Square on a', on: true },
-	{ id: 'par', label: 'Parallelogram', on: false },
+	{ id: 'par', label: 'Parallelogram b×a', on: false },
 ];
 
 const XY = { min: -4, max: 4, step: 0.1 };
@@ -84,7 +85,7 @@ const ROWS2: readonly Row[] = [
 	{ id: 'r', label: 'arc r', kind: 'num', key: 'r', spec: { min: 0.3, max: 2, step: 0.1 }, snap: 0.5, tip: { text: 'Radius of the angle arc (a plain number field).' } },
 	{ id: 'dot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'b')), group: 'Numbers', tip: { title: 'Dot product', text: 'Sum of products of matching components.', tex: String.raw`a\cdot b = a_x b_x + a_y b_y` } },
 	{ id: 'sqa', label: '|a|²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')) },
-	{ id: 'par', label: 'a×b', kind: 'ro', value: (v) => signedArea2(vec(v, 'a'), vec(v, 'b')), tip: { title: 'Signed area', text: 'Negative (hatched) when b is clockwise from a.', tex: String.raw`a_x b_y - a_y b_x` } },
+	{ id: 'par', label: 'b×a', kind: 'ro', value: (v) => signedArea2(vec(v, 'b'), vec(v, 'a')), tip: { title: 'Signed area', text: 'Negative (hatched) when the second vector is clockwise from the first.', tex: String.raw`b_x a_y - b_y a_x` } },
 ];
 
 const STATUS2: StatusSpec = {
@@ -98,22 +99,24 @@ const STATUS2: StatusSpec = {
 		proj: 'Shadow of b on a · its length × |a| = a·b',
 		drop: 'Drop line from the tip of b · meets a at a right angle',
 		sqa: (v) => `|a|² = ${num(dot(vec(v, 'a'), vec(v, 'a')))}`,
-		par: (v) => `a×b = ${num(signedArea2(vec(v, 'a'), vec(v, 'b')))} · hatched = negative`,
+		par: (v) => `b×a = ${num(signedArea2(vec(v, 'b'), vec(v, 'a')))} · hatched = negative`,
 	},
-	state: (v) => (dot(vec(v, 'a'), vec(v, 'b')) === 0 && norm(vec(v, 'a')) > 0 && norm(vec(v, 'b')) > 0 ? 'a ⊥ b · a·b = 0' : null),
+	// isRight: dragged grid values are perpendicular only up to rounding (a = (3, 1), b = (-0.3, 0.9): a·b = 1e-16).
+	state: (v) => (isRight(vec(v, 'a'), vec(v, 'b')) ? 'a ⊥ b · a·b = 0' : null),
 };
 
 /** 2D: grid, draggable a and b, their angle, b's shadow on a, the square on a, the signed parallelogram, a point. */
 export const Demo2D = () => (
 	<ViewportCard lesson="demo" id="d2" name="DEMO-2D · Vectors" mode="2d" extent={4} overlays={OV2} rows={ROWS2} status={STATUS2} drawIn>
 		<Show ov="grid">
-			<Grid extent={4} step={1} minor={0.5} />
+			<Grid lesson="demo" extent={4} step={1} minor={0.5} />
 		</Show>
 		<Show ov="square">
 			<SquareA />
 		</Show>
 		<Show ov="par">
-			<Parallelogram lesson="demo" id="par" a="a" b="b" role="vecC" label={(s) => num(s)} />
+			{/* b then a: clockwise at the default a, b, so the hatch of a negative signed area shows as soon as it is on. */}
+			<Parallelogram lesson="demo" id="par" a="b" b="a" role="vecC" label={(s) => num(s)} />
 		</Show>
 		<Show ov="shadow">
 			<Projection />
@@ -160,19 +163,82 @@ const STATUS3: StatusSpec = {
 export const Demo3D = () => (
 	<ViewportCard lesson="demo" id="d3" name="DEMO-3D · Vectors" mode="3d" extent={3} overlays={OV3} rows={ROWS3} status={STATUS3}>
 		<Show ov="grid">
-			<Grid extent={3} step={1} />
+			<Grid lesson="demo" extent={3} step={1} />
 		</Show>
 		<Show ov="par">
 			<Parallelogram lesson="demo" id="par3" a="u" b="v" role="vecC" />
 		</Show>
 		<Show ov="angle">
-			<AngleArc lesson="demo" id="phi" at={O3} from="u" to="v" r={0.7} normal={UP} label={phi} />
+			<AngleArc lesson="demo" id="phi" at={O3} from="u" to="v" r={0.7} normal={UP} label={deg} />
 		</Show>
 		<Arrow lesson="demo" id="u" to="u" role="vecA" legs />
 		<Arrow lesson="demo" id="v" to="v" role="vecB" legs />
 		<Show ov="labels">
 			<Label lesson="demo" id="u" at="u" role="vecA" offset={TIP}>u</Label>
 			<Label lesson="demo" id="v" at="v" role="vecB" offset={TIP}>v</Label>
+		</Show>
+	</ViewportCard>
+);
+
+const OVLC: readonly OverlayDef[] = [
+	{ id: 'grid', label: 'Grid', on: true },
+	{ id: 'squares', label: 'Squares on the sides', on: true },
+	{ id: 'corr', label: 'Correction −2a·b', on: true },
+	{ id: 'labels', label: 'Labels', on: true },
+];
+
+const ROWSLC: readonly Row[] = [
+	{ id: 'a', label: 'a', kind: 'vec', key: 'a', spec: XY },
+	{ id: 'b', label: 'b', kind: 'vec', key: 'b', spec: XY },
+	{ id: 'sqa', label: 'a²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')), group: 'Areas' },
+	{ id: 'sqb', label: 'b²', kind: 'ro', value: (v) => dot(vec(v, 'b'), vec(v, 'b')) },
+	{ id: 'corr', label: '−2a·b', kind: 'ro', value: (v) => -2 * dot(vec(v, 'a'), vec(v, 'b')), tip: { title: 'Correction', text: 'Hatched when negative (angle below 90°).', tex: String.raw`-2\,a\cdot b` } },
+	{ id: 'sqc', label: 'c²', kind: 'ro', value: (v) => { const c = sub(vec(v, 'a'), vec(v, 'b')); return dot(c, c); } },
+];
+
+const STATUSLC: StatusSpec = {
+	hints: {
+		sqa: (v) => `a² = ${num(dot(vec(v, 'a'), vec(v, 'a')))}`,
+		sqb: (v) => `b² = ${num(dot(vec(v, 'b'), vec(v, 'b')))}`,
+		sqc: 'c² = a² + b² − 2a·b',
+		corr: (v) => `−2a·b = ${num(-2 * dot(vec(v, 'a'), vec(v, 'b')))} · hatched = negative`,
+	},
+};
+
+const corr = (v: Record<string, unknown>) => -2 * dot(v.a as V, v.b as V);
+
+/** Squares on the three sides of the triangle O, a, b; `flip` keeps them outside for either orientation. */
+function CosineTiles(): React.JSX.Element {
+	const flip = signedArea2(use2('a'), use2('b')) < 0;
+	return (
+		<>
+			<AreaTile lesson="demo" id="sqa" a={O2} b="a" role="vecA" flip={flip} label="a²" />
+			<AreaTile lesson="demo" id="sqb" a="b" b={O2} role="vecB" flip={flip} label="b²" />
+			<AreaTile lesson="demo" id="sqc" a="a" b="b" role="vecC" flip={flip} label="c²" />
+		</>
+	);
+}
+
+/**
+ * Law of cosines layout: squares on the three sides and the correction −2 a·b as a signed bar on a fixed 10-unit base
+ * (height = area / 10). At the default a, b the angle is acute, so the bar is negative: it grows inward and is hatched.
+ */
+export const DemoCosines = () => (
+	<ViewportCard lesson="demo" id="lc" name="DEMO-LC · Law of cosines" mode="2d" extent={6} overlays={OVLC} rows={ROWSLC} status={STATUSLC}>
+		<Show ov="grid">
+			<Grid lesson="demo" extent={6} step={1} />
+		</Show>
+		<Show ov="squares">
+			<CosineTiles />
+		</Show>
+		<Show ov="corr">
+			<AreaTile lesson="demo" id="corr" a={[-5, -5]} b={[5, -5]} role="muted" signed area={corr} label={(s) => `−2a·b ${num(s)}`} />
+		</Show>
+		<Arrow lesson="demo" id="a" to="a" role="vecA" />
+		<Arrow lesson="demo" id="b" to="b" role="vecB" />
+		<Show ov="labels">
+			<Label lesson="demo" id="a" at="a" role="vecA" offset={TIP}>a</Label>
+			<Label lesson="demo" id="b" at="b" role="vecB" offset={TIP}>b</Label>
 		</Show>
 	</ViewportCard>
 );

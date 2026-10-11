@@ -1,8 +1,8 @@
 /** Pure parts of the viewport chrome: gizmo layout, status-bar hint resolution and key caps, grid ticks. */
 import { expect, test } from 'bun:test';
 import { alignSign, gizmoLayout, GIZMO_ID } from '../../src/viz/scene/Gizmo';
-import { DEFAULT_HINTS, hintFor, hintTokens } from '../../src/viz/scene/StatusBar';
-import { tickText, tickValues } from '../../src/viz/scene/Grid';
+import { DEFAULT_HINTS, hintFor, hintTokens, TOUCH_HINTS } from '../../src/viz/scene/StatusBar';
+import { tickText, tickValues } from '../../src/viz/geom';
 
 const key = (h: { axis: number; sign: number }) => `${h.sign > 0 ? '+' : '-'}${'xyz'[h.axis]}`;
 const at = (lay: ReturnType<typeof gizmoLayout>, k: string) => lay.find((h) => key(h) === k)!;
@@ -59,6 +59,22 @@ test('hintTokens: mouse and key words become key caps; N only before "panel"', (
 		{ text: ' panel · N·L', key: false },
 	]);
 	expect(hintTokens('plain')).toEqual([{ text: 'plain', key: false }]);
+	expect(hintTokens('Ctrl+Wheel zoom')[0]).toEqual({ text: 'Ctrl+Wheel', key: true });
+});
+
+test('wheel hint: a plain wheel scrolls the page (Ruling T), so idle hints advertise Ctrl+Wheel', () => {
+	expect(DEFAULT_HINTS.idle2d).toContain('Ctrl+Wheel zoom');
+	expect(DEFAULT_HINTS.idle3d).toContain('Ctrl+Wheel zoom');
+});
+
+test('touch: built-in touch wording, and lesson hints that name mouse buttons or keys are replaced', () => {
+	const spec = { hints: { 'a:tip': 'LMB drag a · Shift 1.0', a: 'Vector a = (3, 1)' }, idle: 'Wheel zoom · MMB pan' };
+	expect(hintFor(H({}), {}, spec, '2d', true)).toBe(TOUCH_HINTS.idle2d);
+	expect(hintFor(H({ handle: 'a:tip' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.handle2d);
+	expect(hintFor(H({ object: 'a' }), {}, spec, '3d', true)).toBe('Vector a = (3, 1)');
+	expect(hintFor(H({ field: 'a' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.field);
+	expect(hintFor(H({ object: GIZMO_ID }), {}, spec, '3d', true)).toBe(TOUCH_HINTS.gizmo);
+	for (const t of Object.values(TOUCH_HINTS)) expect(hintTokens(t).some((x) => x.key)).toBe(false);
 });
 
 test('grid ticks: multiples of the step within extent, without 0; integer text or one decimal with a true minus', () => {

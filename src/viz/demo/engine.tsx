@@ -1,7 +1,7 @@
 /**
  * Island entry for dev/engine.mdx. The server evaluates this module (see ../island.tsx), so it holds only what
  * is cheap and SSR-safe: the lesson store init, DOM-only views (server-rendered via client:load, so they take
- * their space before hydration) and lazy wrappers for the three/drei scenes (two ViewportCards, engine.impl.tsx).
+ * their space before hydration) and lazy wrappers for the three/drei scenes (three ViewportCards, engine.impl.tsx).
  */
 import { dot, type V } from '../geom';
 import { lessonStore, useVal } from '../store';
@@ -9,10 +9,11 @@ import { lazyIsland } from '../island';
 import { Formula } from '../Formula';
 
 // a, b: 2D vectors; p: a draggable point; r: the angle arc radius (an N-panel number field); u, v: 3D vectors (y-up).
-lessonStore('demo', { a: [3, 1], b: [1, 2], p: [-2, -1], r: 0.8, u: [2, 1, 1], v: [-1, 2, 1.5] });
+lessonStore('demo', { a: [3, 1], b: [1, 2], p: [-2, -1], r: 0.6, u: [2, 1, 1], v: [-1, 2, 1.5] });
 
 export const Demo2D = lazyIsland(() => import('./engine.impl').then((m) => m.Demo2D));
 export const Demo3D = lazyIsland(() => import('./engine.impl').then((m) => m.Demo3D));
+export const DemoCosines = lazyIsland(() => import('./engine.impl').then((m) => m.DemoCosines));
 
 // Hoisted: Formula memoizes on these identities. A derived value computed from the live a and b (Task 3 `Derived`).
 const DOT = { dot: (v: Record<string, unknown>) => dot(v.a as V, v.b as V) };

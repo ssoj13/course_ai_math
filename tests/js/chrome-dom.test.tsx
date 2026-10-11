@@ -4,7 +4,8 @@ import { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createStage, HOVER_RANK, overlayKey, StageCtx, Show, useHoverable, useOverlay, type HoverProps, type OverlayDef } from '../../src/viz/scene/handles';
 import { StatusBar } from '../../src/viz/scene/StatusBar';
-import { Overlays } from '../../src/viz/scene/ViewportCard';
+import { Gizmo } from '../../src/viz/scene/Gizmo';
+import { Overlays } from '../../src/viz/scene/Header';
 import { lessonStore } from '../../src/viz/store';
 
 const roots: Root[] = [];
@@ -61,6 +62,51 @@ test('Overlays popover: Escape closes and returns focus to the button; a press o
 	act(() => btn.click());
 	act(() => void document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
 	expect(host.querySelector('.lab-vp-pop')).toBeNull();
+	// Tabbing out of the popover closes it.
+	const after = document.createElement('button');
+	document.body.appendChild(after);
+	act(() => btn.click());
+	const box2 = host.querySelector<HTMLInputElement>('input')!;
+	box2.focus();
+	act(() => void box2.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: after })));
+	expect(host.querySelector('.lab-vp-pop')).toBeNull();
+});
+
+test('a bare Stage registry has no card: useOverlay says so', () => {
+	const reg = createStage('2d');
+	function Bad() {
+		useOverlay('grid');
+		return null;
+	}
+	expect(() =>
+		mount(
+			<StageCtx.Provider value={reg}>
+				<Bad />
+			</StageCtx.Provider>,
+		),
+	).toThrow(/not inside a ViewportCard/);
+});
+
+test('gizmo: keyboard buttons keep focus while the bubbles re-stack by depth; Enter aligns', () => {
+	const reg = createStage('3d', { lesson: 'gz1', id: 'c', overlays: [] });
+	const calls: string[] = [];
+	reg.nav = { reset() {}, align: (a, s) => void calls.push(`${a},${s}`), viewDir: () => [0, 0, 1], redraw() {} };
+	const host = mount(<Gizmo reg={reg} />);
+	const keys = [...host.querySelectorAll<HTMLButtonElement>('.lab-gizmo-keys button')];
+	expect(keys.map((k) => k.getAttribute('aria-label'))).toEqual(['Right view (+X)', 'Top view (+Y)', 'Front view (+Z)', 'Left view (−X)', 'Bottom view (−Y)', 'Back view (−Z)']);
+	const top = keys[1];
+	act(() => top.focus());
+	act(() => top.click()); // Enter/Space on a <button> fire click
+	expect(calls).toEqual(['1,1']);
+	const order = () => [...host.querySelectorAll('.lab-gizmo-head')].map((g) => g.getAttribute('data-k')).join(';');
+	act(() => reg.gizmo!([0, 0, 0, 1]));
+	const o1 = order();
+	const s = Math.SQRT1_2;
+	act(() => reg.gizmo!([s, 0, 0, s])); // looking down: the depth order of the bubbles changes
+	expect(order()).not.toBe(o1);
+	expect(document.activeElement).toBe(top);
+	expect([...host.querySelectorAll<HTMLButtonElement>('.lab-gizmo-keys button')]).toEqual(keys);
+	expect(host.querySelector('.lab-gizmo-head[data-k="1,1"]')!.classList.contains('is-focus')).toBe(true);
 });
 
 test('useOverlay/Show read the flag (default when absent) and re-render on a toggle; undeclared ids throw', () => {
@@ -98,7 +144,7 @@ test('StatusBar shows the hint of what the pointer is over, with key caps', () =
 	const host = mount(<StatusBar reg={reg} lesson="sb1" spec={{ hints: { a: (v) => `a is ${v.a}` } }} />);
 	const bar = host.querySelector('.lab-vp-status')!;
 	expect(bar.textContent).toContain('orbit');
-	expect([...bar.querySelectorAll('kbd')].map((k) => k.textContent)).toContain('Wheel');
+	expect([...bar.querySelectorAll('kbd')].map((k) => k.textContent)).toContain('Ctrl+Wheel');
 	act(() => reg.hover.set({ object: 'a' }));
 	expect(bar.textContent).toBe('a is 2');
 	act(() => lessonStore('sb1').getState().set('a', 5));

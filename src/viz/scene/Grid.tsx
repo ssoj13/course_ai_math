@@ -9,11 +9,14 @@
 import { Grid as ShaderGrid } from '@react-three/drei';
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
+import { tickText, tickValues } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { useLabel, useStage } from './handles';
 import { SLine, useWorldPx } from './view';
 
 export interface GridProps {
+	/** Lesson store of the stage (tick numbers and axis letters are overlay labels). */
+	lesson: string;
 	extent: number;
 	/** Major line spacing (also the tick spacing). */
 	step: number;
@@ -25,17 +28,6 @@ export interface GridProps {
 }
 
 type P3 = [number, number, number];
-
-/** Multiples of `step` within [-extent, extent] except 0; integer stepping avoids drift. */
-export function tickValues(extent: number, step: number): number[] {
-	const n = Math.floor(extent / step + 1e-9);
-	const out: number[] = [];
-	for (let i = -n; i <= n; i++) if (i !== 0) out.push(Number((i * step).toFixed(10)));
-	return out;
-}
-
-/** Tick number text: integers plain, otherwise one decimal; a true minus sign. */
-export const tickText = (v: number): string => (Number.isInteger(v) ? String(v) : v.toFixed(1)).replace('-', '−');
 
 // 2D axes reach far past any zoom-out limit (Stage clamps zoom), so they read as infinite lines.
 const FAR = 400;
@@ -52,13 +44,10 @@ function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' 
 	return null;
 }
 
-export function Grid({ extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
+export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
 	const pal = usePalette();
 	const is3d = reg.mode === '3d';
-	// Tick numbers and axis letters are overlay labels, which read the stage's lesson store.
-	const lesson = reg.card?.lesson;
-	if (!lesson) throw new Error('Grid must be rendered inside a Stage');
 	const mesh = useRef<Mesh>(null);
 	// drei's material writes depth; the grid must never hide what is drawn on or under it.
 	useLayoutEffect(() => {

@@ -12,7 +12,7 @@ import { norm, scale, sub, to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
-import { SLine, Stroke, wppAt, type StrokeHandle } from './view';
+import { SLine, Stroke, useReveal, wppAt, type StrokeHandle } from './view';
 
 export interface ArrowProps {
 	lesson: string;
@@ -94,6 +94,12 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 	}, [from, to]);
 	const legs = useMemo(() => (p.legs ? legPoints(to) : null), [p.legs, to]);
 
+	// Draw-in: the component legs fade in with their beam instead of standing at full strength around a growing tip.
+	const legRef = useRef<React.ComponentRef<typeof SLine>>(null);
+	useReveal((r) => {
+		const m = legRef.current?.material;
+		if (m) m.opacity = r;
+	});
 	const head = useRef<Group>(null);
 	const out = useRef<Mesh>(null);
 	const glow = useRef<Mesh>(null);
@@ -136,7 +142,7 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 	const geo = reg.mode === '3d' ? CONE : TRI;
 	return (
 		<group>
-			{legs && <SLine points={legs} segments color={pal.muted} lineWidth={STYLE.edge} dashPx={STYLE.dash} transparent depthWrite={false} renderOrder={1} />}
+			{legs && <SLine ref={legRef} points={legs} segments color={pal.muted} lineWidth={STYLE.edge} dashPx={STYLE.dash} transparent depthWrite={false} renderOrder={1} />}
 			<group visible={g.len > 1e-9} {...hover}>
 				<Stroke ref={shaft} points={g.shaft} color={color} hot={hot} order={2} />
 				<group ref={head} position={g.b} quaternion={g.q}>

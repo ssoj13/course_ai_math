@@ -25,7 +25,7 @@ literal shadows; the lit sphere computes brightness as exactly `max(0, N·L)`. T
 │                                                        │ θ  [60.0°]│
 │                                                        │ a·b 4.50  │
 ├─────────────────────────────────────────────────────────┴───────────┤
-│ status: LMB drag tip · Shift 1.0 steps · MMB orbit · Wheel zoom      │
+│ status: LMB drag tip · Shift 1.0 steps · MMB orbit · Ctrl+Wheel zoom │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 - **Header** (28 px): view toggles, Overlays popover (grid, legs, labels, shadows, angles — each scene declares which
@@ -37,6 +37,9 @@ literal shadows; the lit sphere computes brightness as exactly `max(0, N·L)`. T
   values render as flat rows. These rows are the linked "numbers view" (term ids → hover lights scene + formula).
   At < 720 px the N-panel becomes a row of chips under the viewport.
 - **Status bar** (22 px): context hints for what the pointer is over ("Drag tip of a", "MMB orbit"), like Blender's.
+  Touch devices get touch hints (drag, two-finger pinch), never mouse buttons.
+- **Wheel**: a plain wheel always scrolls the lesson page, never the scene (a card must not trap reading);
+  Ctrl/Cmd+wheel and pinch zoom.
 - **Selection/hot**: Blender's active outline — a 2 px light-orange outline + halo on the hovered/linked object;
   never changes the object's own color (color = meaning, outline = attention).
 - **Tooltips**: Blender-like, delayed 500 ms, title + one-line explanation + the formula term.
@@ -52,7 +55,7 @@ viewport follow the Starlight theme.
 | `vp-bg-top` / `vp-bg-bottom` | `#3A3A3A` / `#282828` | viewport vertical gradient (Blender default theme feel) |
 | `chrome` / `chrome-2` | `#2B2B2B` / `#232323` | header, N-panel, status bar |
 | `field` / `field-hover` | `#545454` / `#656565` | number fields (Blender widget grey) |
-| `grid` / `gridMinor` | `#4A4A4A` / `#3C3C3C` | drei shader Grid, fades with distance |
+| `grid` / `gridMinor` | `#4A4A4A` / `#444444` | drei shader Grid, fades with distance (minor >= 1.15:1 on `vp-bg-top`, so it stays visible but quiet) |
 | `ink` / `muted` | `#E6E6E6` / `#9A9A9A` | labels, ticks, chrome text |
 | `axisX` / `axisY` / `axisZ` | `#FF3352` / `#8BDC00` / `#2890FF` | Blender's own axis colors (gizmo, axes, component legs) |
 | `vecA` | `#56B4E9` (sky blue) | vector a |

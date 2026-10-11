@@ -8,7 +8,7 @@ head:
 ---
 
 import SceneIsland from '../../../viz/SceneIsland.astro';
-import { Demo2D, Demo3D, DemoDotFormula, DemoVecReadout } from '../../../viz/demo/engine';
+import { Demo2D, Demo3D, DemoCosines, DemoDotFormula, DemoVecReadout } from '../../../viz/demo/engine';
 
 Every scene is a small DCC viewport: a header (view type, projection, Overlays, Reset view), the dark viewport with
 the navigation gizmo (3D) or the XY corner (2D), the N-panel of draggable number fields (press `N` over the card or
@@ -26,6 +26,14 @@ does. Hover anything: the scene object, its N-panel row and its formula term lig
 Drag b to point exactly opposite a: the angle arc becomes a semicircle and the label reads 180 degrees. Drag b onto
 the origin: the arc and its label disappear (a zero vector has no angle) and nothing else breaks. Turn on the
 parallelogram in Overlays and drag b clockwise of a: its signed area turns negative and the tile is hatched.
+
+The same a and b on the law-of-cosines layout: squares on the three sides and the correction $-2\,a\cdot b$ as a signed
+bar. At the starting values the angle is acute, so the correction is negative: the bar grows inward and is hatched.
+Drag b past 90 degrees and it turns positive and plain.
+
+<SceneIsland caption="Law of cosines: squares on the sides of the triangle 0, a, b and the signed correction -2 a.b (hatched when negative)">
+	<DemoCosines client:only="react" />
+</SceneIsland>
 
 ## Scroll filler
 

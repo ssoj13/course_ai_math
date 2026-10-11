@@ -81,6 +81,21 @@ const DIST_3D: readonly [number, number] = [1, 6];
 /** Default 3D camera position: an elevated three-quarter view of the floor. */
 const home3 = (e: number): [number, number, number] => [e * 1.6, e * 1.2, e * 1.8];
 
+/** Radius, in units of `extent`, of the sphere the default 3D view must show whole: the axes reach +-extent, and the
+ * margin keeps the axis letters, tip labels and the gizmo corner clear of the frame. */
+const FRAME_3D = 1.3;
+/** Free px around the 2D extent, so tick numbers and labels at +-extent are not cut by the frame. */
+const MARGIN_2D = 16;
+
+/**
+ * Camera distance that fits a sphere of radius `r` in a perspective view `w` x `h` px (vertical fov FOV): the
+ * narrower of the vertical and horizontal half-angles decides (a tall phone viewport is limited horizontally).
+ */
+export function fitDistance(r: number, w: number, h: number): number {
+	const half = Math.min(Math.atan(TAN), Math.atan(TAN * (w / h)));
+	return r / Math.sin(half);
+}
+
 /** Orthographic zoom (px per world unit) that shows a `dist`-away perspective view's apparent size in `hPx`. */
 const orthoZoom = (dist: number, hPx: number) => hPx / (2 * dist * TAN);
 
@@ -113,8 +128,17 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 	const anim = useRef<{ from: Pose; to: Pose; t0: number } | null>(null);
 
 	const ortho = camera instanceof OrthoCam;
-	const fitZoom = () => (mode === '2d' ? Math.min(w - inset, h) / (2 * e) : orthoZoom(Math.hypot(...home3(e)), h));
-	const home = (): Pose => (mode === '2d' ? poseOf([center[0], center[1], 10], center, fitZoom()) : poseOf(home3(e), [0, 0, 0], ortho ? fitZoom() : 1));
+	// The free area is the stage minus the overlaid N-panel; both views fit their content into it.
+	const fw = Math.max(1, w - inset);
+	const fitZoom = () => (mode === '2d' ? (Math.min(fw, h) - 2 * MARGIN_2D) / (2 * e) : Math.min(fw, h) / (2 * FRAME_3D * e));
+	const home = (): Pose => {
+		if (mode === '2d') return poseOf([center[0], center[1], 10], center, fitZoom());
+		// Same three-quarter direction as before, at the distance that frames the whole extent.
+		const d = Math.min(e * DIST_3D[1], Math.max(e * DIST_3D[0], fitDistance(FRAME_3D * e, fw, h)));
+		const n = Math.hypot(...home3(1));
+		const pos = home3(d / n);
+		return poseOf(pos, [0, 0, 0], ortho ? fitZoom() : 1);
+	};
 
 	const apply = (p: Pose) => {
 		if (!controls) return;
@@ -225,7 +249,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 	const ref = useRef<HTMLDivElement>(null);
 	const { w, h } = useBoxSize(ref);
 	// One registry per stage, created once (mode and card of a mounted stage never change).
-	const [reg] = useState(() => p.reg ?? createStage(p.mode, { lesson: p.lesson, id: 'stage', overlays: [] }));
+	const [reg] = useState(() => p.reg ?? createStage(p.mode));
 	if (reg.mode !== p.mode) throw new Error(`Stage: registry mode ${reg.mode} does not match mode ${p.mode}`);
 	useLayoutEffect(() => {
 		reg.el = ref.current;

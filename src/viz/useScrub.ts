@@ -3,13 +3,15 @@
  * an element that outlives value re-renders (Formula's root div, Num's own span, the field), because Formula re-sets
  * innerHTML on every value change and removes the span that was pressed. Updates are throttled to animation frames;
  * `onValue` also gets the latest pointer event, so callers can read modifier keys (Ctrl snap, Shift fine), and
- * `onEnd` reports the final travel at release (a field that barely moved treats the press as a click).
+ * `onEnd` reports the final travel and whether the gesture was cancelled: a `pointercancel` (e.g. the browser took a
+ * vertical touch swipe as a page scroll, `touch-action: pan-y`) is never a release, so a field must not treat it as a
+ * click, and should restore the value it started from.
  */
 export function startScrubDrag(
 	e: React.PointerEvent,
 	captureEl: HTMLElement,
 	onValue: (dxPx: number, ev: PointerEvent) => void,
-	onEnd?: (dxPx: number) => void,
+	onEnd?: (dxPx: number, cancelled: boolean) => void,
 ): void {
 	e.preventDefault();
 	captureEl.setPointerCapture(e.pointerId);
@@ -32,14 +34,14 @@ export function startScrubDrag(
 		},
 		{ signal: ctl.signal },
 	);
-	const end = () => {
+	const end = (cancelled: boolean) => {
 		cancelAnimationFrame(raf);
-		// A frame still pending at release must not swallow the final position.
-		if (pending) onValue(pending.clientX - x0, pending);
+		// A frame still pending at release must not swallow the final position (a cancelled gesture applies nothing).
+		if (pending && !cancelled) onValue(pending.clientX - x0, pending);
 		pending = null;
 		ctl.abort();
-		onEnd?.(dx);
+		onEnd?.(dx, cancelled);
 	};
-	captureEl.addEventListener('pointerup', end, { signal: ctl.signal });
-	captureEl.addEventListener('pointercancel', end, { signal: ctl.signal });
+	captureEl.addEventListener('pointerup', () => end(false), { signal: ctl.signal });
+	captureEl.addEventListener('pointercancel', () => end(true), { signal: ctl.signal });
 }

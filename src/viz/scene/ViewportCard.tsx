@@ -14,10 +14,9 @@
  * Imports Stage (three/drei): lives in a lesson's .impl chunk.
  */
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { useStore } from 'zustand';
 import type { V } from '../geom';
-import { lessonStore } from '../store';
-import { createStage, overlayKey, overlayOn, type OverlayDef } from './handles';
+import { createStage, type OverlayDef } from './handles';
+import { Icon, Overlays } from './Header';
 import { NPanel, useTip, type Row } from './NPanel';
 import { Stage } from './Stage';
 import { StatusBar, type StatusSpec } from './StatusBar';
@@ -44,84 +43,6 @@ export interface ViewportCardProps {
 
 const NARROW = '(max-width: 719.98px)';
 
-const Icon = {
-	reset: (
-		<svg viewBox="0 0 16 16" aria-hidden="true">
-			<path d="M3.5 6.5A5 5 0 1 1 3 9.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-			<path d="M1.8 3.2v4h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	),
-	overlays: (
-		<svg viewBox="0 0 16 16" aria-hidden="true">
-			<circle cx="6" cy="8" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-			<circle cx="10" cy="8" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-		</svg>
-	),
-	caret: (
-		<svg viewBox="0 0 16 16" aria-hidden="true">
-			<path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	),
-	chev: (open: boolean) => (
-		<svg viewBox="0 0 16 16" aria-hidden="true">
-			<path d={open ? 'M6 4l4 4-4 4' : 'M10 4l-4 4 4 4'} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-		</svg>
-	),
-};
-
-/**
- * Blender's Overlays popover: a checkbox per declared flag, written to the lesson store. Escape or a press outside
- * closes it; Escape returns focus to the button.
- */
-export function Overlays({ lesson, card, overlays }: { lesson: string; card: string; overlays: readonly OverlayDef[] }): React.JSX.Element {
-	const [open, setOpen] = useState(false);
-	const wrap = useRef<HTMLDivElement>(null);
-	const btn = useRef<HTMLButtonElement>(null);
-	const popId = useId();
-	const store = lessonStore(lesson);
-	const on = useStore(store, (s) => overlays.map((o) => overlayOn(s.vals, card, o)).join());
-	const flags = on.split(',').map((x) => x === 'true');
-	useEffect(() => {
-		if (!open) return;
-		const away = (e: PointerEvent) => {
-			if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-		};
-		document.addEventListener('pointerdown', away, true);
-		return () => document.removeEventListener('pointerdown', away, true);
-	}, [open]);
-	return (
-		<div
-			className="lab-vp-pop-wrap"
-			ref={wrap}
-			onKeyDown={(e) => {
-				if (e.key !== 'Escape' || !open) return;
-				e.preventDefault();
-				setOpen(false);
-				btn.current?.focus();
-			}}
-		>
-			<button ref={btn} type="button" className="lab-vp-btn" aria-expanded={open} aria-controls={popId} onClick={() => setOpen((o) => !o)}>
-				{Icon.overlays}
-				<span className="lab-vp-label">Overlays</span>
-				{Icon.caret}
-			</button>
-			{open && (
-				<div id={popId} className="lab-vp-pop" role="group" aria-label="Viewport overlays">
-					<div className="lab-vp-pop-title" aria-hidden="true">
-						Viewport overlays
-					</div>
-					{overlays.map((o, i) => (
-						<label key={o.id} className="lab-vp-check">
-							<input type="checkbox" checked={flags[i]} onChange={(e) => store.getState().set(overlayKey(card, o.id), e.currentTarget.checked ? 1 : 0)} />
-							{o.label}
-						</label>
-					))}
-				</div>
-			)}
-		</div>
-	);
-}
-
 export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	const overlays = p.overlays ?? [];
 	const rows = p.rows ?? [];
@@ -134,6 +55,16 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	const [inset, setInset] = useState(0);
 	const root = useRef<HTMLDivElement>(null);
 	const panelId = useId();
+	const chev = useRef<HTMLButtonElement>(null);
+	const toggleRef = useRef(() => {});
+	// Closing the sidebar while a field in it holds focus would drop focus to <body> (display: none): hand it to the
+	// chevron, which reopens the panel.
+	const toggle = () => {
+		const panel = document.getElementById(panelId);
+		if (open && panel?.contains(document.activeElement) && !matchMedia(NARROW).matches) chev.current?.focus();
+		setOpen((o) => !o);
+	};
+	toggleRef.current = toggle;
 	const tip = useTip();
 
 	// The server frame reserves the chip row only for cards with a panel; a mismatch would shift layout on phones.
@@ -170,7 +101,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 			if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
 			if (!inside && !card.contains(document.activeElement)) return;
 			e.preventDefault();
-			setOpen((o) => !o);
+			toggleRef.current();
 		};
 		card.addEventListener('pointerenter', enter);
 		card.addEventListener('pointerleave', leave);
@@ -224,7 +155,8 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 						aria-controls={panelId}
 						aria-label="Sidebar"
 						aria-keyshortcuts="N"
-						onClick={() => setOpen((o) => !o)}
+						ref={chev}
+						onClick={toggle}
 						{...tip.bind({ title: 'Sidebar', text: 'Show or hide the property panel (N).' })}
 					>
 						{Icon.chev(open)}

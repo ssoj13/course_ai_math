@@ -299,7 +299,7 @@ h1#_top,
 	--viz-field: #545454;
 	--viz-field-hover: #656565;
 	--viz-grid: #4a4a4a;
-	--viz-grid-minor: #3c3c3c;
+	--viz-grid-minor: #444444;
 	--viz-ink: #e6e6e6;
 	--viz-muted: #9a9a9a;
 	--viz-axis-x: #ff3352;
@@ -454,8 +454,7 @@ h1#_top,
 	cursor: default;
 }
 .lab-vp-btn:focus-visible,
-.lab-np-field:focus-visible,
-.lab-gizmo [role='button']:focus-visible {
+.lab-np-field:focus-visible {
 	outline: 1px solid var(--viz-ink);
 	outline-offset: 1px;
 }
@@ -482,7 +481,7 @@ h1#_top,
 	top: calc(100% + 4px);
 	left: 0;
 	z-index: 5;
-	min-width: 170px;
+	min-width: 190px;
 	padding: 4px;
 	background: var(--viz-chrome);
 	border: 1px solid var(--viz-field);
@@ -490,14 +489,16 @@ h1#_top,
 	box-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.7);
 }
 .lab-vp-pop-title {
+	white-space: nowrap;
 	color: var(--viz-muted);
-	font: 600 10px/1 var(--lab-font-ui);
+	font: 600 10px/1.3 var(--lab-font-ui);
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	padding: 5px 6px 6px;
 }
 .lab-vp-check {
 	display: flex;
+	white-space: nowrap;
 	align-items: center;
 	gap: 8px;
 	height: 24px;
@@ -610,7 +611,9 @@ h1#_top,
 	white-space: nowrap;
 	cursor: ew-resize;
 	user-select: none;
-	touch-action: none;
+	/* A vertical swipe that starts on a field scrolls the page (phones: the chip row spans the screen); horizontal
+	   moves reach the scrub (NPanel starts it only on a horizontal-dominant move). */
+	touch-action: pan-y;
 }
 .lab-np-field:hover {
 	background: var(--viz-field-hover);
@@ -703,6 +706,16 @@ h1#_top,
 	.lab-np-sep {
 		display: none;
 	}
+	/* More chips off an edge: fade that edge (NPanel sets the classes from the scroll position). */
+	.lab-vp-panel.is-more {
+		mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+	}
+	.lab-vp-panel.is-less {
+		mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
+	}
+	.lab-vp-panel.is-more.is-less {
+		mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+	}
 	.lab-np-row {
 		flex: none;
 		display: flex;
@@ -756,8 +769,14 @@ h1#_top,
 	overflow: hidden;
 }
 .lab-vp-status > span {
+	display: block;
+	flex: 1 1 auto;
+	min-width: 0;
+	/* Room for ascenders/descenders: with line-height 1 the clip of `overflow: hidden` cut the glyph tops. */
+	line-height: 1.6;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 .lab-vp-status kbd {
 	display: inline-block;
@@ -821,15 +840,23 @@ h1#_top,
 .lab-gizmo:hover .lab-gizmo-bg {
 	opacity: 0.08;
 }
-.lab-gizmo [role='button'] {
+.lab-gizmo-head {
 	cursor: pointer;
-	outline: none;
 }
-.lab-gizmo [role='button'] circle {
+.lab-gizmo-head circle {
 	stroke-width: 1.5;
 }
-.lab-gizmo [role='button']:hover circle {
+.lab-gizmo-head:hover circle,
+.lab-gizmo-head.is-focus circle {
 	stroke: var(--viz-ink);
+}
+.lab-gizmo-head.is-focus circle {
+	stroke-width: 2.5;
+}
+.lab-gizmo-keys {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
 }
 .lab-gizmo text {
 	font: 700 10.5px/1 var(--lab-font-ui);
@@ -842,7 +869,7 @@ h1#_top,
 	visibility: hidden;
 }
 .lab-gizmo .is-neg:hover text,
-.lab-gizmo .is-neg:focus-visible text {
+.lab-gizmo .is-neg.is-focus text {
 	visibility: visible;
 }
 .lab-xy {
@@ -921,7 +948,8 @@ h1#_top,
 	white-space: nowrap;
 	color: var(--lab-label-c, var(--viz-ink));
 	/* A halo in the viewport background keeps the text readable over grid lines and fills. */
-	text-shadow: 0 0 3px var(--viz-bg-bottom), 0 0 3px var(--viz-bg-bottom), 0 0 1px var(--viz-bg-bottom);
+	/* A tight dark outline plus a soft halo: text stays readable where a line or a fill passes under it. */
+	text-shadow: 0 0 1px var(--viz-bg-bottom), 0 0 2px var(--viz-bg-bottom), 0 0 4px var(--viz-bg-bottom), 0 0 4px var(--viz-bg-bottom);
 }
 .lab-label.is-sm {
 	font-size: 10.5px;

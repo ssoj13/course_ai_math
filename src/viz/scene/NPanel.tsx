@@ -12,6 +12,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 import type { V } from '../geom';
+import { roleVar } from '../palette';
 import { ctrlSnap, fmtField, keyStep, parseField, scrubValue, type ScrubSpec } from '../scrub';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { renderStaticMath } from '../tex';
@@ -52,8 +53,10 @@ export interface Row {
 const PX_PER_STEP = 4;
 /** Travel below which a press counts as a click (opens the text input). */
 const CLICK_PX = 3;
+/** Touch/pen travel before a gesture counts as a horizontal scrub (or a vertical swipe): fingers jitter more. */
+const TOUCH_SLOP = 8;
 const AXIS = ['x', 'y', 'z'] as const;
-const AXIS_ROLE = ['--viz-axis-x', '--viz-axis-y', '--viz-axis-z'] as const;
+const AXIS_ROLE = ['axisX', 'axisY', 'axisZ'] as const;
 
 function checkRow(r: Row): void {
 	if ((r.kind === 'num' || r.kind === 'vec') && (!r.key || !r.spec)) throw new Error(`N-panel row "${r.id}": a ${r.kind} row needs \`key\` and \`spec\``);
@@ -207,22 +210,43 @@ function NumField(p: FieldProps): React.JSX.Element {
 				}
 				e.currentTarget.focus();
 				// Shift (fine) re-bases the drag at the current value, so toggling it mid-drag never jumps.
-				let base = { v0: p.get(), dx0: 0, fine: false };
+				const v0 = p.get();
+				let base = { v0, dx0: 0, fine: false };
 				let moved = false;
+				// Touch/pen: the field is `touch-action: pan-y`, so a vertical swipe scrolls the page (the browser then
+				// cancels the pointer). Scrubbing starts only on a clearly horizontal move; a vertical one is ignored.
+				const touch = e.pointerType !== 'mouse';
+				const y0 = e.clientY;
+				let vertical = false;
 				startScrubDrag(
 					e,
 					e.currentTarget,
 					(dx, ev) => {
-						if (Math.abs(dx) >= CLICK_PX) moved = true;
-						if (!moved) return;
+						if (vertical) return;
+						if (!moved) {
+							const dy = Math.abs(ev.clientY - y0);
+							if (touch) {
+								if (dy >= TOUCH_SLOP && dy > Math.abs(dx)) {
+									vertical = true;
+									return;
+								}
+								if (Math.abs(dx) < TOUCH_SLOP || Math.abs(dx) < 1.5 * dy) return;
+							} else if (Math.abs(dx) < CLICK_PX) return;
+							moved = true;
+						}
 						if (ev.shiftKey !== base.fine) base = { v0: p.get(), dx0: dx, fine: ev.shiftKey };
 						const spec = base.fine ? { ...p.spec, step: p.spec.step / 10 } : p.spec;
 						let v = scrubValue(base.v0, dx - base.dx0, spec, PX_PER_STEP);
 						if (ev.ctrlKey) v = ctrlSnap(v, p.snap ?? p.spec.step * 10, p.spec);
 						if (v !== p.get()) p.set(v);
 					},
-					(dx) => {
-						if (!moved && Math.abs(dx) < CLICK_PX) open();
+					(dx, cancelled) => {
+						// A cancelled gesture is not a click and leaves the value where it started.
+						if (cancelled) {
+							if (moved && p.get() !== v0) p.set(v0);
+							return;
+						}
+						if (!moved && !vertical && Math.abs(dx) < (touch ? TOUCH_SLOP : CLICK_PX)) open();
 					},
 				);
 			}}
@@ -239,7 +263,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 			}}
 		>
 			{p.axis !== undefined && (
-				<span className="lab-np-ax" style={{ color: `var(${AXIS_ROLE[p.axis]})` }} aria-hidden="true">
+				<span className="lab-np-ax" style={{ color: roleVar(AXIS_ROLE[p.axis]) }} aria-hidden="true">
 					{AXIS[p.axis].toUpperCase()}
 				</span>
 			)}
@@ -341,8 +365,28 @@ export function NPanel({ lesson, rows, reg, open = true, id }: NPanelProps): Rea
 	const hot = useStore(store, (s) => s.hot);
 	const tip = useTip();
 	const shown = rows.filter((r) => !r.visible || r.visible(vals, steps));
+	// Chip row (phones): cue that more chips are off an edge (lab.css fades that edge); a no-op for the sidebar.
+	const el = useRef<HTMLElement>(null);
+	const [edge, setEdge] = useState('');
+	useEffect(() => {
+		const p = el.current;
+		if (!p) return;
+		const upd = () => {
+			const more = p.scrollLeft + p.clientWidth < p.scrollWidth - 1;
+			const less = p.scrollLeft > 1;
+			setEdge(`${more ? ' is-more' : ''}${less ? ' is-less' : ''}`);
+		};
+		upd();
+		p.addEventListener('scroll', upd, { passive: true });
+		const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(upd) : null;
+		ro?.observe(p);
+		return () => {
+			p.removeEventListener('scroll', upd);
+			ro?.disconnect();
+		};
+	}, [shown.length]);
 	return (
-		<aside id={id} className={open ? 'lab-vp-panel' : 'lab-vp-panel is-closed'} aria-label="Properties">
+		<aside ref={el} id={id} className={`lab-vp-panel${open ? '' : ' is-closed'}${edge}`} aria-label="Properties">
 			{shown.map((r, i) => (
 				<RowGroup key={r.id} sep={r.group && r.group !== shown[i - 1]?.group ? r.group : null}>
 					<RowView lesson={lesson} row={r} vals={vals} hot={hot.has(r.id)} reg={reg} tip={tip.bind} />

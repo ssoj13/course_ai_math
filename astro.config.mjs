@@ -70,7 +70,7 @@ export default defineConfig({
 	vite: {
 		// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
 		worker: { format: 'es' },
-		// The scene chunk (three + r3f + drei, ~1009 kB raw / 269 kB gz) cannot shrink: r3f registers all of THREE
+		// The scene chunk (three + r3f + drei, ~1013 kB raw / 270 kB gz) cannot shrink: r3f registers all of THREE
 		// (`import *`), so three core is not tree-shaken. Task 6b added drei's Line (three-stdlib Line2/LineMaterial,
 		// ~32 kB) for pixel-stable lines; Task 6c's angle/area/label primitives and demo added ~9 kB raw; Task 6d's
 		// viewport chrome (ViewportCard, N-panel, gizmo, status bar, motion) and drei's shader Grid added ~31 kB raw

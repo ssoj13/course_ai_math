@@ -69,8 +69,8 @@ export const STYLE = {
 	hatchW: 1,
 	/** Arrow head length. */
 	headPx: 14,
-	/** Point: disc radius and its dark rim (6 px total, Blender vertex look). */
-	pointR: 4.5,
+	/** Point: a 6 px disc (radius 3, Blender's vertex) inside a 1.5 px dark rim (visual-language.md). */
+	pointR: 3,
 	rim: 1.5,
 	/** Projection shadow band on the target line, and its alpha. */
 	bandPx: 6,

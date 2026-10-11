@@ -25,37 +25,53 @@ export interface StatusSpec {
 	state?: (vals: Vals) => string | null;
 }
 
-/** Built-in hints: what any handle, field and the gizmo do, and the default navigation per mode. */
+/** Built-in mouse hints: what any handle, field and the gizmo do, and the default navigation per mode. */
 export const DEFAULT_HINTS = {
-	idle2d: 'Wheel zoom · MMB pan · N panel',
-	idle3d: 'LMB/MMB orbit · Shift+MMB pan · Wheel zoom · N panel',
+	idle2d: 'Ctrl+Wheel zoom · MMB pan · N panel',
+	idle3d: 'LMB/MMB orbit · Shift+MMB pan · Ctrl+Wheel zoom · N panel',
 	handle2d: 'LMB drag · arrows 0.1 · Shift 1.0',
 	handle3d: 'LMB drag · arrows 0.1 · Shift 1.0 · PageUp/PageDown z',
 	field: 'LMB drag scrub · Ctrl snap · Shift fine · click to type · arrows step',
 	gizmo: 'LMB click an axis: align the view · again: the opposite side',
 } as const;
 
-const run = (h: Hint | undefined, vals: Vals): string | null => (h === undefined ? null : typeof h === 'string' ? h : h(vals));
+/** Built-in touch hints (visual-language.md: touch devices never see mouse buttons, wheel or keys). */
+export const TOUCH_HINTS = {
+	idle2d: 'Drag a tip · pinch to zoom',
+	idle3d: 'Drag a tip · swipe sideways to orbit · pinch to zoom',
+	handle2d: 'Drag to move',
+	handle3d: 'Drag to move',
+	field: 'Swipe sideways to scrub · tap to type',
+	gizmo: 'Tap an axis to align the view',
+} as const;
+
+const KEYS = /(LMB\/MMB|LMB|MMB|RMB|Ctrl\+Wheel|Wheel|Shift\+MMB|Shift|Ctrl|PageUp\/PageDown|PageUp|PageDown|\bN(?= panel))/g;
+
+const run = (h: Hint | undefined, vals: Vals, touch: boolean): string | null => {
+	const t = h === undefined ? null : typeof h === 'string' ? h : h(vals);
+	// A lesson hint that names mouse buttons or keys means nothing on a touch screen: use the built-in one instead.
+	return t !== null && touch && new RegExp(KEYS.source).test(t) ? null : t;
+};
 
 /**
  * The hint for the current hover: state first, then an editable N-panel field (what dragging/typing does), the
  * handle (lesson hint or the built-in one), the gizmo, the object (lesson hint; read-only N-panel rows count as
- * their object); finally idle.
+ * their object); finally idle. `touch` swaps the built-ins for touch wording and drops lesson hints that mention
+ * mouse buttons or keys.
  */
-export function hintFor(h: HoverState, vals: Vals, spec: StatusSpec, mode: '2d' | '3d'): string {
+export function hintFor(h: HoverState, vals: Vals, spec: StatusSpec, mode: '2d' | '3d', touch = false): string {
 	const hints = spec.hints ?? {};
+	const D = touch ? TOUCH_HINTS : DEFAULT_HINTS;
 	return (
-		spec.state?.(vals) ??
-		(h.field !== null ? DEFAULT_HINTS.field : null) ??
-		(h.handle !== null ? (run(hints[h.handle], vals) ?? DEFAULT_HINTS[mode === '3d' ? 'handle3d' : 'handle2d']) : null) ??
-		(h.object === GIZMO_ID ? DEFAULT_HINTS.gizmo : null) ??
-		(h.object !== null ? run(hints[h.object], vals) : null) ??
-		spec.idle ??
-		DEFAULT_HINTS[mode === '3d' ? 'idle3d' : 'idle2d']
+		run(spec.state, vals, touch) ??
+		(h.field !== null ? D.field : null) ??
+		(h.handle !== null ? (run(hints[h.handle], vals, touch) ?? D[mode === '3d' ? 'handle3d' : 'handle2d']) : null) ??
+		(h.object === GIZMO_ID ? D.gizmo : null) ??
+		(h.object !== null ? run(hints[h.object], vals, touch) : null) ??
+		run(spec.idle, vals, touch) ??
+		D[mode === '3d' ? 'idle3d' : 'idle2d']
 	);
 }
-
-const KEYS = /(LMB\/MMB|LMB|MMB|RMB|Wheel|Shift\+MMB|Shift|Ctrl|PageUp\/PageDown|PageUp|PageDown|\bN(?= panel))/g;
 
 /** Splits a hint into text and key-cap tokens. */
 export function hintTokens(s: string): { text: string; key: boolean }[] {
@@ -70,10 +86,36 @@ export function hintTokens(s: string): { text: string; key: boolean }[] {
 	return out;
 }
 
+// Whether the reader is on touch: a coarse primary pointer, then whatever pointer was last pressed (hybrid devices).
+// One page-wide listener shared by every status bar.
+let touchNow = false;
+const touchSubs = new Set<() => void>();
+let touchInit = false;
+function touchSubscribe(cb: () => void): () => void {
+	if (!touchInit) {
+		touchInit = true;
+		touchNow = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+		window.addEventListener(
+			'pointerdown',
+			(e) => {
+				const t = e.pointerType === 'touch' || e.pointerType === 'pen';
+				if (t === touchNow) return;
+				touchNow = t;
+				for (const f of touchSubs) f();
+			},
+			{ capture: true, passive: true },
+		);
+	}
+	touchSubs.add(cb);
+	return () => void touchSubs.delete(cb);
+}
+const touchSnap = () => touchNow;
+
 export function StatusBar({ reg, lesson, spec }: { reg: StageReg; lesson: string; spec: StatusSpec }): React.JSX.Element {
 	const hover = useSyncExternalStore(reg.hover.subscribe, reg.hover.get, reg.hover.get);
+	const touch = useSyncExternalStore(touchSubscribe, touchSnap, () => false);
 	// Only the hint text re-renders the bar, not every store write.
-	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode));
+	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode, touch));
 	return (
 		<div className="lab-vp-status">
 			<span>

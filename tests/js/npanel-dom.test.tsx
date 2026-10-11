@@ -185,3 +185,46 @@ test('visible() hides rows; authoring errors throw', () => {
 	expect(() => panel('np9', [{ id: 'a', label: 'a', kind: 'num', key: 'a' }])).toThrow(/spec/);
 	expect(() => panel('np9', [{ id: 'r', label: 'r', kind: 'ro' }])).toThrow(/key or value/);
 });
+
+const touchPtr = (type: string, clientX: number, clientY: number) =>
+	new PointerEvent(type, { bubbles: true, clientX, clientY, pointerId: 2, pointerType: 'touch' });
+
+test('touch: a vertical swipe from a field neither scrubs nor opens the input (the browser scrolls the page)', () => {
+	lessonStore('np10', { a: 3 });
+	const { host } = panel('np10', [{ id: 'a', label: 'a', kind: 'num', key: 'a', spec: LEN }]);
+	const f = field(host);
+	fire(f, touchPtr('pointerdown', 100, 100));
+	fire(f, touchPtr('pointermove', 104, 112)); // mostly vertical, a little horizontal jitter
+	fire(f, touchPtr('pointermove', 108, 160));
+	expect(vals('np10').a).toBe(3);
+	// pan-y: the browser takes the swipe and cancels the pointer; that is never a click.
+	fire(f, touchPtr('pointercancel', 108, 160));
+	expect(host.querySelector('input')).toBeNull();
+	expect(vals('np10').a).toBe(3);
+});
+
+test('touch: a horizontal drag scrubs once past the slop; a cancel restores the start value and opens nothing', () => {
+	lessonStore('np11', { a: 3 });
+	const { host } = panel('np11', [{ id: 'a', label: 'a', kind: 'num', key: 'a', spec: LEN }]);
+	const f = field(host);
+	fire(f, touchPtr('pointerdown', 100, 100));
+	fire(f, touchPtr('pointermove', 106, 100)); // inside the 8 px slop
+	expect(vals('np11').a).toBe(3);
+	fire(f, touchPtr('pointermove', 120, 101));
+	expect(vals('np11').a).toBe(3.5);
+	fire(f, touchPtr('pointercancel', 120, 101));
+	expect(vals('np11').a).toBe(3);
+	expect(host.querySelector('input')).toBeNull();
+	// A tap still opens the input.
+	fire(field(host), touchPtr('pointerdown', 50, 50));
+	fire(field(host), touchPtr('pointerup', 52, 51));
+	expect(host.querySelector('input.lab-np-input')).not.toBeNull();
+});
+
+test('mouse: a cancelled press is not a click', () => {
+	lessonStore('np12', { a: 3 });
+	const { host } = panel('np12', [{ id: 'a', label: 'a', kind: 'num', key: 'a', spec: LEN }]);
+	fire(field(host), ptr('pointerdown', 50));
+	fire(field(host), ptr('pointercancel', 50));
+	expect(host.querySelector('input')).toBeNull();
+});

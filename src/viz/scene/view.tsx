@@ -147,12 +147,25 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 	const core = useRef<LineObj>(null);
 	const out = useRef<LineObj>(null);
 	const glow = useRef<LineObj>(null);
+	// Last per-frame override (e.g. a beam trimmed inside its head). The hot outline and halo mount on hover with drei's
+	// untrimmed `points`, so they get the override as soon as they exist, not on the next geometry change.
+	const last = useRef<number[] | null>(null);
 	useImperativeHandle(fwd, () => ({
 		setPositions(flat) {
+			last.current = flat;
 			for (const l of [core.current, out.current, glow.current]) l?.geometry.setPositions(flat);
 		},
 		geometry: () => core.current?.geometry ?? null,
 	}));
+	// Runs after the children's layout effects (drei sets `points` there), so the override wins on mount.
+	useLayoutEffect(() => {
+		const f = last.current;
+		if (f) for (const l of [out.current, glow.current]) l?.geometry.setPositions(f);
+	}, [hot, halo]);
+	// New `points` reset every line; the owner re-applies its override on the next frame.
+	useLayoutEffect(() => {
+		last.current = null;
+	}, [points]);
 	const outW = width + 2 * STYLE.hotPad;
 	const common = { points, segments, dashPx, transparent: true, depthWrite: false };
 	return (
@@ -340,6 +353,16 @@ export function DragLayer(): null {
 		on('mousedown', (e) => {
 			if (e.button === 1) e.preventDefault();
 		});
+		// Ruling T: a plain wheel always scrolls the lesson (a card must never trap reading). Stopping the event here, in
+		// the capture phase on the stage, keeps it away from OrbitControls on the View div, which would preventDefault
+		// and zoom; Ctrl/Cmd+wheel (and a trackpad pinch, which arrives as ctrl+wheel) passes through and zooms.
+		on(
+			'wheel',
+			(e) => {
+				if (!e.ctrlKey && !e.metaKey) e.stopPropagation();
+			},
+			{ capture: true },
+		);
 		// Leaving the stage clears what the status bar describes (r3f's pointerout covers objects, not handles).
 		on('pointerleave', () => {
 			if (!active) reg.hover.set({ handle: null });

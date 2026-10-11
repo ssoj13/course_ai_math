@@ -10,10 +10,10 @@
  * once autoClear is off and its location is fed from the stage rect, but its 128 px size, colors, black negative
  * bubbles and constant-speed animation are private to its closure. So the gizmo is DOM: an SVG in the stage overlay,
  * updated per rendered frame from the camera quaternion (GizmoSync in view.tsx). It is crisp at any DPR, uses the
- * real UI font, needs no GL state juggling, and its bubbles are real keyboard-reachable buttons.
+ * real UI font and needs no GL state juggling; keyboard users get six hidden buttons in a fixed order.
  * Three-free: the layout math is pure and unit-tested.
  */
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { roleVar } from '../palette';
 import type { StageReg } from './handles';
 
@@ -92,7 +92,9 @@ export function Gizmo({ reg }: { reg: StageReg }): React.JSX.Element {
 					l?.setAttribute('y2', h.y.toFixed(2));
 				}
 			}
-			// Re-stack only when the depth order changes (orbiting moves bubbles every frame, reordering is rare).
+			// Re-stack only when the depth order changes (orbiting moves bubbles every frame, reordering is rare). SVG has no
+			// z-index, so depth is DOM order. Safe to move: the bubbles never hold focus (see the key buttons below) and
+			// React never reorders this constant keyed list, so its bookkeeping does not depend on their order.
 			const next = lay.map((h) => `${h.axis},${h.sign}`).join(';');
 			if (next !== order && layer.current) {
 				order = next;
@@ -112,6 +114,11 @@ export function Gizmo({ reg }: { reg: StageReg }): React.JSX.Element {
 		const nav = reg.nav;
 		if (nav) nav.align(axis, alignSign(nav.viewDir(), axis, sign));
 	};
+	// Keyboard focus lives on visually hidden buttons in a FIXED order, apart from the bubbles: the bubbles are
+	// re-stacked by depth while the view turns, and moving a focused node in the DOM drops its focus (and would make
+	// the Tab order change with the orbit). The focused button's bubble draws the focus ring.
+	const [focus, setFocus] = useState<string | null>(null);
+	const label = (axis: number, sign: number) => `${VIEW_NAME[`${axis},${sign}`]} view (${sign < 0 ? '−' : '+'}${LETTER[axis]})`;
 
 	return (
 		<div
@@ -121,7 +128,7 @@ export function Gizmo({ reg }: { reg: StageReg }): React.JSX.Element {
 			onPointerEnter={() => reg.hover.set({ object: GIZMO_ID })}
 			onPointerLeave={() => reg.hover.clear('object', GIZMO_ID)}
 		>
-			<svg viewBox="-42 -42 84 84">
+			<svg viewBox="-42 -42 84 84" aria-hidden="true">
 				<circle className="lab-gizmo-bg" r={41} />
 				{([0, 1, 2] as const).map((a) => (
 					<line key={a} ref={(el) => void (lines.current[a] = el)} x1={0} y1={0} x2={0} y2={0} stroke={roleVar(ROLE[a])} strokeWidth={2} strokeLinecap="round" />
@@ -138,28 +145,34 @@ export function Gizmo({ reg }: { reg: StageReg }): React.JSX.Element {
 									if (el) heads.current.set(k, el);
 									else heads.current.delete(k);
 								}}
-								className={neg ? 'is-neg' : undefined}
-								role="button"
-								tabIndex={0}
-								aria-label={`${VIEW_NAME[k]} view (${neg ? '−' : '+'}${LETTER[axis]})`}
+								className={`lab-gizmo-head${neg ? ' is-neg' : ''}${focus === k ? ' is-focus' : ''}`}
+								data-k={k}
 								onClick={() => align(axis, sign)}
-								onKeyDown={(e) => {
-									if (e.key !== 'Enter' && e.key !== ' ') return;
-									e.preventDefault();
-									align(axis, sign);
-								}}
 							>
-								<circle
-									r={BUBBLE}
-									fill={neg ? `color-mix(in srgb, ${color} 28%, var(--viz-bg-bottom))` : color}
-									stroke={color}
-								/>
-								<text fill={neg ? 'var(--viz-ink)' : 'var(--viz-chrome-2)'}>{LETTER[axis]}</text>
+								<circle r={BUBBLE} fill={neg ? `color-mix(in srgb, ${color} 28%, ${roleVar('bgBottom')})` : color} stroke={color} />
+								<text fill={roleVar(neg ? 'ink' : 'chrome2')}>{LETTER[axis]}</text>
 							</g>
 						);
 					})}
 				</g>
 			</svg>
+			<div className="lab-gizmo-keys">
+				{AXES.map(([axis, sign]) => {
+					const k = `${axis},${sign}`;
+					return (
+						<button
+							key={k}
+							type="button"
+							className="lab-handle-key"
+							aria-label={label(axis, sign)}
+							onClick={() => align(axis, sign)}
+							// Hidden buttons are reached only by keyboard (or assistive tech), so any focus draws the ring.
+							onFocus={() => setFocus(k)}
+							onBlur={() => setFocus((f) => (f === k ? null : f))}
+						/>
+					);
+				})}
+			</div>
 		</div>
 	);
 }

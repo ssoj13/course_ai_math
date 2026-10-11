@@ -205,16 +205,16 @@ Upstream / known console noise:
   from the stage element per frame; heads/dots/glyphs/markers scale per frame via `wppAt`/`usePxScale`. Per-frame
   helpers in view.tsx use module-level Vector3 temporaries (no allocation per object per frame).
 - `hotOn`/`hotOff` in store.ts are the only hot writers for single objects (write only on change; Formula uses hotOn).
-  Arrow/Point/Segment `stopPropagation()` on pointerover so they win the hover over area fills underneath.
+  Hover arbitration since 6d: `useHoverable(lesson, id, HOVER_RANK.*)` (see the 6d section), not plain stopPropagation.
 - Axis letters and tick numbers are DOM labels since 6d (self-hosted fonts now exist). `label` on Arrow/Point names
   the keyboard button only; visible text is a separate `<Label>`.
 - Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6b-evidence/` (`cdp-drag.ts`, `final/`).
-- [ ] Default 3D camera (Stage) does not frame the whole `extent`: grid corners and the top of the y axis are cut off.
+- [x] Default 3D camera frames the whole extent (6d fix round 1: `fitDistance`).
 
 ### Angle, area and label primitives (Task 6c)
 
 - Files: `scene/{AngleArc,RightAngle,AreaTile,Parallelogram,Label}.tsx`; pure helpers in `geom.ts` (`angleArc`,
-  `rightOf`, `rectOn`, `isRight`, `hatch`, `cross`) and `drag.ts` (`hitRadius`, `ndcToPx`, `pushAway`).
+  `rightOf`, `isRight`, `hatch`, `cross`; `rectOn` removed in 6d) and `drag.ts` (`hitRadius`, `ndcToPx`, `pushAway`).
 - **Label** is DOM, not drei `Html`: scene objects register a `LabelSpec` (`useLabel`, three-free, in handles.tsx) with
   the stage registry; the overlay (`Labels`) renders spans (`aria-hidden`, `pointer-events:none`, role color via
   `roleVar` = CSS var, so theme flips need no render); `LabelLayer` calls `placeLabels` in `useFrame(..., 2)` - AFTER
@@ -229,7 +229,7 @@ Upstream / known console noise:
   `flip={signedArea2(a, b) < 0}`). `signed` + `area` (number or fn of vals): bar of height area/|b-a| on the base,
   positive outward, negative inward + hatched, zero/degenerate draws nothing.
 - **Parallelogram** 2D: negative orientation (signedArea2 < 0) hatched; 3D plain quad. Collinear -> nothing. `Quad`
-  (in Parallelogram.tsx) is the shared fill (16%, polygonOffset so coplanar lines keep their color) + 1.5 px edge +
+  (in Parallelogram.tsx) is the shared fill (`STYLE.fillA` = 18 % since 6d, polygonOffset so coplanar lines keep their color) + 1.5 px edge +
   6 px hatch; hatch spacing in px comes from `useWorldPx` (quantized React state, rebuilt only on ~9% scale change).
 - **RightAngle**: px-sized square, auto-shown within `tol` = 0.5 degrees of 90 (or `show`); hidden for zero vectors.
 - Derived geometry (projection foot etc.) is computed in the lesson .tsx with `useVal` inside a child of Stage and passed
@@ -247,7 +247,7 @@ Upstream / known console noise:
   `SceneRole` (`STROKE_ROLES`), each >= 3:1 on both ends of the viewport gradient; ink/muted >= 4.5:1 on chrome
   (`tests/js/tokens.test.ts` parses lab.css and computes WCAG contrast).
 - Non-color look = `STYLE` in palette.ts (core 2.5 px, halo 9 px @14 %, hot outline +2 px each side + 30 % hot halo,
-  edge 1.5 px, fill 18 %, sector 10 %, hatch 6 px / 1 px, head 14 px, point 4.5 + 1.5 px rim, band 6 px @35 %).
+  edge 1.5 px, fill 18 %, sector 10 %, hatch 6 px / 1 px, head 14 px, point = 6 px disc (radius 3) + 1.5 px rim, band 6 px @35 %).
   No private style constants in primitives.
 - The theme observer stays (page-side elements follow Starlight; a re-read on a flip is harmless).
 - Test order trap: after any `./dom` test loads, happy-dom's `localStorage` is read-only; `store.test.ts` uses `Object.defineProperty` for that reason.
@@ -271,6 +271,9 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   fields use the ONE scrub engine (`startScrubDrag` in useScrub.ts + `scrubValue`/`keyStep`/`ctrlSnap`/`parseField`/
   `fmtField` in scrub.ts; 4 px per step, Ctrl = `snap` targets or increment (default 10 steps), Shift = 1/10 step
   re-based mid-drag, click or Enter = type (Enter commits, Esc reverts, blur keeps a valid value), arrows/PageUp).
+  Touch: fields are `touch-action: pan-y`; a scrub starts only after an 8 px horizontal-dominant move, a vertical
+  swipe scrolls the page, and `startScrubDrag` reports `pointercancel` as cancelled (never a click; the field restores
+  its start value).
   Read-only rows hover like their scene object. Row ids are term ids (hover <-> hot <-> formula). `bool` rows and
   `glyph` (lessons spec item 11) are not built: 6e (Toggle) / lesson scope.
 - **Desktop N-panel = Blender region overlap**: drawn over the right edge of the viewport (200 px, 94 % chrome); the
@@ -278,9 +281,14 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   stay exact. Under 720 px (media query, = spec) the same DOM is a scrollable chip row under the viewport. Why overlap:
   the Starlight content column is only 632 px at 1280 px (measured), a side column would leave a 432 px viewport.
   `N` toggles it for the card under the pointer or holding focus.
-- **Navigation** (Stage `Nav`): 2D = wheel zoom (0.5x..8x of fit, relative zoom kept on resize), MMB/RMB pan, LMB on
-  empty space does nothing (handles own LMB); 3D = LMB/MMB orbit, Shift+MMB pan (three-stdlib OrbitControls swaps
-  ROTATE to pan with Shift), wheel dolly. MMB `mousedown` is prevented (Chrome's middle-click autoscroll moved the page
+- **Navigation** (Stage `Nav`): **a plain wheel always scrolls the page (Ruling T)**: DragLayer stops plain `wheel`
+  events in the capture phase on `.lab-stage`, before OrbitControls (on the View div) can preventDefault; Ctrl/Cmd+wheel
+  and trackpad pinch (ctrl+wheel) zoom, two-finger touch pinch zooms. 2D = Ctrl+wheel zoom (0.5x..8x of fit, relative
+  zoom kept on resize), MMB/RMB pan, LMB on empty space does nothing (handles own LMB); 3D = LMB/MMB orbit, Shift+MMB
+  pan (three-stdlib OrbitControls swaps ROTATE to pan with Shift), Ctrl+wheel dolly.
+  Framing: 2D fit leaves `MARGIN_2D` 16 px around the extent (tick numbers at +-extent stay inside); the 3D home
+  camera sits at `fitDistance(FRAME_3D * extent, freeW, h)` along the old three-quarter direction, so the whole
+  extent, axis tops and labels are in view at any aspect (closes the 6b framing TODO); ortho fit uses the same radius. MMB `mousedown` is prevented (Chrome's middle-click autoscroll moved the page
   17 px per pan). Persp/Ortho switch hands the pose over (same direction, same apparent size). Reset view and gizmo
   align = smooth view with the shared spring (`motion.ts`, VIEW_MS 250), cut under reduced motion, cancelled when the
   reader grabs the view.
@@ -290,7 +298,9 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   clears the whole canvas, and it sizes from the View's stale `size`. three `ViewHelper` renders correctly once
   autoClear is off and `location` is fed from the stage rect, but its 128 px size, colors, black negative bubbles and
   constant-speed animation are closure-private. Chosen: the third fallback, a DOM/SVG gizmo (`Gizmo.tsx`, pure
-  `gizmoLayout`), crisp, real font, keyboard buttons, Blender colors, hollow negatives, click again = opposite side.
+  `gizmoLayout`), crisp, real font, Blender colors, hollow negatives, click again = opposite side. Keyboard: six
+  visually hidden `<button>`s in a FIXED order next to the SVG (the bubbles re-stack by depth via DOM order, and
+  moving a focused node drops its focus); the focused button's bubble draws the ring.
   2D shows the static `XYCorner`.
 - **Grid**: drei `Grid` shader (infinite, `followCamera`, pixel-thin AA lines; 2D no fade, 3D fades at 7 x extent),
   `depthWrite` off; axes, ticks, tick numbers and axis letters are our primitives/labels. Verified at 0.5x..8x.
@@ -312,10 +322,11 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
 - Status bar hints: `status={{ hints: { [handleId|objectId]: string | (vals) => string|null }, idle?, state? }}`;
   built-ins for any handle, field, the gizmo and idle navigation (`DEFAULT_HINTS`). Tooltips (`useTip`, 500 ms,
   title + line + TeX via `renderStaticMath`) on N-panel rows and header buttons.
-- [ ] Indirect value changes are not yet eased on screen (keyboard nudges, typed values jump): needs a direct/indirect
-  write channel in the store; build it with 6e/7 (magnet catch, timeline steps, Poly tweens), reusing `springStep`.
+- [ ] Indirect value changes are not yet eased on screen (keyboard nudges, typed values jump): Ruling U defers it to
+  6e (direct/indirect write channel in the store, reusing `springStep`).
 - [ ] Formula term tooltips (lessons spec) need a `tips` prop on Formula (Task 7 / lessons).
-- [ ] Grid tokens: `gridMinor` #3C3C3C is 1.03:1 on `vp-bg-top` #3A3A3A, so minor lines vanish in the upper half of
-  a viewport (spec values kept; designer to decide).
-- [ ] Wheel over a viewport zooms instead of scrolling the page (spec: "Wheel zoom"); consider Ctrl+wheel if readers
-  complain.
+- [x] `gridMinor` is #444444 (1.17:1 on `vp-bg-top`, tested >= 1.15 and below the major grid); spec table updated.
+- [x] Wheel scrolls the page; Ctrl+wheel zooms (Ruling T). Touch devices get touch hints (`TOUCH_HINTS`; lesson
+  hints naming mouse buttons/keys are replaced on touch).
+- Tests import no three/drei (bun would print THREE_CJS_DEPRECATED): pure helpers live in three-free modules
+  (`geom.ts` tickValues/tickText, `Header.tsx` Overlays/Icon, Gizmo/NPanel/StatusBar/handles).
