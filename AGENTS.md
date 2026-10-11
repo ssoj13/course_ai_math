@@ -180,6 +180,11 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
   before other sides. `Label` takes `away`/`gap`. Registration order = priority (region names after values).
 - Derived geometry (projection foot etc.) is computed in the lesson with `useVal` and passed as literals; guard zero
   vectors (`project` throws on zero).
+- 0.2 powers: `FnCurve` (`scene/FnCurve.tsx`: y = f(t, vals) sampled uniformly on [from, to] on `Stroke`; a non-finite
+  sample throws). TileGrid `fill` may be a function returning undefined (a plain row). TileGrid lays out from the
+  store's `shown` record only; a prop that changes with React state (role) does not re-layout by itself, so the ladder
+  remounts a rung (`key`) when its colour changes. A card's mode is fixed: 0.2-4 switches 2D/3D by remounting the
+  card on the `d3` key (focus moved to the new checkbox).
 
 ### Viewport chrome ([6d](docs/acceptance/6d.md))
 
@@ -339,7 +344,8 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - [ ] Phone chip rows keep invisible slots for rows a later step reveals (LC-0 at 360 has a blank band); a reflow on
   reveal would be input-driven, but chips.ts / the SSR frame contract would have to change.
 - [ ] Merge to main, deploy, check live (nothing deployed since 8868525).
-- [ ] 1.4 dot product scenes DP-1..4; 0.G / 0.2 powers scenes (TileGrid, FnCurve, "square is an area" 2D + 3D).
+- [ ] 1.4 dot product scenes DP-1..4; 0.G scenes. [x] 0.2 powers scenes 0.2-1..5 EN + RU (batch report
+  `.superpowers/sdd/2026-10-11-recover/batch-powers-report.md`); open: ladder split animation, layer explode hover.
 - [ ] Remaining lessons in course-completion order (P3 services → P4 Part 0/1 → P5..P15), each EN + RU, scenes,
   Python/Colab, term map; implementer → reviewer (different model) → visual verifier.
 - [x] Task 8 (Pyodide cells) implemented; awaiting review. 0.G squares-and-plane python block not wrapped yet
