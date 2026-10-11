@@ -441,6 +441,20 @@ h1#_top,
 	grid-template-columns: minmax(0, 1fr);
 	grid-template-areas: 'head' 'body' 'chips' 'status';
 }
+/* Full mode is one stacking context, including the temporarily relocated shared canvas host. */
+.lab-vp-card[data-size='full'] {
+ position: fixed;
+ inset: 0;
+ z-index: 100;
+ background: var(--viz-bg-bottom);
+ border-radius: 0;
+}
+.lab-vp-card[data-size='full'] > .lab-vp-head { border-radius: 0; }
+.lab-vp-size { flex: none; padding-inline: 5px; }
+@media (max-width: 359.98px) {
+ .lab-vp-card > .lab-vp-head { gap: 3px; }
+ .lab-vp-head .lab-vp-btn, .lab-vp-head .lab-vp-tag { padding-inline: 3px; }
+}
 .lab-vp-body {
 	grid-area: body;
 	position: relative;

@@ -7,9 +7,13 @@ import { useLocale } from '../../i18n/react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useStore } from 'zustand';
 import { lessonStore } from '../store';
+import { toggleSize, type SizeMode } from './sizeModes';
+import { useTip } from './NPanel';
 import { overlayKey, overlayOn, type OverlayDef } from './handles';
 
 export const Icon = {
+ wide: <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3H3v3m7-3h3v3M3 10v3h3m7-3v3h-3M3 3l4 4m6-4L9 7M3 13l4-4m6 4L9 9" fill="none" stroke="currentColor" strokeWidth="1.4"/></svg>,
+ full: <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 2H2v4m8-4h4v4M2 10v4h4m8-4v4h-4" fill="none" stroke="currentColor" strokeWidth="1.6"/></svg>,
 	reset: (
 		<svg viewBox="0 0 16 16" aria-hidden="true">
 			<path d="M3.5 6.5A5 5 0 1 1 3 9.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -33,6 +37,19 @@ export const Icon = {
 		</svg>
 	),
 };
+
+export function SizeButtons({ id, mode }: { id: string; mode: SizeMode }) {
+ const locale = useLocale();
+ const tip = useTip();
+ const names = { wide: t(locale, 'viewport.wide'), full: t(locale, 'viewport.full') };
+ const hints = { wide: t(locale, 'viewport.wideTip'), full: t(locale, 'viewport.fullTip') };
+ return <>{(['wide', 'full'] as const).map(k =>
+  <button key={k} type="button" className="lab-vp-btn lab-vp-size" aria-label={names[k]}
+   aria-pressed={mode === k} aria-keyshortcuts={k === 'wide' ? 'Control+Space' : 'Control+Alt+Space F'}
+   onClick={() => toggleSize(id, k)} {...tip.bind({ title: names[k], text: hints[k] })}>
+   {Icon[k]}
+  </button>)}{tip.node}</>;
+}
 
 /**
  * Blender's Overlays popover: a checkbox per declared flag, written to the lesson store. Escape, a press outside or

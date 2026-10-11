@@ -18,7 +18,8 @@ import { useLocale } from '../../i18n/react';
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { V } from '../geom';
 import { createStage, type OverlayDef } from './handles';
-import { Icon, Overlays } from './Header';
+import { Icon, Overlays, SizeButtons } from './Header';
+import { useCardSize } from './sizeModes';
 import { frameMismatch, frameOf } from './chips';
 import { NPanel, rowRanges, useTip, type Row } from './NPanel';
 import { Stage } from './Stage';
@@ -64,6 +65,8 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	const [open, setOpen] = useState(true);
 	const [inset, setInset] = useState(0);
 	const root = useRef<HTMLDivElement>(null);
+	const sizeId = p.lesson + ':' + p.id;
+	const { mode: sizeMode } = useCardSize(sizeId, root, () => reg.nav?.redraw());
 	const panelId = useId();
 	const chev = useRef<HTMLButtonElement>(null);
 	const toggleRef = useRef(() => {});
@@ -134,7 +137,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 
 	const is3d = p.mode === '3d';
 	return (
-		<div className="lab-vp-card" data-hud={p.instruments ? "" : undefined} data-formula={p.formula ? "" : undefined} style={{"--lab-vp-inset":`${inset}px`} as React.CSSProperties} ref={root}>
+		<div className="lab-vp-card" tabIndex={-1} data-size={sizeMode} data-size-id={sizeId} data-hud={p.instruments ? "" : undefined} data-formula={p.formula ? "" : undefined} style={{"--lab-vp-inset":`${inset}px`} as React.CSSProperties} ref={root}>
 			<header className="lab-vp-head">
 				{/* Indicators, not controls: the view type and a 2D view's projection are fixed by the scene. */}
 				<span className="lab-vp-seg" role="img" aria-label={is3d ? t(locale, 'viewport.view3d') : t(locale, 'viewport.view2d')}>
@@ -165,6 +168,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 					{Icon.reset}
 					<span className="lab-vp-label">{t(locale, 'viewport.reset')}</span>
 				</button>
+				<SizeButtons id={sizeId} mode={sizeMode} />
 				<span className="lab-vp-name">{p.name}</span>
 				{hasPanel && (
 					<button

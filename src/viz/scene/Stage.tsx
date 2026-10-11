@@ -17,6 +17,7 @@ import { Gizmo, XYCorner } from './Gizmo';
 import { createStage, DragKeys, Labels, StageCtx, type StageReg } from './handles';
 import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, VIEW_MS, type Pose } from './motion';
 import { ensureSceneHost } from './SceneHost';
+import { useSizeState, viewVisible } from './sizeModes';
 import { DragLayer, DrawIn, GizmoSync, LabelLayer } from './view';
 
 import { LookCtx, type Look } from './look';
@@ -252,6 +253,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose }: NavProps) {
 
 export function Stage(p: StageProps): React.JSX.Element {
  const locale = useLocale();
+ const sizeState = useSizeState();
 	useEffect(ensureSceneHost, []);
 	const ref = useRef<HTMLDivElement>(null);
 	const { w, h } = useBoxSize(ref);
@@ -266,6 +268,8 @@ export function Stage(p: StageProps): React.JSX.Element {
 			reg.el = null;
 		};
 	}, [reg]);
+	const visible = viewVisible(reg.card ? reg.card.lesson + ':' + reg.card.id : undefined, sizeState);
+	useLayoutEffect(() => { reg.nav?.redraw(); }, [visible, reg]);
 	const pose = useRef<Pose | null>(null);
 	const inset = p.inset ?? 0;
 	const c = p.center ?? [0, 0];
@@ -274,7 +278,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 	const proj = p.mode === '2d' ? 'ortho' : (p.proj ?? 'persp');
 	return (
 		<div className="lab-stage" data-look={p.look ?? "holo"} ref={ref} style={{ '--lab-vp-inset': `${inset}px` } as React.CSSProperties}>
-			<View className="lab-stage-view">
+			<View className="lab-stage-view" visible={visible}>
 				{/* The provider sits inside the View: context does not cross drei's tunnel into the shared Canvas. */}
 				<LocaleContext.Provider value={locale}><StageCtx.Provider value={reg}>
 					<InvalidateOnStore lesson={p.lesson} />
