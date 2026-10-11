@@ -12,7 +12,6 @@
   "vectors/basis",
   "vectors/cosine-similarity",
   "vectors/cross-product",
-  "vectors/dot-product",
   "vectors/length",
   "vectors/projection",
   "vectors/vector",
