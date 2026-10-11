@@ -1,0 +1,31 @@
+---
+/**
+ * LessonMap - the local term map at the end of every lesson page (page template: "... Next question -> Local term
+ * map"). The lesson is the current route's (also on a Russian fallback page, which therefore gets a Russian map); its
+ * own terms (terms.json `lessons`) are the highlighted focus, drawn with everything within `hops` edges of them.
+ * The slice and all texts/links are resolved here, so the island receives only what it draws.
+ */
+import UiStrings from './UiStrings.astro';
+import { pageLocale } from '../i18n/ui';
+import { lessonByPath, lessonBySlug } from '../lib/course';
+import { TermMap } from '../viz/terms/TermMap';
+import { EDGES, ORDER, mapData, termsOf } from '../viz/terms/data';
+import { neighborhoodIn } from '../viz/terms/graph';
+
+interface Props {
+	/** Lesson slug; defaults to the current route's lesson (the prop exists for non-lesson demo pages). */
+	lesson?: string;
+	hops?: 1 | 2;
+}
+
+const locale = pageLocale(Astro);
+const slug = Astro.props.lesson ?? lessonByPath(Astro.locals.starlightRoute?.id ?? '')?.slug;
+if (!slug || !lessonBySlug(slug)) throw new Error(`<LessonMap>: not a lesson page and no valid \`lesson\` slug (got ${JSON.stringify(slug)}).`);
+const own = termsOf(slug).map((t) => t.id);
+if (own.length === 0) throw new Error(`<LessonMap>: lesson "${slug}" teaches no terms in src/data/terms.json`);
+const slice = neighborhoodIn(ORDER, EDGES, own, Astro.props.hops ?? 1);
+const data = mapData(slice.ids, slice.edges, locale);
+---
+
+<TermMap client:visible locale={locale} data={data} mode="local" focus={own} />
+<UiStrings ns={['terms']} />

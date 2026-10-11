@@ -1,10 +1,11 @@
 ---
 title: "Теорема косинусов"
 description: "Пифагор плюс поправка для непрямого угла; IK для двух костей."
-translatedFrom: 90ed7bf297e2d1fc3d85339bbd76c59a428bf80b
+translatedFrom: 0f993cea7b57ad74f5281df36c72cd398eb479d8
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
+import LessonMap from '../../../../components/LessonMap.astro';
 import UiStrings from '../../../../components/UiStrings.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { LawScene, LawControls, LawDetail, LawDetailControls } from '../../../../viz/lessons/law-of-cosines';
@@ -384,3 +385,7 @@ print(np.arccos(-1.625))          # nan (and a RuntimeWarning: invalid value enc
 Посмотрите на полосу ещё раз. Её площадь — длина стороны $a$, умноженная на тень стороны $b$ на ней. В следующих уроках стороны станут стрелками, записанными жирным, $\mathbf{a}$ и $\mathbf{b}$, с длинами $|\mathbf{a}|$ и $|\mathbf{b}|$. Тогда полоса — $|\mathbf{a}|\,(|\mathbf{b}|\cos\theta)$, а урок о [скалярном произведении](lesson:dot-product) даст этому произведению имя, $\mathbf{a} \cdot \mathbf{b}$ — новое значение точки: не обычное умножение, — и покажет вычисление только по координатам, без угла. Третья сторона, расстояние $c$, тогда стрелка $\mathbf{a} - \mathbf{b}$ от конца $\mathbf{b}$ к концу $\mathbf{a}$, её длина — $|\mathbf{a} - \mathbf{b}|$. Поэтому теорема косинусов читается как $|\mathbf{a} - \mathbf{b}|^2 = |\mathbf{a}|^2 + |\mathbf{b}|^2 - 2\,\mathbf{a} \cdot \mathbf{b}$: Пифагор с двумя вырезанными прямоугольниками.
 
 Но сначала сами палочки. У них есть длина и направление, до сих пор мы считали их «сторонами». Следующий урок, [Вектор: стрелка и список чисел](lesson:vector), всюду рассматривает их как стрелки.
+
+## Карта терминов
+
+<LessonMap />

@@ -1,0 +1,291 @@
+/*
+ * Term maps (TermMap.tsx) and the glossary (Glossary.astro): the 6d Blender viewport look of lab.css (viewport and
+ * chrome always dark in both site themes, Ruling R), colors only from the --viz-* tokens. Depth colors: ground =
+ * vecC, vectors = vecA, machine = vecB, forward parts = light / axisY.
+ */
+.lab-tm {
+	--lab-tm-edge: color-mix(in srgb, var(--viz-ink) 72%, transparent);
+	--lab-tm-box: 420px;
+	margin: 1.5rem 0 0;
+	border-radius: 8px;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font: 400 12px/1.4 var(--lab-font-ui);
+	overflow: hidden;
+}
+/* The glossary's genealogy is the page's main figure and a tall tree: a taller box. */
+.lab-tm[data-mode='genealogy'] {
+	--lab-tm-box: 560px;
+}
+@media (max-width: 719.98px) {
+	.lab-tm {
+		--lab-tm-box: 340px;
+	}
+	.lab-tm[data-mode='genealogy'] {
+		--lab-tm-box: 460px;
+	}
+}
+[data-depth='ground'] { --lab-tm-c: var(--viz-vec-c); }
+[data-depth='vectors'] { --lab-tm-c: var(--viz-vec-a); }
+[data-depth='machine'] { --lab-tm-c: var(--viz-vec-b); }
+[data-depth='matrices'] { --lab-tm-c: var(--viz-light); }
+[data-depth='ai'] { --lab-tm-c: var(--viz-axis-y); }
+
+.lab-tm-head {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 28px;
+	padding: 0 4px 0 5px;
+	background: var(--viz-chrome);
+	border-bottom: 1px solid var(--viz-chrome-2);
+	min-width: 0;
+}
+.lab-tm-tag {
+	padding: 0 7px;
+	color: var(--viz-ink);
+	font: 600 11px/1 var(--lab-font-ui);
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+}
+.lab-tm-spacer { flex: 1; }
+.lab-tm-btn,
+.lab-tm-pick select {
+	appearance: none;
+	height: 20px;
+	padding: 0 7px;
+	border: 0;
+	border-radius: 4px;
+	background: var(--viz-chrome-2);
+	color: var(--viz-ink);
+	font: 500 11.5px/1 var(--lab-font-ui);
+	white-space: nowrap;
+	cursor: pointer;
+}
+.lab-tm-pick select {
+	max-width: 46vw;
+	background: var(--viz-field);
+}
+.lab-tm-btn:hover { background: var(--viz-field); }
+.lab-tm-icon {
+	display: inline-grid;
+	place-items: center;
+	width: 24px;
+	padding: 0;
+}
+.lab-tm-icon svg {
+	width: 14px;
+	height: 14px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.5;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.lab-tm-btn:focus-visible,
+.lab-tm-pick select:focus-visible,
+.lab-tm-list summary:focus-visible {
+	outline: 1px solid var(--viz-ink);
+	outline-offset: 1px;
+}
+.lab-tm-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* The map box: fixed height reserved on the server, so hydration and layout never move the page. */
+.lab-tm-box {
+	position: relative;
+	height: var(--lab-tm-box);
+	background: linear-gradient(var(--viz-bg-top), var(--viz-bg-bottom));
+}
+.lab-tm-flow {
+	position: absolute;
+	inset: 0;
+}
+.lab-tm-msg {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	margin: 0;
+	padding: 1rem;
+	color: var(--viz-muted);
+	text-align: center;
+}
+.lab-tm-msg.is-err { color: var(--viz-hot); }
+.lab-tm .react-flow { background: transparent; }
+.lab-tm .react-flow__attribution {
+	background: transparent;
+	font-size: 9px;
+}
+.lab-tm .react-flow__attribution a { color: var(--viz-muted); }
+
+.lab-tm-node {
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: 100%;
+	height: 100%;
+	padding: 0 12px;
+	border: 1px solid var(--viz-chrome-2);
+	border-top: 2px solid var(--lab-tm-c);
+	border-radius: 5px;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font: 600 12px/1 var(--lab-font-ui);
+	white-space: nowrap;
+	cursor: pointer;
+}
+.lab-tm-node:hover { background: var(--viz-field); }
+.lab-tm-node.is-focus {
+	outline: 2px solid var(--viz-hot);
+	outline-offset: 1px;
+	background: color-mix(in srgb, var(--viz-hot) 18%, var(--viz-chrome));
+}
+.lab-tm-node.is-later {
+	border-style: dashed;
+	border-top-style: solid;
+	color: var(--viz-muted);
+}
+.lab-tm-dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--lab-tm-c);
+}
+.lab-tm-handle {
+	opacity: 0;
+	pointer-events: none;
+}
+
+/* Edges: built-on solid, is-a / special-case-of dashed, used-in dotted, equivalent-to a double line. */
+.lab-tm-edge path {
+	fill: none;
+	stroke: var(--lab-tm-edge);
+	stroke-width: 1.5;
+}
+.lab-tm-edge.t-is-a path,
+.lab-tm-edge.t-special-case-of path { stroke-dasharray: 6 4; }
+.lab-tm-edge.t-used-in path {
+	stroke: var(--viz-muted);
+	stroke-dasharray: 1 4;
+	stroke-linecap: round;
+	stroke-width: 2;
+}
+.lab-tm-edge.t-equivalent-to .lab-tm-under {
+	stroke-width: 5;
+}
+.lab-tm-edge.t-equivalent-to path:not(.lab-tm-under) {
+	stroke: var(--viz-bg-bottom);
+	stroke-width: 2;
+}
+
+.lab-tm-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 10px;
+	padding: 4px 8px;
+	background: var(--viz-chrome-2);
+	color: var(--viz-muted);
+	font: 500 11px/1.3 var(--lab-font-ui);
+}
+.lab-tm-key {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	white-space: nowrap;
+}
+
+/* Status line: a fixed two-line slot (three under 720 px) so live text never shifts what follows. */
+.lab-tm-status {
+	--lines: 2;
+	box-sizing: content-box;
+	height: calc(var(--lines) * 1.4em);
+	/* Vertical space as margin, not padding: padding would show the top of a clamped next line. */
+	margin: 4px 0;
+	padding: 0 8px;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: var(--lines);
+	line-clamp: var(--lines);
+	overflow: hidden;
+	color: var(--viz-ink);
+}
+@media (max-width: 719.98px) {
+	.lab-tm-status { --lines: 3; }
+}
+.lab-tm a { color: var(--viz-vec-a); }
+
+.lab-tm-list {
+	border-top: 1px solid var(--viz-chrome-2);
+	padding: 4px 8px 6px;
+}
+.lab-tm-list summary {
+	cursor: pointer;
+	color: var(--viz-ink);
+	font-weight: 600;
+}
+.lab-tm-list ul {
+	margin: 6px 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 13px;
+}
+.lab-tm-list li {
+	margin: 0 0 6px;
+	padding-left: 8px;
+	border-left: 2px solid var(--lab-tm-c);
+}
+.lab-tm-list li.is-focus { border-left-color: var(--viz-hot); }
+.lab-tm-depth,
+.lab-tm-rel { color: var(--viz-muted); }
+
+.lab-tm-dialog[open] {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	width: 100vw;
+	height: 100dvh;
+	max-width: none;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: var(--viz-bg-bottom);
+	color: var(--viz-ink);
+}
+.lab-tm-dialog .lab-tm-box { height: auto; }
+.lab-tm-dialog::backdrop { background: var(--viz-bg-bottom); }
+
+/*
+ * Glossary (Glossary.astro): page-side prose in the site theme, entries grouped by depth with the same color stripe.
+ * The sections are `not-content`, so Starlight's prose spacing (1rem between siblings) and heading scale stay out.
+ */
+.lab-gl > h2 {
+	margin: 2.2rem 0 0.8rem;
+	color: var(--sl-color-white);
+	font-size: var(--sl-text-h3);
+	line-height: var(--sl-line-height-headings);
+}
+.lab-gl-entry {
+	margin: 0 0 1.1rem;
+	padding-left: 0.7rem;
+	border-left: 3px solid var(--lab-tm-c);
+}
+.lab-gl-entry h3 {
+	margin: 0 0 0.2rem;
+	color: var(--sl-color-white);
+	font-size: var(--sl-text-lg);
+}
+.lab-gl-entry p { margin: 0.15rem 0; }
+.lab-gl a { color: var(--sl-color-text-accent); }
+.lab-gl-meta {
+	color: var(--sl-color-gray-3);
+	font-size: var(--sl-text-sm);
+}
