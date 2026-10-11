@@ -14,30 +14,30 @@ function registerGuide(store:Store,focus:string|undefined){
  let group=guides.get(store);
  if(!group){
   const g:Guides={items:new Set(),active:null,clock:0,off:()=>{},restore:()=>{
-   const id=g.active?.focus;if(id&&store.getState().hot.size===0)store.getState().setHot([id]);
+   const id=g.active?.focus;if(id&&store.getState().hot.size===0)store.getState().setHot([id],'guide');
   }};
   g.off=store.subscribe((s,prev)=>{if(s.hot!==prev.hot&&s.hot.size===0)g.restore()});
   guides.set(store,g);group=g;
  }
  const g=group,entry:Guide={focus,order:++g.clock};g.items.add(entry);
  if(!g.active&&focus){g.active=entry;g.restore()}
- const replace=(old:string|undefined)=>{
-  const hot=store.getState().hot,owned=hot.size===1&&!!old&&hot.has(old);
+ const replace=()=>{
+  const {hot,hotSource}=store.getState(),owned=hotSource==='guide';
   if(owned||hot.size===0){
    const next=g.active?.focus;
-   if(next){if(hot.size!==1||!hot.has(next))store.getState().setHot([next])}
+   if(next){if(hot.size!==1||!hot.has(next))store.getState().setHot([next],'guide')}
    else if(owned)store.getState().setHot([]);
   }
  };
  return {
   update(next:string|undefined){
-   const old=g.active?.focus;entry.focus=next;entry.order=++g.clock;
+   entry.focus=next;entry.order=++g.clock;
    g.active=next?entry:[...g.items].filter(x=>x.focus).sort((a,b)=>b.order-a.order)[0]??null;
-   replace(old);
+   replace();
   },
   dispose(){
-   const old=g.active?.focus;g.items.delete(entry);
-   if(g.active===entry){g.active=[...g.items].filter(x=>x.focus).sort((a,b)=>b.order-a.order)[0]??null;replace(old)}
+   g.items.delete(entry);
+   if(g.active===entry){g.active=[...g.items].filter(x=>x.focus).sort((a,b)=>b.order-a.order)[0]??null;replace()}
    if(!g.items.size){g.off();guides.delete(store)}
   },
  };

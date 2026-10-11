@@ -31,6 +31,8 @@ export interface LessonState {
 	/** What scenes draw: equal to `vals` except while an eased write is in flight. */
 	shown: Readonly<Record<string, Val>>;
 	hot: ReadonlySet<string>;
+	/** Authority is independent of the visible IDs: same-ID interaction still supersedes a guide. */
+	hotSource: 'interaction' | 'guide' | null;
 	/** Keys whose shared radial resolver replaces ordinary per-component box bounds. */
 	radialKeys: ReadonlySet<string>;
 	step: Readonly<Record<string, number>>;
@@ -39,7 +41,7 @@ export interface LessonState {
 	/** Restore only this transaction's keys, mirrors and in-flight motion; unrelated edits survive. */
 	checkpoint(keys: readonly string[]): () => void;
 	boundTimeline(id: string, count: number, phases?: readonly number[]): void;
-	setHot(ids: Iterable<string>): void;
+	setHot(ids: Iterable<string>, source?: 'interaction' | 'guide'): void;
 	setStep(timeline: string, i: number): void;
 }
 
@@ -147,7 +149,7 @@ export function lessonStore(lesson: string, init: Record<string, Val> = {}, link
   });
   const start = () => {if(eases.size&&!running){running=true;loop(performance.now())}};
   const store=createStore<LessonState>()((set,get)=>({
-   vals:initial, shown:initial, hot:new Set(), step:initialStep,
+   vals:initial, shown:initial, hot:new Set(), hotSource:null, step:initialStep,
    radialKeys:new Set(groups.filter(g=>g.rangePolicy==='radial').flatMap(g=>g.keys)),
    set:(key,v,how='cut')=>get().setMany({[key]:v},how),
    setMany:(input,how='cut',ease=[])=>{
@@ -212,7 +214,11 @@ export function lessonStore(lesson: string, init: Record<string, Val> = {}, link
     const i=boundIndex(get().step[id]??0,count-1);
     get().setStep(id,i);
    },
-   setHot:ids=>set({hot:new Set(ids)}),
+   setHot:(ids,source='interaction')=>{
+    const st=get(),next=new Set(ids),hotSource=next.size?source:null;
+    const same=next.size===st.hot.size&&[...next].every(id=>st.hot.has(id));
+    if(!same||hotSource!==st.hotSource)set({hot:same?st.hot:next,hotSource});
+   },
    setStep:(id,i)=>{
     const index=boundIndex(i,bounds.get(id)??Number.MAX_SAFE_INTEGER);
     const a=adapters[id];
@@ -261,11 +267,11 @@ export function useStep(lesson: string, timeline: string): number {
  */
 export function hotOn(lesson: string, id: string): void {
 	const s = lessonStore(lesson).getState();
-	if (!(s.hot.size === 1 && s.hot.has(id))) s.setHot([id]);
+	s.setHot([id], 'interaction');
 }
 
 /** Clears the highlight if `id` is lit, so leaving one object never wipes a highlight another view set meanwhile. */
 export function hotOff(lesson: string, id: string): void {
 	const s = lessonStore(lesson).getState();
-	if (s.hot.has(id)) s.setHot([]);
+	if (s.hotSource === 'interaction' && s.hot.has(id)) s.setHot([]);
 }

@@ -596,7 +596,6 @@ export function useHoverable(lesson: string, id: string | undefined, rank: numbe
 			const top = Math.max(...e.intersections.map((i) => rankOf(i.object)));
 			if (rank < top) return;
 			e.stopPropagation();
-			if (reg.hover.get().object === id && lessonStore(lesson).getState().hot.has(id)) return;
 			hotOn(lesson, id);
 			reg.hover.set({ object: id });
 		};
