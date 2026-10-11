@@ -4,6 +4,8 @@ import { t } from '../i18n/core';
 import { useLocale } from '../i18n/react';
 import { lessonStore } from './store';
 import { boundIndex } from './links';
+import { plain, rich } from './rich';
+/** `text` may carry the inline markup of rich.tsx (`**bold**`, `*em*`); it is rendered, never shown literally. */
 export interface TimelineStep {id:string;text:string;phases?:number;focus?:string}
 type Store=ReturnType<typeof lessonStore>;
 type Guide={focus:string|undefined;order:number};
@@ -56,9 +58,9 @@ export function Timeline({lesson,id,steps}:{lesson:string;id:string;steps:readon
  return <div className="lab-timeline not-content" data-timeline={id}>
   <div className="lab-timeline-controls">
    <button type="button" aria-disabled={i===0} onClick={()=>write(i-1)}>{t(locale,'linked.back')}</button>
-   <input type="range" min={0} max={steps.length-1} step={1} value={i} aria-label={t(locale,'linked.step')} aria-valuetext={steps[i].text} onChange={e=>write(Number(e.currentTarget.value))}/>
+   <input type="range" min={0} max={steps.length-1} step={1} value={i} aria-label={t(locale,'linked.step')} aria-valuetext={plain(steps[i].text)} onChange={e=>write(Number(e.currentTarget.value))}/>
    <button type="button" aria-disabled={i===steps.length-1} onClick={()=>write(i+1)}>{t(locale,'linked.next')}</button>
   </div>
-  <p aria-live="polite" aria-atomic="true">{i+1} / {steps.length} · {steps[i].text}</p>
+  <p aria-live="polite" aria-atomic="true">{i+1} / {steps.length} · {rich(steps[i].text)}</p>
  </div>;
 }
