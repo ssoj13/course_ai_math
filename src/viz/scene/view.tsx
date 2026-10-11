@@ -6,12 +6,13 @@
 import { Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
+import { AdditiveBlending, BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Vector2, Vector3, type Object3D } from 'three';
 import { sub, to3, type V } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitRadius, ndcToPx, rayPlane, worldPerPx } from './drag';
 import { gateWheel, placeLabels, useStage, type Draggable } from './handles';
+import { hotAlpha, lightened } from './look';
 import { DRAW_MS, reducedMotion, springProgress } from './motion';
 
 // Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
@@ -147,20 +148,28 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 	const core = useRef<LineObj>(null);
 	const out = useRef<LineObj>(null);
 	const glow = useRef<LineObj>(null);
+	const inner = useRef<LineObj>(null);
+	const started = useRef(performance.now());
+	useLayoutEffect(()=>{started.current=performance.now();},[hot]);
+	useFrame(({ invalidate }) => {
+		if (!hot || !glow.current) return;
+		glow.current.material.opacity = hotAlpha((performance.now() - started.current) / 1000, reducedMotion());
+		if (!reducedMotion()) invalidate();
+	});
 	// Last per-frame override (e.g. a beam trimmed inside its head). The hot outline and halo mount on hover with drei's
 	// untrimmed `points`, so they get the override as soon as they exist, not on the next geometry change.
 	const last = useRef<number[] | null>(null);
 	useImperativeHandle(fwd, () => ({
 		setPositions(flat) {
 			last.current = flat;
-			for (const l of [core.current, out.current, glow.current]) l?.geometry.setPositions(flat);
+			for (const l of [core.current, out.current, glow.current, inner.current]) l?.geometry.setPositions(flat);
 		},
 		geometry: () => core.current?.geometry ?? null,
 	}));
 	// Runs after the children's layout effects (drei sets `points` there), so the override wins on mount.
 	useLayoutEffect(() => {
 		const f = last.current;
-		if (f) for (const l of [out.current, glow.current]) l?.geometry.setPositions(f);
+		if (f) for (const l of [out.current, glow.current, inner.current]) l?.geometry.setPositions(f);
 	}, [hot, halo]);
 	// New `points` reset every line; the owner re-applies its override on the next frame.
 	useLayoutEffect(() => {
@@ -177,11 +186,13 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 					color={hot ? pal.hot : color}
 					lineWidth={hot ? Math.max(STYLE.halo, outW + 6) : STYLE.halo}
 					opacity={hot ? STYLE.hotHaloA : STYLE.haloA}
+					blending={AdditiveBlending}
 					renderOrder={order - 0.2}
 				/>
 			)}
+			{halo && <SLine ref={inner} {...common} color={color} lineWidth={STYLE.inner} opacity={STYLE.innerA} blending={AdditiveBlending} renderOrder={order - .15} />}
 			{hot && <SLine ref={out} {...common} color={pal.hot} lineWidth={outW} renderOrder={order - 0.1} />}
-			<SLine ref={core} {...common} color={color} lineWidth={width} opacity={opacity} renderOrder={order} />
+			<SLine ref={core} {...common} color={lightened(color)} lineWidth={width} opacity={opacity} renderOrder={order} />
 		</>
 	);
 });

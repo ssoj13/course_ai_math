@@ -6,7 +6,7 @@
  */
 import { OrbitControls, OrthographicCamera, PerspectiveCamera, View } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { MOUSE, OrthographicCamera as OrthoCam, PerspectiveCamera as PerspCam, TOUCH, Vector3 } from 'three';
 import type { V } from '../geom';
 import { usePalette } from '../palette';
@@ -17,8 +17,12 @@ import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, 
 import { ensureSceneHost } from './SceneHost';
 import { DragLayer, DrawIn, GizmoSync, LabelLayer } from './view';
 
+import { LookCtx, type Look } from './look';
+const HoloLayer = lazy(() => import('./HoloLayer').then(m=>({default:m.HoloLayer})));
+
 export interface StageProps {
 	lesson: string;
+	look?: Look;
 	mode: '2d' | '3d';
 	extent: number;
 	children: React.ReactNode;
@@ -266,7 +270,7 @@ export function Stage(p: StageProps): React.JSX.Element {
 	const e = p.extent;
 	const proj = p.mode === '2d' ? 'ortho' : (p.proj ?? 'persp');
 	return (
-		<div className="lab-stage" ref={ref} style={{ '--lab-vp-inset': `${inset}px` } as React.CSSProperties}>
+		<div className="lab-stage" data-look={p.look ?? "holo"} ref={ref} style={{ '--lab-vp-inset': `${inset}px` } as React.CSSProperties}>
 			<View className="lab-stage-view">
 				{/* The provider sits inside the View: context does not cross drei's tunnel into the shared Canvas. */}
 				<StageCtx.Provider value={reg}>
@@ -306,7 +310,10 @@ export function Stage(p: StageProps): React.JSX.Element {
 					{p.mode === '3d' && <GizmoSync />}
 					{p.drawIn && <DrawIn />}
 					{/* Scene code reads the drawn values: eased writes glide here while readouts jump (store.ts). */}
-					<ShownCtx.Provider value={true}>{p.children}</ShownCtx.Provider>
+					<ShownCtx.Provider value={true}><LookCtx.Provider value={p.look ?? 'holo'}>
+						<Suspense fallback={null}><HoloLayer look={p.look ?? 'holo'}>{p.children}</HoloLayer></Suspense>
+						{p.children}
+					</LookCtx.Provider></ShownCtx.Provider>
 				</StageCtx.Provider>
 			</View>
 			{/* Sibling of the View div (see interface note): DOM here never blocks scene raycasts outside its own boxes. */}

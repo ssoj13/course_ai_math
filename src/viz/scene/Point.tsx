@@ -7,11 +7,12 @@
  * the rim; the disc keeps its color).
  */
 import { useRef } from 'react';
-import { CircleGeometry, type Group } from 'three';
+import { AdditiveBlending, CircleGeometry, type Group } from 'three';
 import { to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot, useVals, type LessonState } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
+import { lightened } from './look';
 import { usePxScale } from './view';
 
 export interface PointProps {
@@ -26,11 +27,11 @@ export interface PointProps {
 	/** Name used in the keyboard button label ("Move point P"); defaults to `id`. */
 	label?: string;
 	role?: SceneRole;
+	size?: number;
 }
 
 // Unit disc scaled to the pixel radius per frame; shared by every point (the rim and ring are scaled copies).
 const DISC = new CircleGeometry(1, 28);
-const RIM = (STYLE.pointR + STYLE.rim) / STYLE.pointR;
 const RING = (STYLE.pointR + STYLE.rim + STYLE.hotPad) / STYLE.pointR;
 
 export function Point(p: PointProps): React.JSX.Element {
@@ -53,19 +54,17 @@ export function Point(p: PointProps): React.JSX.Element {
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.point);
 	const dot = useRef<Group>(null);
 	// Draw-in: points pop in over the second half of the reveal.
-	usePxScale(dot, (r) => STYLE.pointR * Math.min(1, Math.max(0, r * 2 - 1)), reg.mode === '3d');
+	usePxScale(dot, (r) => (p.size ? p.size / 2 : STYLE.pointR) * Math.min(1, Math.max(0, r * 2 - 1)), reg.mode === '3d');
 	return (
 		<group ref={dot} position={to3(at)} {...hover}>
+			<mesh geometry={DISC} scale={STYLE.pointHalo / (p.size ?? 2 * STYLE.pointR)} renderOrder={2.6}><meshBasicMaterial color={pal[p.role ?? 'ink']} blending={AdditiveBlending} opacity={STYLE.pointHaloA} transparent depthWrite={false} /></mesh>
 			{hot && (
 				<mesh geometry={DISC} scale={RING} renderOrder={2.7}>
 					<meshBasicMaterial color={pal.hot} transparent depthWrite={false} />
 				</mesh>
 			)}
-			<mesh geometry={DISC} scale={RIM} renderOrder={2.8}>
-				<meshBasicMaterial color={pal.bgBottom} transparent depthWrite={false} />
-			</mesh>
 			<mesh geometry={DISC} renderOrder={2.9}>
-				<meshBasicMaterial color={pal[p.role ?? 'ink']} transparent depthWrite={false} />
+				<meshBasicMaterial color={lightened(pal[p.role ?? 'ink'])} transparent depthWrite={false} />
 			</mesh>
 		</group>
 	);

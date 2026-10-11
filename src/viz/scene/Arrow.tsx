@@ -6,9 +6,10 @@
  * around shaft and head; its own color stays). Data is y-up in 3D (three.js convention).
  */
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useContext, useMemo, useRef } from 'react';
 import { BufferGeometry, ConeGeometry, DoubleSide, Float32BufferAttribute, Quaternion, Vector3, type Group, type Mesh } from 'three';
 import { norm, scale, sub, to3, type V } from '../geom';
+import { LookCtx, assertSubject } from './look';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
@@ -113,6 +114,7 @@ const PAD_OUT = STYLE.hotPad;
 const PAD_HALO = (STYLE.halo - STYLE.core) / 2;
 
 export function Arrow(p: ArrowProps): React.JSX.Element {
+ assertSubject(useContext(LookCtx), true);
 	const reg = useStage();
 	const pal = usePalette();
 	const hot = useHot(p.lesson, p.id);

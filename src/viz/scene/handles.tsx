@@ -18,6 +18,8 @@ import { roleVar, type SceneRole } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState, type Val, type WriteHow } from '../store';
 import { hitHandle, keyDelta, moved, pushAway } from './drag';
 
+import { useMirror } from './look';
+
 type Vals = LessonState['vals'];
 
 export interface Draggable {
@@ -367,6 +369,8 @@ export function usePos(lesson: string, v: V | string): V {
  * inline function does not re-register the handle on every render.
  */
 export function useDraggable(d: Draggable | null): void {
+	const mirror = useMirror();
+	if (mirror) d = null;
 	const reg = useStage();
 	const at = useRef(d?.at);
 	at.current = d?.at;
@@ -427,6 +431,8 @@ function KeyHandle({ reg, d }: { reg: StageReg; d: Draggable }): React.JSX.Eleme
  * so inline functions are fine; the overlay re-renders only when text, color, hot id or offsets change.
  */
 export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
+	const mirror = useMirror();
+	if (mirror) spec = null;
 	const reg = useStage();
 	const id = useId();
 	const [owner] = useState(() => ({}));
@@ -583,6 +589,8 @@ export interface HoverProps {
  * beam that lies over a band hands the hover back to the band.
  */
 export function useHoverable(lesson: string, id: string | undefined, rank: number): HoverProps {
+	const mirror = useMirror();
+	if (mirror) id = undefined;
 	const reg = useStage();
 	return useMemo(() => {
 		if (id === undefined) return {};

@@ -7,7 +7,8 @@
  * Drawn first and without depth writes, so anything coplanar draws on top.
  */
 import { Grid as ShaderGrid } from '@react-three/drei';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { LookCtx, useMirror } from './look';
+import { useContext, useLayoutEffect, useMemo, useRef } from 'react';
 import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
 import { tickText, tickValues } from '../geom';
 import { STYLE, usePalette } from '../palette';
@@ -44,9 +45,14 @@ function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' 
 	return null;
 }
 
-export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
+export function Grid(props: GridProps): React.JSX.Element | null {
+ const mirror = useMirror();
+ return mirror ? null : <GridContent {...props}/>;
+}
+function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
 	const pal = usePalette();
+	const studio = useContext(LookCtx) === 'clay';
 	const is3d = reg.mode === '3d';
 	const mesh = useRef<Mesh>(null);
 	// drei's material writes depth; the grid must never hide what is drawn on or under it.
@@ -82,8 +88,8 @@ export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true
 				sectionSize={step}
 				cellThickness={minor ? 1 : 0}
 				sectionThickness={1}
-				cellColor={pal.gridMinor}
-				sectionColor={pal.grid}
+				cellColor={studio ? '#b9bfc9' : pal.gridMinor}
+				sectionColor={studio ? '#b9bfc9' : pal.grid}
 				fadeDistance={is3d ? e * 7 : 1e4}
 				fadeStrength={is3d ? 1.6 : 0}
 				side={DoubleSide}

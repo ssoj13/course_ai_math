@@ -20,10 +20,16 @@ import { Icon, Overlays } from './Header';
 import { frameMismatch, frameOf } from './chips';
 import { NPanel, rowRanges, useTip, type Row } from './NPanel';
 import { Stage } from './Stage';
+import { Instruments } from './Instruments';
+import { FormulaPlate } from './FormulaPlate';
 import { StatusBar, type StatusSpec } from './StatusBar';
 
 export interface ViewportCardProps {
 	lesson: string;
+	look?: 'holo' | 'clay';
+	instruments?: boolean;
+	angleKey?: string;
+	formula?: ReactNode;
 	/** Card id, unique per lesson: scopes the overlay flags. */
 	id: string;
 	/** Scene name in the header, e.g. "LC-1 · Ledger". */
@@ -143,7 +149,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 
 	const is3d = p.mode === '3d';
 	return (
-		<div className="lab-vp-card" ref={root}>
+		<div className="lab-vp-card" data-hud={p.instruments ? "" : undefined} data-formula={p.formula ? "" : undefined} style={{"--lab-vp-inset":`${inset}px`} as React.CSSProperties} ref={root}>
 			<header className="lab-vp-head">
 				{/* Indicators, not controls: the view type and a 2D view's projection are fixed by the scene. */}
 				<span className="lab-vp-seg" role="img" aria-label={is3d ? '3D view' : '2D view'}>
@@ -192,10 +198,11 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 				)}
 			</header>
 			<div className="lab-vp-body">
-				<Stage lesson={p.lesson} mode={p.mode} extent={p.extent} reg={reg} proj={proj} center={p.center} inset={inset} drawIn={p.drawIn}>
+				<Stage look={p.look} lesson={p.lesson} mode={p.mode} extent={p.extent} reg={reg} proj={proj} center={p.center} inset={inset} drawIn={p.drawIn} overlay={<>{p.instruments && <Instruments reg={reg} lesson={p.lesson} angleKey={p.angleKey} rows={rows}/>}</>}>
 					{p.children}
 				</Stage>
 			</div>
+			{p.formula && <FormulaPlate>{p.formula}</FormulaPlate>}
 			{hasPanel && <NPanel id={panelId} lesson={p.lesson} rows={rows} reg={reg} open={open} />}
 			<StatusBar reg={reg} lesson={p.lesson} spec={p.status ?? {}} />
 			{tip.node}

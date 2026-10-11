@@ -5,14 +5,16 @@
  * plain quad in the plane of a and b (area |a x b| has no sign). Collinear or zero vectors span no area and draw
  * nothing (no throw: a reader can drag into that). `Quad` here is also the drawing of AreaTile.
  */
-import { useLayoutEffect, useMemo, useRef } from 'react';
-import { DoubleSide, type Group, type MeshBasicMaterial } from 'three';
+import { lazy, Suspense, useLayoutEffect, useMemo, useRef } from 'react';
+import { Float32BufferAttribute, type Group } from 'three';
 import { add, cross, hatch, norm, scale, signedArea2, to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useHoverable, useLabel, usePos } from './handles';
 import { SLine, Stroke, useDynGeo, useReveal, useWorldPx, writeGeo } from './view';
 
+import { Point } from './Point';
+const Glass = lazy(()=>import('./Glass').then(m=>({default:m.Glass})));
 const QUAD_INDEX = [0, 1, 2, 0, 2, 3];
 const O2: V = [0, 0];
 const O3: V = [0, 0, 0];
@@ -45,34 +47,23 @@ export function Quad(p: QuadProps): React.JSX.Element {
 		return { c, edge: [...c, c[0]], center: add(o, scale(add(u, v), 0.5)) };
 	}, [o, u, v]);
 	const geo = useDynGeo(4, QUAD_INDEX);
-	useLayoutEffect(() => writeGeo(geo, g.c), [geo, g]);
+	useLayoutEffect(() => { writeGeo(geo, g.c); geo.setAttribute('uv', new Float32BufferAttribute([0,0,1,0,1,1,0,1],2)); }, [geo, g]);
 	const step = useWorldPx(STYLE.hatchPx, g.center);
 	const lines = useMemo(() => (p.neg && step ? hatch(o, u, v, step).map(to3) : null), [p.neg, step, o, u, v]);
 	useLabel(p.text === undefined ? null : { lesson: p.lesson, text: p.text, role: p.role, hot: p.id, at: () => g.center });
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
-	const fill = useRef<MeshBasicMaterial>(null);
 	const group = useRef<Group>(null);
 	useReveal((r) => {
-		if (fill.current) fill.current.opacity = STYLE.fillA * r;
 		if (group.current) group.current.visible = r > 0;
 	});
 	const color = pal[p.role];
 	return (
 		<group ref={group} {...hover}>
 			<mesh geometry={geo} frustumCulled={false} renderOrder={0}>
-				<meshBasicMaterial
-					ref={fill}
-					color={color}
-					transparent
-					opacity={STYLE.fillA}
-					depthWrite={false}
-					side={DoubleSide}
-					polygonOffset
-					polygonOffsetFactor={1}
-					polygonOffsetUnits={1}
-				/>
+				<Suspense fallback={<meshBasicMaterial color={color} transparent opacity={STYLE.glassBottomA} depthWrite={false}/>}><Glass color={color} hot={hot} units={[norm(u),norm(v)]} px={step ? STYLE.hatchPx/step : 30}/></Suspense>
 			</mesh>
-			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} halo={false} order={1} />
+			<Stroke points={g.edge} color={color} hot={hot} width={STYLE.edge} halo order={1} />
+			{g.c.map((at,i)=><Point key={i} lesson={p.lesson} id={p.id} size={5} at={at} drag={false} role={p.role}/>)}
 			{lines && lines.length > 0 && (
 				<SLine points={lines} segments color={color} lineWidth={STYLE.hatchW} transparent depthWrite={false} renderOrder={1} />
 			)}

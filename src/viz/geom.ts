@@ -1,4 +1,19 @@
 /** Pure vector helpers for lesson scenes. Arrays in/out, any dimension unless noted; no DOM, no three. */
+/** World-unit glass grid; zero means the fill alone is readable at this scale. */
+export function gridStep(pxPerUnit: number): number { return pxPerUnit < 14 ? 0 : pxPerUnit >= 80 ? .5 : 1; }
+/** Measured side tick law; endpoints remain exact, labels disappear before they crowd. */
+export function rulerTicks(length: number, pxPerUnit: number): {value:number;major:boolean;label:boolean}[] {
+ if(!Number.isFinite(length)||length<0||pxPerUnit<=0)return [];
+ const step=pxPerUnit>=40?.5:1;
+ return Array.from({length:Math.floor(length/step)+1},(_,i)=>{const value=i*step,major=Number.isInteger(value);return {value,major,label:major&&pxPerUnit>=24};});
+}
+export function dimensionLayout(a: V,b: V,wpp: number,normal: V=[0,0,1]): {a:number[];b:number[];mid:number[];out:number[]} {
+ const d=sub(b,a),l=norm(d);
+ const n=rightOf(a,b,a.length===3?normal:undefined);
+ const out=l&&n?scale(n,14*wpp):d.map(()=>0);
+ const aa=add(a,out),bb=add(b,out);
+ return {a:aa,b:bb,mid:scale(add(aa,bb),.5),out};
+}
 export type V = readonly number[];
 
 /** Silent truncation by `zip` would hide a 2D/3D mix-up in a lesson, so mismatches are loud. */

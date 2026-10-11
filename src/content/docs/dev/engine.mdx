@@ -63,6 +63,18 @@ focused tip along z.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna
 aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
 
+import { DemoHolo, DemoFloor, DemoClay, ROWSHOLO } from "../../../viz/demo/holo";
+
+## Holographic measurements
+
+Drag A to change the angle. The squares, measured side lengths, dial and equation all read the same triangle.
+
+<SceneIsland caption="Holographic law of cosines with glass area squares, measured sides and linked equation" rows={ROWSHOLO} hud formula><DemoHolo client:only="react" /></SceneIsland>
+
+<SceneIsland caption="Reflection across y = 0, with real view instruments" hud><DemoFloor client:only="react" /></SceneIsland>
+
+<SceneIsland caption="Nine unit tiles and eight cubes, counted in a clay studio" hud><DemoClay client:only="react" /></SceneIsland>
+
 ## Lesson primitives
 
 Vertex drags with custom mappings: B slides along the x axis and sets the length a; A moves in polar terms and sets b

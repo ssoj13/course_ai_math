@@ -80,7 +80,7 @@ export default defineConfig({
 		// The limit is set just above it so any
 		// further growth warns; the real gate is the per-page gzip budget of scripts/size-report.ts (Task 11, viz core
 		// <= 300 kB gz). The chunk loads only on scene pages.
-		build: { chunkSizeWarningLimit: 1030 },
+		build: { chunkSizeWarningLimit: 1015 },
 	},
 	integrations: [
 		starlight({

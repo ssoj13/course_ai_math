@@ -4,8 +4,9 @@
  * projection shadow band (a soft 6 px translucent strip on the target line). Beams and bands draw in from `a`.
  */
 import { useFrame } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useContext, useMemo, useRef } from 'react';
 import { to3, type V } from '../geom';
+import { LookCtx, assertSubject } from './look';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useHoverable, usePos, useStage } from './handles';
@@ -26,6 +27,7 @@ export interface SegmentProps {
 const DASH: readonly [number, number] = [7, 5];
 
 export function Segment(p: SegmentProps): React.JSX.Element {
+ assertSubject(useContext(LookCtx), !p.dashed && !p.band);
 	if (p.dashed && p.band) throw new Error(`Segment "${p.id}": a segment is either dashed or a band`);
 	const reg = useStage();
 	const pal = usePalette();

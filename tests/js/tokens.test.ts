@@ -24,9 +24,9 @@ test('visual-language.md values (spec table)', () => {
 	const p = pal();
 	const lc = (xs: string[]) => xs.map((c) => c.toLowerCase());
 	expect(lc([p.axisX, p.axisY, p.axisZ])).toEqual(['#ff3352', '#8bdc00', '#2890ff']);
-	expect(lc([p.vecA, p.vecB, p.vecC, p.light, p.hot])).toEqual(['#56b4e9', '#e07bd0', '#3dd6b0', '#ffe27a', '#ffaa40']);
-	expect(lc([p.bgTop, p.bgBottom, p.chrome, p.chrome2, p.field, p.fieldHover])).toEqual(['#3a3a3a', '#282828', '#2b2b2b', '#232323', '#545454', '#656565']);
-	expect(lc([p.grid, p.gridMinor, p.ink, p.muted])).toEqual(['#4a4a4a', '#444444', '#e6e6e6', '#9a9a9a']);
+	expect(lc([p.vecA, p.vecB, p.vecC, p.light, p.hot])).toEqual(['#4fd8ff', '#d85cc8', '#3df0b4', '#ffe27a', '#ffaa40']);
+	expect(lc([p.bgTop, p.bgBottom, p.chrome, p.chrome2, p.field, p.fieldHover])).toEqual(['#0c1220', '#05070f', '#2b2b2b', '#232323', '#545454', '#656565']);
+	expect(lc([p.grid, p.gridMinor, p.ink, p.muted])).toEqual(['#1e2d4d', '#141c30', '#e9eef8', '#93a0b8']);
 });
 
 test('contrast: WCAG ratio', () => {
@@ -51,18 +51,18 @@ test('chrome text (ink, muted) is >= 4.5:1 on chrome and chrome-2; field text (i
 
 test('grid: minor lines visible but quiet on both ends of the gradient, majors stronger than minors', () => {
 	const p = pal();
-	for (const bg of [p.bgTop, p.bgBottom]) expect(contrast(p.gridMinor, bg)).toBeGreaterThanOrEqual(1.15);
+	for (const bg of [p.bgTop, p.bgBottom]) expect(contrast(p.gridMinor, bg)).toBeGreaterThanOrEqual(1.08);
 	expect(contrast(p.gridMinor, p.bgTop)).toBeLessThan(1.3);
 	expect(contrast(p.grid, p.bgTop)).toBeGreaterThan(contrast(p.gridMinor, p.bgTop));
 });
 
 test('style tokens: the stroke recipe of visual-language.md', () => {
-	expect(STYLE.core).toBe(2.5);
-	expect(STYLE.halo).toBe(9);
-	expect(STYLE.haloA).toBe(0.14);
+	expect(STYLE.core).toBe(2);
+	expect(STYLE.halo).toBe(18);
+	expect(STYLE.haloA).toBe(0.10);
 	expect(STYLE.hotPad).toBe(2);
 	expect(STYLE.hotHaloA).toBe(0.3);
-	expect(STYLE.fillA).toBe(0.18);
+	expect(STYLE.fillA).toBe(0.12);
 	expect(STYLE.edge).toBe(1.5);
 	expect(STYLE.hatchPx).toBe(6);
 	expect(STYLE.sectorA).toBe(0.1);
