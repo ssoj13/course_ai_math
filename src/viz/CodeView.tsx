@@ -1,6 +1,7 @@
 import { useStore } from 'zustand';
 import { hotOn,hotOff,lessonStore } from './store';
-type Base={code:string;lang:'python'|'ts'};
+/** `lang` only labels the block (`data-lang`); there is no runtime highlighter (AGENTS.md Task 7). */
+type Base={code:string;lang:'python'|'ts'|'glsl'};
 export type CodeViewProps=Base&({lesson:string;lines:Record<number,string>}|{lesson?:never;lines?:never});
 export function CodeView(p:CodeViewProps):React.JSX.Element {
  return p.lines?<LinkedCode {...p} lesson={p.lesson!} lines={p.lines}/>:<pre className="lab-code not-content" data-lang={p.lang}><code>{p.code}</code></pre>;

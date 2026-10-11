@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { fit2d, fit3d, FILL_3D, MARGIN_2D, type Bounds } from '../../src/viz/scene/framing';
+import { fit2d, fit3d, FILL_3D, MARGIN_2D, stepRefitDelay, type Bounds } from '../../src/viz/scene/framing';
 import { hintSegments } from '../../src/viz/scene/StatusBar';
 import { separate, type Placed } from '../../src/viz/scene/handles';
 
@@ -58,4 +58,12 @@ test('label separation: an overlapping label moves to the nearest free slot; tic
 	expect(list[1].x).toBe(105);
 	expect(list[1].y).toBe(102 + 12 + 2);
 	expect([list[2].x, list[2].y]).toEqual([100, 100]);
+});
+
+test('a new timeline step re-measures the home view after its step motion; bookkeeping keys and reduced motion', () => {
+	expect(stepRefitDelay({ derive: 0 }, { derive: 0, 'derive:max': 3 }, 180, false)).toBeNull();
+	expect(stepRefitDelay({ derive: 0 }, { derive: 1, 'derive:max': 1, 'derive:phases': 1 }, 180, false)).toBe(240);
+	expect(stepRefitDelay({ cut: 8 }, { cut: 9, 'cut:phases': 3 }, 180, false)).toBe(600);
+	expect(stepRefitDelay({ derive: 7 }, { derive: 8 }, 180, true)).toBe(0);
+	expect(stepRefitDelay({ a: 1 }, { a: 1 }, 180, false)).toBeNull();
 });

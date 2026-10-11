@@ -67,7 +67,7 @@ viewport follow the Starlight theme.
 | `ink` / `muted` | `#E6E6E6` / `#9A9A9A` | labels, ticks, chrome text |
 | `axisX` / `axisY` / `axisZ` | `#FF3352` / `#8BDC00` / `#2890FF` | Blender's own axis colors (gizmo, axes, component legs) |
 | `vecA` | `#56B4E9` (sky blue) | vector a |
-| `vecB` | `#E07BD0` (orchid) | vector b — chosen to clash with neither the red X axis nor the orange selection |
+| `vecB` | `#E06BC8` (orchid) | vector b — chosen to clash with neither the red X axis nor the orange selection; ≥ 15 ΔE from vecA under protan/deutan (`tests/js/cvd.test.ts`; was #E07BD0, 11.5 ΔE protan) |
 | `vecC` | `#3DD6B0` (bluish green) | results: a−b, a+b, projections |
 | `light` | `#FFE27A` | lamps, the N·L light |
 | `hot` | `#FFAA40` | active outline/halo (Blender selection orange) |

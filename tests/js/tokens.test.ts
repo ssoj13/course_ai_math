@@ -24,7 +24,7 @@ test('visual-language.md values (spec table)', () => {
 	const p = pal();
 	const lc = (xs: string[]) => xs.map((c) => c.toLowerCase());
 	expect(lc([p.axisX, p.axisY, p.axisZ])).toEqual(['#ff3352', '#8bdc00', '#2890ff']);
-	expect(lc([p.vecA, p.vecB, p.vecC, p.light, p.hot])).toEqual(['#56b4e9', '#e07bd0', '#3dd6b0', '#ffe27a', '#ffaa40']);
+	expect(lc([p.vecA, p.vecB, p.vecC, p.light, p.hot])).toEqual(['#56b4e9', '#e06bc8', '#3dd6b0', '#ffe27a', '#ffaa40']);
 	expect(lc([p.bgTop, p.bgBottom, p.chrome, p.chrome2, p.field, p.fieldHover])).toEqual(['#3a3a3a', '#282828', '#2b2b2b', '#232323', '#545454', '#656565']);
 	expect(lc([p.grid, p.gridMinor, p.ink, p.muted])).toEqual(['#4a4a4a', '#444444', '#e6e6e6', '#9a9a9a']);
 });

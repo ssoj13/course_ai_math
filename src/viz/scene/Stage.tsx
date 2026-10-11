@@ -15,11 +15,11 @@ import { usePalette } from '../palette';
 import { lessonStore, ShownCtx } from '../store';
 import { Gizmo, XYCorner } from './Gizmo';
 import { createStage, DragKeys, Labels, StageCtx, type StageReg } from './handles';
-import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, VIEW_MS, type Pose } from './motion';
+import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, SPRING_MS, VIEW_MS, type Pose } from './motion';
 import { ensureSceneHost } from './SceneHost';
 import { useSizeState, viewVisible } from './sizeModes';
 import { contentBox, DragLayer, DrawIn, GizmoSync, LabelLayer } from './view';
-import { fit2d, fit3d, MARGIN_2D, type Bounds } from './framing';
+import { fit2d, fit3d, MARGIN_2D, stepRefitDelay, type Bounds } from './framing';
 
 export interface StageProps {
 	lesson: string;
@@ -277,20 +277,21 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 	};
 	useLayoutEffect(refit, [w, h, inset, camera, controls, e]);
 
-	useLayoutEffect(() => {
-		const go = (to: Pose) => {
-			if (!controls) return;
-			const from = current();
-			if (reducedMotion()) {
-				anim.current = null;
-				apply(to);
-				pose.current = current();
-				invalidate();
-				return;
-			}
-			anim.current = { from, to, t0: performance.now() };
+	/** Smooth view to `to` (Blender's smooth view with the shared spring), a cut under reduced motion. */
+	const go = (to: Pose) => {
+		if (!controls) return;
+		const from = current();
+		if (reducedMotion()) {
+			anim.current = null;
+			apply(to);
+			pose.current = current();
 			invalidate();
-		};
+			return;
+		}
+		anim.current = { from, to, t0: performance.now() };
+		invalidate();
+	};
+	useLayoutEffect(() => {
 		reg.nav = {
 			reset: () => {
 				measure();
@@ -357,6 +358,49 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 		refit();
 		again();
 	}, -1);
+	// Step-revealed geometry (LC-0/LC-2 tiles, DP-1's squares and rectangle) arrives after the settling window: while
+	// the view is still home (the reader has not zoomed, panned or orbited), a timeline step re-measures the figure once
+	// its step motion has played and glides to the new View All. A reader's navigation clears `atHome`, so their view
+	// is never taken away; a handle drag does not navigate, so the home view keeps following the figure on the next step.
+	const stepRefit = useRef(0);
+	useEffect(() => {
+		const lesson = reg.card?.lesson;
+		if (!lesson) return;
+		return lessonStore(lesson).subscribe((s, prev) => {
+			if (s.step === prev.step) return;
+			const delay = stepRefitDelay(prev.step, s.step, SPRING_MS, reducedMotion());
+			if (delay === null) return;
+			stepRefit.current = performance.now() + delay;
+			invalidate();
+		});
+	}, [reg, invalidate]);
+	useFrame(({ invalidate: again }) => {
+		const due = stepRefit.current;
+		if (!due || !controls || !h) return;
+		// The settling period measures on its own; a step during it needs nothing extra.
+		if (settle.current > 0 || !atHome.current) {
+			stepRefit.current = 0;
+			return;
+		}
+		if (performance.now() < due) {
+			again();
+			return;
+		}
+		stepRefit.current = 0;
+		const box = figure();
+		if (!moved(box, homeBox.current)) return;
+		measure(box);
+		const to = home();
+		// The zoom limits follow the new home zoom (as a resize would set them).
+		const f = fitZoom();
+		if (camera instanceof OrthoCam && mode === '2d') {
+			controls.minZoom = f * ZOOM_2D[0];
+			controls.maxZoom = f * ZOOM_2D[1];
+		}
+		fit.current = f;
+		go(to);
+		atHome.current = true;
+	});
 	// A pointer press on the stage (a handle drag, a pan) ends the settling: the view is the reader's now.
 	useEffect(() => {
 		const el = reg.el;

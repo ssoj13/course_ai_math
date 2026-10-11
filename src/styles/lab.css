@@ -306,7 +306,8 @@ h1#_top,
 	--viz-axis-y: #8bdc00;
 	--viz-axis-z: #2890ff;
 	--viz-vec-a: #56b4e9;
-	--viz-vec-b: #e07bd0;
+	/* #e07bd0 was 11.5 ΔE from vecA under protanopia (cvd.test.ts); 16 less green keeps the orchid and reaches 15.6. */
+	--viz-vec-b: #e06bc8;
 	--viz-vec-c: #3dd6b0;
 	--viz-light: #ffe27a;
 	--viz-hot: #ffaa40;

@@ -4,6 +4,14 @@ description: "Σ aᵢbᵢ = |a||b| cos θ, and what its sign means."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { DotScene, DotControls } from '../../../viz/lessons/dot-product';
+import { rowsFor } from '../../../viz/lessons/dot-product.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'dp']} />
 
 **Built on:** [Length, Σ notation and normalization](lesson:length) · [The law of cosines](lesson:law-of-cosines) · [Distance and Pythagoras](lesson:pythagoras)
 
@@ -26,14 +34,23 @@ $$
 Squared lengths, by Pythagoras over the components:
 
 $$
-\lvert \mathbf{a} \rvert^2 = 3^2 + 1^2 = 10, \qquad \lvert \mathbf{b} \rvert^2 = 1^2 + 2^2 = 5, \qquad \lvert \mathbf{a} - \mathbf{b} \rvert^2 = 2^2 + (-1)^2 = 5
+\begin{aligned}
+\lvert \mathbf{a} \rvert^2 &= 3^2 + 1^2 = 10 \\
+\lvert \mathbf{b} \rvert^2 &= 1^2 + 2^2 = 5 \\
+\lvert \mathbf{a} - \mathbf{b} \rvert^2 &= 2^2 + (-1)^2 = 5
+\end{aligned}
 $$
 
 Three squares, three sums. We have not used the angle yet.
 
 ## 2. The derivation
 
-{/* scene: DP-1 — derivation timeline: triangle a, b, a − b with squares on the sides; steps expand |a − b|² in components, strike |a|² and |b|² from both sides, and leave Σ aᵢbᵢ = |a||b| cos θ as two live, equal numbers */}
+The scene below walks through the whole derivation in nine steps. Step with ◀ ▶ (or the slider), and drag the tips of $\mathbf{a}$ and $\mathbf{b}$ at any step: every number in the formula, the table and the panel is computed from the arrows you see. The text after the scene walks through the same derivation slowly, in seven written steps with our fixed numbers.
+
+<SceneIsland caption="DP-1 · Derivation: the law of cosines and the components give the same number." rows={rowsFor(1, locale)}>
+  <DotScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<DotControls scene={1} locale={locale} client:load />
 
 **Step 1: the law of cosines.** In [lesson 0.5](lesson:law-of-cosines) the letters $a$, $b$, $c$ were *lengths* of sides: $c^2 = a^2 + b^2 - 2ab\cos\theta$, with $\theta$ the corner between the sides $a$ and $b$, opposite the side $c$. Here $\mathbf{a}$ and $\mathbf{b}$ are arrows, so their lengths are $\lvert \mathbf{a} \rvert$ and $\lvert \mathbf{b} \rvert$, and the side opposite the angle, $c$, is $\lvert \mathbf{a} - \mathbf{b} \rvert$. Substituting:
 
@@ -60,7 +77,10 @@ Check it on the first component: $a_1 = 3$, $b_1 = 1$: $(3 - 1)^2 = 4$ and $9 - 
 **Step 3: regroup.** Add the expansions over all components and sort the three kinds of term into three sums:
 
 $$
-\sum_i (a_i - b_i)^2 = \sum_i a_i^2 \;-\; 2 \sum_i a_i b_i \;+\; \sum_i b_i^2
+\begin{aligned}
+\sum_i (a_i - b_i)^2 &= \sum_i a_i^2 \;-\; 2 \sum_i a_i b_i \\
+&\quad +\; \sum_i b_i^2
+\end{aligned}
 $$
 
 With numbers: $4 + 1 = (9 + 1) - 2\,(3 \cdot 1 + 1 \cdot 2) + (1 + 4) = 10 - 10 + 5 = 5$. Correct.
@@ -70,7 +90,10 @@ Now look at the first and last sums. $\sum a_i^2$ is $\lvert \mathbf{a} \rvert^2
 **Step 4: face to face.** We now have two expressions for the same $\lvert \mathbf{a} - \mathbf{b} \rvert^2$. Set them equal:
 
 $$
-\lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2 \sum_i a_i b_i \;=\; \lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2\,\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert \cos\theta
+\begin{aligned}
+&\lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2 \sum_i a_i b_i \\
+&\quad= \lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2\,\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert \cos\theta
+\end{aligned}
 $$
 
 **Step 5: cancel.** $\lvert \mathbf{a} \rvert^2$ appears on both sides; subtract it from both. $\lvert \mathbf{b} \rvert^2$ too. Only the two cross terms survive:
@@ -85,7 +108,7 @@ $$
 \sum_i a_i b_i = \lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert \cos\theta
 $$
 
-Check with our numbers. Left: $5$. Right: $\sqrt{10} \cdot \sqrt{5} \cdot \cos 45^\circ = 7.071 \cdot 0.7071 = 5.000$. Two completely different computations, one number. Drag the arrows in the scene and the two readouts stay equal, always.
+Check with our numbers. Left: $5$. Right: $\sqrt{10} \cdot \sqrt{5} \cdot \cos 45^\circ = \sqrt{50} \cdot \tfrac{1}{\sqrt 2} = \sqrt{25} = 5$ exactly. With the rounded decimals you would type into a calculator, $7.071 \cdot 0.7071 \approx 5.000$: the small difference is rounding, not mathematics. Two completely different computations, one number. Drag the arrows in the scene and the two readouts stay equal, always.
 
 **Step 7: name it.** This quantity is the **dot product** of $\mathbf{a}$ and $\mathbf{b}$, written $\mathbf{a} \cdot \mathbf{b}$:
 
@@ -97,25 +120,32 @@ The left formula is how you *compute* it: multiply matching components, add. No 
 
 **Misconception to drop, the most important one:** "to compute $\mathbf{a} \cdot \mathbf{b}$ you need to know the angle." No. You need the components. The angle is what you *get out*: $\cos\theta = \mathbf{a} \cdot \mathbf{b} / (\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert)$. That is the whole reason the dot product exists.
 
+One honest exception, which the scene shows if you drag a tip onto the origin: a zero arrow has no direction, so it has no angle with anything. Then $\cos\theta$ and the route $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$ have nothing to compute (the readout shows a dash and says why), while the component sum still works and gives $0$.
+
 ## 3. One number, three faces
 
-{/* scene: DP-2 — sign explorer: drag a and b; the plane is pre-tinted by the sign of a·v, the perpendicular line is a·v = 0 (snap, ⊥ badge), the rectangle |a| × shadow(b) is the area face, hatched when negative; the three-faces strip shows sum, area and brightness as one number */}
+<SceneIsland caption="DP-2 · Sign: the plane is coloured by the sign of a·v; the rectangle |a| × shadow is the area face." rows={rowsFor(2, locale)}>
+  <DotScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<DotControls scene={2} locale={locale} client:load />
 
 **Face 1: a sum of products.** $\mathbf{a} \cdot \mathbf{b} = 3 \cdot 1 + 1 \cdot 2 = 5$. This is what the hardware does.
 
-**Face 2: an area.** Shine a light straight down onto the line of $\mathbf{a}$. The arrow $\mathbf{b}$ casts a shadow of length $\lvert \mathbf{b} \rvert \cos\theta$ on it ([lesson 0.4](lesson:unit-circle): cosine is the shadow of a length-1 stick, scaled by $\lvert \mathbf{b} \rvert$ here). Then
+**Face 2: an area.** Shine a light straight down onto the line of $\mathbf{a}$. The arrow $\mathbf{b}$ casts a shadow of length $\lvert \mathbf{b} \rvert \cos\theta$ on it ([lesson 0.4](lesson:unit-circle): cosine is the shadow of a length-1 stick, scaled by $\lvert \mathbf{b} \rvert$ here). So the dot product is the length of $\mathbf{a}$ times the shadow of $\mathbf{b}$ on $\mathbf{a}$:
 
 $$
-\mathbf{a} \cdot \mathbf{b} = \lvert \mathbf{a} \rvert \cdot (\lvert \mathbf{b} \rvert \cos\theta) = \text{length of } \mathbf{a} \times \text{shadow of } \mathbf{b} \text{ on } \mathbf{a}
+\mathbf{a} \cdot \mathbf{b} = \lvert \mathbf{a} \rvert \cdot (\lvert \mathbf{b} \rvert \cos\theta)
 $$
 
-That is the area of a rectangle with base $\lvert \mathbf{a} \rvert$ and height equal to the shadow. With our numbers: the shadow is $5 / \sqrt{10} \approx 1.581$ and the rectangle is $3.162 \times 1.581 = 5.00$. You have seen this rectangle before: it is exactly the strip that [lesson 0.5](lesson:law-of-cosines) cut out of the square on side $a$. The law of cosines reads $\lvert \mathbf{a} - \mathbf{b} \rvert^2 = \lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2\,(\mathbf{a} \cdot \mathbf{b})$: Pythagoras with two rectangles of area $\mathbf{a} \cdot \mathbf{b}$ removed.
+That is the area of a rectangle whose height is $\lvert \mathbf{a} \rvert$ and whose width is the shadow: in the scene it stands on the line of $\mathbf{a}$, as wide as the shadow, and reaches $\lvert \mathbf{a} \rvert$ away from that line. With our numbers the shadow is exactly $5 / \sqrt{10}$, so the rectangle is $\sqrt{10} \cdot (5 / \sqrt{10}) = 5$. With rounded decimals, $3.162 \times 1.581 \approx 5.00$. You have seen this rectangle before: it is exactly the strip that [lesson 0.5](lesson:law-of-cosines) cut out of the square on side $a$. The law of cosines reads $\lvert \mathbf{a} - \mathbf{b} \rvert^2 = \lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2\,(\mathbf{a} \cdot \mathbf{b})$: Pythagoras with two rectangles of area $\mathbf{a} \cdot \mathbf{b}$ removed.
 
-**Face 3: brightness.** If $\mathbf{a}$ and $\mathbf{b}$ were unit vectors, $\mathbf{a} \cdot \mathbf{b}$ would be $\cos\theta$ alone, and that is the brightness a Lambert surface shows. Section 5 makes this the whole scene.
+Its height stays $\lvert \mathbf{a} \rvert$ whatever you do with $\mathbf{b}$; only the width changes. Drag $\mathbf{b}$ onto the line of $\mathbf{a}$ and the shadow becomes all of $\lvert \mathbf{b} \rvert$: the rectangle is $\lvert \mathbf{a} \rvert$ tall and $\lvert \mathbf{b} \rvert$ wide, a square only when the two lengths match. Pointing $\mathbf{b}$ the opposite way gives the same rectangle on the other side of the origin, hatched.
+
+**Face 3: brightness.** If $\mathbf{a}$ and $\mathbf{b}$ were unit vectors, $\mathbf{a} \cdot \mathbf{b}$ would be $\cos\theta$ alone, and that is the brightness a Lambert surface shows. The strip under the scene shows this face as $\max(0, \cos\theta)$; section 5 makes it the whole scene.
 
 ### The sign
 
-Because $\lvert \mathbf{a} \rvert$ and $\lvert \mathbf{b} \rvert$ are never negative, the sign of $\mathbf{a} \cdot \mathbf{b}$ is the sign of $\cos\theta$:
+Because $\lvert \mathbf{a} \rvert$ and $\lvert \mathbf{b} \rvert$ are never negative, the sign of $\mathbf{a} \cdot \mathbf{b}$ is the sign of $\cos\theta$ (for two nonzero arrows):
 
 | angle between the arrows | cosine | dot product | meaning |
 |---|---|---|---|
@@ -123,25 +153,28 @@ Because $\lvert \mathbf{a} \rvert$ and $\lvert \mathbf{b} \rvert$ are never nega
 | exactly 90° | zero | zero | perpendicular |
 | more than 90° | negative | negative | the arrows disagree |
 
-Draw the line through the origin perpendicular to $\mathbf{a}$. Every $\mathbf{b}$ with its tip on one side gives a positive dot product, every $\mathbf{b}$ on the other side a negative one, and every $\mathbf{b}$ on the line gives exactly zero. The rectangle face shows the same thing: past 90° the shadow points backwards and the rectangle's area counts as negative (hatched in the scene).
+Draw the line through the origin perpendicular to $\mathbf{a}$. Every $\mathbf{b}$ with its tip on one side gives a positive dot product, every $\mathbf{b}$ on the other side a negative one, and every $\mathbf{b}$ on the line gives exactly zero. In the scene the plane is tinted before you read any number, so you can predict the sign by looking. The rectangle face shows the same thing: past 90° the shadow points backwards and the rectangle's area counts as negative (hatched in the scene). Near the line, $\mathbf{b}$ sticks to it: within $3^\circ$ of perpendicular it is caught exactly on the line, so a zero is easy to hit.
 
 Example: $(2, 2) \cdot (1, -1) = 2 - 2 = 0$. Neither arrow is zero; they are perpendicular. Two vectors with $\mathbf{a} \cdot \mathbf{b} = 0$ are called **orthogonal**.
 
-**Misconception to drop:** "$\mathbf{a} \cdot \mathbf{b} = 0$ means one of them is zero." Usually it means they are perpendicular. (A zero vector also gives zero, but that is the boring case.)
+**Misconception to drop:** "$\mathbf{a} \cdot \mathbf{b} = 0$ means one of them is zero." Usually it means they are perpendicular. A zero vector also gives zero, but then there is no direction and so no right angle: the scene shows the ⊥ badge only when both arrows are nonzero. With $\mathbf{a} \neq \mathbf{0}$ and $\mathbf{b} = \mathbf{0}$, the shadow of $\mathbf{b}$ and the rectangle are simply $0$; with $\mathbf{a} = \mathbf{0}$ there is not even a line to cast a shadow on.
 
 ### Two checkpoints you will use constantly
 
-1. **A vector dotted with itself is its squared length:** $\mathbf{a} \cdot \mathbf{a} = \sum a_i^2 = \lvert \mathbf{a} \rvert^2$. For $(3, 4)$: $9 + 16 = 25 = 5^2$. In the geometric formula, $\theta = 0$ and $\cos 0 = 1$, so $\lvert \mathbf{a} \rvert \lvert \mathbf{a} \rvert \cdot 1$. Both faces agree.
+1. **A vector dotted with itself is its squared length:** $\mathbf{a} \cdot \mathbf{a} = \sum a_i^2 = \lvert \mathbf{a} \rvert^2$. For $(3, 4)$: $9 + 16 = 25 = 5^2$. In the geometric formula, $\theta = 0$ and $\cos 0 = 1$, so $\lvert \mathbf{a} \rvert \lvert \mathbf{a} \rvert \cdot 1$. Both faces agree, and with $\mathbf{b} = \mathbf{a}$ the rectangle is the full square on $\mathbf{a}$.
 2. **Order does not matter:** $\mathbf{a} \cdot \mathbf{b} = \mathbf{b} \cdot \mathbf{a}$, because $a_i b_i = b_i a_i$. (In 0.5 this was the fact that the two strips have the same area.) Keep this in mind for Part 2, where matrix products do *not* commute; the dot product does.
 
 Also useful: the dot product is a plain **number**, not a vector. And for unit vectors it is trapped between $-1$ and $1$, because that is the range of the cosine. A value of $1.5$ for two unit vectors is impossible, and a value slightly above 1 is a rounding error that `acos` will turn into `NaN`, so code clamps first.
 
 ### The angle from the components
 
-Rearrange the definition:
+Rearrange the definition (both arrows nonzero):
 
 $$
-\cos\theta = \frac{\mathbf{a} \cdot \mathbf{b}}{\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert}, \qquad \theta = \arccos\!\left(\frac{\mathbf{a} \cdot \mathbf{b}}{\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert}\right)
+\begin{aligned}
+\cos\theta &= \frac{\mathbf{a} \cdot \mathbf{b}}{\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert} \\
+\theta &= \arccos\!\left(\frac{\mathbf{a} \cdot \mathbf{b}}{\lvert \mathbf{a} \rvert\,\lvert \mathbf{b} \rvert}\right)
+\end{aligned}
 $$
 
 Example: the angle between $(1, 0)$ and $(1, 1)$. Dot product $1 \cdot 1 + 0 \cdot 1 = 1$; lengths $1$ and $\sqrt 2$; $\cos\theta = 1/\sqrt 2 \approx 0.7071$; $\theta = 45^\circ$. No protractor was used.
@@ -150,31 +183,42 @@ Example: the angle between $(1, 0)$ and $(1, 1)$. Dot product $1 \cdot 1 + 0 \cd
 
 ## 4. Nothing changes in 3D
 
-{/* scene: DP-3 — 3D explorer with orbit: a·b = 0 is now a disc through the origin; the component table gets a third row */}
+<SceneIsland caption="DP-3 · 3D: the vectors perpendicular to a now fill a plane, drawn as a disc." rows={rowsFor(3, locale)}>
+  <DotScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<DotControls scene={3} locale={locale} client:load />
 
 Add a component to each vector and the sum gets one more term. Take $\mathbf{a} = (2, 1, 1)$ and $\mathbf{b} = (1, 2, -1)$:
 
 $$
-\mathbf{a} \cdot \mathbf{b} = 2 \cdot 1 + 1 \cdot 2 + 1 \cdot (-1) = 2 + 2 - 1 = 3
+\begin{aligned}
+\mathbf{a} \cdot \mathbf{b} &= 2 \cdot 1 + 1 \cdot 2 + 1 \cdot (-1) \\
+&= 2 + 2 - 1 = 3
+\end{aligned}
 $$
 
-Lengths: $\lvert \mathbf{a} \rvert = \sqrt{4 + 1 + 1} = \sqrt 6$, $\lvert \mathbf{b} \rvert = \sqrt{1 + 4 + 1} = \sqrt 6$. So $\cos\theta = 3 / 6 = 0.5$ and $\theta = 60^\circ$. The set of all vectors perpendicular to $\mathbf{a}$ is no longer a line but a whole plane through the origin; orbit the scene and you see it as a disc. The formula did not notice.
+Lengths: $\lvert \mathbf{a} \rvert = \sqrt{4 + 1 + 1} = \sqrt 6$, $\lvert \mathbf{b} \rvert = \sqrt{1 + 4 + 1} = \sqrt 6$. So $\cos\theta = 3 / 6 = 0.5$ and $\theta = 60^\circ$. The set of all vectors perpendicular to $\mathbf{a}$ is no longer a line but a whole plane through the origin; orbit the scene and you see it as a disc, tinted on the side $\mathbf{a}$ points to. The formula did not notice. The rectangle $\lvert \mathbf{a} \rvert \times$ shadow now lies in the plane that $\mathbf{a}$ and $\mathbf{b}$ span. When the two arrows are parallel they span only a line, so the scene picks a plane for the picture by a fixed rule (through $\mathbf{a}$ and the coordinate axis least parallel to it); the area does not depend on that choice. The axes are Blender's: $x$ red, $y$ green and up, $z$ blue.
 
 ## 5. The N·L lamp
 
-{/* scene: DP-4 — a sphere shaded with max(0, N·L); drag the point light; a probe point P shows its N, the L arrow, θ and the number driving its brightness; a toggle shows raw N·L with negatives tinted */}
+<SceneIsland caption="DP-4 · N·L lamp: brightness max(0, N·L) with a point light, computed at every surface point." rows={rowsFor(4, locale)}>
+  <DotScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<DotControls scene={4} locale={locale} client:load />
 
 Lambert shading, the first lighting model every shader writer meets, *is* the dot product. At a surface point with unit normal $\mathbf{N}$ and unit direction to the light $\mathbf{L}$:
 
 $$
-\text{brightness} = \max(0,\; \mathbf{N} \cdot \mathbf{L}) = \max(0,\; \cos\theta)
+k = \max(0,\; \mathbf{N} \cdot \mathbf{L}) = \max(0,\; \cos\theta)
 $$
 
-Both vectors have length 1, so the dot product is the bare cosine of the angle between the normal and the light direction. Facing the light ($\theta = 0$): brightness 1. Light grazing the surface ($\theta = 90^\circ$): brightness 0. Light behind the surface ($\theta$ past 90°): the cosine is negative, and `max` clamps it to 0. There is no negative light.
+Here $k$ is the brightness, the same `k` as in the shader code under the scene. Both vectors have length 1, so the dot product is the bare cosine of the angle between the normal and the light direction. Facing the light ($\theta = 0$): brightness 1. Light grazing the surface ($\theta = 90^\circ$): brightness 0. Light behind the surface ($\theta$ past 90°): the cosine is negative, and `max` clamps it to 0. There is no negative light.
 
 Numbers: $\mathbf{N} = (0, 1, 0)$, $\mathbf{L} = (0.6, 0.8, 0)$ (a unit vector, since $0.36 + 0.64 = 1$): $\mathbf{N} \cdot \mathbf{L} = 0 + 0.8 + 0 = 0.8$. Brightness $0.8$. Flip the light below the surface, $\mathbf{L} = (0.6, -0.8, 0)$: $\mathbf{N} \cdot \mathbf{L} = -0.8$, brightness $\max(0, -0.8) = 0$.
 
-The dashed circle on the sphere where $\mathbf{N} \cdot \mathbf{L} = 0$, the terminator, is the perpendicular line of section 3 wrapped around a ball. The back-face test `dot(N, V) < 0`, with $\mathbf{V}$ the direction from the surface toward the camera, is the same sign test with the view direction instead of the light.
+The lamp in the scene is a point light, as in most real scenes: $\mathbf{L}$ points from each surface point toward the lamp, so it is a different vector at every point of the sphere. The shader computes it per pixel, exactly like the GLSL under the scene. The probe point P is one sample of that computation: at the start it reads $\theta \approx 33.49^\circ$ and $\mathbf{N} \cdot \mathbf{L} \approx 0.834$, and the readouts follow P and the lamp as you drag them. The small rectangle at P is the same area face as in section 3, drawn at 0.6 scale: both of its sides are multiplied by 0.6, so its drawn area is $0.36$ times $\mathbf{N} \cdot \mathbf{L}$, while the unit rectangle it pictures has area $\mathbf{N} \cdot \mathbf{L}$.
+
+The dashed circle where $\mathbf{N} \cdot \mathbf{L} = 0$ is the terminator: the perpendicular line of section 3, bent around the ball. For a lamp this close it is the lamp's horizon, the circle of points where a line from the lamp just grazes the sphere, and the lit region is a cap smaller than half the sphere. Only a very distant (directional) light lights exactly a hemisphere. The back-face test `dot(N, V) < 0`, with $\mathbf{V}$ the direction from the surface toward the camera, is the same sign test with the view direction instead of the light.
 
 ## Check yourself
 
@@ -200,7 +244,7 @@ The dashed circle on the sphere where $\mathbf{N} \cdot \mathbf{L} = 0$, the ter
         "The two vectors have the same length"
       ],
       answer: 0,
-      explain: "|a||b| cos θ = 0 needs either a zero length or cos θ = 0, i.e. θ = 90°. For non-zero vectors, zero dot product means perpendicular: (2, 2)·(1, −1) = 0."
+      explain: "|a||b| cos θ = 0 needs either a zero length or cos θ = 0, i.e. θ = 90°. For non-zero vectors, zero dot product means perpendicular: (2, 2)·(1, −1) = 0. A zero vector has no direction, so it is not perpendicular to anything; it just gives 0."
     },
     {
       q: "How do a·b and b·a compare?",
@@ -236,7 +280,7 @@ The dashed circle on the sphere where $\mathbf{N} \cdot \mathbf{L} = 0$, the ter
       explain: "The component formula needs no angle. The angle is what you get out of the dot product afterwards: cos θ = a·b / (|a||b|) = 5 / √50 ≈ 0.707, so θ = 45°."
     },
     {
-      q: "The rectangle with base |a| and height equal to the shadow of b on a has area…",
+      q: "The rectangle of height |a| and width equal to the shadow of b on a has area…",
       options: [
         "|a| + |b| cos θ",
         "|a||b|, independent of the angle",
@@ -244,7 +288,7 @@ The dashed circle on the sphere where $\mathbf{N} \cdot \mathbf{L} = 0$, the ter
         "a·b, counted as negative (hatched) when θ is more than 90°"
       ],
       answer: 3,
-      explain: "Base |a| times height |b| cos θ is |a||b| cos θ = a·b. Past 90° the shadow points backwards, so this signed area is negative; lesson 0.5 drew it hatched and added it instead of subtracting."
+      explain: "Height |a| times width |b| cos θ is |a||b| cos θ = a·b. Past 90° the shadow points backwards, so this signed area is negative; lesson 0.5 drew it hatched and added it instead of subtracting."
     },
     {
       q: "Lambert brightness for N·L = −0.3 is…",
@@ -288,17 +332,17 @@ The dashed circle on the sphere where $\mathbf{N} \cdot \mathbf{L} = 0$, the ter
 1. $3 + 8 = 11$.
 2. $0 + 0 = 0$.
 3. $2 - 2 = 0$: perpendicular (neither vector is zero).
-4. $\cos\theta = 1 / (1 \cdot \sqrt 2) = 0.7071$, so $\theta = 45^\circ$.
+4. $\cos\theta = 1 / (1 \cdot \sqrt 2) \approx 0.7071$, so $\theta = 45^\circ$.
 5. $(3, 4) \cdot (3, 4) = 9 + 16 = 25 = 5^2$.
 6. $\mathbf{a} \cdot \mathbf{b} = 2 + 2 - 1 = 3$; $\lvert \mathbf{a} \rvert = \lvert \mathbf{b} \rvert = \sqrt 6$; $\cos\theta = 3/6 = 0.5$; $\theta = 60^\circ$.
-7. Shadow $= \mathbf{a} \cdot \mathbf{b} / \lvert \mathbf{a} \rvert = 5 / \sqrt{10} \approx 1.581$; rectangle $= \sqrt{10} \cdot 1.581 = 5 = \mathbf{a} \cdot \mathbf{b}$.
+7. Shadow $= \mathbf{a} \cdot \mathbf{b} / \lvert \mathbf{a} \rvert = 5 / \sqrt{10} \approx 1.581$; rectangle $= \sqrt{10} \cdot (5 / \sqrt{10}) = 5 = \mathbf{a} \cdot \mathbf{b}$ exactly. With the rounded shadow, $\sqrt{10} \cdot 1.581 \approx 4.9996 \approx 5$: keep the exact fraction until the end.
 8. $\mathbf{N} \cdot \mathbf{L} = 0.8$, brightness $0.8$; $\mathbf{N} \cdot \mathbf{L} = -0.8$, brightness $0$.
 
 </details>
 
 ## Python
 
-Three spellings of the same sum, the angle recovered from it (with the clip that every real codebase needs), the derivation checked numerically, Lambert, and one machine-layer surprise at the end. The comments show the real output of NumPy; the last digits of a few values depend on the platform.
+Three spellings of the same sum, the angle recovered from it (with the clip that every real codebase needs), the derivation checked numerically, Lambert, and one machine-layer surprise at the end. The comments show the output of Python 3.13 with NumPy 2.4 on a desktop x86-64 CPU; the last digits of the float32 line depend on the CPU and the BLAS build.
 
 ```python
 import numpy as np

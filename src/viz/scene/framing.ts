@@ -68,3 +68,19 @@ export function fit3d(b: Bounds, dir: Vec3, w: number, h: number, tan: number): 
 	const zoom = Math.min((Math.max(1, w) * FILL_3D) / (2 * hx), (Math.max(1, h) * FILL_3D) / (2 * hy));
 	return { target: c, dist, zoom };
 }
+
+/**
+ * Step-revealed figures (squares appearing at a timeline step, a rectangle growing in) change the figure after the
+ * first-view settling window, so the home view must be measured again when a timeline step changes. This returns how
+ * long to wait before measuring (the step's polygon tweens take `springMs` per phase), or null when `next` is not a
+ * new step of any timeline (history `:max` and `:phases` bookkeeping alone does not count). Reduced motion: at once.
+ */
+export function stepRefitDelay(prev: Readonly<Record<string, number>>, next: Readonly<Record<string, number>>, springMs: number, reduced: boolean): number | null {
+	let phases = 0;
+	for (const k of Object.keys(next)) {
+		if (k.includes(':') || next[k] === prev[k]) continue;
+		phases = Math.max(phases, next[k + ':phases'] ?? 1);
+	}
+	if (!phases) return null;
+	return reduced ? 0 : springMs * phases + 60;
+}
