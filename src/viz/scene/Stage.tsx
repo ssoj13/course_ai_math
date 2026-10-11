@@ -10,7 +10,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 're
 import { MOUSE, OrthographicCamera as OrthoCam, PerspectiveCamera as PerspCam, TOUCH, Vector3 } from 'three';
 import type { V } from '../geom';
 import { usePalette } from '../palette';
-import { lessonStore } from '../store';
+import { lessonStore, ShownCtx } from '../store';
 import { Gizmo, XYCorner } from './Gizmo';
 import { createStage, DragKeys, Labels, StageCtx, type StageReg } from './handles';
 import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, VIEW_MS, type Pose } from './motion';
@@ -251,6 +251,8 @@ export function Stage(p: StageProps): React.JSX.Element {
 	// One registry per stage, created once (mode and card of a mounted stage never change).
 	const [reg] = useState(() => p.reg ?? createStage(p.mode));
 	if (reg.mode !== p.mode) throw new Error(`Stage: registry mode ${reg.mode} does not match mode ${p.mode}`);
+	// Same value on every render; primitives that cover the stage (HalfPlane) read it while rendering.
+	reg.extent = p.extent;
 	useLayoutEffect(() => {
 		reg.el = ref.current;
 		return () => {
@@ -303,7 +305,8 @@ export function Stage(p: StageProps): React.JSX.Element {
 					<LabelLayer />
 					{p.mode === '3d' && <GizmoSync />}
 					{p.drawIn && <DrawIn />}
-					{p.children}
+					{/* Scene code reads the drawn values: eased writes glide here while readouts jump (store.ts). */}
+					<ShownCtx.Provider value={true}>{p.children}</ShownCtx.Provider>
 				</StageCtx.Provider>
 			</View>
 			{/* Sibling of the View div (see interface note): DOM here never blocks scene raycasts outside its own boxes. */}

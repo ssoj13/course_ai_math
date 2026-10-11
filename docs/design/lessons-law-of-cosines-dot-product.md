@@ -483,7 +483,7 @@ Status bar: over tip of b — "LMB drag tip of b · snaps to ⊥ near 90°"; ove
 | id | primitive | geometry | role | label | drag |
 |---|---|---|---|---|---|
 | `a` | Arrow (beam) | O→`a` | vecA | `a` | tip |
-| `b` | Arrow | O→`b` | vecB | `b` | tip; **magnet to ⊥**: when `|cosT| < sin 3°` (≈ 0.052) during a drag or nudge, b's tip is replaced by `nb · cw(ahat) · sign(cross(a, b))` (off-grid, exactly perpendicular); the grid snap is skipped for that write |
+| `b` | Arrow | O→`b` | vecB | `b` | tip; **magnet to ⊥**: when `|cosT| < sin 3°` (≈ 0.052) during a drag or nudge, b's tip is replaced by `nb · ccw(ahat) · sign(cross(a, b))` (ccw(v) = [−v_y, v_x]: b stays on its own side of a; sign +1 when cross = 0) (off-grid, exactly perpendicular); the grid snap is skipped for that write |
 | `hp_pos` | HalfPlane (section 5 item 3) | `{v : a·v > 0}` | vecA fill 10% | `a·v > 0` in the far corner | — |
 | `hp_neg` | HalfPlane | `{v : a·v < 0}` | `muted` fill 10% | `a·v < 0` | — |
 | `perp` | Segment dashed | the boundary through O, `±extent · cw(ahat)` | muted; hot outline when `|dot| < 1e-9` | `a·v = 0` | — |

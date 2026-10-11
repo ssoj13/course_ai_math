@@ -214,5 +214,110 @@ export function tickValues(extent: number, step: number): number[] {
 	return out;
 }
 
+/**
+ * Orthonormal pair (u, v) spanning the plane perpendicular to the 3D vector `normal`, with (u, v, normal) right-handed.
+ * u is built from the coordinate axis least parallel to `normal`, so it never degenerates. Null for a zero normal.
+ */
+export function planeBasis(normal: V): [number[], number[]] | null {
+	if (normal.length !== 3) throw new Error('planeBasis is 3D only');
+	const l = norm(normal);
+	if (l === 0) return null;
+	const n = scale(normal, 1 / l);
+	const ax = n.map(Math.abs);
+	const i = ax[0] <= ax[1] && ax[0] <= ax[2] ? 0 : ax[1] <= ax[2] ? 1 : 2;
+	const e = [0, 0, 0];
+	e[i] = 1;
+	const u = normalize(sub(e, scale(n, dot(e, n))));
+	return [u, cross(n, u)];
+}
+
+/**
+ * Closed loop of `n` segments (n + 1 points, the last equals the first) of radius `r` around `center`: in the plane
+ * z = 0 for a 2D center, in the plane perpendicular to `normal` for a 3D one. `arcPoints` sweeps at most 180 degrees,
+ * so a full circle (reach rings, the terminator of a lit sphere) needs its own parametrization. A 3D circle without
+ * `normal`, a 2D one with it, a bad radius or segment count throw (authoring); a zero normal returns null (data).
+ */
+export function circlePoints(center: V, r: number, n = 64, normal?: V): number[][] | null {
+	if (!Number.isFinite(r) || r < 0) throw new Error(`circle radius must be finite and >= 0, got ${r}`);
+	if (!Number.isInteger(n) || n < 3) throw new Error(`circle needs an integer segment count >= 3, got ${n}`);
+	let u: V;
+	let v: V;
+	if (center.length === 2) {
+		if (normal) throw new Error('circlePoints: a 2D circle takes no normal (its plane is z = 0)');
+		u = [1, 0];
+		v = [0, 1];
+	} else {
+		if (!normal) throw new Error('circlePoints: a 3D circle needs a `normal`');
+		const b = planeBasis(normal);
+		if (!b) return null;
+		[u, v] = b;
+	}
+	return Array.from({ length: n + 1 }, (_, i) => {
+		// The last point repeats the first exactly, so the loop closes without a rounding gap.
+		const t = ((i % n) * 2 * Math.PI) / n;
+		return add(center, add(scale(u, r * Math.cos(t)), scale(v, r * Math.sin(t))));
+	});
+}
+
+/**
+ * Radial tick marks of an angle arc (AngleArc `ticks`): for each target angle in degrees, measured from `from` toward
+ * the arc's side (the side of `to`; for parallel rays 2D counter-clockwise, 3D toward `normal`), a segment from radius
+ * `r` to `r + len` around `center`. Flat list of endpoint pairs. Zero rays have no arc and give []; targets outside
+ * [0, 180] are skipped (the arc never goes there).
+ */
+export function arcTicks(center: V, from: V, to: V, r: number, targetsDeg: readonly number[], len: number, normal?: V): number[][] {
+	same(center, from);
+	if (norm(from) === 0 || norm(to) === 0) return [];
+	const b = arcBasis(from, to, normal);
+	if (!b) return [];
+	let e2 = b.e2;
+	if (b.theta === 0) {
+		if (from.length === 2) e2 = [-b.e1[1], b.e1[0]];
+		else {
+			if (!normal) throw new Error('3D arc ticks need a `normal` for parallel rays');
+			const p = sub(normal, scale(b.e1, dot(normal, b.e1)));
+			if (norm(p) <= 1e-9 * norm(normal)) return [];
+			e2 = normalize(p);
+		}
+	}
+	const out: number[][] = [];
+	for (const t of targetsDeg) {
+		if (t < 0 || t > 180) continue;
+		const a = (t * Math.PI) / 180;
+		const d = add(scale(b.e1, Math.cos(a)), scale(e2, Math.sin(a)));
+		out.push(add(center, scale(d, r)), add(center, scale(d, r + len)));
+	}
+	return out;
+}
+
+/**
+ * The 2D half-plane {v : side * (normal . v) > 0} through the origin, clipped to the square [-size, size]^2: a convex
+ * polygon of 3 to 5 vertices in counter-clockwise order (one Sutherland-Hodgman pass). [] for a zero normal (no line).
+ */
+export function halfPlanePoly(normal: V, side: 1 | -1, size: number): number[][] {
+	if (normal.length !== 2) throw new Error('halfPlanePoly is 2D only (a 3D half-space is drawn as a disc)');
+	if (norm(normal) === 0) return [];
+	const sq = [
+		[-size, -size],
+		[size, -size],
+		[size, size],
+		[-size, size],
+	];
+	const f = (p: V) => side * dot(normal, p);
+	const out: number[][] = [];
+	for (let i = 0; i < 4; i++) {
+		const p = sq[i];
+		const q = sq[(i + 1) % 4];
+		const fp = f(p);
+		const fq = f(q);
+		if (fp >= 0) out.push(p);
+		if ((fp >= 0) !== (fq >= 0)) {
+			const t = fp / (fp - fq);
+			out.push([p[0] + t * (q[0] - p[0]), p[1] + t * (q[1] - p[1])]);
+		}
+	}
+	return out;
+}
+
 /** Tick number text: integers plain, otherwise one decimal; a true minus sign. */
 export const tickText = (v: number): string => (Number.isInteger(v) ? String(v) : v.toFixed(1)).replace('-', '−');

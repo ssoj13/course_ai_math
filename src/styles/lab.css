@@ -374,10 +374,11 @@ h1#_top,
 	inset: 0;
 }
 @media (max-width: 719.98px) {
-	/* Chip lines the frame reserves before hydration (SceneIsland `chipLines`, the line count at 360 px); the card
-	   grows the row if the chips need more (ViewportCard), never shrinks it, so wider phones only get spare room. */
+	/* Chip row height the frame reserves before hydration: computed by the fixed-width chip model (scene/chips.ts) at
+	   the 320 px basis and set inline by SceneIsland. Wider phones wrap into the same or fewer lines; the card grows the
+	   row only if the chips ever need more (ViewportCard), never shrinks it. */
 	.lab-vp[data-panel] {
-		--lab-vp-chips: calc(var(--lab-vp-chip-lines, 1) * 24px + 10px);
+		--lab-vp-chips: var(--lab-vp-chip-h);
 	}
 }
 
@@ -674,7 +675,36 @@ h1#_top,
 	color: var(--viz-axis-x);
 	font-size: 10.5px;
 }
+/* Live values are placed by a transform from a fixed anchor (centre of a field, right edge of a read-only value): a
+   value whose text changes width while the reader drags would otherwise move its own start edge, and Chrome reports
+   every such move as a layout shift (measured at 360 px: one entry per drag). The boxes keep their size from the row
+   layout (fields: fixed height and the grid or chip width; read-only: the grid cell or the chip budget). */
+.lab-np-val {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	white-space: nowrap;
+	pointer-events: none;
+}
+/* Vector components: the axis letter takes 4 px more on the left than the arrow on the right. */
+.lab-np-vec > .lab-np-field > .lab-np-val {
+	left: calc(50% + 2px);
+}
+.lab-np-ro > .lab-np-val {
+	left: calc(100% - 4px);
+	transform: translateX(-100%);
+}
+.lab-np-check {
+	height: 20px;
+	padding: 0;
+}
+.lab-np-check:hover {
+	background: none;
+}
 .lab-np-ro {
+	position: relative;
+	height: 20px;
 	line-height: 20px;
 	padding: 0 4px;
 	border-radius: 4px;
@@ -700,9 +730,11 @@ h1#_top,
 		flex-wrap: wrap;
 		align-content: flex-start;
 		align-items: center;
-		/* Ruling V: chips wrap onto lines (every value visible at a glance, no sideways scroller). */
-		gap: 4px 12px;
-		padding: 5px 8px;
+		/* Ruling V: chips wrap onto lines (every value visible at a glance, no sideways scroller). Geometry comes from
+		   the chip model (chips.ts CHIP, set as variables by NPanel), which the server reservation is computed from. */
+		gap: var(--np-gy) var(--np-gx);
+		padding: var(--np-py) var(--np-px);
+		box-sizing: border-box;
 		overflow: visible;
 		background: var(--viz-chrome-2);
 		border: 0;
@@ -715,10 +747,22 @@ h1#_top,
 		flex: none;
 		display: flex;
 		align-items: center;
-		gap: 5px;
+		gap: var(--np-lg);
+		height: var(--np-h);
+		padding: 0;
 	}
+	/* Mono at 11 px (advance <= 6.9 px): the label fits the model's 7 px per character with any fallback font. */
 	.lab-np-label {
+		flex: none;
+		width: var(--np-lw);
 		text-align: left;
+		font: 400 11px/20px var(--lab-font-mono);
+		overflow: visible;
+	}
+	.lab-np-ro {
+		flex: none;
+		min-width: var(--np-fw);
+		box-sizing: border-box;
 	}
 	.lab-np-vec {
 		display: flex;
@@ -736,7 +780,9 @@ h1#_top,
 		border-radius: 0 4px 4px 0;
 	}
 	.lab-np-field {
-		min-width: 46px;
+		flex: none;
+		min-width: var(--np-fw);
+		box-sizing: border-box;
 	}
 	.lab-vp-chev,
 	.lab-vp-name {
@@ -1012,4 +1058,87 @@ h1#_top,
 	.lab-formula [data-t] {
 		transition: none;
 	}
+}
+
+/* Ledger (src/viz/Ledger.tsx): page-side, follows the Starlight theme; bars keep their scene role colours. */
+.lab-ledger {
+	margin: 1rem 0;
+	color: var(--sl-color-white);
+}
+.lab-ledger svg {
+	display: block;
+	overflow: visible;
+}
+.lab-ledger-base {
+	stroke: var(--lab-border);
+	stroke-width: 1;
+}
+.lab-ledger-zero {
+	stroke: color-mix(in srgb, var(--viz-light) 70%, currentColor);
+}
+.lab-ledger-t {
+	fill: currentColor;
+	font: 500 12px/1 var(--lab-font-mono);
+	font-variant-numeric: tabular-nums;
+}
+.lab-ledger-t.is-hot {
+	text-decoration: underline 2px var(--viz-hot);
+}
+
+/* Challenge (src/viz/Challenge.tsx): task, live status, hints. */
+.lab-challenge {
+	margin: 1rem 0;
+	padding: 0.75rem 1rem;
+	border: 1px solid var(--lab-border);
+	border-left: 3px solid var(--lab-border);
+	border-radius: 6px;
+	background: var(--lab-surface);
+}
+.lab-challenge.is-done {
+	border-left-color: var(--viz-vec-c);
+}
+.lab-ch-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	font: 600 0.8rem/1.4 var(--lab-font-ui);
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--lab-text-muted);
+}
+/* The status text changes width when solved (often mid-drag): a fixed box with the text placed by a transform keeps
+   it from moving its own edge, which Chrome would report as a layout shift (as for the N-panel values). */
+.lab-ch-status {
+	position: relative;
+	flex: none;
+	width: 7em;
+	height: 1.4em;
+}
+.lab-ch-status > span {
+	position: absolute;
+	top: 0;
+	left: 100%;
+	transform: translateX(-100%);
+	white-space: nowrap;
+}
+.lab-challenge.is-done .lab-ch-status {
+	color: var(--sl-color-white);
+}
+.lab-ch-text,
+.lab-ch-success {
+	margin: 0.4rem 0 0;
+}
+.lab-ch-success {
+	color: var(--lab-text-muted);
+}
+.lab-ch-hint {
+	margin-top: 0.5rem;
+}
+.lab-ch-hint summary {
+	cursor: pointer;
+	color: var(--lab-text-muted);
+}
+.lab-ch-hint ol {
+	margin: 0.4rem 0 0;
+	padding-left: 1.4rem;
 }

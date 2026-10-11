@@ -1,22 +1,28 @@
 /**
  * The N-panel (Blender's sidebar): the linked "numbers view" of a scene. Each row is label | value: editable rows
  * are Blender number fields (drag horizontally to scrub, Ctrl snaps, Shift is fine, click or Enter to type, arrows and
- * PageUp/PageDown to step), vector rows have one field per component, read-only rows are flat text. Every row carries
- * a term id: hovering or focusing it lights that id everywhere (scene outline, formula term), and a row lights up
- * when its id is hot elsewhere. Under 720 px the same DOM lays out as a row of chips under the viewport (lab.css).
+ * PageUp/PageDown to step), vector rows have one field per component, read-only rows are flat text, bool rows are
+ * checkboxes writing 0/1 (`ik_flip`, `nl_raw`). Every row carries a term id: hovering or focusing it lights that id
+ * everywhere (scene outline, formula term), and a row lights up when its id is hot elsewhere. Under 720 px the same
+ * DOM lays out as wrapped chips under the viewport, each chip as wide as the fixed-width model of chips.ts says (CSS
+ * variables set here), so the server frame can reserve the exact height.
+ *
+ * Motion (Ruling U): a scrub drag writes as a cut (1:1); arrow keys, the step arrows and a typed value are indirect
+ * changes and write `ease`, so the scene glyph glides while the field already shows the exact value.
  *
  * One drag implementation in the codebase: fields use `startScrubDrag` (useScrub.ts) and the pure math of scrub.ts
  * (scrubValue, keyStep, ctrlSnap, parseField, fmtField), exactly like Formula and Num.
  * Three-free (DOM only), so it is tested in happy-dom.
  */
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 import type { V } from '../geom';
 import { roleVar } from '../palette';
 import { ctrlSnap, fmtField, keyStep, parseField, scrubValue, type ScrubSpec } from '../scrub';
-import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
+import { hotOff, hotOn, lessonStore, type LessonState, type WriteHow } from '../store';
 import { renderStaticMath } from '../tex';
 import { startScrubDrag } from '../useScrub';
+import { CHIP, chipBox, type ChipRow } from './chips';
 import type { StageReg } from './handles';
 
 type Vals = LessonState['vals'];
@@ -28,13 +34,16 @@ export interface Tip {
 	tex?: string;
 }
 
-export interface Row {
+export interface Row extends ChipRow {
 	/** Term id shared with the scene object, formula term and table cell. */
 	id: string;
 	label: string;
-	/** num: editable number; vec: editable vector (one field per component); ro: read-only value. */
-	kind: 'num' | 'vec' | 'ro';
-	/** Store key (required for num/vec; for ro either `key` or `value`). */
+	/**
+	 * num: editable number; vec: editable vector (one field per component, `dims` of them); ro: read-only value
+	 * (`chars` = its text budget in the phone chip row, see chips.ts); bool: a checkbox writing 0/1 to a number key.
+	 */
+	kind: 'num' | 'vec' | 'ro' | 'bool';
+	/** Store key (required for num/vec/bool; for ro either `key` or `value`). */
 	key?: string;
 	spec?: ScrubSpec;
 	/** Ctrl while dragging: snap to these targets, or to multiples of this increment (default 10 steps). */
@@ -60,6 +69,8 @@ const AXIS_ROLE = ['axisX', 'axisY', 'axisZ'] as const;
 
 function checkRow(r: Row): void {
 	if ((r.kind === 'num' || r.kind === 'vec') && (!r.key || !r.spec)) throw new Error(`N-panel row "${r.id}": a ${r.kind} row needs \`key\` and \`spec\``);
+	if (r.kind === 'vec' && !r.dims) throw new Error(`N-panel row "${r.id}": a vec row needs \`dims\` (its chip width depends on it)`);
+	if (r.kind === 'bool' && !r.key) throw new Error(`N-panel row "${r.id}": a bool row needs \`key\``);
 	if (r.kind === 'ro' && !r.key === !r.value) throw new Error(`N-panel row "${r.id}": a read-only row needs a key or value (exactly one)`);
 }
 
@@ -118,7 +129,8 @@ interface FieldProps {
 	axis?: 0 | 1 | 2;
 	/** Reads the live value at event time (events can outrun React renders). */
 	get(): number;
-	set(v: number): void;
+	/** Drags write cuts (the default); keys, step arrows and typed values ease (see the module note). */
+	set(v: number, how?: WriteHow): void;
 }
 
 /** A Blender number field: drag to scrub, click/Enter to type, arrows to step. */
@@ -146,7 +158,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 			setEdit({ text, err: r.err });
 			return false;
 		}
-		p.set(r.v);
+		p.set(r.v, 'ease');
 		setEdit(null);
 		return true;
 	};
@@ -188,7 +200,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 			</span>
 		);
 	}
-	const step = (d: number) => p.set(keyStep(p.get(), d > 0 ? 'ArrowRight' : 'ArrowLeft', p.spec) ?? p.get());
+	const step = (d: number) => p.set(keyStep(p.get(), d > 0 ? 'ArrowRight' : 'ArrowLeft', p.spec) ?? p.get(), 'ease');
 	return (
 		<span
 			ref={field}
@@ -254,7 +266,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 				const next = keyStep(p.get(), e.key, p.spec);
 				if (next === null) return;
 				e.preventDefault();
-				if (next !== p.get()) p.set(next);
+				if (next !== p.get()) p.set(next, 'ease');
 			}}
 		>
 			{p.axis !== undefined && (
@@ -265,7 +277,7 @@ function NumField(p: FieldProps): React.JSX.Element {
 			<span className="lab-np-step" data-d="-1" aria-hidden="true">
 				{'‹'}
 			</span>
-			{shown}
+			<span className="lab-np-val">{shown}</span>
 			<span className="lab-np-step" data-d="1" aria-hidden="true">
 				{'›'}
 			</span>
@@ -286,13 +298,25 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 	let body: React.ReactNode;
 	if (row.kind === 'ro') {
 		const v = row.value ? row.value(vals) : (raw as number | V);
-		body = <span className="lab-np-ro">{roText(row, v)}</span>;
+		body = (
+			<span className="lab-np-ro">
+				<span className="lab-np-val">{roText(row, v)}</span>
+			</span>
+		);
 	} else if (row.kind === 'num') {
 		if (typeof raw !== 'number') throw new Error(`N-panel row "${row.id}": store key "${row.key}" is not a number`);
-		body = <NumField value={raw} spec={row.spec!} snap={row.snap} label={row.label} fmt={row.fmt} get={() => live() as number} set={(v) => store.getState().set(row.key!, v)} />;
+		body = <NumField value={raw} spec={row.spec!} snap={row.snap} label={row.label} fmt={row.fmt} get={() => live() as number} set={(v, how) => store.getState().set(row.key!, v, how)} />;
+	} else if (row.kind === 'bool') {
+		if (raw !== 0 && raw !== 1) throw new Error(`N-panel row "${row.id}": store key "${row.key}" must hold 0 or 1, got ${String(raw)}`);
+		body = (
+			<span className="lab-vp-check lab-np-check">
+				<input type="checkbox" aria-label={row.label} checked={raw === 1} onChange={(e) => store.getState().set(row.key!, e.currentTarget.checked ? 1 : 0)} />
+			</span>
+		);
 	} else {
 		if (typeof raw === 'number') throw new Error(`N-panel row "${row.id}": store key "${row.key}" is not a vector`);
 		const vec = raw as V;
+		if (vec.length !== row.dims) throw new Error(`N-panel row "${row.id}": store key "${row.key}" has ${vec.length} components, the row declares dims ${row.dims}`);
 		body = (
 			<span className="lab-np-vec">
 				{vec.map((x, i) => (
@@ -305,7 +329,7 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 						fmt={row.fmt}
 						axis={i as 0 | 1 | 2}
 						get={() => (live() as V)[i]}
-						set={(v) => store.getState().set(row.key!, (live() as V).map((c, j) => (j === i ? v : c)))}
+						set={(v, how) => store.getState().set(row.key!, (live() as V).map((c, j) => (j === i ? v : c)), how)}
 					/>
 				))}
 			</span>
@@ -321,10 +345,13 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 		hotOff(lesson, row.id);
 		reg?.hover.clear(kind, row.id);
 	};
+	const box = chipBox(row);
 	return (
 		<div
 			className={hot ? 'lab-np-row is-hot' : 'lab-np-row'}
 			data-id={row.id}
+			// Chip widths of the fixed-width model (used by lab.css under 720 px only).
+			style={{ '--np-lw': `${box.label}px`, '--np-fw': `${box.field}px` } as React.CSSProperties}
 			onPointerOver={on}
 			onPointerOut={(e) => {
 				// Moving between the row's own children fires pointerout; clear only when the pointer left the row.
@@ -340,6 +367,34 @@ function RowView({ lesson, row, vals, hot, reg, tip }: { lesson: string; row: Ro
 			{body}
 		</div>
 	);
+}
+
+/** The chip geometry of chips.ts as the CSS variables lab.css reads under 720 px (one source for model and layout). */
+const CHIP_VARS = {
+	'--np-gx': `${CHIP.gapX}px`,
+	'--np-gy': `${CHIP.gapY}px`,
+	'--np-px': `${CHIP.padX}px`,
+	'--np-py': `${CHIP.padY}px`,
+	'--np-h': `${CHIP.h}px`,
+	'--np-lg': `${CHIP.labelGap}px`,
+} as React.CSSProperties;
+
+/**
+ * Values are placed by a transform (lab.css `.lab-np-val`), so a text longer than its box no longer widens the box: it
+ * would silently overlap its neighbour. That is an authoring error (a read-only row's `chars` budget, or a `fmt`
+ * longer than the spec's range ends), reported once per row in the console after each render.
+ */
+function useOverflowCheck(panel: React.RefObject<HTMLElement | null>): void {
+	const warned = useRef(new Set<string>());
+	useLayoutEffect(() => {
+		for (const v of panel.current?.querySelectorAll<HTMLElement>('.lab-np-val') ?? []) {
+			const box = v.parentElement;
+			const id = v.closest<HTMLElement>('.lab-np-row')?.dataset.id ?? '?';
+			if (!box || v.offsetWidth <= box.clientWidth || warned.current.has(id)) continue;
+			warned.current.add(id);
+			console.error(`N-panel row "${id}": value "${v.textContent}" (${v.offsetWidth} px) overflows its ${box.clientWidth} px box; raise its \`chars\` or shorten \`fmt\``);
+		}
+	});
 }
 
 export interface NPanelProps {
@@ -360,8 +415,10 @@ export function NPanel({ lesson, rows, reg, open = true, id }: NPanelProps): Rea
 	const hot = useStore(store, (s) => s.hot);
 	const tip = useTip();
 	const shown = rows.filter((r) => !r.visible || r.visible(vals, steps));
+	const panel = useRef<HTMLElement>(null);
+	useOverflowCheck(panel);
 	return (
-		<aside id={id} className={open ? 'lab-vp-panel' : 'lab-vp-panel is-closed'} aria-label="Properties">
+		<aside ref={panel} id={id} className={open ? 'lab-vp-panel' : 'lab-vp-panel is-closed'} aria-label="Properties" style={CHIP_VARS}>
 			{shown.map((r, i) => (
 				<RowGroup key={r.id} sep={r.group && r.group !== shown[i - 1]?.group ? r.group : null}>
 					<RowView lesson={lesson} row={r} vals={vals} hot={hot.has(r.id)} reg={reg} tip={tip.bind} />

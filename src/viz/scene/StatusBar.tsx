@@ -127,7 +127,9 @@ export function StatusBar({ reg, lesson, spec }: { reg: StageReg; lesson: string
 	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode, touch));
 	return (
 		<div className="lab-vp-status">
-			<span>
+			{/* Keyed by the text: a new hint is new nodes, so token spans reused by index never "move" (each such move was
+			    a layout-shift entry during every drag, measured at 360 px). */}
+			<span key={text}>
 				{hintTokens(text).map((t, i) => (t.key ? <kbd key={i}>{t.text}</kbd> : <span key={i}>{t.text}</span>))}
 			</span>
 		</div>

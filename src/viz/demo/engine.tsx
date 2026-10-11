@@ -1,19 +1,45 @@
 /**
  * Island entry for dev/engine.mdx. The server evaluates this module (see ../island.tsx), so it holds only what
- * is cheap and SSR-safe: the lesson store init, DOM-only views (server-rendered via client:load, so they take
- * their space before hydration) and lazy wrappers for the three/drei scenes (three ViewportCards, engine.impl.tsx).
+ * is cheap and SSR-safe: the lesson store init, the N-panel rows (MDX passes them to SceneIsland, which reserves the
+ * phone chip row from them), DOM-only views (server-rendered via client:load, so they take their space before
+ * hydration: formula, readout, Ledger, Challenges) and lazy wrappers for the three/drei scenes (engine.impl.tsx).
  */
-import { dot, type V } from '../geom';
-import { lessonStore, useVal } from '../store';
+import { dot, normalize, scale, type V } from '../geom';
+import { lessonStore, useVal, type LessonState } from '../store';
 import { lazyIsland } from '../island';
+import { Challenge } from '../Challenge';
 import { Formula } from '../Formula';
+import { Ledger, type LedgerItem } from '../Ledger';
+import { SPHERE_R, tri, vec } from './engine.rows';
+
+export { ROWS2, ROWS3, ROWSLAMP, ROWSLC, ROWSPOLAR, ROWSSIGN } from './engine.rows';
 
 // a, b: 2D vectors; p: a draggable point; r: the angle arc radius (an N-panel number field); u, v: 3D vectors (y-up).
-lessonStore('demo', { a: [3, 1], b: [1, 2], p: [-2, -1], r: 0.6, u: [2, 1, 1], v: [-1, 2, 1.5] });
+// la, lb, lth: the polar triangle (side lengths, angle in degrees); sa, sb: the sign card's vectors; nl_*: the lamp
+// (light position, probe on the sphere, raw N·L checkbox as 0/1).
+lessonStore('demo', {
+	a: [3, 1],
+	b: [1, 2],
+	p: [-2, -1],
+	r: 0.6,
+	u: [2, 1, 1],
+	v: [-1, 2, 1.5],
+	la: 3,
+	lb: 4,
+	lth: 60,
+	sa: [2, 1],
+	sb: [1, 2],
+	nl_light: [3, 1.5, -1.2],
+	nl_pt: scale(normalize([1, 0.6, 0.8]), SPHERE_R),
+	nl_raw: 0,
+});
 
 export const Demo2D = lazyIsland(() => import('./engine.impl').then((m) => m.Demo2D));
 export const Demo3D = lazyIsland(() => import('./engine.impl').then((m) => m.Demo3D));
 export const DemoCosines = lazyIsland(() => import('./engine.impl').then((m) => m.DemoCosines));
+export const DemoPolar = lazyIsland(() => import('./engine.impl').then((m) => m.DemoPolar));
+export const DemoSign = lazyIsland(() => import('./engine.impl').then((m) => m.DemoSign));
+export const DemoLamp = lazyIsland(() => import('./engine.impl').then((m) => m.DemoLamp));
 
 // Hoisted: Formula memoizes on these identities. A derived value computed from the live a and b (Task 3 `Derived`).
 const DOT = { dot: (v: Record<string, unknown>) => dot(v.a as V, v.b as V) };
@@ -37,5 +63,34 @@ export function DemoVecReadout(): React.JSX.Element {
 			a = <output data-k="a">{fmtV(a)}</output>, b = <output data-k="b">{fmtV(b)}</output>, u = <output data-k="u">{fmtV(u)}</output>, v ={' '}
 			<output data-k="v">{fmtV(v)}</output>, P = <output data-k="p">{fmtV(pt)}</output>
 		</p>
+	);
+}
+
+// Same ids as the polar card's N-panel rows, so a bar, its row and the scene light together.
+const LEDGER: readonly LedgerItem[] = [
+	{ id: 'a2', label: 'a²', role: 'vecA', value: (v) => tri(v).a2 },
+	{ id: 'b2', label: 'b²', role: 'vecB', value: (v) => tri(v).b2 },
+	{ id: 'corr', label: '−2ab cos θ', role: 'vecC', value: (v) => tri(v).corr },
+];
+const C2 = { id: 'c2', label: 'c²', value: (v: LessonState['vals']) => tri(v).c2 };
+
+/** LC-1's ledger on the polar triangle: a² and b² stacked, the signed correction, the rule at c². */
+export function DemoLedger(): React.JSX.Element {
+	return <Ledger lesson="demo" items={LEDGER} total={C2} scale={3.4} max={64} zeroLabel="= Pythagoras" label="Law of cosines as areas" />;
+}
+
+/** Two Challenge boxes: one on a value (LC-1), one on the sign card (DP-2). */
+export function DemoChallenges(): React.JSX.Element {
+	return (
+		<>
+			<Challenge lesson="demo" n={1} text="Make the correction disappear without touching a or b." hint={['Drag A until the angle reads 90°.']} check={(v) => v.lth === 90} />
+			<Challenge
+				lesson="demo"
+				n={2}
+				text="In the sign scene, make a·b = 0 without making either vector zero."
+				hint={['Drag b toward the boundary between the two tints.', 'Integer solution: a = (2, 1), b = (−1, 2).']}
+				check={(v) => Math.abs(dot(vec(v, 'sa'), vec(v, 'sb'))) < 1e-9 && dot(vec(v, 'sa'), vec(v, 'sa')) > 0 && dot(vec(v, 'sb'), vec(v, 'sb')) > 0}
+			/>
+		</>
 	);
 }

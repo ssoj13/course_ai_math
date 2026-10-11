@@ -70,14 +70,16 @@ export default defineConfig({
 	vite: {
 		// Vite workers are ES modules: the default iife format cannot code-split the Pyodide / elk workers.
 		worker: { format: 'es' },
-		// The scene chunk (three + r3f + drei, ~1013 kB raw / 270 kB gz) cannot shrink: r3f registers all of THREE
+		// The scene chunk (three + r3f + drei, ~1020 kB raw / 272 kB gz) cannot shrink: r3f registers all of THREE
 		// (`import *`), so three core is not tree-shaken. Task 6b added drei's Line (three-stdlib Line2/LineMaterial,
 		// ~32 kB) for pixel-stable lines; Task 6c's angle/area/label primitives and demo added ~9 kB raw; Task 6d's
 		// viewport chrome (ViewportCard, N-panel, gizmo, status bar, motion) and drei's shader Grid added ~31 kB raw
-		// (+10 kB gz; KaTeX for tooltips stays in the shared Formula chunk). The limit is set just above it so any
+		// (+10 kB gz; KaTeX for tooltips stays in the shared Formula chunk). Task 6e's lesson primitives (half-plane,
+		// lit sphere, circle, magnet ticks, eased store, chip model) and their demo cards added ~7 kB raw (+2 kB gz).
+		// The limit is set just above it so any
 		// further growth warns; the real gate is the per-page gzip budget of scripts/size-report.ts (Task 11, viz core
 		// <= 300 kB gz). The chunk loads only on scene pages.
-		build: { chunkSizeWarningLimit: 1015 },
+		build: { chunkSizeWarningLimit: 1022 },
 	},
 	integrations: [
 		starlight({

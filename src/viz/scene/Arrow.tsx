@@ -12,7 +12,7 @@ import { norm, scale, sub, to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
-import { SLine, Stroke, useReveal, wppAt, type StrokeHandle } from './view';
+import { Stroke, useReveal, wppAt, type StrokeHandle } from './view';
 
 export interface ArrowProps {
 	lesson: string;
@@ -23,7 +23,13 @@ export interface ArrowProps {
 	/** Name used in the keyboard button label ("Move tip of a"); defaults to `id`. */
 	label?: string;
 	drag?: 'tip' | 'whole' | 'none';
-	/** Dashed component legs from the tip to the axes. */
+	/** Custom mapping of the drag (see Draggable.move), e.g. DP-2's magnet of b to the perpendicular of a. */
+	move?: Draggable['move'];
+	/**
+	 * Dashed component legs from the tip to the axes, each in the colour of its axis (visual-language.md). Each leg is
+	 * its own hoverable object with id `${id}:x`, `${id}:y` (and `${id}:z` in 3D), so a component cell of a table or
+	 * N-panel can light exactly one leg.
+	 */
 	legs?: boolean;
 }
 
@@ -47,7 +53,7 @@ function dragSpec(p: ArrowProps, mode: 'tip' | 'whole' | 'none'): Draggable | nu
 	const name = p.label ?? p.id;
 	const { to, from } = p;
 	if (typeof to !== 'string') throw new Error(`Arrow "${p.id}": drag="${mode}" needs \`to\` to be a store key`);
-	if (mode === 'tip') return { id: `${p.id}:tip`, owner: p.id, label: `Move tip of ${name}`, lesson: p.lesson, keys: [to], at: (v) => v[to] as V };
+	if (mode === 'tip') return { id: `${p.id}:tip`, owner: p.id, label: `Move tip of ${name}`, lesson: p.lesson, keys: [to], at: (v) => v[to] as V, move: p.move };
 	if (typeof from !== 'string') throw new Error(`Arrow "${p.id}": drag="whole" needs \`from\` to be a store key`);
 	// The handle sits mid-shaft so it never competes with another arrow's tip; `from` is the anchor that snaps.
 	return {
@@ -57,17 +63,48 @@ function dragSpec(p: ArrowProps, mode: 'tip' | 'whole' | 'none'): Draggable | nu
 		lesson: p.lesson,
 		keys: [from, to],
 		at: (v) => (v[from] as V).map((x, i) => (x + (v[to] as V)[i]) / 2),
+		move: p.move,
 	};
 }
 
-/** Legs from the tip to the axes: 2D drops to both axes; 3D drops to the floor (y = 0), then to the x and z axes. */
-function legPoints(t: readonly number[]): [number, number, number][] {
+type P3 = [number, number, number];
+const AXES = ['x', 'y', 'z'] as const;
+const AXIS_ROLE = ['axisX', 'axisY', 'axisZ'] as const;
+
+/**
+ * Legs from the tip to the axes, one per component, each as long as its component and parallel to its axis: 2D drops
+ * to both axes; 3D drops to the floor (y = 0), then runs to the x and z axes.
+ */
+export function legSegs(t: readonly number[]): { axis: 0 | 1 | 2; pts: [P3, P3] }[] {
 	if (t.length === 2) {
 		const [x, y] = t;
-		return [[x, y, 0], [x, 0, 0], [x, y, 0], [0, y, 0]];
+		return [
+			{ axis: 0, pts: [[x, y, 0], [0, y, 0]] },
+			{ axis: 1, pts: [[x, y, 0], [x, 0, 0]] },
+		];
 	}
 	const [x, y, z] = t;
-	return [[x, y, z], [x, 0, z], [x, 0, z], [x, 0, 0], [x, 0, z], [0, 0, z]];
+	return [
+		{ axis: 0, pts: [[x, 0, z], [0, 0, z]] },
+		{ axis: 1, pts: [[x, y, z], [x, 0, z]] },
+		{ axis: 2, pts: [[x, 0, z], [x, 0, 0]] },
+	];
+}
+
+/** One component leg: dashed, axis-coloured, hoverable as `${arrow}:${axis}`; appears halfway through the draw-in. */
+function Leg({ lesson, id, axis, pts }: { lesson: string; id: string; axis: 0 | 1 | 2; pts: [P3, P3] }): React.JSX.Element {
+	const pal = usePalette();
+	const hot = useHot(lesson, id);
+	const hover = useHoverable(lesson, id, HOVER_RANK.guide);
+	const group = useRef<Group>(null);
+	useReveal((r) => {
+		if (group.current) group.current.visible = r >= 0.5;
+	});
+	return (
+		<group ref={group} {...hover}>
+			<Stroke points={pts} color={pal[AXIS_ROLE[axis]]} hot={hot} width={STYLE.edge} halo={false} dashPx={STYLE.dash} order={1} />
+		</group>
+	);
 }
 
 // Rim of the outline and halo heads around the core head, in px per side, matching the shaft's rims (the outline is
@@ -92,14 +129,7 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 		const dir = len > 1e-9 ? scale(sub(b, a), 1 / len) : [0, 1, 0];
 		return { a, b, len, dir, q: new Quaternion().setFromUnitVectors(UP, new Vector3(...dir)), shaft: [a, b] };
 	}, [from, to]);
-	const legs = useMemo(() => (p.legs ? legPoints(to) : null), [p.legs, to]);
-
-	// Draw-in: the component legs fade in with their beam instead of standing at full strength around a growing tip.
-	const legRef = useRef<React.ComponentRef<typeof SLine>>(null);
-	useReveal((r) => {
-		const m = legRef.current?.material;
-		if (m) m.opacity = r;
-	});
+	const legs = useMemo(() => (p.legs ? legSegs(to) : null), [p.legs, to]);
 	const head = useRef<Group>(null);
 	const out = useRef<Mesh>(null);
 	const glow = useRef<Mesh>(null);
@@ -142,7 +172,7 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 	const geo = reg.mode === '3d' ? CONE : TRI;
 	return (
 		<group>
-			{legs && <SLine ref={legRef} points={legs} segments color={pal.muted} lineWidth={STYLE.edge} dashPx={STYLE.dash} transparent depthWrite={false} renderOrder={1} />}
+			{legs?.map((l) => <Leg key={l.axis} lesson={p.lesson} id={`${p.id}:${AXES[l.axis]}`} axis={l.axis} pts={l.pts} />)}
 			<group visible={g.len > 1e-9} {...hover}>
 				<Stroke ref={shaft} points={g.shaft} color={color} hot={hot} order={2} />
 				<group ref={head} position={g.b} quaternion={g.q}>

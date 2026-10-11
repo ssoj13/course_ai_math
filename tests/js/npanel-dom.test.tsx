@@ -136,7 +136,7 @@ test('invalid text is flagged and not written; Escape reverts; Enter on a focuse
 
 test('a vec row has one field per component and writes the whole vector', () => {
 	lessonStore('np6', { v: [3, 1] });
-	const { host } = panel('np6', [{ id: 'v', label: 'a', kind: 'vec', key: 'v', spec: { min: -5, max: 5, step: 0.1 } }]);
+	const { host } = panel('np6', [{ id: 'v', label: 'a', kind: 'vec', key: 'v', dims: 2, spec: { min: -5, max: 5, step: 0.1 } }]);
 	const fs = host.querySelectorAll<HTMLElement>('[role="slider"]');
 	expect(fs.length).toBe(2);
 	expect(fs[1].getAttribute('aria-label')).toBe('a y');

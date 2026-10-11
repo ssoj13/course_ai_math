@@ -11,11 +11,11 @@
  */
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { DoubleSide, type Group, type MeshBasicMaterial } from 'three';
-import { angleArc, to3, type V } from '../geom';
+import { angleArc, arcTicks, to3, type V } from '../geom';
 import { STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useHoverable, useLabel, usePos, useStage } from './handles';
-import { Stroke, useDynGeo, useReveal, writeGeo } from './view';
+import { SLine, Stroke, useDynGeo, useReveal, useWorldPx, writeGeo } from './view';
 
 export interface AngleArcProps {
 	lesson: string;
@@ -33,6 +33,11 @@ export interface AngleArcProps {
 	/** 3D only (required there): picks the plane of a 180-degree arc; any vector not along the sides. */
 	normal?: V;
 	role?: SceneRole;
+	/**
+	 * Magnet targets in degrees (e.g. 0, 30, 45, 60, 90, ...): short radial marks just outside the arc, measured from
+	 * `from` toward the arc's side, so the reader sees where a dragged angle will stick (see `magnet` in drag.ts).
+	 */
+	ticks?: readonly number[];
 }
 
 const N = 32;
@@ -40,6 +45,8 @@ const N = 32;
 const FAN = Array.from({ length: N }, (_, i) => [0, i + 1, i + 2]).flat();
 // Clearance between the arc and the near edge of its label, in CSS px.
 const LABEL_GAP = 6;
+// Length of a magnet tick beyond the arc, in CSS px (pixel-stable: a world length vanishes on a phone).
+const TICK_PX = 6;
 
 export function AngleArc(p: AngleArcProps): React.JSX.Element | null {
 	const { mode } = useStage();
@@ -63,13 +70,27 @@ export function AngleArc(p: AngleArcProps): React.JSX.Element | null {
 	useLabel(
 		text === undefined
 			? null
-			: { lesson: p.lesson, text, role: p.role ?? 'ink', hot: p.id, at: () => arc?.mid ?? null, away: () => c, gap: LABEL_GAP, wedge: () => arc?.theta ?? null },
+			: { lesson: p.lesson, text, role: p.role ?? 'ink', hot: p.id, at: () => arc?.mid ?? null, away: () => c, gap: LABEL_GAP + (p.ticks ? TICK_PX : 0), sides: () => (arc ? [arc.pts[0], arc.pts[N]] : null) },
 	);
 	if (!arc || !line) return null;
 	const color = pal[p.role ?? 'ink'];
 	return (
-		<ArcBody hover={hover} geo={geo} line={line} color={color} hot={hot} />
+		<>
+			<ArcBody hover={hover} geo={geo} line={line} color={color} hot={hot} />
+			{p.ticks && <Ticks c={c} f={f} t={t} r={p.r} ticks={p.ticks} normal={p.normal} />}
+		</>
 	);
+}
+
+/** Magnet ticks of an arc: muted 1 px radial marks TICK_PX long (re-measured when the zoom changes, see useWorldPx). */
+function Ticks(p: { c: V; f: V; t: V; r: number; ticks: readonly number[]; normal?: V }): React.JSX.Element | null {
+	const pal = usePalette();
+	const len = useWorldPx(TICK_PX, p.c);
+	const key = p.ticks.join();
+	const nKey = p.normal?.join();
+	const pts = useMemo(() => (len === null ? [] : arcTicks(p.c, p.f, p.t, p.r, p.ticks, len, p.normal).map(to3)), [p.c, p.f, p.t, p.r, key, len, nKey]);
+	if (!pts.length) return null;
+	return <SLine points={pts} segments color={pal.muted} lineWidth={1} transparent depthWrite={false} renderOrder={1} />;
 }
 
 /** Sector + arc of an AngleArc; a separate component so the draw-in hook only exists while the arc is drawn. */

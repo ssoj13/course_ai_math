@@ -53,6 +53,68 @@ Arrow leg ids `${id}:x|y|z`; Toggle (role switch, writes 0/1). Pure helpers unit
 LitSphere verified by CDP pixel sampling (brightness at the probe = max(0, N·L) within 1/255).
 Gates as above. Commit: `feat(viz): lesson primitives — custom drag mapping, magnet, half-plane, lit sphere, ledger, challenge, circle, toggle`.
 
+### Task 6h: Visual language v3 — holographic viewport (and clay solids)
+
+Spec: docs/design/visual-language.md (v3, refs `docs/design/refs/holo-style-ref.png` reproduced as is, `clay-style-ref.png`
+for solids). User requirements: the reference look exactly (space background with stars/nebula, glow filaments, glass faces,
+rulers/dials/HUD instruments, framed formula plate, reflective floor), chrome and interaction unchanged, clay as a secondary
+material for countable solids. Nothing from the reference is dropped; readability concerns are recorded in the spec, not
+"fixed" by removal.
+
+**Files:** src/styles/lab.css (v3 tokens), src/viz/palette.ts (roles: star, nebulaA/B, vignette, floor, plate, clayA/B/C,
+clayAccent, clayPlate, clayInk; `STYLE` glow/glass/mirror numbers), src/viz/scene/view.tsx (`Stroke` two additive glow
+layers, lightened core, hot halo swap), new src/viz/scene/{Background.tsx,Floor.tsx,Ruler.tsx,Dimension.tsx,Instruments.tsx,
+FormulaPlate.tsx,ClayTile.tsx}, Parallelogram.tsx (`Quad` glass shader), Stage.tsx (Mirror group + FloorFade, low-power
+predicate), Header.tsx (overlay flags `rulers`, `floor`, `instruments`), public/matcap-clay.png (≤ 8 kB), geom.ts (ruler
+tick law, dimension layout), tests, demo.
+
+1. **Tokens.** Replace the v2 viewport values with the v3 table (vp-bg `#0C1220/#05070F`, vignette, floor, grid `#1E2D4D/#141C30`,
+   star, nebula-a/b, plate, vecA `#4FD8FF`, vecB `#D85CC8`, vecC `#3DF0B4`; axis/light/hot/chrome unchanged; clay set).
+   Test (`tests/js/tokens.test.ts`): every data stroke ≥ 3:1 on both bg ends, ink/muted ≥ 4.5:1 on chrome/chrome-2,
+   `gridMinor` ≥ 1.08 and < `grid` < 1.6 on `vp-bg-top`, clayInk ≥ 4.5:1 on clayPlate; new `tests/js/cvd.test.ts`: Machado
+   2009 severity-1.0 simulation + CIE76 ΔE, min pair ≥ 15 for {vecA, vecB, vecC, hot, light} and for {axisX, axisY, axisZ,
+   vecA} under normal/protan/deutan, ≥ 14 for the clay set (the spec's measured numbers are the fixtures).
+2. **Glow strokes.** `Stroke` = outer glow 18 px @ 0.10 (additive) + inner glow 7 px @ 0.38 (additive) + core 2 px
+   (`mix(role, white, 0.35)`), hot = +2 px hot outline behind the core and the hot halo 18 px @ 0.30 replacing the outer glow.
+   Points: 6 px lightened disc + 14 px additive halo. Pixel-stable widths as today. CDP: sample a horizontal filament's
+   vertical profile at its midpoint: center pixel ≥ the lightened core within 2/255, glow at ±6 px ≈ bg + 0.38·role (±8/255),
+   at ±12 px ≈ bg + 0.10·role (±6/255), background at ±14 px; two crossing filaments brighter at the crossing than either alone
+   (additive). Hot: pulse amplitude measured at two instants 0.6 s apart differs by ≥ 0.08·hot; under reduced motion two
+   samples are equal.
+3. **Background.** `Background.tsx`: one NDC-fixed quad per Stage, renderOrder −10, depthWrite off, shader: gradient +
+   vignette + ≤ 3 nebula blobs (seeded) + hashed stars (radial law from the spec), no time uniform. CDP: corner pixel darker
+   than center by the vignette amount; star count in a 200×200 center crop within 0.2–0.5 % of pixels; two screenshots 1 s
+   apart bit-identical (static); orbit/zoom leaves the star positions unchanged (same crop hash).
+4. **Glass faces.** `Quad` ShaderMaterial: fill 0.12 → 0.06 vertical gradient, inner grid in world units (1; 0.5 when
+   1 unit ≥ 80 px; none when < 14 px) at 0.22, `fwidth` AA; edges are `Stroke`s; corner points 5 px; hatch unchanged.
+   Unit test of the grid-step law (`gridStep(pxPerUnit)`); CDP: a 3×3 face shows 2 interior lines per axis at fit zoom,
+   none at 0.5× when the unit falls under 14 px; hatch visible on a negative face in both zooms.
+5. **Rulers, dimensions, instruments, plate.** `Ruler` (segment prop) with the tick law (major 1, minor 0.5 at ≥ 40 px/unit,
+   mono labels at ≥ 24 px/unit) unit-tested in geom.ts; `Dimension` (14 px offset, end ticks, value label, term id → hot);
+   `Instruments` DOM overlay (left vertical ruler = view y-scale, dial = θ or azimuth, 3-line readout of the hovered term;
+   overlay flag `instruments`, default on ≥ 900 px); `FormulaPlate` wraps the lesson's existing linked `Formula` inside the
+   card at the bottom (glass plate with chamfers; under 720 px the Formula returns to the page flow). DOM tests: ruler label
+   visibility by zoom, dimension term hover lights the formula term, instruments hidden at 360 px. CDP: dial reads the
+   store's θ after a drag (±0.5°).
+6. **Reflective floor.** Stage `Mirror` group (`scale(1,-1,1)`, `MirrorCtx`: alpha 0.28, half glows, no labels/handles/hits)
+   + `FloorFade` quad + floor plane with the footprint lightening; overlay flag `floor` (3D only). Low-power predicate
+   (`lab-no-webgl` or `hardwareConcurrency ≤ 4` on touch) turns it off; record it in AGENTS.md. CDP: a vertical filament at
+   x = 1 has a mirrored pixel run below y = 0 at ≈ 0.28·core brightness fading to bg by 0.8× extent; hit test below the
+   floor picks nothing; registry handle count unchanged with the mirror on.
+7. **Clay solids.** `ClayTile`/`ClayCube` (RoundedBoxGeometry + MeshMatcapMaterial with the self-hosted matcap, pastel
+   `color`, footprint shadow sprite 1.4× at 0.45 → 0, hot = silhouette outline, negative = hatched top + accent rim); card
+   prop `look: 'clay'` switches the background to the light studio set (covers / Part 0 solid-only scenes). CDP: a
+   `clayA` tile's top face mean color within 12/255 of the matcap-lit expectation at the home camera; shadow pixel under the
+   tile darker than the floor beside it; both looks never mixed on one card (test: `look: 'clay'` + a filament throws).
+8. **Demo** gains DEMO-HOLO (2D: glass squares on a triangle, rulers, dimension, plate) and DEMO-FLOOR (3D: filaments over
+   the mirror floor, instruments) and DEMO-CLAY (unit tiles 3×3 and a 2×2×2 cube); CDP screenshots at 1280 and 360 px.
+Gates: `bun test tests/js`, `bun run check`, `bun run build` 0 warnings, viz-core ≤ 300 kB gz (today 272 kB; the
+budget for 6h is ≤ 18 kB gz: shaders are inline strings, RoundedBoxGeometry ≈ 2 kB, matcap is an asset not JS; no
+postprocessing, no MeshReflectorMaterial, no ContactShadows — if the size report would exceed the budget, nothing from the
+reference is dropped: stop and report the numbers so the controller asks the user (raise the budget or lazy-load the
+holo layer)). Commit: `feat(viz): holographic viewport — space background, glow filaments, glass faces, rulers,
+instruments, formula plate, mirror floor, clay solids`.
+
 ### Task 6g: Bilingual site (en + ru), same as vllm_en
 
 User requirement (task.md): two languages from the start, like the other courses: English at the root, Russian under `/ru/`.
@@ -93,7 +155,7 @@ Blender analogue: Ctrl+Space "Toggle Maximize Area" and Ctrl+Alt+Space "Toggle F
    drawn at the new size (pixel sample), returning to normal restores the layout with 0 layout-shift entries, 360 px works.
 Gates as above. Commit: `feat(viz): viewport size modes — enlarge 2x and full screen`.
 
-Execution order (ledger Ruling N/P): 6c → 6d → 6e → 6g → 6f → 7 → lessons law-of-cosines + dot-product → merge to main + deploy → 8 → 9 → 10 → 11.
+Execution order (ledger Ruling N/P, revised 2026-10-10 for 6h): 6c → 6d → 6e → 6h → 6g → 6f → 7 → lessons law-of-cosines + dot-product → merge to main + deploy → 8 → 9 → 10 → 11.
 
 ## Illustration roadmap (user requirements, task.md) — scheduled with the sections that use them
 

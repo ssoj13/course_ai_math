@@ -43,7 +43,7 @@ export function AreaTile(p: AreaTileProps): React.JSX.Element | null {
 	const a = usePos(p.lesson, p.a);
 	const b = usePos(p.lesson, p.b);
 	const src = p.area;
-	const signedArea = useStore(lessonStore(p.lesson), (s) => (typeof src === 'function' ? src(s.vals) : (src ?? 0)));
+	const signedArea = useStore(lessonStore(p.lesson), (s) => (typeof src === 'function' ? src(s.shown) : (src ?? 0)));
 	if (!Number.isFinite(signedArea)) throw new Error(`AreaTile "${p.id}": area is ${signedArea}`);
 	const nKey = p.normal?.join();
 	// u and v are memoized by value: Quad rebuilds its geometry and hatch when their identities change, and an unrelated

@@ -110,4 +110,6 @@ export const KEYS = {
 	progress: 'progress',
 	/** Key prefix of per-lesson persisted viz state: `lesson:<slug>` (see the lesson store in src/viz/store.ts) */
 	lessonState: 'lesson',
+	/** Record<`challenge:<lesson>:<n>`, true>: solved Challenge boxes (src/lib/challenges.ts) */
+	challenges: 'challenges',
 } as const;

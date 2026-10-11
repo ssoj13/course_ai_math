@@ -254,7 +254,7 @@ Upstream / known console noise:
 
 ### Viewport chrome and visual language (Task 6d)
 
-Every scene is a `ViewportCard` (`src/viz/scene/ViewportCard.tsx`), mounted inside `<SceneIsland caption panel?>`:
+Every scene is a `ViewportCard` (`src/viz/scene/ViewportCard.tsx`), mounted inside `<SceneIsland caption rows?>`:
 header (2D/3D tag, Persp/Ortho in 3D, `Overlays` popover, `Reset view`, scene name, sidebar chevron), the Stage
 (viewport), the N-panel (`NPanel.tsx`) and the status bar (`StatusBar.tsx`). Composition API:
 `<ViewportCard lesson id name mode extent center? overlays? rows? status? drawIn?>{scene}</ViewportCard>`.
@@ -267,7 +267,7 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   update, fed per frame by `GizmoSync`) and `reveal` (draw-in progress).
 - **Overlay flags** live in the lesson store as 0/1 under `ov:<card>:<flag>` (absent = the declared default), so the
   scene (canvas React root) reads them like any value; toggling hides objects and never changes lesson values.
-- **N-panel rows** `{ id, label, kind: 'num'|'vec'|'ro', key?, spec?, snap?, value?, fmt?, visible?, group?, tip? }`:
+- **N-panel rows** `{ id, label, kind: 'num'|'vec'|'ro'|'bool', key?, spec?, snap?, value?, fmt?, visible?, group?, tip?, dims?, chars? }`:
   fields use the ONE scrub engine (`startScrubDrag` in useScrub.ts + `scrubValue`/`keyStep`/`ctrlSnap`/`parseField`/
   `fmtField` in scrub.ts; 4 px per step, Ctrl = `snap` targets or increment (default 10 steps), Shift = 1/10 step
   re-based mid-drag, click or Enter = type (Enter commits, Esc reverts, blur keeps a valid value), arrows/PageUp).
@@ -275,13 +275,13 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   swipe scrolls the page. `startScrubDrag(e, el, { get, set }, next, onEnd)` owns the writes and the cancel rule for
   Formula, Num and fields alike: `pointercancel` applies no pending frame, restores the value from the press and is
   never a click.
-  Read-only rows hover like their scene object. Row ids are term ids (hover <-> hot <-> formula). `bool` rows and
-  `glyph` (lessons spec item 11) are not built: 6e (Toggle) / lesson scope.
+  Read-only rows hover like their scene object. Row ids are term ids (hover <-> hot <-> formula). `bool` rows (6e)
+  are checkboxes writing 0/1 (a non-0/1 value throws); `glyph` (lessons spec item 11) is lesson scope.
 - **Desktop N-panel = Blender region overlap**: drawn over the right edge of the viewport (200 px, 94 % chrome); the
   scene is re-centered in the free part with `camera.setViewOffset` (Stage `inset`), so labels, hit tests and raycasts
   stay exact. Under 720 px (media query, = spec) the same DOM becomes chips under the viewport that WRAP onto lines
-  (Ruling V; no sideways scroller). SceneIsland `chipLines` reserves the line count measured at 360 px (24 px/line);
-  ViewportCard grows the row if the chips need more (a shift: measure!) and never shrinks it. Why overlap:
+  (Ruling V; no sideways scroller). The reserved height is DERIVED (6e, see "Lesson primitives"): fixed-width chip
+  model `scene/chips.ts`; ViewportCard grows the row only as a safety net and never shrinks it. Why overlap:
   the Starlight content column is only 632 px at 1280 px (measured), a side column would leave a 432 px viewport.
   `N` toggles it for the card under the pointer or holding focus.
 - **Navigation** (Stage `Nav`): **a plain wheel always scrolls the page (Ruling T)**: DragLayer stops plain `wheel`
@@ -327,8 +327,7 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   the built-in touch hint); never guessed from words;
   built-ins for any handle, field, the gizmo and idle navigation (`DEFAULT_HINTS`). Tooltips (`useTip`, 500 ms,
   title + line + TeX via `renderStaticMath`) on N-panel rows and header buttons.
-- [ ] Indirect value changes are not yet eased on screen (keyboard nudges, typed values jump): Ruling U defers it to
-  6e (direct/indirect write channel in the store, reusing `springStep`).
+- [x] Indirect value changes are eased on screen (Ruling U, done in 6e: `vals`/`shown` in the store).
 - [ ] Formula term tooltips (lessons spec) need a `tips` prop on Formula (Task 7 / lessons).
 - [x] `gridMinor` is #444444 (1.17:1 on `vp-bg-top`, tested >= 1.15 and below the major grid); spec table updated.
 - [x] Wheel scrolls the page; Ctrl+wheel zooms (Ruling T): `gateWheel` (handles.tsx) stops plain wheels in the
@@ -337,7 +336,69 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
 - Overlays popover closes on a pointerdown whose composedPath excludes it, on Escape, and on focusout with a NON-null
   relatedTarget outside (Tab-out). A null relatedTarget is Chrome's focus fixup when the mouse presses non-focusable
   popover text: closing then would swallow the click (CDP-verified with real mouse input).
-- Angle labels pass `wedge` (the angle): `fitWedge` pushes the label out along the bisector until its box fits between
-  the sides (max 80 px extra), so narrow wedges on phones keep the text off the beams.
+- Angle labels pass `sides` (6e; was `wedge`): the wedge is measured on SCREEN (`screenWedge`), then `fitWedge` pushes
+  the label out along the projected bisector until its box fits between the projected sides (max 80 px extra).
 - Tests import no three/drei (bun would print THREE_CJS_DEPRECATED): pure helpers live in three-free modules
   (`geom.ts` tickValues/tickText, `Header.tsx` Overlays/Icon, Gizmo/NPanel/StatusBar/handles).
+
+### Lesson primitives (Task 6e, lessons spec §5 items 1-9 + Rulings U and the 6d carry-overs)
+
+Demo: three more cards on dev/engine (DEMO-POLAR vertex drags + Ledger, DEMO-SIGN half-planes + Challenges, DEMO-LAMP
+lit sphere); rows, derived values and drag mappings of the demo are in the three-free `src/viz/demo/engine.rows.ts`
+(imported by the entry for MDX/SceneIsland, by the scenes and by tests). Evidence:
+`.superpowers/sdd/2026-10-10-engine-and-spikes/task-6e-evidence/` (`e6.ts` + `cdp.ts`, `final/report.json`,
+screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a drag).
+
+- **Eased writes (Ruling U)**: the lesson store has `vals` (truth: every number, formula, challenge) and `shown`
+  (what scenes draw). `set(key, v, 'ease')` jumps `vals` and springs `shown` with `springStep` (SPRING_MS, keeps
+  velocity on retarget, lands exactly, never overshoots); `'cut'` (default) moves both. Scene code reads `shown`
+  automatically: Stage provides `ShownCtx`, and `useVal`/`useVals`/`usePos`, `pick`, labels and the focus ring read
+  it. Ease: keyboard nudges of handles, N-panel arrows/step arrows/typed values, Formula/Num arrow keys. Cut: pointer
+  drags and scrubs (1:1), checkboxes, overlays. Reduced motion = cut. A requestAnimationFrame that calls back
+  synchronously (test stubs) is detected in `nextFrame` (it would recurse into a stack overflow).
+- **Custom drag mapping**: `Draggable.move?(vals, raw, src: 'drag' | 'key') => Record<string, Val>` replaces `moved`
+  in DragLayer (vals = press-time values, raw = plane travel since the press, sliced to the handle's dimension) and in
+  `nudge` (current values, one `keyDelta` step, written `ease`). `writeMove` takes numbers and vectors. Point takes
+  `move` and `keys`, and `at` may be a function of the values (a derived vertex); Arrow takes `move` (tip/whole).
+- **Magnet** `magnet(v, targets, zone, from?)` (drag.ts): nearest target within the zone. TRAP: a keyboard step of 0.1
+  is smaller than the zone (1.4 degrees at radius 4 vs 2.5), so a plain magnet pulls every key step back onto the
+  target it left: pass `from` (the current value) for `src === 'key'`; the magnet then only catches steps that move
+  toward a target. Vector magnets (DP-2 b to the perpendicular) need the same rule (`moveSb` in the demo).
+  AngleArc `ticks` = 6 px radial marks (pixel-stable via `useWorldPx`) at the targets, from `from` toward the arc side.
+- **HalfPlane** `{ lesson, id, normal: V|key, side, role, opacity? }`: 2D = square of 50 x extent clipped by the line
+  through O (`halfPlanePoly`), 3D = single-sided disc of radius `extent` perpendicular to the normal (`pos` = face seen
+  from +normal). Render order -1, no depth writes, hot doubles the opacity. `reg.extent` is set by Stage.
+- **LitSphere** `{ lesson, id, center, r, light: key, mode, roles: { base, dark?, neg? } }`: ShaderMaterial, exact
+  per-fragment sphere normal, point light uniform from the store (shown values), `mix` in sRGB values with NO
+  colorspace chunk, so the pixel encodes N·L linearly. CDP: 16 probes (lit, near the terminator at N·L 0.07, unlit,
+  raw negative) all within 0.42/255 of `dark + (base - dark) * max(0, N·L)` (raw: `mix(dark, neg, -N·L)`). Method:
+  P's ring gives its exact projected px; the pixel is sampled after P was moved away (its glyph covers it).
+- **Circle** `{ lesson, id, center, r, normal?, role, dashPx? }` (values or functions of vals): 64-segment closed loop
+  (`circlePoints`, basis from `planeBasis`); r < 1e-9 draws nothing; 3D requires `normal`.
+- **Arrow legs**: one hoverable dashed leg per component, axis-coloured, ids `${id}:x|y|z` (exported `legSegs`).
+- **Ledger** (DOM SVG, page-side theme) `{ lesson, items, total, scale, max, zeroLabel?, fmt?, label }`: pure
+  `ledgerLayout` + `spreadLabels`; negative last item = hatched band hanging from the stack top with a down arrow,
+  zero = `light` line + zeroLabel. Moving parts are placed with CSS `translateY` (y attributes were layout shifts).
+- **Challenge** (DOM) `{ lesson, n, text, hint?, success?, check(vals, step) }`: sticky; stored as
+  `challenge:<lesson>:<n>` under KEYS.challenges (`src/lib/challenges.ts`, separate from progress.ts so scene bundles
+  do not pull course.json); shows stored success after hydration. Step tasks read `step['<timeline>:max']` (Task 7's
+  Timeline writes it).
+- **Chip row reservation (derived)**: rows are declared once (three-free module) and passed to BOTH
+  `<SceneIsland rows={ROWS}>` and the ViewportCard; `chips.ts` computes each chip's width from the row (label length
+  and value budget in 7 px characters: num/vec from the spec's range ends and `fmt`, ro from `chars` (default 7),
+  vec needs `dims`), greedy-wraps at the 320 px basis and gives the height (`1 + 2*5 + 20n + 4(n-1)`). NPanel sets the
+  widths/gaps as CSS variables (one source), chip labels are mono 11 px. The card throws if its rows give another
+  line count than the frame (`chipLines` = explicit override). CDP: lines and height equal the model at 320 px for
+  all 6 cards, fit at 360 px, and 0 layout-shift entries during drags at 320/360.
+- **No layout shift from live text**: N-panel values sit in `.lab-np-val`, placed by a transform from a fixed anchor;
+  a centred or right-aligned text whose width changes moves its own edge, which Chrome reports as a shift (measured:
+  one entry per drag). Same for the Challenge status and the status bar (keyed by text). NPanel reports a value wider
+  than its box once per row (`console.error`): raise `chars` or shorten `fmt`.
+- [ ] Formula: a centred display formula whose live number changes width shifts its line (measured during a drag of
+  the 2D demo, `cls-probe.ts`; excluded from CLS by hadRecentInput but an entry): Task 7 should anchor `\s{}` numbers.
+- [ ] A magnet catch during a POINTER drag is a cut (the spec wants the glyph to ease); `move` has no way to say "this
+  write was a catch". Key-step catches ease.
+- [ ] Lessons spec DP-2 writes b's perpendicular as `nb * cw(ahat) * sign(cross(a, b))`, which is the other side of
+  a's line; the demo (`moveSb`) uses the side of b. Fix the spec when the lesson is built.
+- [ ] Point sizes (DP-4 "sun glyph, larger", LC-0 small feet D/E/F, LC-3 larger joint) and the `nl_light` typed-value
+  clamp (outside the sphere) are lesson-task scope (Point `size`, a row-level constraint).
