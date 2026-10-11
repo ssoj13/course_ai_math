@@ -171,3 +171,28 @@ test('a11y: root is a labelled group and handles carry readable aria-valuetext',
 	expect(root.getAttribute('aria-label')).toBe('angle');
 	expect(host.querySelector('[data-s]')!.getAttribute('aria-valuetext')).toBe('60°');
 });
+
+test('a cancelled scrub (pointercancel, e.g. the page took the swipe) restores the start value: Formula and Num share the loop', () => {
+	const lesson = 'fdom-cancel';
+	lessonStore(lesson, { theta: 60 });
+	const host = mount(
+		<>
+			<Formula lesson={lesson} tex={TEX} scrub={{ theta: spec }} label="angle" />
+			<Num lesson={lesson} k="theta" spec={spec} label="theta" />
+		</>,
+	);
+	const root = host.querySelector<HTMLElement>('.lab-formula')!;
+	act(() => void host.querySelector('[data-s]')!.dispatchEvent(ptr('pointerdown', 100)));
+	act(() => void root.dispatchEvent(ptr('pointermove', 120)));
+	expect(val(lesson)).toBe(65);
+	act(() => void root.dispatchEvent(ptr('pointercancel', 120)));
+	expect(val(lesson)).toBe(60);
+	const num = host.querySelector<HTMLElement>('.lab-num')!;
+	act(() => void num.dispatchEvent(ptr('pointerdown', 0)));
+	act(() => void num.dispatchEvent(ptr('pointermove', -40)));
+	expect(val(lesson)).toBe(50);
+	act(() => void num.dispatchEvent(ptr('pointercancel', -40)));
+	expect(val(lesson)).toBe(60);
+	act(() => void num.dispatchEvent(ptr('pointerup', -40)));
+	expect(val(lesson)).toBe(60);
+});

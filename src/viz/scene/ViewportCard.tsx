@@ -89,6 +89,32 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 		};
 	}, [open, hasPanel, panelId]);
 
+	// Wrapped chips (< 720 px, Ruling V): the frame reserved `chipLines` lines server-side. If the chips need more, grow
+	// the row to fit (a shift, so authors size chipLines from the 360 px layout); never shrink below the reservation,
+	// so a wider phone keeps a little spare room instead of a jump.
+	useLayoutEffect(() => {
+		const panel = document.getElementById(panelId);
+		const fig = root.current?.closest<HTMLElement>('.lab-vp');
+		const reserve = fig?.querySelector<HTMLElement>('.lab-vp-skel > :nth-child(3)');
+		if (!panel || !fig || !reserve) return;
+		const mq = matchMedia(NARROW);
+		const upd = () => {
+			fig.style.removeProperty('--lab-vp-chips');
+			if (!mq.matches) return;
+			const need = panel.scrollHeight;
+			if (need > reserve.offsetHeight) fig.style.setProperty('--lab-vp-chips', `${need}px`);
+		};
+		upd();
+		mq.addEventListener('change', upd);
+		const ro = new ResizeObserver(upd);
+		ro.observe(panel);
+		return () => {
+			mq.removeEventListener('change', upd);
+			ro.disconnect();
+			fig.style.removeProperty('--lab-vp-chips');
+		};
+	}, [hasPanel, panelId]);
+
 	// `N` toggles the sidebar of the card under the pointer (or holding focus), like Blender's region toggle.
 	useEffect(() => {
 		const card = root.current;

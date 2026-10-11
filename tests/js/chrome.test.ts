@@ -67,13 +67,22 @@ test('wheel hint: a plain wheel scrolls the page (Ruling T), so idle hints adver
 	expect(DEFAULT_HINTS.idle3d).toContain('Ctrl+Wheel zoom');
 });
 
-test('touch: built-in touch wording, and lesson hints that name mouse buttons or keys are replaced', () => {
-	const spec = { hints: { 'a:tip': 'LMB drag a · Shift 1.0', a: 'Vector a = (3, 1)' }, idle: 'Wheel zoom · MMB pan' };
-	expect(hintFor(H({}), {}, spec, '2d', true)).toBe(TOUCH_HINTS.idle2d);
-	expect(hintFor(H({ handle: 'a:tip' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.handle2d);
+test('touch: built-in touch wording; lesson hints switch only when they declare a touch alternative', () => {
+	const spec = {
+		hints: { 'a:tip': { mouse: 'LMB drag a · Shift 1.0', touch: 'Drag a' }, 'b:tip': { mouse: 'LMB drag b', touch: null }, a: 'Vector a = (3, 1)', m: 'Shift of the mean' },
+		idle: { mouse: 'Ctrl+Wheel zoom', touch: 'Pinch to zoom' },
+	};
+	expect(hintFor(H({}), {}, spec, '2d', true)).toBe('Pinch to zoom');
+	expect(hintFor(H({}), {}, spec, '2d', false)).toBe('Ctrl+Wheel zoom');
+	expect(hintFor(H({ handle: 'a:tip' }), {}, spec, '2d', true)).toBe('Drag a');
+	expect(hintFor(H({ handle: 'a:tip' }), {}, spec, '2d', false)).toBe('LMB drag a · Shift 1.0');
+	expect(hintFor(H({ handle: 'b:tip' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.handle2d);
+	// Plain text is device-neutral, even when it contains a word like "Shift".
+	expect(hintFor(H({ object: 'm' }), {}, spec, '2d', true)).toBe('Shift of the mean');
 	expect(hintFor(H({ object: 'a' }), {}, spec, '3d', true)).toBe('Vector a = (3, 1)');
 	expect(hintFor(H({ field: 'a' }), {}, spec, '2d', true)).toBe(TOUCH_HINTS.field);
 	expect(hintFor(H({ object: GIZMO_ID }), {}, spec, '3d', true)).toBe(TOUCH_HINTS.gizmo);
+	expect(hintFor(H({}), {}, {}, '3d', true)).toBe(TOUCH_HINTS.idle3d);
 	for (const t of Object.values(TOUCH_HINTS)) expect(hintTokens(t).some((x) => x.key)).toBe(false);
 });
 

@@ -47,7 +47,8 @@ export function Overlays({ lesson, card, overlays }: { lesson: string; card: str
 	useEffect(() => {
 		if (!open) return;
 		const away = (e: PointerEvent) => {
-			if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+			const w = wrap.current;
+			if (w && !e.composedPath().includes(w)) setOpen(false);
 		};
 		document.addEventListener('pointerdown', away, true);
 		return () => document.removeEventListener('pointerdown', away, true);
@@ -62,9 +63,12 @@ export function Overlays({ lesson, card, overlays }: { lesson: string; card: str
 				setOpen(false);
 				btn.current?.focus();
 			}}
-			// Tabbing out of the popover closes it, like a press outside (a stray open popover would cover the scene).
+			// Tabbing out of the popover closes it. Only a non-null relatedTarget is a keyboard move elsewhere: a mouse press
+			// on non-focusable popover content (label text, title, padding) blurs the button with relatedTarget = null, and
+			// closing then would unmount the popover before the click lands (presses outside are the pointerdown rule).
 			onBlur={(e) => {
-				if (open && !e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
+				const to = e.relatedTarget as Node | null;
+				if (open && to && !e.currentTarget.contains(to)) setOpen(false);
 			}}
 		>
 			<button ref={btn} type="button" className="lab-vp-btn" aria-expanded={open} aria-controls={popId} onClick={() => setOpen((o) => !o)}>

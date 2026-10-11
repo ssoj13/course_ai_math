@@ -2,7 +2,7 @@ import './dom';
 import { afterEach, expect, test } from 'bun:test';
 import { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { createStage, Labels, placeLabels, StageCtx, useLabel, type StageReg } from '../../src/viz/scene/handles';
+import { createStage, fitWedge, Labels, placeLabels, StageCtx, useLabel, type StageReg } from '../../src/viz/scene/handles';
 import { Label } from '../../src/viz/scene/Label';
 import { lessonStore } from '../../src/viz/store';
 
@@ -113,4 +113,16 @@ test('authoring errors are loud: a Label outside a Stage, a bad store key', () =
 	} finally {
 		console.error = err;
 	}
+});
+
+test('fitWedge: a label moves out along the bisector until its box fits between the sides, never inward, capped', () => {
+	const r = Math.hypot(20, 10) / 2 + 2;
+	const need = r / Math.sin(Math.PI / 4); // 90-degree wedge
+	const p = fitWedge([10, 0], [0, 0], Math.PI / 2, [20, 10]);
+	expect(p[0]).toBeCloseTo(need, 9);
+	expect(p[1]).toBe(0);
+	expect(fitWedge([100, 0], [0, 0], Math.PI / 2, [20, 10])).toEqual([100, 0]);
+	// A 1-degree wedge would need ~800 px: capped at 80 px beyond the start.
+	expect(fitWedge([10, 0], [0, 0], Math.PI / 180, [20, 10])[0]).toBeCloseTo(90, 9);
+	expect(fitWedge([0, 0], [0, 0], 1, [20, 10])).toEqual([0, 0]);
 });

@@ -4,17 +4,20 @@
  * caption is real HTML (the scene's accessible name, and the fallback without JS or WebGL). `.lab-vp-skel` paints the
  * card's skeleton (header, dark viewport, chip row on phones, status bar) and fixes its exact height before any
  * script runs: the 16:10 viewport comes from an aspect-ratio spacer and the bars are fixed px, so the island, which
- * fills the same box absolutely, causes no layout shift. `panel` (default true) reserves the N-panel chip row under
- * 720 px; it must match whether the card has N-panel rows (ViewportCard checks).
+ * fills the same box absolutely, causes no layout shift. `panel` (default true) reserves the N-panel chip rows under
+ * 720 px; it must match whether the card has N-panel rows (ViewportCard checks). `chipLines` = how many lines the
+ * wrapped chips take at 360 px (the narrowest layout, so the reservation is never too small on a wider phone); if it
+ * is too small the card grows after hydration (a layout shift), so measure it with the demo harness.
  */
 interface Props {
 	caption: string;
 	panel?: boolean;
+	chipLines?: number;
 }
-const { caption, panel = true } = Astro.props;
+const { caption, panel = true, chipLines = 1 } = Astro.props;
 ---
 
-<figure class="lab-scene lab-vp not-content" data-panel={panel ? '' : undefined}>
+<figure class="lab-scene lab-vp not-content" data-panel={panel ? '' : undefined} style={`--lab-vp-chip-lines: ${chipLines}`}>
 	<div class="lab-vp-frame">
 		<div class="lab-vp-skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
 		<slot />

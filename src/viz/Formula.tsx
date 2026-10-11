@@ -85,7 +85,7 @@ export function Formula(p: FormulaProps): React.JSX.Element {
 		const spec = k ? props.current.scrub?.[k] : undefined;
 		if (!k || !spec) return;
 		const v0 = store.getState().vals[k] as number;
-		startScrubDrag(e, e.currentTarget, (dx) => store.getState().set(k, scrubValue(v0, dx, spec)));
+		startScrubDrag(e, e.currentTarget, { get: () => store.getState().vals[k] as number, set: (v) => store.getState().set(k, v) }, (dx) => scrubValue(v0, dx, spec));
 	};
 
 	const onKeyDown = (e: React.KeyboardEvent) => {

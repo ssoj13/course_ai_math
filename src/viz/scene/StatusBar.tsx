@@ -14,15 +14,23 @@ import type { HoverState, StageReg } from './handles';
 
 type Vals = LessonState['vals'];
 
-export type Hint = string | ((vals: Vals) => string | null);
+/** Hint text: fixed, or computed from the store values (null = no hint here, fall through). */
+export type HintText = string | ((vals: Vals) => string | null);
+
+/**
+ * A lesson hint. Plain text is device-neutral (a value, a description) and is shown on every device. An instruction
+ * that names mouse buttons or keys is written as `{ mouse, touch }`: the touch wording replaces it on touch screens
+ * (`touch: null` = nothing specific on touch, the built-in touch hint is shown). Explicit, never guessed from words.
+ */
+export type Hint = HintText | { mouse: HintText; touch: HintText | null };
 
 export interface StatusSpec {
 	/** By handle id (`a:tip`) or scene object id (`a`; a read-only N-panel row with the same id shows it too). */
 	hints?: Readonly<Record<string, Hint>>;
 	/** Shown when nothing more specific applies; defaults to the navigation of the viewport. */
-	idle?: string;
+	idle?: Hint;
 	/** Evaluated first: a state of the scene that beats any hover hint, or null. */
-	state?: (vals: Vals) => string | null;
+	state?: Hint;
 }
 
 /** Built-in mouse hints: what any handle, field and the gizmo do, and the default navigation per mode. */
@@ -47,17 +55,18 @@ export const TOUCH_HINTS = {
 
 const KEYS = /(LMB\/MMB|LMB|MMB|RMB|Ctrl\+Wheel|Wheel|Shift\+MMB|Shift|Ctrl|PageUp\/PageDown|PageUp|PageDown|\bN(?= panel))/g;
 
+const text = (h: HintText | null, vals: Vals): string | null => (h === null ? null : typeof h === 'string' ? h : h(vals));
+
 const run = (h: Hint | undefined, vals: Vals, touch: boolean): string | null => {
-	const t = h === undefined ? null : typeof h === 'string' ? h : h(vals);
-	// A lesson hint that names mouse buttons or keys means nothing on a touch screen: use the built-in one instead.
-	return t !== null && touch && new RegExp(KEYS.source).test(t) ? null : t;
+	if (h === undefined) return null;
+	if (typeof h === 'object') return text(touch ? h.touch : h.mouse, vals);
+	return text(h, vals);
 };
 
 /**
  * The hint for the current hover: state first, then an editable N-panel field (what dragging/typing does), the
  * handle (lesson hint or the built-in one), the gizmo, the object (lesson hint; read-only N-panel rows count as
- * their object); finally idle. `touch` swaps the built-ins for touch wording and drops lesson hints that mention
- * mouse buttons or keys.
+ * their object); finally idle. `touch` picks the touch wording of the built-ins and of `{ mouse, touch }` hints.
  */
 export function hintFor(h: HoverState, vals: Vals, spec: StatusSpec, mode: '2d' | '3d', touch = false): string {
 	const hints = spec.hints ?? {};

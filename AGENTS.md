@@ -271,14 +271,17 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   fields use the ONE scrub engine (`startScrubDrag` in useScrub.ts + `scrubValue`/`keyStep`/`ctrlSnap`/`parseField`/
   `fmtField` in scrub.ts; 4 px per step, Ctrl = `snap` targets or increment (default 10 steps), Shift = 1/10 step
   re-based mid-drag, click or Enter = type (Enter commits, Esc reverts, blur keeps a valid value), arrows/PageUp).
-  Touch: fields are `touch-action: pan-y`; a scrub starts only after an 8 px horizontal-dominant move, a vertical
-  swipe scrolls the page, and `startScrubDrag` reports `pointercancel` as cancelled (never a click; the field restores
-  its start value).
+  Touch: fields are `touch-action: pan-y`; a scrub starts only after an 8 px horizontal-dominant move and a vertical
+  swipe scrolls the page. `startScrubDrag(e, el, { get, set }, next, onEnd)` owns the writes and the cancel rule for
+  Formula, Num and fields alike: `pointercancel` applies no pending frame, restores the value from the press and is
+  never a click.
   Read-only rows hover like their scene object. Row ids are term ids (hover <-> hot <-> formula). `bool` rows and
   `glyph` (lessons spec item 11) are not built: 6e (Toggle) / lesson scope.
 - **Desktop N-panel = Blender region overlap**: drawn over the right edge of the viewport (200 px, 94 % chrome); the
   scene is re-centered in the free part with `camera.setViewOffset` (Stage `inset`), so labels, hit tests and raycasts
-  stay exact. Under 720 px (media query, = spec) the same DOM is a scrollable chip row under the viewport. Why overlap:
+  stay exact. Under 720 px (media query, = spec) the same DOM becomes chips under the viewport that WRAP onto lines
+  (Ruling V; no sideways scroller). SceneIsland `chipLines` reserves the line count measured at 360 px (24 px/line);
+  ViewportCard grows the row if the chips need more (a shift: measure!) and never shrinks it. Why overlap:
   the Starlight content column is only 632 px at 1280 px (measured), a side column would leave a 432 px viewport.
   `N` toggles it for the card under the pointer or holding focus.
 - **Navigation** (Stage `Nav`): **a plain wheel always scrolls the page (Ruling T)**: DragLayer stops plain `wheel`
@@ -319,14 +322,22 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   `--lab-font-prose|ui|mono`. `display: 'optional'` + metric-matched fallbacks: with `swap` the late face re-wrapped
   the intro paragraph (CLS 0.049); with optional, 3 cold loads had 0 shifts and the faces in use. No preload (the
   local provider cannot filter preloads by subset).
-- Status bar hints: `status={{ hints: { [handleId|objectId]: string | (vals) => string|null }, idle?, state? }}`;
+- Status bar hints: `status={{ hints: { [handleId|objectId]: Hint }, idle?: Hint, state?: Hint }}` where a Hint is
+  device-neutral text (string or `(vals) => string|null`) or `{ mouse, touch }` for instructions (touch: null = use
+  the built-in touch hint); never guessed from words;
   built-ins for any handle, field, the gizmo and idle navigation (`DEFAULT_HINTS`). Tooltips (`useTip`, 500 ms,
   title + line + TeX via `renderStaticMath`) on N-panel rows and header buttons.
 - [ ] Indirect value changes are not yet eased on screen (keyboard nudges, typed values jump): Ruling U defers it to
   6e (direct/indirect write channel in the store, reusing `springStep`).
 - [ ] Formula term tooltips (lessons spec) need a `tips` prop on Formula (Task 7 / lessons).
 - [x] `gridMinor` is #444444 (1.17:1 on `vp-bg-top`, tested >= 1.15 and below the major grid); spec table updated.
-- [x] Wheel scrolls the page; Ctrl+wheel zooms (Ruling T). Touch devices get touch hints (`TOUCH_HINTS`; lesson
-  hints naming mouse buttons/keys are replaced on touch).
+- [x] Wheel scrolls the page; Ctrl+wheel zooms (Ruling T): `gateWheel` (handles.tsx) stops plain wheels in the
+  capture phase; DOM-tested against real OrbitControls (happy-dom's WheelEvent drops modifier init fields: the test
+  sets ctrlKey explicitly). Touch devices get `TOUCH_HINTS` and the `touch` side of `{ mouse, touch }` hints.
+- Overlays popover closes on a pointerdown whose composedPath excludes it, on Escape, and on focusout with a NON-null
+  relatedTarget outside (Tab-out). A null relatedTarget is Chrome's focus fixup when the mouse presses non-focusable
+  popover text: closing then would swallow the click (CDP-verified with real mouse input).
+- Angle labels pass `wedge` (the angle): `fitWedge` pushes the label out along the bisector until its box fits between
+  the sides (max 80 px extra), so narrow wedges on phones keep the text off the beams.
 - Tests import no three/drei (bun would print THREE_CJS_DEPRECATED): pure helpers live in three-free modules
   (`geom.ts` tickValues/tickText, `Header.tsx` Overlays/Icon, Gizmo/NPanel/StatusBar/handles).

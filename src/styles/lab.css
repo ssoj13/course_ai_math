@@ -374,8 +374,10 @@ h1#_top,
 	inset: 0;
 }
 @media (max-width: 719.98px) {
+	/* Chip lines the frame reserves before hydration (SceneIsland `chipLines`, the line count at 360 px); the card
+	   grows the row if the chips need more (ViewportCard), never shrinks it, so wider phones only get spare room. */
 	.lab-vp[data-panel] {
-		--lab-vp-chips: 38px;
+		--lab-vp-chips: calc(var(--lab-vp-chip-lines, 1) * 24px + 10px);
 	}
 }
 
@@ -693,28 +695,21 @@ h1#_top,
 		grid-area: chips;
 		justify-self: stretch;
 		width: auto;
+		height: auto;
 		display: flex;
+		flex-wrap: wrap;
+		align-content: flex-start;
 		align-items: center;
-		gap: 10px;
-		padding: 0 8px;
-		overflow-x: auto;
-		overflow-y: hidden;
+		/* Ruling V: chips wrap onto lines (every value visible at a glance, no sideways scroller). */
+		gap: 4px 12px;
+		padding: 5px 8px;
+		overflow: visible;
 		background: var(--viz-chrome-2);
 		border: 0;
 		border-top: 1px solid var(--viz-chrome);
 	}
 	.lab-np-sep {
 		display: none;
-	}
-	/* More chips off an edge: fade that edge (NPanel sets the classes from the scroll position). */
-	.lab-vp-panel.is-more {
-		mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
-	}
-	.lab-vp-panel.is-less {
-		mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent);
-	}
-	.lab-vp-panel.is-more.is-less {
-		mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
 	}
 	.lab-np-row {
 		flex: none;

@@ -11,7 +11,7 @@ import { sub, to3, type V } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitRadius, moved, ndcToPx, rayPlane, worldPerPx } from './drag';
-import { placeLabels, useStage, writeMove, type Draggable } from './handles';
+import { gateWheel, placeLabels, useStage, writeMove, type Draggable } from './handles';
 import { DRAW_MS, reducedMotion, springProgress } from './motion';
 
 // Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
@@ -353,16 +353,7 @@ export function DragLayer(): null {
 		on('mousedown', (e) => {
 			if (e.button === 1) e.preventDefault();
 		});
-		// Ruling T: a plain wheel always scrolls the lesson (a card must never trap reading). Stopping the event here, in
-		// the capture phase on the stage, keeps it away from OrbitControls on the View div, which would preventDefault
-		// and zoom; Ctrl/Cmd+wheel (and a trackpad pinch, which arrives as ctrl+wheel) passes through and zooms.
-		on(
-			'wheel',
-			(e) => {
-				if (!e.ctrlKey && !e.metaKey) e.stopPropagation();
-			},
-			{ capture: true },
-		);
+		gateWheel(el, ac.signal);
 		// Leaving the stage clears what the status bar describes (r3f's pointerout covers objects, not handles).
 		on('pointerleave', () => {
 			if (!active) reg.hover.set({ handle: null });

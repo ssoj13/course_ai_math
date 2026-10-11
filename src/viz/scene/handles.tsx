@@ -54,6 +54,12 @@ export interface LabelSpec {
 	/** Optional second point: the label moves away from its projection until its near edge is `gap` px from the anchor (e.g. off an arc, away from its center). */
 	away?(vals: Vals): readonly number[] | null;
 	gap?: number;
+	/**
+	 * Angle labels: the opening (radians) of the wedge the label sits in, with `away` at its corner. The label moves
+	 * further out along the bisector until its box fits between the two sides (a narrow wedge on a phone would put
+	 * the text on a side's stroke otherwise), at most WEDGE_MAX_PX beyond its `gap` position.
+	 */
+	wedge?(vals: Vals): number | null;
 	/** Fixed screen offset in CSS px, y down (e.g. up and to the right of an arrow tip). */
 	offset?: readonly [number, number];
 }
@@ -337,7 +343,7 @@ export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
 	const [owner] = useState(() => ({}));
 	const fns = useRef(spec);
 	fns.current = spec;
-	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.small, spec.hot, spec.gap, spec.offset, Boolean(spec.away)]);
+	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.small, spec.hot, spec.gap, spec.offset, Boolean(spec.away), Boolean(spec.wedge)]);
 	useEffect(() => {
 		if (sig === null) return;
 		const s = fns.current!;
@@ -347,6 +353,7 @@ export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
 				id,
 				at: (v) => fns.current?.at(v) ?? null,
 				away: s.away && ((v) => fns.current?.away?.(v) ?? null),
+				wedge: s.wedge && ((v) => fns.current?.wedge?.(v) ?? null),
 			},
 			owner,
 		);
@@ -422,7 +429,12 @@ function labelPx(s: LabelSpec, vals: Vals, project: NonNullable<StageReg['projec
 	const away = s.away?.(vals);
 	const q = away && project(away);
 	// The label's own size (layout box; transforms do not change it) keeps its near edge `gap` px from the anchor.
-	if (q) p = pushAway(p, q, s.gap ?? 0, [el.offsetWidth, el.offsetHeight]);
+	if (q) {
+		const box: [number, number] = [el.offsetWidth, el.offsetHeight];
+		p = pushAway(p, q, s.gap ?? 0, box);
+		const w = s.wedge?.(vals);
+		if (w) p = fitWedge(p, q, w, box);
+	}
 	const o = s.offset;
 	return o ? [p[0] + o[0], p[1] + o[1]] : p;
 }
@@ -501,4 +513,41 @@ export function useHoverable(lesson: string, id: string | undefined, rank: numbe
 			userData: { hoverRank: rank },
 		};
 	}, [reg, lesson, id, rank]);
+}
+
+/** Ruling T: only Ctrl/Cmd+wheel (and a trackpad pinch, which arrives as ctrl+wheel) zooms a viewport. */
+export const wheelZooms = (e: { ctrlKey: boolean; metaKey: boolean }): boolean => e.ctrlKey || e.metaKey;
+
+/**
+ * Lets a plain wheel over a stage scroll the lesson page (a card must never trap reading): the event is stopped in
+ * the capture phase on the stage element, before OrbitControls on the View div could preventDefault and zoom. It is
+ * not prevented, so the browser scrolls. Zooming wheels pass through to the controls.
+ */
+export function gateWheel(stage: HTMLElement, signal?: AbortSignal): void {
+	stage.addEventListener(
+		'wheel',
+		(e) => {
+			if (!wheelZooms(e)) e.stopPropagation();
+		},
+		{ capture: true, signal },
+	);
+}
+
+/** Furthest extra push of a wedge label, in px (a near-zero angle would otherwise send it far away). */
+const WEDGE_MAX_PX = 80;
+
+/**
+ * Moves `p` out from the wedge corner `q` along the line q->p until a box of size `box` centered there fits inside a
+ * wedge of opening `angle` (radians): the center must be at least half the box diagonal (+2 px) from both sides, i.e.
+ * at distance >= r / sin(angle / 2). Never moves it inward; at most WEDGE_MAX_PX further out.
+ */
+export function fitWedge(p: readonly [number, number], q: readonly [number, number], angle: number, box: readonly [number, number]): [number, number] {
+	const dx = p[0] - q[0];
+	const dy = p[1] - q[1];
+	const d = Math.hypot(dx, dy);
+	const s = Math.sin(Math.min(Math.PI, Math.max(0, angle)) / 2);
+	if (d === 0 || s <= 0) return [p[0], p[1]];
+	const need = Math.min((Math.hypot(box[0], box[1]) / 2 + 2) / s, d + WEDGE_MAX_PX);
+	if (need <= d) return [p[0], p[1]];
+	return [q[0] + (dx / d) * need, q[1] + (dy / d) * need];
 }

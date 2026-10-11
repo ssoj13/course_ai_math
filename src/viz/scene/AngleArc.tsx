@@ -63,7 +63,7 @@ export function AngleArc(p: AngleArcProps): React.JSX.Element | null {
 	useLabel(
 		text === undefined
 			? null
-			: { lesson: p.lesson, text, role: p.role ?? 'ink', hot: p.id, at: () => arc?.mid ?? null, away: () => c, gap: LABEL_GAP },
+			: { lesson: p.lesson, text, role: p.role ?? 'ink', hot: p.id, at: () => arc?.mid ?? null, away: () => c, gap: LABEL_GAP, wedge: () => arc?.theta ?? null },
 	);
 	if (!arc || !line) return null;
 	const color = pal[p.role ?? 'ink'];

@@ -15,7 +15,7 @@ the navigation gizmo (3D) or the XY corner (2D), the N-panel of draggable number
 use the chevron; on a phone it is the row of chips under the viewport) and a status bar that says what the pointer
 does. Hover anything: the scene object, its N-panel row and its formula term light up together.
 
-<SceneIsland caption="2D: vectors a and b, the angle between them, the shadow of b on a with its right angle, the square on a and a point P">
+<SceneIsland caption="2D: vectors a and b, the angle between them, the shadow of b on a with its right angle, the square on a and a point P" chipLines={4}>
 	<Demo2D client:only="react" />
 </SceneIsland>
 
@@ -31,7 +31,7 @@ The same a and b on the law-of-cosines layout: squares on the three sides and th
 bar. At the starting values the angle is acute, so the correction is negative: the bar grows inward and is hatched.
 Drag b past 90 degrees and it turns positive and plain.
 
-<SceneIsland caption="Law of cosines: squares on the sides of the triangle 0, a, b and the signed correction -2 a.b (hatched when negative)">
+<SceneIsland caption="Law of cosines: squares on the sides of the triangle 0, a, b and the signed correction -2 a.b (hatched when negative)" chipLines={2}>
 	<DemoCosines client:only="react" />
 </SceneIsland>
 
@@ -53,7 +53,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo pharetra.
 
-<SceneIsland caption="3D: vectors u and v with component legs, their angle and parallelogram (drag a tip to move it, drag elsewhere to orbit, click the gizmo to align the view)">
+<SceneIsland caption="3D: vectors u and v with component legs, their angle and parallelogram (drag a tip to move it, drag elsewhere to orbit, click the gizmo to align the view)" chipLines={3}>
 	<Demo3D client:only="react" />
 </SceneIsland>
 

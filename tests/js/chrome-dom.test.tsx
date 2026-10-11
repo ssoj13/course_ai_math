@@ -70,6 +70,13 @@ test('Overlays popover: Escape closes and returns focus to the button; a press o
 	box2.focus();
 	act(() => void box2.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: after })));
 	expect(host.querySelector('.lab-vp-pop')).toBeNull();
+	// A mouse press on label text blurs the button with relatedTarget = null (Chrome focus fixup): stays open.
+	act(() => btn.click());
+	act(() => void btn.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null })));
+	expect(host.querySelector('.lab-vp-pop')).not.toBeNull();
+	const label = host.querySelector<HTMLLabelElement>('.lab-vp-check')!;
+	act(() => void label.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })));
+	expect(host.querySelector('.lab-vp-pop')).not.toBeNull();
 });
 
 test('a bare Stage registry has no card: useOverlay says so', () => {

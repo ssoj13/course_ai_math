@@ -90,9 +90,9 @@ const ROWS2: readonly Row[] = [
 
 const STATUS2: StatusSpec = {
 	hints: {
-		'a:tip': 'LMB drag the tip of a · arrows 0.1 · Shift 1.0',
-		'b:tip': 'LMB drag the tip of b · arrows 0.1 · Shift 1.0',
-		'p:pt': 'LMB drag P · arrows 0.1',
+		'a:tip': { mouse: 'LMB drag the tip of a · arrows 0.1 · Shift 1.0', touch: 'Drag the tip of a' },
+		'b:tip': { mouse: 'LMB drag the tip of b · arrows 0.1 · Shift 1.0', touch: 'Drag the tip of b' },
+		'p:pt': { mouse: 'LMB drag P · arrows 0.1', touch: 'Drag P' },
 		a: (v) => `Vector a = (${vec(v, 'a').map(num).join(', ')})`,
 		b: (v) => `Vector b = (${vec(v, 'b').map(num).join(', ')})`,
 		th: (v) => `Angle θ = ${angleOf(vec(v, 'a'), vec(v, 'b')).toFixed(1)}°`,
