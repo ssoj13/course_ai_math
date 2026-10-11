@@ -335,7 +335,7 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   built-ins for any handle, field, the gizmo and idle navigation (`DEFAULT_HINTS`). Tooltips (`useTip`, 500 ms,
   title + line + TeX via `renderStaticMath`) on N-panel rows and header buttons.
 - [x] Indirect value changes are eased on screen (Ruling U, done in 6e: `vals`/`shown` in the store).
-- [ ] Formula term tooltips (lessons spec) need a `tips` prop on Formula (Task 7 / lessons).
+- [x] Formula term tooltip API (Task 7): `tips` prop implemented; actual per-lesson tooltip authoring remains lesson scope.
 - [x] Task 6d baseline: `gridMinor` was #444444 (1.17:1 on `vp-bg-top`, tested >= 1.15 and below the major grid); spec table updated.
 - [x] Wheel scrolls the page; Ctrl+wheel zooms (Ruling T): `gateWheel` (handles.tsx) stops plain wheels in the
   capture phase; DOM-tested against real OrbitControls (happy-dom's WheelEvent drops modifier init fields: the test
@@ -407,8 +407,9 @@ screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a 
   a centred or right-aligned text whose width changes moves its own edge, which Chrome reports as a shift (measured:
   one entry per drag). Same for the Challenge status and the status bar (keyed by text). NPanel reports a value wider
   than its box once per row (`console.error`): raise `chars` or shorten `fmt`.
-- [ ] Formula: a centred display formula whose live number changes width shifts its line (measured during a drag of
-  the 2D demo, `cls-probe.ts`; excluded from CLS by hadRecentInput but an entry): Task 7 should anchor `\s{}` numbers.
+- [x] Formula: a centred display formula whose live number changes width shifted its line (measured during a drag of
+  the 2D demo, `cls-probe.ts`; excluded from CLS by hadRecentInput but an entry). Task 7 anchors `\s{}` numeric widths;
+  raw SSR math/font/media shifts remain open for reference C7/C9.
 - [ ] Point sizes (DP-4 "sun glyph, larger", LC-0 small feet D/E/F, LC-3 larger joint) and the `nl_light` typed-value
   clamp (outside the sphere) are lesson-task scope (Point `size`, a row-level constraint).
 
@@ -647,6 +648,71 @@ Reports: `.superpowers/sdd/2026-10-10-engine-addendum-6d-6e/task-6f-report.md`, 
   zero mode-exit shifts do not mean zero-all-CLS. This work does not fix or waive that baseline issue.
 - Evidence is headless Chromium/CDP/touch emulation; physical device/multi-GPU coverage remains unproven.
   Size-mode acceptance does not complete the engine, 98-entry course, Russian lesson prose or Task 11 accounting.
+
+### Linked lesson controls and placement (Task 7, accepted)
+
+Accepted at `8b2f0c3b1ec92a775aac0324f2529e8a352a95c7`: BASE `cbfd5e1` → initial `0fb29d6` →
+fix1 `afa82e4` → fix2 `8b2f0c3`. Independent `task-7-review.md`, `task-7-rereview1.md` and
+`task-7-rereview2.md` close I1/I2/I3/M1 and residual R1; 0 Critical / 0 Important / 0 Minor remain.
+Reports and evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-7{,-fix1,-fix2}-report.md`
+and corresponding `task-7{,-fix1,-fix2}-evidence/`. This accepts Task 7, not reference lessons or the course.
+
+- **Linked tables/code**: `NumTable {lesson,rows:{label,key}[],op,labels?,marks?}` takes one/two vectors;
+  op = components/product/square/diff. Pure `rowsFor` checks finite inputs and product/diff dimensions;
+  cells use a0…/p0…/sq0…/d0…, product/square totals use sum. Match IDs across scene, Formula and code in
+  the same lesson. `CodeView {code,lang:'python'|'ts'}` stays plain pre/code; linked lines additionally
+  require lesson and `lines:Record<number,string>` (1-based). No runtime syntax highlighter.
+- **Timeline / hot authority**: `Timeline {lesson,id,steps}` uses nonempty unique
+  `TimelineStep {id,text,phases?:number,focus?:string}`; phases are positive integers. Back/Next/range
+  set bounded current indices, never autoplay. Reveals use `step[id]`, Challenge history uses
+  `step[id+':max']`; `step[id+':phases']` supplies active placement phases. Author focus as a term ID.
+  One coordinator per lesson gives first focused mount initial guide ownership, then last changed selection;
+  unmount picks the remaining guide by change order. Interaction overrides; empty hot restores current guide.
+  `hotSource:'interaction'|'guide'|null` distinguishes authority from visible IDs. `setHot(ids,source?)`
+  defaults to interaction; Timeline writes guide. Empty hot has null authority; authority-only changes retain
+  Set identity. No-op requires matching IDs and authority. hotOn claims interaction even for a same-ID guide;
+  hotOff clears only matching interaction. Step/list/unmount cannot steal stationary same-ID interaction.
+  This retains the existing one-visible-hot policy, not simultaneous independent pointer/focus arbitration.
+- **Atomic values / cancel**: initialize `lessonStore(lesson,init,links)` once at module scope.
+  `setMany(patch,how?,ease?)` resolves LessonLinks before pruning/notification; no-op checks truth, shown
+  and active ease. An unchanged-target cut cancels motion and publishes coherent shown values immediately.
+  powersLinks bounds x/A/V to 4/16/64, preserves from provenance, rejects conflicts/incoherent defaults;
+  canonical shown x derives A=x²/V=x³ each frame. n/k integer adapters synchronize timeline/history without
+  fractional exponent easing. Shared Formula/Num/NPanel scrubs use `checkpoint(keys):()=>void` to restore
+  relevant truth/shown/ease/provenance/history on cancel; unrelated edits survive, cancel is never a click.
+- **Formula**: required lesson/tex/label; optional texNarrow/scrub/fmt/derived/marks/tips/block. Marks map
+  term IDs to hidden/struck; tips use `Tip {title?,text,tex?}` and the existing 500ms mouse mechanism.
+  Current props update values/slider ARIA; active KaTeX HTML is exposed, hidden terms untabbable, reserve
+  clones aria-hidden. Commit snapshots preserve semantic occurrence focus; size modes restore the connected
+  node or same stable Formula root/occurrence, never a global search. texNarrow selects below 420px Formula
+  width; inactive template reserves height. Scrub min/max/0 formatted widths anchor right-aligned numbers.
+- **Poly / fields**: Poly has pure `pts(vals,step)`, optional `path(vals,from,to,progress)`, fixed vertex
+  count and finite coplanar 2D/3D points. Value changes cut; step placements spring by phases (reduced motion
+  cuts). Degenerate fill/edge hide while label remains; edge solid/dashed/none. Explicit LC paths preserve
+  cyclic correspondence, shear area and rigid-angle rotation; debt hatch is independent of winding.
+  Poly and Quad/signed AreaTile share CSS-pixel hatch stripes. `FieldCell {lesson,row,size?}` defaults lg,
+  reusing RowView/writes/tips/hot. Glyph rect/disc/sum sizes sm32×20/lg64×40; chip width adds sm32+4px.
+- **Radial exception**: radialLink declares `LinkGroup.rangePolicy?:'radial'`; stable
+  `LessonState.radialKeys:ReadonlySet<string>` feeds clampMove's fourth argument and NPanel. Only these
+  keys bypass ordinary component boxes: surface fixes radius, outside enforces minimum radius without upper
+  cap. Preserve requested nonzero direction; zero uses prior valid/declared initial direction. Internal
+  FieldProps.radial selects finite unbounded parsing/grid/steps and truthful ARIA spinbutton without min/max;
+  ordinary fields remain bounded sliders, ordinary clamps/caught scaling remain. Never bypass via easing.
+  Large values need honest display/character budgets; measured 103 is not every-magnitude width proof.
+  Point.size is a finite positive CSS-pixel diameter. Reference sun/joint/feet authoring remains lesson scope.
+- **SSR / locales**: formulaHeight belongs to SceneIsland, not ViewportCardProps: finite ≥76, default 76;
+  linked demo authors 116 via inherited CSS variable for SSR/live plate. Reserve before hydration, no later
+  grow. Powers page-side Formula is two SSR lines at 320px. Reuse identical SSR/live rows and formula flags,
+  one shared demand Canvas, SSR-safe entry → lazy implementation and DOM-only client:load. Explicit EN/RU
+  locale and reachable UiStrings namespaces remain required; translate UI, preserve semantic IDs and TeX.
+- **Evidence / limits**: final reported Bun 1.4.3 gates: 252 pass / 0 fail / 2,532 expectations; check 154 files
+  with 0 errors/warnings/hints; build 41 pages / 0 warnings. Reviewers assessed supplied logs, not broad reruns.
+  Renderer 270,182 / largest other 84,115 gzip remain under unchanged 300,000 / 100,000; lazy elk/xyflow 600,000 and
+  raw threshold 1015 unchanged; Task11 accounting remains. Fix2 same-id/modes-touch/fingerprint evidence
+  covers stationary p0 through keyboard step3 until mouse-out restores distance, native exits/focus/cancel.
+  Fix1 theme/radial/reduced-motion evidence is reused only for unchanged code. Raw RU hydration/input shifts
+  remain; recent input does not erase them. Exact font cause and dynamic media stability, reference C7/C9,
+  physical-device coverage, Russian lesson prose and all 98-entry course delivery stay OPEN.
 
 ## Whole-course execution (2026-10-11)
 
