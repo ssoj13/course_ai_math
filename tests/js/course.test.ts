@@ -5,7 +5,7 @@ describe('course manifest', () => {
 	test('lessons are numbered globally in course order', () => {
 		expect(lessons.map((l) => l.num)).toEqual(lessons.map((_, i) => i + 1));
 		expect(lessons[0].slug).toBe('squares-and-plane');
-		expect(lessons.at(-1)?.slug).toBe('cross-product');
+		expect(lessons.at(-1)?.slug).toBe('waves-dft');
 	});
 	test('slugs are unique', () => {
 		expect(new Set(lessons.map((l) => l.slug)).size).toBe(lessons.length);
