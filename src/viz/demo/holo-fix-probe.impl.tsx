@@ -42,6 +42,7 @@ export default function FixProbe({kind}:{kind:string}){
  <Boundary report={setError}>{invalid?subjects[name]:kind==='grid'?<>
  <Parallelogram {...p} at={[-3.5,.5]} a={[2,0]} b={[0,2]}/><Parallelogram {...p} id="skew" at={[.5,.5]} a={[2,0]} b={[.8,2]}/>
  </>:clay?<><ClayCube lesson={lesson} id="cube" at={[-1,1,0]} size={[1,1,1]}/><ClayTile lesson={lesson} id="negative" at={[1,1,0]} size={[1,.2,1]} negative/><Grid lesson={lesson} step={1} extent={4}/><Ruler lesson={lesson} a={[-2,0,0]} b={[2,0,0]} normal={[0,1,0]}/></>:<>
+ {kind==='points'&&<Point {...p} id="point" at={[2,1,-2]}/>}
  {kind==="arrow"?<Arrow {...p} from={[-2,1,0]} to={[2,2,-1]}/>:<Segment {...p} a={[-2,1,0]} b={[2,2,-1]}/>}<Dimension lesson={lesson} id="length" a={[-2,1,0]} b={[2,2,-1]} normal={[0,0,1]}/>
  <Parallelogram {...p} id="glass" at={[-1,1,1]} a={[2,0,0]} b={[.5,2,.5]}/></>}</Boundary><Inspect/>
  </ViewportCard></>;

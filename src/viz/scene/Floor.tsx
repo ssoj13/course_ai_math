@@ -18,8 +18,8 @@ export function Mirror({children}:{children:ReactNode}){
     if(m.userData.mirrorConfigured)continue;
     m.userData.mirrorConfigured=true;
     m.transparent=true;m.depthWrite=false;
-    // Wide lines need both sides after reflection; meshes keep their intended front/back silhouette culling.
-    if(m.type==='LineMaterial')m.side=DoubleSide;
+    // Reflected billboards can face away after negative-Y scaling; clay keeps its front/back silhouette culling.
+    if(m.type==='LineMaterial'||mesh.geometry?.type==='CircleGeometry')m.side=DoubleSide;
     // Draw reflected clay surfaces first: depth hides the back-face highlight inside the silhouette.
     if(m.type==='MeshMatcapMaterial'){m.depthWrite=true;mesh.renderOrder-=.1;}
     const alpha=STYLE.mirrorA*(m.blending===AdditiveBlending?.5:1);
