@@ -1,7 +1,7 @@
 ---
 title: "Теорема косинусов"
 description: "Пифагор плюс поправка для непрямого угла; IK для двух костей."
-translatedFrom: 7ac83a5157896d1960481a89c529b28e6a43f016
+translatedFrom: 90ed7bf297e2d1fc3d85339bbd76c59a428bf80b
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
@@ -12,7 +12,7 @@ import { rowsFor } from '../../../../viz/lessons/law-of-cosines.rows';
 
 export const locale = 'ru';
 
-<UiStrings ns={['viewport', 'gizmo', 'hud', 'status', 'challenge', 'linked', 'lc']} />
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'lc']} />
 
 **Опирается на:** [Расстояние и теорема Пифагора](lesson:pythagoras) (квадраты на сторонах, $c^2 = a^2 + b^2$ для прямого угла) и [Углы, радианы и единичная окружность](lesson:unit-circle) (cos — тень палочки длины 1).
 
@@ -30,7 +30,7 @@ export const locale = 'ru';
 
 ## Пропавшие прямоугольники
 
-<SceneIsland caption="LC-0 · Пропавшие прямоугольники: наклон, поворот и баланс площадей." rows={rowsFor(0, locale)} hud formula formulaHeight={100}>
+<SceneIsland caption="LC-0 · Пропавшие прямоугольники: наклон, поворот и баланс площадей." rows={rowsFor(0, locale)}>
   <LawScene scene={0} locale={locale} client:only="react" />
 </SceneIsland>
 <LawDetailControls locale={locale} client:load />
@@ -90,7 +90,7 @@ $$
 
 ## Поправка
 
-<SceneIsland caption="LC-1 · Баланс a² + b² − 2ab cos θ = c²." rows={rowsFor(1, locale)} hud formula formulaHeight={100}>
+<SceneIsland caption="LC-1 · Баланс a² + b² − 2ab cos θ = c²." rows={rowsFor(1, locale)}>
   <LawScene scene={1} locale={locale} client:only="react" />
 </SceneIsland>
 <LawControls scene={1} locale={locale} client:load />
@@ -117,7 +117,7 @@ $$
 
 ## Тот же результат из алгебры
 
-<SceneIsland caption="LC-2 · Пошаговый вывод по теореме Пифагора." rows={rowsFor(2, locale)} hud formula formulaHeight={100}>
+<SceneIsland caption="LC-2 · Пошаговый вывод по теореме Пифагора." rows={rowsFor(2, locale)}>
   <LawScene scene={2} locale={locale} client:only="react" />
 </SceneIsland>
 <LawDetailControls proof locale={locale} client:load />
@@ -180,7 +180,7 @@ $$
 
 ## IK для двух костей: теорема косинусов в вашем риге
 
-<SceneIsland caption="LC-3 · IK двух костей: цель, локоть и ограничение косинуса." rows={rowsFor(3, locale)} hud>
+<SceneIsland caption="LC-3 · IK двух костей: цель, локоть и ограничение косинуса." rows={rowsFor(3, locale)}>
   <LawScene scene={3} locale={locale} client:only="react" />
 </SceneIsland>
 <LawControls scene={3} locale={locale} client:load />

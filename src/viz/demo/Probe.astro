@@ -1,9 +1,0 @@
----
-import Probe from './holo-probe';
-import SceneIsland from '../SceneIsland.astro';
-import UiStrings from '../../components/UiStrings.astro';
-import { pageLocale, t } from '../../i18n/ui';
-const locale = pageLocale(Astro);
----
-<UiStrings ns={['viewport', 'gizmo', 'status', 'hud', 'probe']} />
-<SceneIsland caption={t(locale, 'probe.caption')}><Probe locale={locale} client:only="react" /></SceneIsland>

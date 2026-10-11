@@ -1,26 +1,4 @@
 /** Pure vector helpers for lesson scenes. Arrays in/out, any dimension unless noted; no DOM, no three. */
-/** Measured side tick law; endpoints remain exact, labels disappear before they crowd. */
-export function rulerTicks(length: number, pxPerUnit: number): {value:number;major:boolean;label:boolean}[] {
- if(!Number.isFinite(length)||length<0||pxPerUnit<=0)return [];
- const step=pxPerUnit>=40?.5:1;
- return Array.from({length:Math.floor(length/step)+1},(_,i)=>{const value=i*step,major=Number.isInteger(value);return {value,major,label:major&&pxPerUnit>=24};});
-}
-export function dimensionLayout(a: V,b: V,wpp: number,normal: V=[0,0,1]): {a:number[];b:number[];mid:number[];out:number[]} {
- const d=sub(b,a),l=norm(d);
- const n=rightOf(a,b,a.length===3?normal:undefined);
- const out=l&&n?scale(n,14*wpp):d.map(()=>0);
- const aa=add(a,out),bb=add(b,out);
- return {a:aa,b:bb,mid:scale(add(aa,bb),.5),out};
-}
-/** Screen-space dimension endpoints; null means the segment cannot be measured from this view. */
-export function screenDimension(a:V,b:V,out:V,px=14): {a:number[];b:number[];normal:number[]}|null {
- const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);
- if(!Number.isFinite(length)||length<.01)return null;
- let nx=-dy/length,ny=dx/length;
- if(nx*(out[0]-a[0])+ny*(out[1]-a[1])<0){nx=-nx;ny=-ny;}
- return {a:[a[0]+px*nx,a[1]+px*ny],b:[b[0]+px*nx,b[1]+px*ny],normal:[nx,ny]};
-}
-/** World-aligned orthonormal plane basis. Anchor is world origin projected into the plane, never a face corner. */
 export type V = readonly number[];
 
 /** Silent truncation by `zip` would hide a 2D/3D mix-up in a lesson, so mismatches are loud. */

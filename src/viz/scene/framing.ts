@@ -2,8 +2,7 @@
  * Home-view framing of a stage (Blender's View All): pure, three-free math used by Stage's navigation and unit-tested.
  * The figure's world bounds come from `contentBox` (view.tsx); these functions turn them into a camera.
  *
- * 2D (orthographic): the bounds fill the free rectangle of the stage - minus an open N-panel (`inset`), the HUD
- * columns and formula plate (`pad`) and, with a holographic floor, the floor band under the figure.
+ * 2D (orthographic): the bounds fill the stage left of an open N-panel (`inset`), with a margin for labels.
  * 3D: the eight corners of the bounds are fitted in the camera's own frame for the home direction, so a flat or wide
  * figure fills the view (a bounding-sphere fit leaves it at ~30 % of the height).
  */
@@ -16,41 +15,21 @@ export interface Bounds {
 	max: Vec3;
 }
 
-/** CSS px of the stage kept clear of the figure at the home view (HUD columns, formula plate). */
-export interface FramePad {
-	l: number;
-	r: number;
-	t: number;
-	b: number;
-}
-
 /** Free px around the 2D figure, so labels just outside its bounds are not cut by the frame. */
 export const MARGIN_2D = 16;
-/**
- * 2D home view with a floor: the figure stands in the upper part of the stage and the floor (and the formula plate
- * over it) take this share of the height below it, as in the reference (figure ~60 %, floor band ~30 %).
- */
-export const FLOOR_SHARE = 0.3;
 /** 3D: the figure's projected extent fills this share of the free view (labels and arrow heads need the rest). */
 export const FILL_3D = 0.86;
 
 /**
- * 2D framing: orthographic zoom (px per world unit) and the camera centre that put `b` in the free rectangle of a
- * `width` x `height` stage. The camera looks at the centre of the area left of the N-panel (the view offset).
+ * 2D framing: orthographic zoom (px per world unit) that fits `b` in a `width` x `height` stage left of an open
+ * N-panel, with MARGIN_2D px around it; the camera looks at the box centre (the view offset centres the free area).
  */
-export function fit2d(b: Bounds, width: number, height: number, inset: number, pad: FramePad, floor: boolean): { zoom: number; cx: number; cy: number } {
+export function fit2d(b: Bounds, width: number, height: number, inset: number): { zoom: number; cx: number; cy: number } {
 	const fw = Math.max(1, width - inset);
-	const left = pad.l + MARGIN_2D;
-	const right = fw - pad.r - MARGIN_2D;
-	const top = pad.t + MARGIN_2D;
-	const bottom = height - Math.max(pad.b, floor ? FLOOR_SHARE * height : 0) - MARGIN_2D;
 	const bw = Math.max(b.max[0] - b.min[0], 1e-6);
 	const bh = Math.max(b.max[1] - b.min[1], 1e-6);
-	const zoom = Math.max(1e-6, Math.min((right - left) / bw, (bottom - top) / bh));
-	// Screen x grows with world x, screen y against world y.
-	const cx = (b.min[0] + b.max[0]) / 2 - ((left + right) / 2 - fw / 2) / zoom;
-	const cy = (b.min[1] + b.max[1]) / 2 + ((top + bottom) / 2 - height / 2) / zoom;
-	return { zoom, cx, cy };
+	const zoom = Math.max(1e-6, Math.min((fw - 2 * MARGIN_2D) / bw, (height - 2 * MARGIN_2D) / bh));
+	return { zoom, cx: (b.min[0] + b.max[0]) / 2, cy: (b.min[1] + b.max[1]) / 2 };
 }
 
 const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

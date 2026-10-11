@@ -14,8 +14,6 @@ import { useSyncExternalStore } from 'react';
 export type Role =
 	| 'bgTop' | 'bgBottom' | 'chrome' | 'chrome2' | 'field' | 'fieldHover'
 	| 'grid' | 'gridMinor' | 'ink' | 'muted'
-	| 'star' | 'nebulaA' | 'nebulaB' | 'vignette' | 'floor' | 'plate'
-	| 'clayA' | 'clayB' | 'clayC' | 'clayAccent' | 'clayPlate' | 'clayInk' | 'clayBgTop' | 'clayBgBottom' | 'clayGrid'
 	| 'axisX' | 'axisY' | 'axisZ'
 	| 'vecA' | 'vecB' | 'vecC' | 'light' | 'hot';
 
@@ -23,9 +21,6 @@ export type Palette = Record<Role, string>;
 
 /** CSS custom property of every role (the spec table of visual-language.md). */
 export const ROLE_VARS: Readonly<Record<Role, string>> = {
-	star: '--viz-star', nebulaA: '--viz-nebula-a', nebulaB: '--viz-nebula-b', vignette: '--viz-vignette', floor: '--viz-floor', plate: '--viz-plate',
-	clayA: '--viz-clay-a', clayB: '--viz-clay-b', clayC: '--viz-clay-c', clayAccent: '--viz-clay-accent', clayPlate: '--viz-clay-plate', clayInk: '--viz-clay-ink',
-	clayBgTop: '--viz-clay-bg-top', clayBgBottom: '--viz-clay-bg-bottom', clayGrid: '--viz-clay-grid',
 	bgTop: '--viz-bg-top',
 	bgBottom: '--viz-bg-bottom',
 	chrome: '--viz-chrome',
@@ -56,18 +51,10 @@ export type SceneRole = (typeof STROKE_ROLES)[number];
  */
 export const STYLE = {
 	/** Core width of a beam (vector, segment). */
-	core: 2,
+	core: 2.5,
 	/** Halo width around a beam, and its alpha in the beam's own color. */
-	halo: 16,
-	haloA: 0.09,
-	inner: 5.5,
-	innerA: 0.34,
-	lighten: 0.35,
-	mirrorA: 0.28,
-	glassBottomA: 0.06,
-	glassGridA: 0.22,
-	pointHalo: 14,
-	pointHaloA: 0.3,
+	halo: 9,
+	haloA: 0.14,
 	/** Hot (Blender active outline): a hot-colored stroke `hotPad` px wider on each side, behind the core. */
 	hotPad: 2,
 	/** Halo alpha while hot, in the hot color. */
@@ -75,7 +62,7 @@ export const STYLE = {
 	/** Secondary lines: area edges, angle arcs, right-angle marks, legs. */
 	edge: 1.5,
 	/** Area fill alpha and angle sector alpha. */
-	fillA: 0.12,
+	fillA: 0.18,
 	sectorA: 0.1,
 	/** Negative areas: 1 px hatch lines every 6 px at 45 degrees (sign never color-only). */
 	hatchPx: 6,

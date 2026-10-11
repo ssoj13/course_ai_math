@@ -157,12 +157,12 @@ describe('client slices', () => {
   for (const c of clients) for (const tag of c.tags) expect(tag).toMatch(/^<UiStrings\s+ns=\{\[[^]*\]\}\s*\/>$/);
   expect(readFileSync(join(SRC, 'components/UiStrings.astro'), 'utf8')).toContain(".replace(/</g, '\\\\u003c')");
  });
- test('negative fixtures detect a lazy .tsx dictionary leak and a missing HUD namespace', () => {
+ test('negative fixtures detect a lazy .tsx dictionary leak and a missing status namespace', () => {
   const path = (p: string) => join(SRC, p);
   const fixture = new Map([
    [path('entry.tsx'), "export { Root } from './root';"],
    [path('root.tsx'), "import type { UiKey } from './i18n/ui'; export const Root=()=>import('./lazy');"],
-   [path('lazy.tsx'), "import { t } from './i18n/core'; import { DICT } from './i18n/ui'; t(locale, 'hud.angle');"],
+   [path('lazy.tsx'), "import { t } from './i18n/core'; import { DICT } from './i18n/ui'; t(locale, 'status.idle2d');"],
    [path('i18n/core.ts'), ''],
    [path('i18n/ui.ts'), ''],
   ]);
@@ -170,7 +170,7 @@ describe('client slices', () => {
    { exists: p => fixture.has(p), read: p => fixture.get(p)! });
   expect(graph.roots).toEqual(['Root']);
   expect(graph.imports.some(e => e.from.endsWith('lazy.tsx') && e.file === path('i18n/ui.ts'))).toBe(true);
-  expect(usedNamespaces(graph.texts, namespaces)).toEqual(['hud']);
+  expect(usedNamespaces(graph.texts, namespaces)).toEqual(['status']);
   expect(graph.declared).not.toEqual(usedNamespaces(graph.texts, namespaces));
  });
 

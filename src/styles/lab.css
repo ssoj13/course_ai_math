@@ -1,173 +1,4 @@
 /*
- * HUD instruments and formula plate of the holographic look (src/viz/scene/Instruments.tsx, FormulaPlate.tsx; layout
- * numbers in scene/hud.ts). The instruments fill the free stage area (left of an open N-panel) as one SVG; they are
- * decoration over the scene, so they never take pointer events (vertex drags pass through).
- * Phones (< 720 px): a stage that carries instruments is square (more room for the figure and slim instrument
- * columns inside it); the formula plate gets its own reserved strip under the stage, the same height on the server
- * skeleton (SceneIsland) and on the live card, so hydration shifts nothing.
- */
-.lab-instruments {
-	position: absolute;
-	inset: 0 var(--lab-vp-inset, 0px) 0 0;
-	z-index: 2;
-	pointer-events: none;
-	color: color-mix(in srgb, var(--viz-vec-a) 62%, var(--viz-muted));
-	font-family: var(--lab-font-mono);
-}
-.lab-instruments[data-look='clay'] {
-	color: var(--viz-clay-ink);
-}
-.lab-hud {
-	position: absolute;
-	inset: 0;
-	overflow: visible;
-	stroke: currentColor;
-	stroke-width: 1;
-	fill: currentColor;
-}
-.lab-hud text {
-	stroke: none;
-	fill: currentColor;
-	opacity: 0.9;
-}
-.lab-hud-arc {
-	stroke-opacity: 0.28;
-}
-.lab-hud-ruler > path:first-child {
-	stroke-opacity: 0.8;
-}
-.lab-hud-ruler > path:nth-child(2) {
-	stroke-opacity: 0.75;
-}
-.lab-hud-target,
-.lab-hud-dial {
-	fill: none;
-}
-.lab-hud-dial > circle:last-child {
-	fill: currentColor;
-}
-.lab-hud-hot {
-	stroke: var(--viz-vec-a);
-	stroke-width: 1.5;
-}
-.lab-instruments[data-look='clay'] .lab-hud-hot {
-	stroke: var(--viz-clay-accent);
-}
-.lab-hud-galaxy rect,
-.lab-hud-galaxy path {
-	fill: none;
-}
-.lab-hud-caption {
-	position: absolute;
-	display: grid;
-	justify-items: end;
-	/* hud.ts reserves exactly `lines` x 1.2 font for the caption (the right galaxy panel starts below it). */
-	line-height: 1.2;
-	text-align: right;
-	color: var(--viz-ink);
-}
-.lab-hud-caption > * {
-	max-width: 100%;
-	overflow: hidden;
-	white-space: nowrap;
-	text-overflow: ellipsis;
-}
-.lab-hud-caption > span:first-child,
-.lab-hud-note {
-	color: color-mix(in srgb, var(--viz-vec-a) 55%, var(--viz-muted));
-}
-.lab-hud-caption output {
-	font-weight: 600;
-	font-variant-numeric: tabular-nums;
-}
-.lab-instruments[data-look='clay'] .lab-hud-caption,
-.lab-instruments[data-look='clay'] .lab-hud-caption > span {
-	color: var(--viz-clay-ink);
-}
-
-/* Formula plate: the linked Formula on a framed, glowing, chamfered glass plate (frame drawn by FormulaPlate's SVG),
-   centred between the instrument columns over the floor. */
-.lab-formula-plate {
-	position: absolute;
-	z-index: 3;
-	bottom: calc(var(--lab-vp-status) + var(--lab-vp-chips) + 4%);
-	left: var(--lab-hud-l, 24px);
-	right: calc(var(--lab-vp-inset, 0px) + var(--lab-hud-r, 24px));
-	width: fit-content;
-	max-width: calc(100% - var(--lab-vp-inset, 0px) - var(--lab-hud-l, 24px) - var(--lab-hud-r, 24px));
-	margin-inline: auto;
-	box-sizing: border-box;
-	padding: 10px 30px;
-	color: var(--viz-ink);
-	font-size: 15px;
-}
-.lab-plate-frame {
-	position: absolute;
-	inset: -6px;
-	width: calc(100% + 12px);
-	height: calc(100% + 12px);
-	overflow: visible;
-	pointer-events: none;
-}
-.lab-formula-plate > .lab-plate-body {
-	position: relative;
-	width: max-content;
-	max-width: none;
-}
-/* The plate fits its formula by text size (FormulaPlate useFitText); a formula never scrolls inside the plate, even
-   where a lesson lets its page-side formulas scroll sideways. */
-.lab-formula-plate .lab-plate-body .lab-formula {
-	margin: 0;
-	overflow: visible;
-	max-width: none;
-}
-.lab-formula-plate[data-look='clay'] {
-	color: var(--viz-clay-ink);
-}
-@media (max-width: 719.98px) {
-	.lab-vp[data-hud] .lab-vp-skel > :nth-child(2) {
-		aspect-ratio: 1 / 1;
-	}
-	.lab-vp[data-formula] .lab-vp-skel > :nth-child(2) {
-		margin-bottom: var(--lab-vp-formula-h, 76px);
-	}
-	.lab-vp-card[data-formula] .lab-stage {
-		height: calc(100% - var(--lab-vp-formula-h, 76px));
-	}
-	.lab-formula-plate {
-		bottom: calc(var(--lab-vp-status) + var(--lab-vp-chips));
-		left: 0;
-		right: 0;
-		width: auto;
-		max-width: none;
-		margin: 0;
-		height: var(--lab-vp-formula-h, 76px);
-		display: flex;
-		align-items: center;
-		padding: 6px 14px;
-		font-size: 12px;
-		background: var(--viz-bg-bottom);
-	}
-	.lab-formula-plate[data-look='clay'] {
-		background: var(--viz-clay-bg-bottom);
-	}
-	.lab-plate-frame {
-		inset: 4px 6px;
-		width: calc(100% - 12px);
-		height: calc(100% - 8px);
-	}
-	.lab-formula-plate > .lab-plate-body {
-		margin-inline: auto;
-		text-align: center;
-	}
-}
-/* Clay studio: labels are dark ink on the light backdrop, without the hologram glow. */
-.lab-stage[data-look="clay"] .lab-label {
-	color: var(--viz-clay-ink);
-	text-shadow: none;
-}
-
-/*
  * Shared design tokens and primitives for interactive lab widgets.
  * Widgets keep their own layout in scoped <style> blocks and build on these classes,
  * so every widget looks like one system in both Starlight themes.
@@ -195,7 +26,7 @@
  * Primitives below set `display` (flex/grid), which would beat the UA `[hidden]` rule;
  * widgets toggle `hidden` to show/hide parts, so restore its meaning inside cards.
  */
-.lab-instruments[hidden], .lab-card [hidden] {
+.lab-card [hidden] {
 	display: none !important;
 }
 
@@ -461,40 +292,24 @@ h1#_top,
  * clear of the red X axis and of the orange selection); color is never the only cue (labels, hatch).
  */
 :root {
-	--viz-bg-top: #0c1220;
-	--viz-bg-bottom: #05070f;
+	--viz-bg-top: #3a3a3a;
+	--viz-bg-bottom: #282828;
 	--viz-chrome: #2b2b2b;
 	--viz-chrome-2: #232323;
 	--viz-field: #545454;
 	--viz-field-hover: #656565;
-	--viz-grid: #1e2d4d;
-	--viz-grid-minor: #141c30;
-	--viz-ink: #e9eef8;
-	--viz-muted: #93a0b8;
+	--viz-grid: #4a4a4a;
+	--viz-grid-minor: #444444;
+	--viz-ink: #e6e6e6;
+	--viz-muted: #9a9a9a;
 	--viz-axis-x: #ff3352;
 	--viz-axis-y: #8bdc00;
 	--viz-axis-z: #2890ff;
-	--viz-vec-a: #4fd8ff;
-	--viz-vec-b: #d85cc8;
-	--viz-vec-c: #3df0b4;
+	--viz-vec-a: #56b4e9;
+	--viz-vec-b: #e07bd0;
+	--viz-vec-c: #3dd6b0;
 	--viz-light: #ffe27a;
 	--viz-hot: #ffaa40;
-	--viz-star: #c9d6f2;
-	--viz-nebula-a: #1b2a5a;
-	--viz-nebula-b: #3a1e4e;
-	--viz-vignette: #02030a;
-	--viz-floor: #070a15;
-	--viz-plate: #0b1a33;
-	--viz-clay-a: #9edcb6;
-	--viz-clay-b: #8fc4f2;
-	--viz-clay-c: #a98cdf;
-	--viz-clay-accent: #f2994a;
-	--viz-clay-plate: #ece9e3;
-	--viz-clay-ink: #2a2e36;
-	/* Clay studio backdrop (light sweep, top/bottom) and its floor grid. */
-	--viz-clay-bg-top: #d6dae1;
-	--viz-clay-bg-bottom: #c4c9d2;
-	--viz-clay-grid: #b9bfc9;
 	/* Page-side formula term highlight: hot at 22 % (CSS only, not a scene role). */
 	--viz-hot-bg: color-mix(in srgb, var(--viz-hot) 22%, transparent);
 	--lab-vp-head: 28px;
