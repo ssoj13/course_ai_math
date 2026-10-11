@@ -14,10 +14,11 @@ import { Label } from '../scene/Label';
 import { Arrow } from '../scene/Arrow';
 import { TileGrid } from '../scene/TileGrid';
 import { snap } from '../scene/drag';
+import { useWorldPx } from '../scene/view';
 import { Show, useOverlay, type Draggable } from '../scene/handles';
 import type { StatusSpec } from '../scene/StatusBar';
 import { rowsFor, type Scene } from './squares-and-plane.rows';
-import { derive, fmt1, fmt2, fmt4, fmtInt, LESSON, squareBox } from './squares-and-plane.math';
+import { derive, floorBox, fmt1, fmt2, fmt4, fmtInt, LESSON, squareBox } from './squares-and-plane.math';
 
 /**
  * Lesson 0.G scenes (storyboard §7.3-§7.5): 0.G-1 the square of side x, 0.G-2 a point read on two rulers, 0.G-3 the
@@ -40,17 +41,22 @@ function Reach({ lo, hi }: { lo: V; hi: V }) {
 		position={[(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, 0]} scale={[hi[0] - lo[0], hi[1] - lo[1], 0.01]} />;
 }
 
+/** Screen distance of the side measurement from the x axis: past the tick numbers (11 px out, ~10 px tall). */
+const SIDE_PX = 28;
+
 /**
- * The measured side: an arrow from the origin to the side's end, drawn just outside the square (below it for a positive
- * side, above it for a mirrored one), with its signed value. It grows from the origin in the draw-in; zero length draws
- * only the value at the origin.
+ * The measured side: an arrow from the origin to the side's end, SIDE_PX outside the axis on the side away from the
+ * square (below it for a positive side, above a mirrored one), with its signed value further out. The offset is in
+ * screen pixels, so arrow and label clear the tick numbers at every zoom and card width. The arrow grows from the
+ * origin in the draw-in; zero length draws only the value.
  */
 function Side({ to, text, id, role }: { to: number; text: string; id: string; role: 'vecA' | 'vecC' }) {
 	const labels = useOverlay('labels');
-	const y = to < 0 ? 0.3 : -0.3;
+	const off = useWorldPx(SIDE_PX, [0, 0]) ?? 0.5;
+	const y = to < 0 ? off : -off;
 	return <>
 		{to !== 0 && <Arrow lesson={LESSON} id={id} from={[0, y]} to={[to, y]} role={role} drag="none" />}
-		{labels && <Label lesson={LESSON} id={id} at={[to / 2, y]} offset={[0, to < 0 ? -14 : 14]} role={role}>{text}</Label>}
+		{labels && <Label lesson={LESSON} id={id} at={[to / 2, y]} offset={[0, to < 0 ? -13 : 13]} role={role}>{text}</Label>}
 	</>;
 }
 
@@ -89,7 +95,8 @@ function Plane() {
 	const fy: V = [0, z.py];
 	// Labels sit on the side away from P so they never cover the legs (P above the x axis -> x label below it).
 	const below = z.py >= 0 ? 14 : -14;
-	const beside = z.px < 0 ? 30 : -30;
+	// The y-leg label sits beside its foot on P's side and a row above it, clear of the y tick numbers on that row.
+	const beside = z.px < 0 ? -36 : 36;
 	return <>
 		<Reach lo={[-4.8, -4.8]} hi={[4.8, 4.8]} />
 		<Show ov="legs">
@@ -100,7 +107,7 @@ function Plane() {
 			<RightAngle lesson={LESSON} id="rtx" at={fx} u={sub(P, fx)} v={[-z.px, 0]} show />
 			<RightAngle lesson={LESSON} id="rty" at={fy} u={sub(P, fy)} v={[0, -z.py]} show />
 			{labels && <Label lesson={LESSON} id="legx" at={fx} offset={[0, 2 * below]} role="axisX">{'x = ' + fmt1(z.px)}</Label>}
-			{labels && <Label lesson={LESSON} id="legy" at={fy} offset={[beside, 0]} role="axisY">{'y = ' + fmt1(z.py)}</Label>}
+			{labels && <Label lesson={LESSON} id="legy" at={fy} offset={[beside, -13]} role="axisY">{'y = ' + fmt1(z.py)}</Label>}
 		</Show>
 		{/* Transient squares of the two readings, on the rulers, away from P: x² on [0, x] of the x axis, y² on [0, y]. */}
 		{hot.has('px2') && <AreaTile lesson={LESSON} id="px2" a={[0, 0]} b={fx} role="axisX" flip={z.px * z.py < 0} label={(a) => 'x² = ' + fmt2(a)} />}
@@ -117,7 +124,7 @@ function Root() {
 	const s = Math.sqrt(v.A as number);
 	const sideText = '√A = ' + fmt4(s);
 	return <>
-		<Reach lo={[-0.4, -0.8]} hi={[4.4, 4.4]} />
+		<Reach lo={[-0.5, -1]} hi={[4.2, 4.2]} />
 		<Show ov="tiles">
 			<TileGrid lesson={LESSON} id="sq" shape={(w) => squareBox(Math.sqrt(w.A as number))} role="vecC" count
 				label={labels ? (total) => 'A = ' + total : false} />
@@ -128,13 +135,34 @@ function Root() {
 	</>;
 }
 
-/** The grid (Overlays "grid"; its axes under "axes" where the card has them). 0.G-3 has no axes (§7.5). */
-function AxesGrid({ extent }: { extent: number }) {
-	return <Grid lesson={LESSON} extent={extent} step={1} axes={useOverlay('axes')} />;
-}
+/** Grid lines under the "grid" overlay, axes under "axes" (cards without an axes flag, 0.G-3 (§7.5), have none). */
 function SceneGrid({ extent, axes }: { extent: number; axes: boolean }) {
-	if (!useOverlay('grid')) return null;
-	return axes ? <AxesGrid extent={extent} /> : <Grid lesson={LESSON} extent={extent} step={1} axes={false} />;
+	const lines = useOverlay('grid');
+	return axes ? <AxesGrid extent={extent} lines={lines} /> : <Grid lesson={LESSON} extent={extent} step={1} axes={false} lines={lines} />;
+}
+function AxesGrid({ extent, lines }: { extent: number; lines: boolean }) {
+	return <Grid lesson={LESSON} extent={extent} step={1} lines={lines} axes={useOverlay('axes')} />;
+}
+
+/**
+ * 0.G-1 in 3D ("square is an area, as a 3D widget"): the same square of side x as unit slabs lying on the floor (xz,
+ * thin y), cut pieces thinner slabs, the side measured along x in front of it, the handle at [x, 0, 0]. Same store,
+ * rows and hot ids as the 2D card, so both views move together.
+ */
+function Square3D() {
+	const locale = useLocale();
+	const v = useVals(LESSON);
+	const x = v.x as number;
+	const labels = useOverlay('labels');
+	return <>
+		<Show ov="tiles">
+			<TileGrid lesson={LESSON} id="sq" shape={(s) => floorBox(s.x as number)} plane="xz" negative="mirror" role="vecA" count
+				parts={{ whole: 'whole', partial: 'partial' }} label={labels ? (total) => 'x² = ' + total : false} />
+		</Show>
+		{x !== 0 && <Arrow lesson={LESSON} id="side" from={[0, 0, x < 0 ? 0.5 : -0.5]} to={[x, 0, x < 0 ? 0.5 : -0.5]} role="vecA" drag="none" />}
+		{labels && <Label lesson={LESSON} id="side" at={[x / 2, 0, x < 0 ? 0.5 : -0.5]} offset={[0, -14]} role="vecA">{'x = ' + fmt1(x)}</Label>}
+		<Point lesson={LESSON} id="side" at={(s) => [s.x as number, 0, 0]} keys={['x']} move={moveSide} role="vecA" label={t(locale, 'sq.handleSide')} />
+	</>;
 }
 
 /** Status bar hints per scene (storyboard status lines); values are read live. */
@@ -175,9 +203,14 @@ function statusFor(scene: Scene, locale: Locale): StatusSpec {
 	};
 }
 
-const CARD = { 1: { id: '0.G-1', name: 'sq.nameSquare' }, 2: { id: '0.G-2', name: 'sq.namePoint' }, 3: { id: '0.G-3', name: 'sq.nameRoot' } } as const;
+const CARD = {
+	1: { id: '0.G-1', name: 'sq.nameSquare' }, 2: { id: '0.G-2', name: 'sq.namePoint' }, 3: { id: '0.G-3', name: 'sq.nameRoot' },
+	4: { id: '0.G-1-3D', name: 'sq.nameSquare3d' },
+} as const;
 
-export function SquaresScene({ scene }: { scene: Scene }) {
+/** Scenes 1-3 as in the storyboard; 4 = the 3D view of scene 1 (same rows, status and store). */
+export function SquaresScene({ scene }: { scene: Scene | 4 }) {
+	if (scene === 4) return <Square3DCard />;
 	const locale = useLocale();
 	const ov = (id: string, key: Parameters<typeof t>[1], on = true) => ({ id, label: t(locale, key), on });
 	const overlays = scene === 1 ? [ov('grid', 'sq.ovGrid'), ov('tiles', 'sq.ovTiles'), ov('labels', 'sq.ovLabels'), ov('axes', 'sq.ovAxes')]
@@ -190,5 +223,16 @@ export function SquaresScene({ scene }: { scene: Scene }) {
 		drawIn={scene === 1}>
 		<SceneGrid extent={extent} axes={scene !== 3} />
 		{scene === 1 ? <Square /> : scene === 2 ? <Plane /> : <Root />}
+	</ViewportCard>;
+}
+
+function Square3DCard() {
+	const locale = useLocale();
+	const ov = (id: string, key: Parameters<typeof t>[1]) => ({ id, label: t(locale, key), on: true });
+	return <ViewportCard lesson={LESSON} id={CARD[4].id} name={CARD[4].id + ' · ' + t(locale, CARD[4].name)} mode="3d" extent={4.5}
+		rows={rowsFor(1, locale)} overlays={[ov('grid', 'sq.ovGrid'), ov('tiles', 'sq.ovTiles'), ov('labels', 'sq.ovLabels'), ov('axes', 'sq.ovAxes')]}
+		status={statusFor(1, locale)}>
+		<SceneGrid extent={4.5} axes />
+		<Square3D />
 	</ViewportCard>;
 }

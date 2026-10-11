@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test';
 import '../../src/i18n/ui';
 import { lessonStore } from '../../src/viz/store';
 import { writeMove, clampMove } from '../../src/viz/scene/handles';
-import { CHECKS, derive, INITIAL, pointLink, squareLink, SPEC, fmt1 } from '../../src/viz/lessons/squares-and-plane.math';
+import { CHECKS, derive, INITIAL, squareLink, SPEC, fmt1 } from '../../src/viz/lessons/squares-and-plane.math';
 import { rowsFor } from '../../src/viz/lessons/squares-and-plane.rows';
 import { rowRanges } from '../../src/viz/scene/NPanel';
 import { chipLines } from '../../src/viz/scene/chips';
@@ -10,7 +10,7 @@ import { chipLines } from '../../src/viz/scene/chips';
 let n = 0;
 const fresh = () => {
 	const id = 'sq-test-' + n++;
-	return { id, store: lessonStore(id, { ...INITIAL }, { groups: [squareLink(), pointLink()] }) };
+	return { id, store: lessonStore(id, { ...INITIAL }, { groups: [squareLink()] }) };
 };
 
 test('x and A publish together: every synchronous subscriber sees A = x·x (x writes) or x = √A (A writes)', () => {
@@ -66,7 +66,7 @@ test('eased writes spring only x; the drawn A is x·x at every frame (side and a
 	// Arrival depends on the frame source (a DOM test file may have stubbed requestAnimationFrame); coherence does not.
 });
 
-test('a scrub checkpoint restores the whole linked pair (and P with its moved flag)', () => {
+test('a scrub checkpoint restores the whole linked pair', () => {
 	const { store } = fresh();
 	store.getState().set('x', -3);
 	const restore = store.getState().checkpoint(['A']);
@@ -75,10 +75,9 @@ test('a scrub checkpoint restores the whole linked pair (and P with its moved fl
 	restore();
 	expect(store.getState().vals).toMatchObject({ x: -3, A: 9 });
 	const back = store.getState().checkpoint(['P']);
-	store.getState().set('P', [1, 1]);
-	expect(store.getState().vals.moved).toBe(1);
+	store.getState().set('P', [-1, 1]);
 	back();
-	expect(store.getState().vals).toMatchObject({ P: [-2, 3], moved: 0 });
+	expect(store.getState().vals.P).toEqual([1, 2]);
 });
 
 test('handles write x through the same resolver and the card clamp', () => {
@@ -88,7 +87,7 @@ test('handles write x through the same resolver and the card clamp', () => {
 	expect(store.getState().vals).toMatchObject({ x: -4, A: 16 });
 	const p = rowRanges(rowsFor(2, 'en'));
 	writeMove(id, clampMove({ P: [9, -9] }, p));
-	expect(store.getState().vals).toMatchObject({ P: [4.5, -4.5], moved: 1 });
+	expect(store.getState().vals.P).toEqual([4.5, -4.5]);
 });
 
 test('derived numbers of the spec edge cases (0.G-1, 0.G-2, 0.G-3)', () => {
@@ -120,7 +119,8 @@ test('challenges: store reads only; the default point does not solve "put P at (
 	expect(CHECKS.negative(w({ x: -0.1 }))).toBe(true);
 	expect(CHECKS.negative(base)).toBe(false);
 	expect(CHECKS.pointTyped(base)).toBe(false);
-	expect(CHECKS.pointTyped(w({ moved: 1 }))).toBe(true);
+	expect(CHECKS.pointTyped(w({ P: [-2, 3] }))).toBe(true);
+	expect(CHECKS.pointTyped(w({ P: [-2, 3.1] }))).toBe(false);
 	expect(CHECKS.sumOther(base)).toBe(false);
 	expect(CHECKS.sumOther(w({ P: [3, 2] }))).toBe(true);
 	expect(CHECKS.sumOther(w({ P: [-3, -2] }))).toBe(true);
@@ -129,11 +129,9 @@ test('challenges: store reads only; the default point does not solve "put P at (
 	expect(CHECKS.wholeSide(w({ A: 0 }))).toBe(false);
 	expect(CHECKS.wholeSide(w({ A: 2.25 }))).toBe(false);
 	expect(CHECKS.sideHalf(w({ A: 2.25 }))).toBe(true);
-	// The live store path: moving away and back by typing solves challenge 1.
+	// The default point is not the worked example, so challenge 3 starts unsolved and typing (-2, 3) solves it.
 	const { store } = fresh();
-	store.getState().set('P', [-2, 3]);
 	expect(CHECKS.pointTyped(store.getState().vals)).toBe(false);
-	store.getState().set('P', [1, 1]);
 	store.getState().set('P', [-2, 3]);
 	expect(CHECKS.pointTyped(store.getState().vals)).toBe(true);
 });

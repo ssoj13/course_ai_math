@@ -362,7 +362,7 @@ pixel-stable polyline of `y = f(t)` over an interval on `Stroke`), the measureme
 |---|---|---|---|---|
 | `x` | number | 3 | [−4, 4] / 0.1 | `\s{x}` scrub (prose and formula), N-panel field, side handle drag (0.G-1); 0.G-3 writes it from `A` (always ≥ 0) |
 | `A` | number | 9 | [0, 16] / 0.25 | N-panel field and `\s{A}` (0.G-3); 0.G-1 writes it from `x` |
-| `P` | [x, y] | [−2, 3] | stage extent, snap 0.1 | point drag (0.G-2), two N-panel fields |
+| `P` | [x, y] | [1, 2] (not the worked example (−2, 3): challenge 1 asks the reader to reproduce it) | stage extent, snap 0.1 | point drag (0.G-2), two N-panel fields |
 
 Both scenes write `x` and `A` together through the future store-level linked patch contract (7.13), including N-panel, Formula, Num and handles: 0.G-1's handle/field writes
 `{ x: v, A: v·v }`; 0.G-3's field writes `{ A: v, x: sqrt(v) }`. So a negative `x` set in 0.G-1 becomes positive the
@@ -439,9 +439,9 @@ idle — "Drag P or type x, y in the N panel".
 = \s{sum}`, dim until the reader hovers a SQUARES row.
 
 **Hover map.** `px`: leg x + foot + its label + `\s{px}` + the x field; `py` likewise; `px2`/`py2`: the leg brightens and
-a transient glass `AreaTile` (axis colour) is drawn on the leg for the hover; `sum`: both tiles.
+a transient `AreaTile` (axis colour) is drawn for the hover on the reading it squares, [0, px] of the x axis (or [0, py] of the y axis), on the side away from P (a leg has the other coordinate's length); `sum`: both tiles.
 
-**NumTable** (Task 7; 2 rows `x`, `y`, 1 column) under the formula: the "two readings" view, cells `px`/`py`.
+**NumTable** (Task 7; 1 row `P`, 2 columns `x`, `y`, as in `P = (x, y)`) under the formula: the "two readings" view, cells a0/a1 linked to `px`/`py`.
 
 **Edge cases.** `P` on an axis: one leg has zero length, its label reads `0.0`, its foot coincides with P. `P` at the
 origin: both.

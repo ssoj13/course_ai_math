@@ -41,7 +41,7 @@ test('0.G-1 controls: formula, live readout and challenges in both locales; the 
 	expect(host.querySelector('[data-m="sq-2"]')!.classList.contains('is-hidden')).toBe(true);
 	act(() => store.getState().set('x', 2.5));
 	expect(host.querySelector('[data-m="sq-2"]')!.classList.contains('is-hidden')).toBe(false);
-	expect(host.textContent).toContain('4 whole tiles and 2.25 of partial area in 5 cut (orange) pieces.');
+	expect(host.textContent).toContain('whole tiles: 4, plus partial area 2.25 in cut (yellow) pieces: 5.');
 	act(() => store.getState().set('x', -3));
 	expect(host.textContent).toContain('squares forget the sign');
 	expect(host.querySelector('.lab-formula')!.textContent).toContain('(−3.0)');
@@ -74,7 +74,7 @@ test('0.G-2: the two-readings table reads P, the squares line dims until a SQUAR
 	const store = lessonStore(LESSON);
 	const host = mount(<SquaresControls scene={2} locale="ru" />);
 	const cells = [...host.querySelectorAll('td')].map((td) => td.textContent);
-	expect(cells).toEqual(['-2', '3']);
+	expect(cells).toEqual(['1', '2']);
 	expect(host.querySelector('[data-m="sq-sum"]')!.classList.contains('is-dim')).toBe(true);
 	act(() => store.getState().setHot(['sum']));
 	expect(host.querySelector('[data-m="sq-sum"]')!.classList.contains('is-dim')).toBe(false);

@@ -42,12 +42,20 @@ One more: $x = 7$ gives $7^2 = 49$. Forty-nine unit tiles, 7 by 7.
 
 Try it. Drag the round handle at the end of the side (or scrub the $x$ in the formula, or type it in the panel).
 The square is built from unit tiles; when the side is not a whole number, the tiles along the far edges are cut, and
-the cut pieces are orange. The formula always gives the exact area, whole tiles plus cut pieces.
+the cut pieces are yellow. The formula always gives the exact area, whole tiles plus cut pieces.
 
 <SceneIsland caption="0.G-1 · The square of side x: unit tiles, cut pieces, and the area x² for a positive, zero or negative side." rows={rowsFor(1, locale)}>
   <SquaresScene scene={1} locale={locale} client:only="react" />
 </SceneIsland>
 <SquaresControls scene={1} locale={locale} client:load />
+
+The same square as a 3D widget: the tiles are thin slabs lying on the floor. Orbit around them (drag in empty space) to
+see that a cut piece is a thinner slab, not a smaller copy of a whole tile. The side handle and every number are shared
+with the scene above.
+
+<SceneIsland caption="0.G-1 · The same square in 3D: unit slabs on the floor, cut pieces thinner, one side x for both views." rows={rowsFor(1, locale)}>
+  <SquaresScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
 
 Now a case that surprises people. Let $x = 0.5$. Then $x^2 = 0.5 \cdot 0.5 = 0.25$. The number $0.25$ is
 *smaller* than $0.5$. Squaring does not always make a number bigger: between 0 and 1 it makes it smaller. The picture
@@ -158,7 +166,7 @@ $$
 (-2)^2 = 4, \qquad 3^2 = 9
 $$
 
-Two squares: one with area 4 built on the x leg, one with area 9 built on the y leg. Their total area is
+Two squares: one with area 4 on the x reading (a side of 2 along the x ruler), one with area 9 on the y reading (a side of 3 along the y ruler). Their total area is
 $4 + 9 = 13$. Keep that number in mind. [Distance and Pythagoras](lesson:pythagoras) shows what $\sqrt{13}$ measures.
 
 > **Say it simpler.** $x^2$ is the area of a square of side $x$. $\sqrt{A}$ is the side of a square of area
