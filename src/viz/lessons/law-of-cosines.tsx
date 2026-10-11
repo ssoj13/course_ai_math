@@ -9,6 +9,7 @@ import { Challenge, type ChallengeProps } from '../Challenge';
 import { CodeView } from '../CodeView';
 import { Ledger } from '../Ledger';
 import { reducedMotion } from '../scene/motion';
+import { HotLinks, type HotLinkMap } from '../HotLinks';
 import type { Marks } from '../marks';
 import { LESSON, INITIAL, derive, solveIK, fmt, fmtCos, fmtAngle, cutProgress, cutElapsed, cutMoves } from './law-of-cosines.math';
 import { SCRUB } from './law-of-cosines.rows';
@@ -155,11 +156,10 @@ function proofTexts(locale: Locale, z: Derived): string[] {
 }
 
 /**
- * Directional hover links (spec hover maps): a hot id lights its linked ids. The expansion keeps the originating
- * source (guide or interaction); a new hover starts a new set, so expansions never accumulate.
- * `legs` is a virtual focus id of proof step 5 that lights both leg tiles at once.
+ * Directional hover links (spec hover maps), expanded by the shared HotLinks. `legs` is a virtual focus id of proof
+ * step 5 that lights both leg tiles at once.
  */
-const LINKS: Record<string, readonly string[]> = {
+const LINKS: HotLinkMap = {
 	sq_a: ['a2'], a2: ['sq_a'], sq_b: ['b2'], b2: ['sq_b'], sq_c: ['c2'], c2: ['sq_c'],
 	p: ['drop_a', 'D'], q: ['drop_b', 'E'], strip_a: ['p'], strip_b: ['q'],
 	th: ['cos'], corr: ['strip_a', 'strip_b', 'p', 'q'], ab: ['strip_a'],
@@ -168,21 +168,6 @@ const LINKS: Record<string, readonly string[]> = {
 	cosraw: ['cosphi'], cosphi: ['cosraw', 'l1', 'l2', 'd'], cosc: ['clamp'], clamp: ['cosc', 'gap', 'reach_max'],
 	hand: ['ik_hand'], ik_hand: ['hand'], l1: ['ik_l1'], ik_l1: ['l1'], l2: ['ik_l2'], ik_l2: ['l2'],
 };
-
-function SemanticLinks() {
-	useEffect(() => {
-		const store = lessonStore(LESSON);
-		const sync = () => {
-			const st = store.getState(), ids = new Set(st.hot);
-			// Iterating a Set while adding to it visits the additions too, so the expansion is transitive.
-			for (const id of ids) for (const linked of LINKS[id] ?? []) ids.add(linked);
-			if (ids.size !== st.hot.size) st.setHot([...ids], st.hotSource ?? 'interaction');
-		};
-		sync();
-		return store.subscribe(sync);
-	}, []);
-	return null;
-}
 
 const TRANSPORTS = ['cut', 'proof_fade'] as const;
 type Transport = typeof TRANSPORTS[number];
@@ -328,7 +313,7 @@ function Controls({ scene }: { scene: Scene }) {
 	const challenges = challengesFor(scene, locale);
 	return <section className="not-content" data-lc-controls={scene}>
 		{/* Links and the clock are lesson-wide; they mount once, with the lead scene's controls. */}
-		{scene === 0 && <><SemanticLinks /><TransportClock /></>}
+		{scene === 0 && <><HotLinks lesson={LESSON} links={LINKS} /><TransportClock /></>}
 		{scene !== 3 && <LawFormula scene={scene} compact />}
 		{scene === 0 && <MotionTransport kind="cut" />}
 		{scene === 2 && <MotionTransport kind="proof_fade" />}

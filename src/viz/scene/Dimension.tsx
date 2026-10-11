@@ -7,12 +7,19 @@ import {useHot} from '../store';
 import {HOVER_RANK,useHoverable,useLabel,usePos,useStage} from './handles';
 import {SLine,useDynGeo,writeGeo} from './view';
 type Layout={a:number[];b:number[];mid:number[];heads:number[][];ticks:number[][]};
-export function Dimension({lesson,id,a:aa,b:bb,normal}:{lesson:string;id:string;a:V|string;b:V|string;normal?:V}){
- const a=usePos(lesson,aa),b=usePos(lesson,bb),reg=useStage(),pal=usePalette(),hot=useHot(lesson,id),hover=useHoverable(lesson,id,HOVER_RANK.guide);
+/**
+ * A dimension line (visual-language v3 measuring instrument): a 1 px line offset 14 CSS px to the right of a->b with
+ * filled heads, end ticks and the value in mono. `label` replaces the default text |b - a| (e.g. a signed side "x = -3.0"
+ * whose sign the length cannot carry). During the stage's draw-in the line grows from `a`, like a beam.
+ */
+export function Dimension({lesson,id,a:aa,b:bb,normal,label}:{lesson:string;id:string;a:V|string;b:V|string;normal?:V;label?:string}){
+ const a=usePos(lesson,aa),bFull=usePos(lesson,bb),reg=useStage(),pal=usePalette(),hot=useHot(lesson,id),hover=useHoverable(lesson,id,HOVER_RANK.guide);
  const [layout,setLayout]=useState<Layout|null>(null),signature=useRef('');
  const heads=useDynGeo(6,[0,1,2,3,4,5]),point=useRef(new Vector3());
  useFrame(({camera,invalidate})=>{
   if(!reg.el)return;
+  // Draw-in: the drawn end moves from a to b over the first half of the reveal (the measured value is unchanged).
+  const grow=Math.min(1,reg.reveal*2),b=bFull.map((x,i)=>a[i]+(x-a[i])*grow);
   const w=reg.el.clientWidth,h=reg.el.clientHeight,n=rightOf(a,b,a.length===3?normal??[0,0,1]:undefined);
   if(!n){if(signature.current!=='hidden'){signature.current='hidden';setLayout(null);invalidate();}return;}
   const project=(p:V)=>point.current.set(...to3(p)).project(camera).toArray();
@@ -29,12 +36,13 @@ export function Dimension({lesson,id,a:aa,b:bb,normal}:{lesson:string;id:string;
    hs.push(unproject(at(p,sign*5,3),z),unproject(p,z),unproject(at(p,sign*5,-3),z));
    ts.push(unproject(at(p,0,4),z),unproject(at(p,0,-4),z));
   });
-  const next={a:pa,b:pb,mid:unproject([(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2],(na[2]+nb[2])/2),heads:hs,ticks:ts};
+    // The value sits 12 px further out along the screen normal: outside whichever side the line was offset to.
+  const next={a:pa,b:pb,mid:unproject(at([(s.a[0]+s.b[0])/2,(s.a[1]+s.b[1])/2],0,12),(na[2]+nb[2])/2),heads:hs,ticks:ts};
   const key=JSON.stringify(next,(_,v)=>typeof v==='number'?Math.round(v*1e7)/1e7:v);
   if(key!==signature.current){signature.current=key;setLayout(next);invalidate();}
  },2);
  useEffect(()=>{if(layout)writeGeo(heads,layout.heads);},[heads,layout]);
- useLabel(layout?{lesson,text:norm(sub(b,a)).toFixed(2),hot:id,at:()=>layout.mid,offset:[0,12],small:true}:null);
+ useLabel(layout?{lesson,text:label??norm(sub(bFull,a)).toFixed(2),hot:id,at:()=>layout.mid,small:true}:null);
  if(!layout)return null;
  const color=hot?pal.hot:pal.ink;
  return <group {...hover}><mesh geometry={heads}><meshBasicMaterial color={color} side={DoubleSide} transparent depthWrite={false}/></mesh>
