@@ -6,6 +6,14 @@ description: "Normals, parallelogram area and orientation in 3D."
 import Quiz from '../../../components/Quiz.astro';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { CrossScene, CrossControls } from '../../../viz/lessons/cross-product';
+import { rowsFor } from '../../../viz/lessons/cross-product.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'cp']} />
 
 **Built on:** [The dot product](lesson:dot-product) · [A vector: an arrow and a list of numbers](lesson:vector)
 
@@ -15,10 +23,14 @@ Houdini computes a polygon's normal as `@N = normalize(cross(e1, e2))` from two 
 
 ## 1. Definition: the arrow that sticks out
 
-The **cross product** of two 3D vectors $\mathbf{a}$ and $\mathbf{b}$ is a new 3D vector:
+The **cross product** of two 3D vectors $\mathbf{a}$ and $\mathbf{b}$ is a new 3D vector, written one component per line:
 
 $$
-\mathbf{a} \times \mathbf{b} = (a_y b_z - a_z b_y,\;\; a_z b_x - a_x b_z,\;\; a_x b_y - a_y b_x)
+\begin{aligned}
+(\mathbf{a} \times \mathbf{b})_x &= a_y b_z - a_z b_y \\
+(\mathbf{a} \times \mathbf{b})_y &= a_z b_x - a_x b_z \\
+(\mathbf{a} \times \mathbf{b})_z &= a_x b_y - a_y b_x
+\end{aligned}
 $$
 
 Each component is a small 2-by-2 "criss-cross": the x component uses only the y and z parts of the inputs, and so on, cycling x → y → z → x. Unlike the dot product, the result is a **vector**, and it exists only in 3D.
@@ -26,22 +38,37 @@ Each component is a small 2-by-2 "criss-cross": the x component uses only the y 
 Example. $\mathbf{a} = (1, 0, 0)$, $\mathbf{b} = (0, 1, 0)$:
 
 $$
-\mathbf{a} \times \mathbf{b} = (0 \cdot 0 - 0 \cdot 1,\;\; 0 \cdot 0 - 1 \cdot 0,\;\; 1 \cdot 1 - 0 \cdot 0) = (0, 0, 1)
+\begin{aligned}
+(\mathbf{a} \times \mathbf{b})_x &= 0 \cdot 0 - 0 \cdot 1 = 0 \\
+(\mathbf{a} \times \mathbf{b})_y &= 0 \cdot 0 - 1 \cdot 0 = 0 \\
+(\mathbf{a} \times \mathbf{b})_z &= 1 \cdot 1 - 0 \cdot 0 = 1
+\end{aligned}
 $$
 
-The x axis crossed with the y axis is the z axis. The result points straight out of the plane of the two inputs.
+So $\mathbf{a} \times \mathbf{b} = (0, 0, 1)$: the x axis crossed with the y axis is the z axis. The result points straight out of the plane of the two inputs.
 
 That is the general rule: $\mathbf{a} \times \mathbf{b}$ is **perpendicular to both** $\mathbf{a}$ and $\mathbf{b}$. Check it with the dot product on a less obvious pair, $\mathbf{a} = (1, 2, 3)$, $\mathbf{b} = (4, 5, 6)$:
 
 $$
-\mathbf{a} \times \mathbf{b} = (2 \cdot 6 - 3 \cdot 5,\;\; 3 \cdot 4 - 1 \cdot 6,\;\; 1 \cdot 5 - 2 \cdot 4) = (-3, 6, -3)
+\begin{aligned}
+(\mathbf{a} \times \mathbf{b})_x &= 2 \cdot 6 - 3 \cdot 5 = -3 \\
+(\mathbf{a} \times \mathbf{b})_y &= 3 \cdot 4 - 1 \cdot 6 = 6 \\
+(\mathbf{a} \times \mathbf{b})_z &= 1 \cdot 5 - 2 \cdot 4 = -3
+\end{aligned}
 $$
 
-$(-3, 6, -3) \cdot (1, 2, 3) = -3 + 12 - 9 = 0$ and $(-3, 6, -3) \cdot (4, 5, 6) = -12 + 30 - 18 = 0$. Perpendicular to both, as promised.
+So $\mathbf{a} \times \mathbf{b} = (-3, 6, -3)$. Check: $(-3, 6, -3) \cdot (1, 2, 3) = -3 + 12 - 9 = 0$ and $(-3, 6, -3) \cdot (4, 5, 6) = -12 + 30 - 18 = 0$. Perpendicular to both, as promised.
 
-Which of the two perpendicular directions? The formula always gives x × y = +z. The **right-hand rule** describes the picture in a right-handed system such as Maya or Houdini (y up, +z toward you): curl the fingers of your right hand from $\mathbf{a}$ toward $\mathbf{b}$ and the thumb points along $\mathbf{a} \times \mathbf{b}$. In a left-handed system (Unity, Unreal, RenderMan) the same numbers are drawn with +z pointing away, so the picture follows the left hand; the arithmetic is unchanged.
+Which of the two perpendicular directions? The formula decides, not a hand: put $(1, 0, 0)$ and $(0, 1, 0)$ in and $(0, 0, 1)$ comes out, so x × y = +z in **every** coordinate system. What differs between systems is only where +z is drawn on your screen. The **right-hand rule** describes the picture in a right-handed system such as Maya or Houdini (y up, +z toward you): curl the fingers of your right hand from $\mathbf{a}$ toward $\mathbf{b}$ and the thumb points along $\mathbf{a} \times \mathbf{b}$. In a left-handed system (Unity, Unreal, RenderMan) the same numbers are drawn with +z pointing away from you, so the picture follows the left hand; the arithmetic is unchanged. The scenes below are right-handed, like Maya: y up, +z toward you.
 
-{/* scene: 1.8-1 — a × b in 3D: the perpendicular result; the parallelogram spanned by a and b is filled and its area is linked to |a × b|; swap order → flips; drag toward parallel → shrinks to zero */}
+Try it in the scene. The arrows $\mathbf{a}$ (blue) and $\mathbf{b}$ (pink) start at the origin; drag their tips, or type their components in the panel on the right (on a phone, in the fields under the scene). The green arrow is $\mathbf{a} \times \mathbf{b}$: it has no handle, because it is computed from the other two. The square marks at the origin show it stays at 90° to both. Drag with the left button on empty space to orbit around it. Three things to try: make it point along +z (put $\mathbf{a}$ on the x axis and $\mathbf{b}$ on the y axis), drag $\mathbf{b}$ onto the line of $\mathbf{a}$ and watch it shrink to nothing, and tick "order b × a" to see it turn over.
+
+<SceneIsland caption="CP-1 · a × b in 3D: perpendicular to both inputs, as long as the parallelogram's area; the order decides its direction." rows={rowsFor(1, locale)}>
+  <CrossScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<CrossControls scene={1} locale={locale} client:load />
+
+The table under the formula shows the criss-cross with live numbers: each component is one product minus another. Hover a row and the matching term of the formula, the code line and the component lights up.
 
 ## 2. Length: the area of the parallelogram
 
@@ -52,6 +79,8 @@ $$
 $$
 
 Compare with the dot product's $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \cos\theta$. Cosine measures the shadow; sine measures the height. Base times height is an area, so $\lvert \mathbf{a} \times \mathbf{b} \rvert$ is the **area of the parallelogram** spanned by $\mathbf{a}$ and $\mathbf{b}$.
+
+In the scene above, the filled parallelogram is this area. Its label and the length of the green arrow are always the same number, and the formula computes it both ways: from the components and as $\lvert \mathbf{a} \rvert \lvert \mathbf{b} \rvert \sin\theta$.
 
 Check with the example: $\lvert (-3, 6, -3) \rvert = \sqrt{9 + 36 + 9} = \sqrt{54} \approx 7.35$. By the other route: $\lvert \mathbf{a} \rvert = \sqrt{14}$, $\lvert \mathbf{b} \rvert = \sqrt{77}$, $\mathbf{a} \cdot \mathbf{b} = 32$, so $\cos\theta = 32 / \sqrt{14 \cdot 77} \approx 0.9746$, $\sin\theta = \sqrt{1 - 0.9746^2} \approx 0.224$, and $\sqrt{14 \cdot 77} \cdot 0.224 \approx 7.35$. Same number.
 
@@ -84,7 +113,12 @@ This number is the **signed area** of the parallelogram spanned by $\mathbf{a}$ 
 
 The sign is the **orientation**: positive when turning from $\mathbf{a}$ to $\mathbf{b}$ is counter-clockwise, negative when clockwise, zero when they are on one line. $(1, 3)$ and $(2, 0)$ in the other order give $1 \cdot 0 - 3 \cdot 2 = -6$: same shape, clockwise turn, negative. This is the "dependence meter" of [lesson 1.6](lesson:basis): zero area means the two arrows span only a line.
 
-{/* scene: 1.8-2 — 2D signed area a_x b_y − a_y b_x: positive when counter-clockwise, the sign shown as the parallelogram tint (orientation); hatched when negative */}
+In the scene, drag $\mathbf{b}$ across the line of $\mathbf{a}$. While the turn from $\mathbf{a}$ to $\mathbf{b}$ is counter-clockwise, the number is positive and the parallelogram is a plain tint; once $\mathbf{b}$ crosses to the clockwise side, the number turns negative and the parallelogram is hatched. The small curved arrow shows the turn; on the line itself the parallelogram is flat and the number is 0.
+
+<SceneIsland caption="CP-2 · Signed area ax·by − ay·bx: positive for a counter-clockwise turn, negative (hatched) for a clockwise one, zero on one line." rows={rowsFor(2, locale)}>
+  <CrossScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<CrossControls scene={2} locale={locale} client:load />
 
 **Misconception to drop:** "the cross product exists in 2D as a vector." In 2D it is a single signed number; the vector version needs three dimensions.
 
@@ -98,9 +132,14 @@ $$
 
 the cross product, normalized. Example: $P_0 = (0, 0, 0)$, $P_1 = (1, 0, 0)$, $P_2 = (0, 1, 0)$. Then $\mathbf{e}_1 = (1, 0, 0)$, $\mathbf{e}_2 = (0, 1, 0)$ and $\mathbf{N} = (0, 0, 1)$: the triangle lies in the xy plane and faces $+z$. Its area is half the parallelogram, $\tfrac{1}{2} \lvert \mathbf{e}_1 \times \mathbf{e}_2 \rvert = 0.5$.
 
-Now list the vertices in the other order, $P_0, P_2, P_1$. The edges swap, the cross product flips, and $\mathbf{N} = (0, 0, -1)$. The triangle did not move; only the **winding order** changed, and the normal now faces the other way. With back-face culling on, such a triangle simply disappears: the rasterizer drops it by the sign of its 2D signed area on screen (section 4). With two-sided display, it is drawn but lit with a flipped normal, and $\max(0, \mathbf{N} \cdot \mathbf{L}) = 0$ turns the side that should be lit black. Both symptoms of a mesh with inconsistent winding come from this one sign.
+Now list the vertices in the other order, $P_0, P_2, P_1$. The edges swap, the cross product flips, and $\mathbf{N} = (0, 0, -1)$. The triangle did not move; only the **winding order** changed, and the normal now faces the other way. With back-face culling on, such a triangle simply disappears: the rasterizer drops it by the sign of its 2D signed area on screen (section 4), because a clockwise triangle on screen is one whose normal points away from the camera. With culling off (two-sided display) and ordinary one-sided lighting, it is drawn, but its normal points away from the light, and $\max(0, \mathbf{N} \cdot \mathbf{L}) = 0$ turns the side that should be lit black. Both symptoms of a mesh with inconsistent winding come from this one sign. (A renderer with true two-sided lighting flips the normal for faces seen from behind, which hides the problem instead of showing it.)
 
-{/* scene: 1.8-3 — triangle normal from two edges; flip the winding order and the normal flips: "this is why back-faces vanish or go dark" */}
+The scene draws the face exactly like a GPU does: the three vertices are sent in the listed order, back-face culling is the real rasterizer test, and the face is lit by the fixed light $\mathbf{L}$ (yellow) with $\max(0, \mathbf{N} \cdot \mathbf{L})$. Tick "order A → C → B" in the panel: the edges $\mathbf{e}_1$ and $\mathbf{e}_2$ trade places, the normal flips, and the face, seen from the front as at the start, vanishes. Untick "back-face culling" and it comes back, black. Orbit behind the triangle to see the same rule from the other side, or drag C down across the line AB.
+
+<SceneIsland caption="CP-3 · Triangle normal from two edges: reverse the winding and the normal flips; culled, the face vanishes; drawn two-sided, it goes black." rows={rowsFor(3, locale)}>
+  <CrossScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<CrossControls scene={3} locale={locale} client:load />
 
 The same logic builds tangent frames: given a normal $\mathbf{N}$ and a tangent $\mathbf{T}$, the bitangent is $\mathbf{B} = \mathbf{N} \times \mathbf{T}$ (or $\mathbf{T} \times \mathbf{N}$, depending on the convention your normal maps were baked with; getting the order wrong mirrors every bump).
 

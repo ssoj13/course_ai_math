@@ -8,7 +8,6 @@
   "index",
   "vectors/basis",
   "vectors/cosine-similarity",
-  "vectors/cross-product",
   "vectors/length",
   "vectors/projection",
   "vectors/vector",
