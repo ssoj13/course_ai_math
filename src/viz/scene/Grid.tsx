@@ -5,11 +5,14 @@
  * 2D lies in the z = 0 plane with "infinite" axes and no fade (a sheet of graph paper); 3D lies on the floor
  * (y = 0, y-up), fades with distance like Blender's floor, and adds a vertical y axis and a z axis.
  * Drawn first and without depth writes, so anything coplanar draws on top.
+ * Scene furniture (`userData.aux`): never reflected by the holographic floor and not part of the figure's bounds,
+ * except that a grid with axes is a coordinate plane, so its +-extent square (2D) or a cube whose bounding sphere has
+ * radius 1.3 extent (3D, the old default framing) counts as the figure the home view frames (`userData.fitBox`).
  */
 import { Grid as ShaderGrid } from '@react-three/drei';
-import { LookCtx, useMirror } from './look';
+import { LookCtx } from './look';
 import { useContext, useLayoutEffect, useMemo, useRef } from 'react';
-import { DoubleSide, type Mesh, type ShaderMaterial } from 'three';
+import { Box3, DoubleSide, Vector3, type Mesh, type ShaderMaterial } from 'three';
 import { tickText, tickValues } from '../geom';
 import { STYLE, usePalette } from '../palette';
 import { useLabel, useStage } from './handles';
@@ -45,11 +48,10 @@ function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' 
 	return null;
 }
 
-export function Grid(props: GridProps): React.JSX.Element | null {
- const mirror = useMirror();
- return mirror ? null : <GridContent {...props}/>;
-}
-function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
+/** Half-size of the 3D fit cube: its bounding sphere (half-diagonal sqrt(3) s), plus the 10 % framing margin, is 1.3 e. */
+const FIT_3D = 1.3 / (Math.sqrt(3) * 1.1);
+
+export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
 	const pal = usePalette();
 	const studio = useContext(LookCtx) === 'clay';
@@ -76,8 +78,14 @@ function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true
 	const every = Math.max(1, Math.ceil(vals.length / 2 / 5));
 	const labelled = showTicks ? vals.filter((v) => Math.round(Math.abs(v) / step) % every === 0) : [];
 	const flat = { transparent: true, depthWrite: false };
+	const userData = useMemo(() => {
+		if (!axes) return { aux: true };
+		// 3D: the cube stands on the floor plane y = 0 (the grid is the floor), so the reflective floor coincides with it.
+		const s = is3d ? e * FIT_3D : e;
+		return { aux: true, fitBox: new Box3(new Vector3(-s, is3d ? 0 : -s, is3d ? -s : 0), new Vector3(s, is3d ? 2 * s : s, is3d ? s : 0)) };
+	}, [axes, is3d, e]);
 	return (
-		<group>
+		<group userData={userData}>
 			<ShaderGrid
 				ref={mesh}
 				args={[2, 2]}
@@ -88,8 +96,8 @@ function GridContent({ lesson, extent: e, step, minor, axes = true, ticks = true
 				sectionSize={step}
 				cellThickness={minor ? 1 : 0}
 				sectionThickness={1}
-				cellColor={studio ? '#b9bfc9' : pal.gridMinor}
-				sectionColor={studio ? '#b9bfc9' : pal.grid}
+				cellColor={studio ? pal.clayGrid : pal.gridMinor}
+				sectionColor={studio ? pal.clayGrid : pal.grid}
 				fadeDistance={is3d ? e * 7 : 1e4}
 				fadeStrength={is3d ? 1.6 : 0}
 				side={DoubleSide}

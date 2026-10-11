@@ -1,6 +1,6 @@
-import {useContext,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useContext,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {useFrame,useThree} from '@react-three/fiber';
-import {DoubleSide,ShapeUtils,Vector2} from 'three';
+import {DoubleSide,Float32BufferAttribute,ShapeUtils,Vector2} from 'three';
 import {to3,sub,dot,cross,normalize,type V} from '../geom';
 import {STYLE,usePalette,type SceneRole} from '../palette';
 import {useVals,useStep,useHot,type LessonState} from '../store';
@@ -11,6 +11,18 @@ import {LookCtx,assertSubject} from './look';
 import {Hatch} from './hatchMaterial';
 import {lerpVertices,polygonInfo} from './polygon';
 type Vals=LessonState['vals'];
+const Glass=lazy(()=>import('./Glass').then(m=>({default:m.Glass})));
+/**
+ * Glass coordinates of a polygon: `local` = position in world units along the first edge and its in-plane normal
+ * (the glass grid then counts unit cells aligned with that edge: squares and strips show their own cells), `uv` =
+ * the same normalised to the polygon's extent in those directions (rim glow; exact for rectangles).
+ */
+function glassCoords(coords:number[][],u:number[],v:number[]):{local:number[];uv:number[]}{
+ const o=coords[0],l=coords.map(p=>[dot(sub(p,o),u),dot(sub(p,o),v)]);
+ const lo=[Math.min(...l.map(q=>q[0])),Math.min(...l.map(q=>q[1]))],hi=[Math.max(...l.map(q=>q[0])),Math.max(...l.map(q=>q[1]))];
+ const span=[Math.max(hi[0]-lo[0],1e-9),Math.max(hi[1]-lo[1],1e-9)];
+ return {local:l.flatMap(q=>[q[0]-lo[0],q[1]-lo[1]]),uv:l.flatMap(q=>[(q[0]-lo[0])/span[0],(q[1]-lo[1])/span[1]])};
+}
 export interface PolyProps {
  lesson:string;id:string;timeline?:string;step?:number;
  /** Reader-controlled fractional placement; supplied positions bypass the internal clock. */
@@ -63,12 +75,21 @@ export function Poly(p:PolyProps):React.JSX.Element {
   return ShapeUtils.triangulateShape(coords.map(p=>new Vector2(dot(p,u),dot(p,v))),[]).flat();
  },[points]);
  const geo=useDynGeo(count.current,indices);
- useLayoutEffect(()=>{geo.setIndex(indices);writeGeo(geo,coords)},[geo,points,indices]);
+ useLayoutEffect(()=>{
+  geo.setIndex(indices);writeGeo(geo,coords);
+  if(info.area<1e-9)return;
+  const u=normalize(sub(coords.find(q=>q.some((x,j)=>x!==coords[0][j]))!,coords[0])),g=glassCoords(coords,u,cross(info.normal,u));
+  geo.setAttribute('local',new Float32BufferAttribute(g.local,2));geo.setAttribute('uv',new Float32BufferAttribute(g.uv,2));
+ },[geo,points,indices]);
  useLabel(p.label?{lesson:p.lesson,text:p.label(vals),role:p.role,hot:p.id,at:()=>info.center}:null);
  const hover=useHoverable(p.lesson,p.id,HOVER_RANK.fill);
  return <group {...hover}>
   {info.area>=1e-9&&<>
-   <mesh geometry={geo} frustumCulled={false}><meshBasicMaterial color={pal[p.role]} side={DoubleSide} transparent opacity={p.fill??STYLE.fillA} depthWrite={false} polygonOffset polygonOffsetFactor={1}/></mesh>
+   <mesh geometry={geo} frustumCulled={false}>
+    <Suspense fallback={<meshBasicMaterial color={pal[p.role]} side={DoubleSide} transparent opacity={p.fill??STYLE.fillA} depthWrite={false} polygonOffset polygonOffsetFactor={1}/>}>
+     <Glass color={pal[p.role]} hot={hot} alpha={p.fill??STYLE.fillA}/>
+    </Suspense>
+   </mesh>
    {p.hatched?.(vals)&&<Hatch geometry={geo} role={p.role}/>}
    {p.edge!=='none'&&<Stroke points={[...coords,coords[0]]} color={pal[p.role]} hot={hot} width={STYLE.edge} dashPx={p.edge==='dashed'?[5,4]:undefined}/>}
   </>}

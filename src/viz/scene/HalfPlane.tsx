@@ -34,6 +34,8 @@ const FAN5 = [0, 1, 2, 0, 2, 3, 0, 3, 4];
 const DISC = new CircleGeometry(1, 64);
 const Z = new Vector3(0, 0, 1);
 
+const AUX = { aux: true };
+
 export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	const reg = useStage();
 	const n = usePos(p.lesson, p.normal);
@@ -76,11 +78,12 @@ export function HalfPlane(p: HalfPlaneProps): React.JSX.Element | null {
 	return (
 		<group ref={group} {...hover}>
 			{poly ? (
-				<mesh geometry={geo} frustumCulled={false} renderOrder={-1}>
+				// A half-plane is 50 x extent wide: scene furniture for framing and the floor reflection (`aux`).
+				<mesh geometry={geo} frustumCulled={false} renderOrder={-1} userData={AUX}>
 					{mat}
 				</mesh>
 			) : (
-				<mesh geometry={DISC} quaternion={q ?? undefined} scale={reg.extent} renderOrder={-1}>
+				<mesh geometry={DISC} quaternion={q ?? undefined} scale={reg.extent} renderOrder={-1} userData={AUX}>
 					{mat}
 				</mesh>
 			)}

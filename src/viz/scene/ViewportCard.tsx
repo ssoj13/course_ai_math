@@ -22,9 +22,10 @@ import { Icon, Overlays, SizeButtons } from './Header';
 import { useCardSize } from './sizeModes';
 import { frameMismatch, frameOf } from './chips';
 import { NPanel, rowRanges, useTip, type Row } from './NPanel';
-import { Stage } from './Stage';
+import { Stage, type FramePad } from './Stage';
 import { Instruments } from './Instruments';
 import { FormulaPlate } from './FormulaPlate';
+import { hudLayout } from './hud';
 import { StatusBar, type StatusSpec } from './StatusBar';
 
 export interface ViewportCardProps {
@@ -53,6 +54,42 @@ export interface ViewportCardProps {
 
 const NARROW = '(max-width: 719.98px)';
 
+/**
+ * Space the home view keeps free around the figure: the instrument columns (hud.ts, from the stage's free area) and,
+ * on desktop where it floats over the stage, the formula plate with its bottom offset. Measured from the live DOM
+ * (stage box, plate box) and recomputed when they resize, so the figure is framed between the instruments and above
+ * the plate at any card size, in wide and full mode alike.
+ */
+function useFramePad(root: React.RefObject<HTMLDivElement | null>, mode: '2d' | '3d', inset: number, hud: boolean, formula: boolean): FramePad {
+	const [pad, setPad] = useState<FramePad>({ l: 0, r: 0, t: 0, b: 0 });
+	useLayoutEffect(() => {
+		const card = root.current;
+		const stage = card?.querySelector<HTMLElement>('.lab-stage');
+		if (!card || !stage) return;
+		const plate = card.querySelector<HTMLElement>('.lab-formula-plate');
+		const mq = matchMedia(NARROW);
+		const update = () => {
+			const w = stage.clientWidth - inset;
+			const h = stage.clientHeight;
+			const L = hud && w > 0 && h > 0 ? hudLayout(w, h, mode === '3d', mode === '2d') : null;
+			// A plate floating over the stage (desktop) covers its bottom from the plate's top edge down.
+			const b = formula && plate && !mq.matches ? Math.max(0, stage.getBoundingClientRect().bottom - plate.getBoundingClientRect().top) + 8 : 0;
+			const next = { l: L?.left ?? 0, r: L?.right ?? 0, t: 0, b: Math.round(b) };
+			setPad((cur) => (cur.l === next.l && cur.r === next.r && cur.b === next.b ? cur : next));
+		};
+		update();
+		const ro = new ResizeObserver(update);
+		ro.observe(stage);
+		if (plate) ro.observe(plate);
+		mq.addEventListener('change', update);
+		return () => {
+			ro.disconnect();
+			mq.removeEventListener('change', update);
+		};
+	}, [root, mode, inset, hud, formula]);
+	return pad;
+}
+
 export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
  const locale = useLocale();
 	const overlays = p.overlays ?? [];
@@ -79,6 +116,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	};
 	toggleRef.current = toggle;
 	const tip = useTip();
+	const pad = useFramePad(root, p.mode, inset, Boolean(p.instruments), Boolean(p.formula));
 
 	// The server frame reserves the chip row from the rows SceneIsland was given; other rows here would shift the layout
 	// on phones, so a mismatch is an authoring error (pass the same rows array to both).
@@ -137,7 +175,16 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 
 	const is3d = p.mode === '3d';
 	return (
-		<div className="lab-vp-card" tabIndex={-1} data-size={sizeMode} data-size-id={sizeId} data-hud={p.instruments ? "" : undefined} data-formula={p.formula ? "" : undefined} style={{"--lab-vp-inset":`${inset}px`} as React.CSSProperties} ref={root}>
+		<div
+			className="lab-vp-card"
+			tabIndex={-1}
+			data-size={sizeMode}
+			data-size-id={sizeId}
+			data-hud={p.instruments ? '' : undefined}
+			data-formula={p.formula ? '' : undefined}
+			style={{ '--lab-vp-inset': `${inset}px`, '--lab-hud-l': `${pad.l}px`, '--lab-hud-r': `${pad.r}px` } as React.CSSProperties}
+			ref={root}
+		>
 			<header className="lab-vp-head">
 				{/* Indicators, not controls: the view type and a 2D view's projection are fixed by the scene. */}
 				<span className="lab-vp-seg" role="img" aria-label={is3d ? t(locale, 'viewport.view3d') : t(locale, 'viewport.view2d')}>
@@ -187,11 +234,23 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 				)}
 			</header>
 			<div className="lab-vp-body">
-				<Stage look={p.look} lesson={p.lesson} mode={p.mode} extent={p.extent} reg={reg} proj={proj} center={p.center} inset={inset} drawIn={p.drawIn} overlay={<>{p.instruments && <Instruments reg={reg} lesson={p.lesson} angleKey={p.angleKey} rows={rows}/>}</>}>
+				<Stage
+					look={p.look}
+					lesson={p.lesson}
+					mode={p.mode}
+					extent={p.extent}
+					reg={reg}
+					proj={proj}
+					center={p.center}
+					inset={inset}
+					drawIn={p.drawIn}
+					pad={pad}
+					overlay={p.instruments && <Instruments reg={reg} lesson={p.lesson} look={p.look} angleKey={p.angleKey} rows={rows} />}
+				>
 					{p.children}
 				</Stage>
 			</div>
-			{p.formula && <FormulaPlate>{p.formula}</FormulaPlate>}
+			{p.formula && <FormulaPlate look={p.look}>{p.formula}</FormulaPlate>}
 			{hasPanel && <NPanel id={panelId} lesson={p.lesson} rows={rows} reg={reg} open={open} />}
 			<StatusBar reg={reg} lesson={p.lesson} spec={p.status ?? {}} />
 			{tip.node}

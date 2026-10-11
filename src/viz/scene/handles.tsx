@@ -8,7 +8,8 @@
  * LabelLayer (inside the View) calls `placeLabels` once per rendered frame with the camera of that frame.
  * The registry also carries the per-stage state the ViewportCard chrome shares with the scene: the card's overlay
  * flags (`useOverlay`, `Show`), what the pointer is over (`hover`, read by the status bar), the camera commands bound
- * by the View (`nav`: Reset view, gizmo align), the gizmo's per-frame update and the draw-in progress (`reveal`).
+ * by the View (`nav`: Reset view, gizmo align), the gizmo's per-frame update, the draw-in progress (`reveal`), the
+ * camera-derived instrument data (`view`) and the floor the holographic look stands the figure on (`frame`).
  * Deliberately free of three/drei so the keyboard, label, overlay and hover paths are testable in happy-dom.
  */
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
@@ -17,8 +18,6 @@ import type { V } from '../geom';
 import { roleVar, type SceneRole } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState, type Val, type WriteHow } from '../store';
 import { hitHandle, keyDelta, moved, pushAway } from './drag';
-
-import { useMirror } from './look';
 
 type Vals = LessonState['vals'];
 
@@ -170,7 +169,74 @@ export interface StageReg {
 	reveal: number;
 	/** Half-size of the stage's data area in world units (Stage `extent`; set by Stage before its scene renders). */
 	extent: number;
+	/** What the camera shows, for the DOM instruments (written by ViewSync only when a value changes). */
+	readonly view: Cell<ViewInfo>;
+	/** Where the figure stands: set by the navigation at its home view (Reset view), null before the first frame. */
+	readonly frame: Cell<FrameInfo | null>;
 }
+
+/**
+ * A one-value external store for useSyncExternalStore: `get` returns the same object until `set` replaces it, so a
+ * writer that runs per frame must detect real changes itself and only then publish a new object.
+ */
+export interface Cell<T> {
+	get(): T;
+	set(v: T): void;
+	subscribe(cb: () => void): () => void;
+}
+
+export function cell<T>(init: T): Cell<T> {
+	let v = init;
+	const subs = new Set<() => void>();
+	return {
+		get: () => v,
+		set(next) {
+			if (next === v) return;
+			v = next;
+			for (const cb of subs) cb();
+		},
+		subscribe(cb) {
+			subs.add(cb);
+			return () => void subs.delete(cb);
+		},
+	};
+}
+
+/** One projected world unit of the vertical axis: value `v` sits `y` CSS px below the stage's top edge. */
+export interface YTick {
+	v: number;
+	y: number;
+}
+
+/** Camera state the HUD instruments draw: stage size, scale, azimuth and the projected world y axis. */
+export interface ViewInfo {
+	/** Stage size in CSS px. */
+	w: number;
+	h: number;
+	/** CSS px per world unit at the view target. */
+	unitPx: number;
+	/** 3D: heading of the view direction in degrees (0 = looking down -z); 2D: 0. */
+	azimuth: number;
+	/** Every whole world unit of the y axis that is on screen, top to bottom. */
+	ticks: readonly YTick[];
+}
+
+/**
+ * The floor of the holographic look, from the figure's bounds at the home view. 3D: the plane y = `y` = min(0, the
+ * figure's lowest point), centred under (`cx`, `cz`). 2D: the figure is a sheet standing on the line y = `y` (its
+ * lowest point); the floor recedes in perspective up to the horizon `horizon` world units above that line, with its
+ * vanishing point at x = `cx`. `size` is the figure's height (2D) or bounding radius (3D): the length scale of the
+ * reflection fade.
+ */
+export interface FrameInfo {
+	y: number;
+	horizon: number;
+	cx: number;
+	cz: number;
+	size: number;
+}
+
+export const EMPTY_VIEW: ViewInfo = { w: 0, h: 0, unitPx: 0, azimuth: 0, ticks: [] };
 
 /** An overlay flag a card declares (Blender's Overlays popover): `on` is the default. */
 export interface OverlayDef {
@@ -304,6 +370,8 @@ export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): St
 		gizmo: null,
 		reveal: 1,
 		extent: 1,
+		view: cell(EMPTY_VIEW),
+		frame: cell<FrameInfo | null>(null),
 		list: handles.list,
 		subscribe: handles.subscribe,
 		add(d) {
@@ -367,8 +435,6 @@ export function usePos(lesson: string, v: V | string): V {
  * inline function does not re-register the handle on every render.
  */
 export function useDraggable(d: Draggable | null): void {
-	const mirror = useMirror();
-	if (mirror) d = null;
 	const reg = useStage();
 	const at = useRef(d?.at);
 	at.current = d?.at;
@@ -429,8 +495,6 @@ function KeyHandle({ reg, d }: { reg: StageReg; d: Draggable }): React.JSX.Eleme
  * so inline functions are fine; the overlay re-renders only when text, color, hot id or offsets change.
  */
 export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
-	const mirror = useMirror();
-	if (mirror) spec = null;
 	const reg = useStage();
 	const id = useId();
 	const [owner] = useState(() => ({}));
@@ -587,8 +651,6 @@ export interface HoverProps {
  * beam that lies over a band hands the hover back to the band.
  */
 export function useHoverable(lesson: string, id: string | undefined, rank: number): HoverProps {
-	const mirror = useMirror();
-	if (mirror) id = undefined;
 	const reg = useStage();
 	return useMemo(() => {
 		if (id === undefined) return {};

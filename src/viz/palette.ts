@@ -15,7 +15,7 @@ export type Role =
 	| 'bgTop' | 'bgBottom' | 'chrome' | 'chrome2' | 'field' | 'fieldHover'
 	| 'grid' | 'gridMinor' | 'ink' | 'muted'
 	| 'star' | 'nebulaA' | 'nebulaB' | 'vignette' | 'floor' | 'plate'
-	| 'clayA' | 'clayB' | 'clayC' | 'clayAccent' | 'clayPlate' | 'clayInk'
+	| 'clayA' | 'clayB' | 'clayC' | 'clayAccent' | 'clayPlate' | 'clayInk' | 'clayBgTop' | 'clayBgBottom' | 'clayGrid'
 	| 'axisX' | 'axisY' | 'axisZ'
 	| 'vecA' | 'vecB' | 'vecC' | 'light' | 'hot';
 
@@ -25,6 +25,7 @@ export type Palette = Record<Role, string>;
 export const ROLE_VARS: Readonly<Record<Role, string>> = {
 	star: '--viz-star', nebulaA: '--viz-nebula-a', nebulaB: '--viz-nebula-b', vignette: '--viz-vignette', floor: '--viz-floor', plate: '--viz-plate',
 	clayA: '--viz-clay-a', clayB: '--viz-clay-b', clayC: '--viz-clay-c', clayAccent: '--viz-clay-accent', clayPlate: '--viz-clay-plate', clayInk: '--viz-clay-ink',
+	clayBgTop: '--viz-clay-bg-top', clayBgBottom: '--viz-clay-bg-bottom', clayGrid: '--viz-clay-grid',
 	bgTop: '--viz-bg-top',
 	bgBottom: '--viz-bg-bottom',
 	chrome: '--viz-chrome',
@@ -57,10 +58,10 @@ export const STYLE = {
 	/** Core width of a beam (vector, segment). */
 	core: 2,
 	/** Halo width around a beam, and its alpha in the beam's own color. */
-	halo: 18,
-	haloA: 0.10,
-	inner: 7,
-	innerA: 0.38,
+	halo: 16,
+	haloA: 0.09,
+	inner: 5.5,
+	innerA: 0.34,
 	lighten: 0.35,
 	mirrorA: 0.28,
 	glassBottomA: 0.06,

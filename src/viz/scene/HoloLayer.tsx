@@ -1,16 +1,20 @@
-import type { ReactNode } from 'react';
-import { useStore } from 'zustand';
-import { lessonStore } from '../store';
-import { InstrumentSync } from './InstrumentSync';
+/**
+ * The look's furniture of one Stage, in its own lazy chunk (pages without scenes never load it): the instrument feed,
+ * the sky (or the clay studio backdrop) and, in the holo look, the reflective floor with the figure's reflection.
+ */
+import type { RefObject } from 'react';
+import type { Group } from 'three';
 import { Background } from './Background';
-import { FloorFade, Mirror } from './Floor';
-import { useStage, overlayOn } from './handles';
+import { Floor } from './Floor';
+import { InstrumentSync } from './InstrumentSync';
 import type { Look } from './look';
-export function HoloLayer({children,look}:{children:ReactNode;look:Look}){
- const reg=useStage(), card=reg.card;
- const floor=useStore(lessonStore(card?.lesson??'scene'),s=>{
-  const def=card?.overlays.find(o=>o.id==='floor');
-  return reg.mode==='3d'&&!!card&&!!def&&overlayOn(s.vals,card.id,def);
- });
- return <><InstrumentSync/><Background look={look}/>{floor&&<><FloorFade/><Mirror>{children}</Mirror></>}</>;
+
+export function HoloLayer({ look, floor, content }: { look: Look; floor: boolean; content: RefObject<Group | null> }): React.JSX.Element {
+	return (
+		<>
+			<InstrumentSync />
+			<Background look={look} />
+			{floor && <Floor content={content} />}
+		</>
+	);
 }

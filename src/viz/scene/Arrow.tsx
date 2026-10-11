@@ -116,6 +116,8 @@ function Leg({ lesson, id, axis, pts }: { lesson: string; id: string; axis: 0 | 
 const PAD_OUT = STYLE.hotPad;
 const PAD_HALO = (STYLE.halo - STYLE.core) / 2;
 
+const PX_SIZED = { pxSized: true };
+
 export function Arrow(p: ArrowProps): React.JSX.Element {
  assertSubject(useContext(LookCtx), true);
 	const reg = useStage();
@@ -184,7 +186,8 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 			{legs?.map((l) => <Leg key={l.axis} lesson={p.lesson} id={`${p.id}:${AXES[l.axis]}`} axis={l.axis} pts={l.pts} />)}
 			<group visible={g.len > 1e-9} {...hover}>
 				<Stroke ref={shaft} points={g.shaft} color={color} hot={hot} order={2} />
-				<group ref={head} position={g.b} quaternion={g.q}>
+				{/* Sized in screen px per frame: the figure's bounds count only its tip (contentBox). */}
+				<group ref={head} position={g.b} quaternion={g.q} userData={PX_SIZED}>
 					<mesh ref={glow} geometry={geo} renderOrder={1.8}>
 						<meshBasicMaterial color={hot ? pal.hot : color} blending={AdditiveBlending} transparent opacity={hot ? STYLE.hotHaloA : STYLE.haloA} depthWrite={false} side={DoubleSide} />
 					</mesh>
