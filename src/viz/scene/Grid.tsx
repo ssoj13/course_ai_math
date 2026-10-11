@@ -27,6 +27,8 @@ export interface GridProps {
 	axes?: boolean;
 	/** 2D only: tick marks and numbers on the axes within +-extent. */
 	ticks?: boolean;
+	/** Grid lines; off keeps the axes, ticks and numbers (a card's "Grid" overlay hides only the lines). */
+	lines?: boolean;
 }
 
 type P3 = [number, number, number];
@@ -34,6 +36,8 @@ type P3 = [number, number, number];
 // 2D axes reach far past any zoom-out limit (Stage clamps zoom), so they read as infinite lines.
 const FAR = 400;
 const TICK_PX = 5;
+/** Least screen distance between two numbered ticks: closer numbers are skipped, so they never overlap. */
+const NUMBER_PX = 26;
 
 function TickLabel({ lesson, at, offset, text }: { lesson: string; at: P3; offset: readonly [number, number]; text: string }): null {
 	useLabel({ lesson, text, role: 'muted', small: true, offset, at: () => at });
@@ -48,7 +52,7 @@ function AxisLetter({ lesson, ch, at, offset }: { lesson: string; ch: 'x' | 'y' 
 
 const AUX = { aux: true };
 
-export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true }: GridProps): React.JSX.Element {
+export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true, lines = true }: GridProps): React.JSX.Element {
 	const reg = useStage();
 	const pal = usePalette();
 	const is3d = reg.mode === '3d';
@@ -57,7 +61,8 @@ export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true
 	useLayoutEffect(() => {
 		const m = mesh.current?.material as ShaderMaterial | undefined;
 		if (m) m.depthWrite = false;
-	}, []);
+		// Switching the lines back on mounts a new drei mesh with a fresh material.
+	}, [lines]);
 	const ax = useMemo(() => {
 		const L = is3d ? e : e * FAR;
 		return { x: [[-L, 0, 0], [L, 0, 0]] as P3[], y: [[0, -L, 0], [0, L, 0]] as P3[], z: [[0, 0, -e], [0, 0, e]] as P3[] };
@@ -70,13 +75,15 @@ export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true
 		const h = tick / 2;
 		return vals.flatMap((v): P3[] => [[v, -h, 0], [v, h, 0], [-h, v, 0], [h, v, 0]]);
 	}, [showTicks, tick, vals]);
-	// Numbers on every tick up to five per half-axis, else on every second (or more) so they never crowd.
-	const every = Math.max(1, Math.ceil(vals.length / 2 / 5));
+	// Numbers on every tick up to five per half-axis and at least NUMBER_PX apart on screen (a phone-sized stage
+	// thins them by its own scale), else on every second (or more) tick.
+	const pxPerTick = tick ? (step * TICK_PX) / tick : Infinity;
+	const every = Math.max(1, Math.ceil(vals.length / 2 / 5), Math.ceil(NUMBER_PX / pxPerTick));
 	const labelled = showTicks ? vals.filter((v) => Math.round(Math.abs(v) / step) % every === 0) : [];
 	const flat = { transparent: true, depthWrite: false };
 	return (
 		<group userData={AUX}>
-			<ShaderGrid
+			{lines && <ShaderGrid
 				ref={mesh}
 				args={[2, 2]}
 				rotation={is3d ? [0, 0, 0] : [Math.PI / 2, 0, 0]}
@@ -92,7 +99,7 @@ export function Grid({ lesson, extent: e, step, minor, axes = true, ticks = true
 				fadeStrength={is3d ? 1.6 : 0}
 				side={DoubleSide}
 				renderOrder={-3}
-			/>
+			/>}
 			{axes && (
 				<>
 					<SLine points={ax.x} color={pal.axisX} lineWidth={STYLE.edge} {...flat} renderOrder={-1} />

@@ -42,6 +42,7 @@ export const DemoCosines = localized(lazyIsland(() => import('./engine.impl').th
 export const DemoPolar = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoPolar)));
 export const DemoSign = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoSign)));
 export const DemoLamp = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoLamp)));
+export const DemoTiles = localized(lazyIsland(() => import('./engine.impl').then((m) => m.DemoTiles)));
 
 // Hoisted: Formula memoizes on these identities. A derived value computed from the live a and b (Task 3 `Derived`).
 const DOT = { dot: (v: Record<string, unknown>) => dot(v.a as V, v.b as V) };

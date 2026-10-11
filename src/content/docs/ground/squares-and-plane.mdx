@@ -4,6 +4,14 @@ description: "A square is an area, a root undoes it, a point is two readings on 
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { SquaresScene, SquaresControls } from '../../../viz/lessons/squares-and-plane';
+import { rowsFor } from '../../../viz/lessons/squares-and-plane.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'sq']} />
 
 **Built on:** nothing. This is the ground floor. Everything else in the course stands on three ideas from
 this page: a square is an area, a root undoes a square, and a point is two numbers.
@@ -32,7 +40,22 @@ A concrete example. Let $x = 3$. The square has side 3. Fill it with unit tiles 
 
 One more: $x = 7$ gives $7^2 = 49$. Forty-nine unit tiles, 7 by 7.
 
-{/* scene: 0.G-1 — scrub x in "x² = ?": a literal square of side x grows on the grid, the area readout is the formula value; drag x negative, the square stays and the area stays positive */}
+Try it. Drag the round handle at the end of the side (or scrub the $x$ in the formula, or type it in the panel).
+The square is built from unit tiles; when the side is not a whole number, the tiles along the far edges are cut, and
+the cut pieces are yellow. The formula always gives the exact area, whole tiles plus cut pieces.
+
+<SceneIsland caption="0.G-1 · The square of side x: unit tiles, cut pieces, and the area x² for a positive, zero or negative side." rows={rowsFor(1, locale)}>
+  <SquaresScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<SquaresControls scene={1} locale={locale} client:load />
+
+The same square as a 3D widget: the tiles are thin slabs lying on the floor. Orbit around them (drag in empty space) to
+see that a cut piece is a thinner slab, not a smaller copy of a whole tile. The side handle and every number are shared
+with the scene above.
+
+<SceneIsland caption="0.G-1 · The same square in 3D: unit slabs on the floor, cut pieces thinner, one side x for both views." rows={rowsFor(1, locale)}>
+  <SquaresScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
 
 Now a case that surprises people. Let $x = 0.5$. Then $x^2 = 0.5 \cdot 0.5 = 0.25$. The number $0.25$ is
 *smaller* than $0.5$. Squaring does not always make a number bigger: between 0 and 1 it makes it smaller. The picture
@@ -60,10 +83,16 @@ The area is 49. The side is the number whose square is 49. That is 7, because $7
 the root sign: $\sqrt{49} = 7$.
 
 $$
-\sqrt{A} = \text{the side of a square whose area is } A
+\sqrt{A} = s \;\Longleftrightarrow\; s \cdot s = A,\; s \ge 0
 $$
 
-{/* scene: 0.G-3 — scrub the area, the side appears: the root as the inverse of the square */}
+In words: $\sqrt{A}$ is the side $s$ of a square whose area is $A$. Now the area is what you set and the side is the
+answer. Scrub $A$ below and watch the side follow; it is an output, so it has no handle.
+
+<SceneIsland caption="0.G-3 · The root undoes the square: set the area A, the side √A appears and is never negative." rows={rowsFor(3, locale)}>
+  <SquaresScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<SquaresControls scene={3} locale={locale} client:load />
 
 Three things to know about the root.
 
@@ -96,7 +125,13 @@ Any place on the plane is now two readings: how far along the x ruler, and how f
 We write them as a pair in parentheses, x first: $(x, y)$. The pair is called the **coordinates** of the
 **point**.
 
-{/* scene: 0.G-2 — number line, then the plane: drag a point, (x, y) updates in the formula and in a 2-row table; the two dashed legs to the axes light up with the matching coordinate */}
+Drag the point, or type its two numbers in the panel: the dot and the numbers move together. Hover a row of the
+SQUARES group to see the square of each reading drawn on its ruler.
+
+<SceneIsland caption="0.G-2 · Two rulers, one point: the dashed legs from P to the axes are its coordinates." rows={rowsFor(2, locale)}>
+  <SquaresScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<SquaresControls scene={2} locale={locale} client:load />
 
 An example. The point $(-2, 3)$. Start at the origin. Walk 2 units in the negative x direction (left).
 Then walk 3 units in the positive y direction (up). You are at $(-2, 3)$. If you drop a line from the point
@@ -131,7 +166,7 @@ $$
 (-2)^2 = 4, \qquad 3^2 = 9
 $$
 
-Two squares: one with area 4 built on the x leg, one with area 9 built on the y leg. Their total area is
+Two squares: one with area 4 on the x reading (a side of 2 along the x ruler), one with area 9 on the y reading (a side of 3 along the y ruler). Their total area is
 $4 + 9 = 13$. Keep that number in mind. [Distance and Pythagoras](lesson:pythagoras) shows what $\sqrt{13}$ measures.
 
 > **Say it simpler.** $x^2$ is the area of a square of side $x$. $\sqrt{A}$ is the side of a square of area
@@ -230,14 +265,14 @@ print(p[0]**2 + p[1]**2)      # 13.0 -> lesson 0.3
 <details>
 <summary>Machine layer: why CG code compares squared distances</summary>
 
-`x * x` is one multiply: a single instruction, about as cheap as an add. `sqrt` is also a hardware
-instruction on every modern CPU and GPU, but it is a slower one, several times the cost of a multiply (roughly
-3 to 10 times on current CPUs), and it cannot be pipelined as freely.
+`x * x` is one multiply: a single instruction. `sqrt` is also a hardware instruction on modern CPUs and GPUs, but a
+separate and longer one than a multiply; how much longer depends on the chip and the precision, so measure it or
+look it up in your processor's instruction tables rather than trusting a rule of thumb.
 
 Here is the trick everyone in CG uses without naming it. Squaring keeps order: if $0 \le a \le b$ then
 $a^2 \le b^2$, and the other way round. So to ask "is this point closer than $r$?" you never need the root:
 compare the squared distance with $r^2$ instead. That is the `dist2 < r * r` you have written in every
-spatial query, culling test and particle solver. One multiply instead of one square root, and, apart from points
+spatial query, culling test and particle solver. A multiply instead of a square root, and, apart from points
 within a rounding error of the boundary, the answer is the same.
 
 </details>
