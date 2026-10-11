@@ -6,6 +6,14 @@ description: "Point vs direction, components, the vector between two points."
 import Quiz from '../../../components/Quiz.astro';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { VectorScene, VectorControls } from '../../../viz/lessons/vector';
+import { rowsFor } from '../../../viz/lessons/vector.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 've']} />
 
 **Built on:** [Distance and Pythagoras](lesson:pythagoras) · [Squares, roots and the plane](lesson:squares-and-plane)
 
@@ -25,7 +33,13 @@ The two numbers are the **components** of $\mathbf{v}$. The first component says
 
 Draw it and the two numbers become two dashed legs: a horizontal leg of length 3 and a vertical leg of length 2. The arrow is the hypotenuse of that right triangle, which is why [Pythagoras](lesson:pythagoras) will give its length in lesson 1.3.
 
-{/* scene: 1.1-1 — drag the arrow tip; the components (x, y) update in the formula and the table, and the dashed legs to the axes light up with the matching number */}
+Try it. Drag the tip of the arrow (or type the two numbers in the panel). The formula and the table under the picture are
+the same two numbers; hover one of them and its leg lights up.
+
+<SceneIsland caption="VE-1 · An arrow and a list of numbers: the dashed legs to the axes are its two components." rows={rowsFor(1, locale)}>
+  <VectorScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<VectorControls scene={1} locale={locale} client:load />
 
 In Houdini the same two (or three) numbers are what you read as `@v.x`, `@v.y` for a velocity; in a shader they are `v.x`, `v.y`. A vector is a small list of numbers with a picture attached.
 
@@ -33,13 +47,30 @@ In Houdini the same two (or three) numbers are what you read as `@v.x`, `@v.y` f
 
 Here is the part that trips people up. Take the arrow $(3, 2)$ and slide it, without turning it, so that it starts at $(5, 5)$ instead of at the origin. It still goes 3 right and 2 up. Its components are still $(3, 2)$. It is the **same vector**.
 
-{/* scene: 1.1-2 — drag the whole arrow by its shaft: the numbers do not change; a toggle shows it as a position (anchored at the origin) or as a free direction */}
+Drag the middle of the arrow to slide it, and watch the numbers stay put. The grey copy at the origin is the same
+vector. Then switch on **Position** in the panel: now the arrow is pinned to the origin, its tip is a point, and moving
+it does change the numbers.
+
+<SceneIsland caption="VE-2 · A vector has no address: slide the arrow and its components stay; pinned to the origin it becomes a position." rows={rowsFor(2, locale)}>
+  <VectorScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<VectorControls scene={2} locale={locale} client:load />
 
 So "the vector $(3, 2)$ starting at $(5, 5)$" and "the vector $(3, 2)$ starting at the origin" are one vector drawn in two places. A vector answers the question "which way, and how far?" and refuses the question "where?".
 
 A **point** answers "where?". The point $(3, 2)$ is a place on the plane. It has an address and no direction. You can turn a point into a vector by drawing the arrow from the origin to it, and that is the only sense in which the point $(3, 2)$ and the vector $(3, 2)$ are the same thing: the vector is the position *measured from the origin*.
 
-This is exactly the Maya `MPoint` versus `MVector` split, and Houdini's `@P` (a point) versus `@N` or `@v` (vectors). Translate an object and every `@P` changes; every `@N` stays. Homogeneous coordinates encode the same rule as the famous "w = 1 for points, w = 0 for directions" trick; we name it here and explain it when matrices arrive in Part 2.
+This is exactly the Maya `MPoint` versus `MVector` split, and Houdini's `@P` (a point) versus `@N` or `@v` (vectors). Translate an object and every `@P` changes; every `@N` stays. Homogeneous coordinates encode the same rule as the famous "w = 1 for points, w = 0 for directions" trick: a translation adds $w \cdot \mathbf{T}$, so a point ($w = 1$) gets the full $\mathbf{T}$ and a direction ($w = 0$) gets nothing. We name it here and explain it when matrices arrive in Part 2.
+
+Here is a tilted strip of floor with three vertices and the normal of each vertex. Drag the floor to translate it.
+The vertices move by $\mathbf{T}$; the normals do not. The formula is the $w$ rule with numbers: $P_1' = P_1 + 1 \cdot \mathbf{T}$ and
+$\mathbf{N}' = \mathbf{N} + 0 \cdot \mathbf{T}$. Switch on **N like a point** to see the bug of giving a normal the
+translation: $\mathbf{N} + \mathbf{T}$ tilts and stretches, and the shading of that floor would be wrong.
+
+<SceneIsland caption="VE-3 · Translate an object: its points (w = 1) move by T, its normals (w = 0) do not." rows={rowsFor(3, locale)}>
+  <VectorScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<VectorControls scene={3} locale={locale} client:load />
 
 **Misconception to drop:** "a vector is an arrow at a particular spot". No. Two arrows with the same components are the same vector no matter where you draw them.
 
@@ -53,7 +84,15 @@ $$
 
 goes 2 along x, 1 along y and 3 along z. In the viewport it has three dashed legs instead of two.
 
-{/* scene: 1.1-3 — 3D arrow with an orbit camera; three colored legs and the formula (x, y, z) */}
+In the 3D view below, y points up, as in Maya and Houdini, and the floor is the x–z plane. Drag the tip (PageUp and
+PageDown move it along z from the keyboard) and orbit around it by dragging empty space. The arrow starts at
+$(3, 2, -1)$; type $(2, 1, 3)$ in the panel to see the vector of the example above, then orbit until it no longer
+points at you.
+
+<SceneIsland caption="VE-4 · The arrow in 3D: three dashed legs, one per component, and the list (x, y, z)." rows={rowsFor(4, locale)}>
+  <VectorScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<VectorControls scene={4} locale={locale} client:load />
 
 And nothing changes with four, or four thousand, components either. The vector $(1, 0, 0, 0)$ has four components, so we say it lives in **four dimensions**. You cannot draw it, and you do not have to. "Dimension" means the number of components, not how long or how big the arrow is. A 4096-dimensional word embedding (lesson 1.7) is just a list of 4096 numbers.
 
@@ -69,9 +108,22 @@ $$
 
 Each component is subtracted on its own: x from x, y from y. Walk 3 right and 4 up from $A$ and you arrive at $B$. By [Pythagoras](lesson:pythagoras) the trip is $\sqrt{3^2 + 4^2} = 5$ long, which is the distance between the two points. Distance is the length of the vector between them.
 
-{/* scene: 1.1-4 — drag A and B; v = B − A with each component subtraction highlighted */}
+Drag $A$ and $B$. The dashed legs are the two subtractions, x from x and y from y; the formula and the table show the
+same numbers. Drag the middle of the arrow and both points move together: $B - A$ does not change.
+
+<SceneIsland caption="VE-5 · The vector between two points: B − A, one subtraction per axis." rows={rowsFor(5, locale)}>
+  <VectorScene scene={5} locale={locale} client:only="react" />
+</SceneIsland>
+<VectorControls scene={5} locale={locale} client:load />
 
 Order matters. $A - B = (1 - 4,\; 2 - 6) = (-3, -4)$ is the trip *back*, from $B$ to $A$: same length, opposite direction. A useful way to remember: **"B minus A" is the arrow that points at B.** The thing you subtract is where you start.
+
+Switch on **Trip back** in the panel to draw $A - B$ instead. The same subtraction works in 3D, with a third leg:
+
+<SceneIsland caption="VE-6 · B − A in 3D: three subtractions, three legs; the length is the distance between the points." rows={rowsFor(6, locale)}>
+  <VectorScene scene={6} locale={locale} client:only="react" />
+</SceneIsland>
+<VectorControls scene={6} locale={locale} client:load />
 
 **Misconception to drop:** "B − A and A − B are the same, it is just the distance". They are opposite arrows. The distance is the same because length forgets direction (and signs: $(-3)^2 = 3^2$, the seed planted in [lesson 0.G](lesson:squares-and-plane)).
 
