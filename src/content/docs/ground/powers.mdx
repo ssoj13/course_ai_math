@@ -1,0 +1,357 @@
+---
+title: "Powers: whole, zero, negative and fractional"
+description: "x³ is a volume, x⁰ = 1, x⁻¹ undoes x, x^½ is the side of a square."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Squares, roots and the plane](lesson:squares-and-plane) (a square is an area, a root undoes it).
+
+## What does pow() actually do?
+
+You have written `pow(c, 2.2)` for gamma, `pow(max(0.0, dot(R, V)), 32.0)` for a highlight, `1.0 / (r * r)` for
+a light that fades with distance, and `1.0 / sqrt(d)` in an attention kernel. Four pieces of code, one operation:
+a number raised to a power. The previous lesson showed that $x^2$ is an *area*. This lesson keeps that picture and
+asks what the other exponents mean. What is $x^3$? What is $x^0$? What can $x^{-2}$ possibly mean, and why is
+$x^{1/2}$ the square root?
+
+The answers all come from a single rule, and the rule comes from counting.
+
+## 1. Whole powers: length, area, volume
+
+A **power** $x^n$ with a whole number $n$ means "multiply $n$ copies of $x$ together". The number on top, $n$,
+is the **exponent**; the number below, $x$, is the **base**.
+
+$$
+x^1 = x, \qquad x^2 = x \cdot x, \qquad x^3 = x \cdot x \cdot x
+$$
+
+Take $x = 2$. Then $2^1 = 2$, $2^2 = 4$, $2^3 = 8$. Take $x = 3$: $3^1 = 3$, $3^2 = 9$, $3^3 = 27$.
+
+Each of the first three powers is a shape you can hold:
+
+- $x^1$ is a **length**: a stick of length $x$.
+- $x^2$ is an **area**: a square of side $x$. For $x = 3$ it holds $9$ unit tiles.
+- $x^3$ is a **volume**: a cube of edge $x$. For $x = 3$ it holds $27$ unit cubes, three layers of nine.
+
+That is why we say "three *squared*" and "three *cubed*". The words are the shapes.
+
+{/* scene: 0.2-1 — "A square is an area": drag the side x; the square fills with unit tiles counted live (x = 3 → 9 tiles; non-integer x shows partial tiles and the exact area); the N-panel shows x, x² and a √ field that drives it backwards */}
+
+A detail that will matter later. The square with side $2.5$ holds four whole tiles, two half tiles along each edge
+and a quarter tile in the corner: $4 + 2 \cdot 0.5 \cdot 2 + 0.25 = 6.25$, and $2.5^2 = 6.25$. Tiles are a way to
+*see* the number; the multiplication gives the exact value even when the tiles do not come out whole.
+
+{/* scene: 0.2-2 — 3D widget: the same square extrudes into a cube (x³), tiles become unit cubes, orbitable; a "power" slider n = 1, 2, 3 morphs segment → square → cube */}
+
+Beyond three the picture stops (we cannot draw a 4-dimensional cube), but the counting continues: $2^4 = 16$,
+$2^5 = 32$, $2^{10} = 1024$. Every extra copy of the base multiplies once more.
+
+## 2. The one rule
+
+Multiply two powers of the same base. $2^3 \cdot 2^4$ is three copies of 2 times four copies of 2, which is seven
+copies of 2:
+
+$$
+2^3 \cdot 2^4 = (2 \cdot 2 \cdot 2)(2 \cdot 2 \cdot 2 \cdot 2) = 2^7
+$$
+
+Check with numbers: $8 \cdot 16 = 128$ and $2^7 = 128$. In general,
+
+$$
+x^m \cdot x^n = x^{m+n}
+$$
+
+**Multiplying powers adds the exponents.** It does not multiply them: $2^3 \cdot 2^4$ is $2^7 = 128$, not
+$2^{12} = 4096$. This is the most common slip with powers, so say it once more in words: *the exponent counts
+copies, and putting two piles of copies together adds the counts.*
+
+A power of a power multiplies the counts, because it repeats a repeat: $(2^3)^4$ is four copies of $2^3$, that is
+$2^3 \cdot 2^3 \cdot 2^3 \cdot 2^3 = 2^{12}$.
+
+$$
+(x^m)^n = x^{m \cdot n}
+$$
+
+Check: $(2^3)^4 = 8^4 = 4096 = 2^{12}$.
+
+Everything that follows, zero, negative and fractional exponents, is this one rule applied where counting copies
+no longer makes sense on its own. We decide what $x^0$, $x^{-1}$ and $x^{1/2}$ mean *so that the rule keeps
+working*. That is not a trick; it is how the definitions were chosen.
+
+## 3. Down the ladder: zero and negative powers
+
+Write the powers of 2 as a ladder, and look at what happens from one rung to the next below it:
+
+$$
+2^3 = 8, \qquad 2^2 = 4, \qquad 2^1 = 2
+$$
+
+Each step down **divides by the base**: $8 / 2 = 4$, $4 / 2 = 2$. Keep stepping down and do the same thing.
+
+$$
+2^0 = 2 / 2 = 1, \qquad 2^{-1} = 1 / 2 = 0.5, \qquad 2^{-2} = 0.5 / 2 = 0.25, \qquad 2^{-3} = 0.125
+$$
+
+{/* scene: 0.2-3 — powers ladder: n from 3 down to −3 on one strip of tiles, each step down divides by x (halving tiles for x = 2), making x⁰ = 1 and x⁻¹ = 1/x visible */}
+
+In tiles: $2^2$ is a 2-by-2 square of 4 tiles; $2^1$ is a strip of 2; $2^0$ is **one tile**; $2^{-1}$ is **half a
+tile**; $2^{-2}$ a quarter; $2^{-3}$ an eighth. The pattern never stops, it just moves into fractions.
+
+So the two definitions are:
+
+$$
+x^0 = 1 \quad (x \neq 0), \qquad x^{-n} = \frac{1}{x^n}
+$$
+
+Both are exactly what the one rule demands. For $x^0$: the rule says $x^n \cdot x^0 = x^{n+0} = x^n$, so $x^0$
+must be the number that changes nothing when you multiply by it, and that number is $1$. For $x^{-1}$: the rule
+says $x^1 \cdot x^{-1} = x^0 = 1$, so $x^{-1}$ must be the number that multiplies with $x$ to give $1$: it is
+$1/x$. **A negative exponent means repeated division.** $x^{-1}$ *undoes* one multiplication by $x$, and
+$x^{-2} = 1/x^2$ undoes two.
+
+A worked check with the rule: $2^2 \cdot 2^{-2} = 4 \cdot 0.25 = 1 = 2^0$. Adding the exponents gives $0$; the
+numbers agree.
+
+**Misconception to drop:** "a negative exponent gives a negative number". No. $2^{-2} = 0.25$, which is positive
+and small. The minus sign in the exponent says *divide*; it never flips the sign of the result. For a positive base
+every power is positive.
+
+**Misconception to drop:** "$x^0 = 0$ because there is nothing there". There is one tile there. $5^0 = 1$,
+$0.3^0 = 1$, $1000^0 = 1$. The ladder lands on 1 for every base (except 0, see the warnings).
+
+## 4. Fractional powers: the root, again
+
+What could $x^{1/2}$ mean? Half a copy of $x$ is not something you can multiply out. Ask the rule instead:
+
+$$
+x^{1/2} \cdot x^{1/2} = x^{1/2 + 1/2} = x^1 = x
+$$
+
+So $x^{1/2}$ is the number that, multiplied by itself, gives $x$. That is the square root from the previous
+lesson:
+
+$$
+x^{1/2} = \sqrt{x} = \text{the side of a square of area } x
+$$
+
+Check: $9^{1/2} = 3$ because $3 \cdot 3 = 9$. $2^{1/2} \approx 1.4142$, the same number as $\sqrt 2$.
+
+The same reasoning with three copies: $x^{1/3} \cdot x^{1/3} \cdot x^{1/3} = x^1$, so $x^{1/3}$ is the number
+whose cube is $x$, the **cube root**: the edge of a cube of volume $x$. $8^{1/3} = 2$ because $2 \cdot 2 \cdot 2 = 8$,
+and $27^{1/3} = 3$.
+
+{/* scene: 0.2-4 — fractional power: scrub the area, the side is the square root (x^½); flip to 3D, scrub the volume, the edge is the cube root (x^⅓) */}
+
+Any fraction follows by combining the two rules. $x^{m/n}$ is "take the $n$-th root, then the $m$-th power" (or the
+other way round; the result is the same):
+
+$$
+x^{m/n} = \left(x^{1/n}\right)^m
+$$
+
+Example: $8^{2/3} = (8^{1/3})^2 = 2^2 = 4$. Example with a decimal: $4^{1.5} = 4^{3/2} = (4^{1/2})^3 = 2^3 = 8$.
+
+And the negative and fractional cases combine the same way: $d^{-1/2} = 1 / d^{1/2} = 1/\sqrt d$. For $d = 64$:
+$64^{-1/2} = 1/8 = 0.125$. Keep that one in mind; it is the scaling factor inside every attention layer.
+
+**Misconception to drop:** "$x^{1/2}$ is half of $x$". $9^{1/2}$ is $3$, not $4.5$. Halving is $x \cdot \tfrac12$; the
+exponent $\tfrac12$ is a root.
+
+## 5. Honest warnings
+
+Three places where the ladder breaks, and what code does there.
+
+**A negative base with a fractional exponent.** $(-8)^{1/3}$ *looks* fine: $(-2)^3 = -8$, so $-2$ is a real cube
+root. But $(-4)^{1/2}$ has no real answer at all: no real number squares to $-4$, because squares forget the sign.
+The general machinery of `pow` cannot tell these two apart, and treats every fractional power of a negative base as
+undefined. GLSL and HLSL say `pow(x, y)` is undefined for $x < 0$ (you get NaN on most GPUs, or black pixels);
+NumPy's `np.power(-8.0, 1/3)` returns `nan`; Python's `(-8.0)**(1/3)` returns a *complex* number. When you need the
+real cube root, ask for it by name (`np.cbrt`) or apply the power to $|x|$ and put the sign back yourself.
+
+**$0^0$.** The ladder for base 0 is $0^3 = 0$, $0^2 = 0$, $0^1 = 0$ and then a step down would divide by zero. So
+the rule gives no answer. Most languages and NumPy return $1$ for `0**0`, by convention, because it makes polynomial
+formulas like $a_0 x^0 + a_1 x^1 + \ldots$ work at $x = 0$. It is a choice, not a consequence.
+
+**Negative exponents of 0.** $0^{-1} = 1/0$. In floating point that is `inf` (with a warning in NumPy); with
+Python integers it is a `ZeroDivisionError`. The light falloff $1/r^2$ at $r = 0$ is this exact problem, which is
+why every renderer clamps $r$ or adds a small constant under the fraction bar.
+
+## 6. Where you already use this
+
+- **Gamma.** `pow(c, 2.2)` turns a display value into light; `pow(c, 1.0/2.2)` turns it back, because
+  $(c^{2.2})^{1/2.2} = c^{2.2 \cdot (1/2.2)} = c^1$. For $c = 0.5$: $0.5^{2.2} \approx 0.2176$, and
+  $0.2176^{1/2.2} \approx 0.5$ again. The one rule is the reason the decode is the reciprocal exponent.
+- **Specular highlight.** `pow(max(0.0, dot(R, V)), n)` with $n = 8, 32, 128$. The base is a cosine between 0 and
+  1. Raising a number between 0 and 1 to a higher power makes it *smaller* (the previous lesson: $0.5^2 = 0.25$), and
+  $0.5^{32} \approx 2.3 \cdot 10^{-10}$ is black. Only bases very close to 1 survive, so a bigger $n$ is a tighter
+  highlight.
+- **Inverse-square falloff.** A point light's intensity goes as $r^{-2} = 1/r^2$: twice the distance, a quarter of
+  the light; four times the distance, a sixteenth. Negative exponent, repeated division.
+- **Attention.** The scores $QK^\top$ are divided by $\sqrt d$, which code writes as `d ** -0.5`: $d^{-1/2}$, a
+  negative *and* fractional exponent in one. Where the $\sqrt d$ comes from is lesson 10.2.
+- **Learning-rate decay.** `lr * gamma ** step` with $\gamma = 0.5$ gives $0.1, 0.05, 0.025, \ldots$: each step is
+  one more copy of $0.5$, one rung down the ladder.
+- **Floating point.** A float is stored as $m \cdot 2^e$: a mantissa times a power of two, with $e$ kept as a few
+  bits (8 of them in FP32, so $e$ runs from about $-126$ to $127$). $6.0 = 0.75 \cdot 2^3$. Multiplying two floats
+  *adds* their exponents, the one rule in hardware. Branch Q of this course opens the bits.
+
+{/* scene: 0.2-5 — pow curves: y = x^n on [0, 1] for a scrubbable n (gamma 2.2 and its inverse 1/2.2, specular 8/32/128); the curve bends down below the diagonal for n > 1 and up for n < 1 */}
+
+> **Say it simpler.** $x^n$ is $n$ copies of $x$ multiplied: a length, an area, a volume. Going one exponent down
+> divides by $x$, so $x^0 = 1$ and $x^{-1} = 1/x$. Half an exponent is a root: $x^{1/2} = \sqrt x$. One rule holds it
+> all together: $x^m \cdot x^n = x^{m+n}$.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "What is 2⁻²?",
+      options: [
+        "−4",
+        "0.25, one over 2²",
+        "−0.25",
+        "4, since the two minus signs cancel"
+      ],
+      answer: 1,
+      explain: "A negative exponent means repeated division: 2⁻² = 1/2² = 1/4 = 0.25. The result is positive. The minus sign in the exponent never flips the sign of the result."
+    },
+    {
+      q: "What is x⁰ for any x other than 0?",
+      options: [
+        "0, because nothing is multiplied",
+        "x, because one copy of x is left",
+        "1",
+        "It depends on the sign of x"
+      ],
+      answer: 2,
+      explain: "One step down the ladder from x¹ divides by x, and x/x = 1. Equivalently, the rule x^n · x⁰ = x^n forces x⁰ to be the number that changes nothing: 1. One tile."
+    },
+    {
+      q: "Which number is 9^(1/2)?",
+      options: [
+        "4.5, half of 9",
+        "81, nine squared",
+        "1/9",
+        "3, the side of a square of area 9"
+      ],
+      answer: 3,
+      explain: "x^(1/2) · x^(1/2) = x¹, so 9^(1/2) is the number whose square is 9: the square root, 3. Halving would be 9 · ½."
+    },
+    {
+      q: "2³ · 2⁴ equals…",
+      options: [
+        "2⁷ = 128",
+        "2¹² = 4096, because the exponents multiply",
+        "4⁷ = 16384, because the bases multiply",
+        "4¹² = 16 777 216, because everything multiplies"
+      ],
+      answer: 0,
+      explain: "Three copies of 2 times four copies of 2 is seven copies of 2: x^m · x^n = x^(m+n). Check: 8 · 16 = 128. Exponents multiply only for a power of a power, (2³)⁴ = 2¹²."
+    },
+    {
+      q: "In a shader, pow(x, 1.0/3.0) with x = −8.0 gives…",
+      options: [
+        "−2.0, the real cube root",
+        "2.0, because the sign is forgotten, as in squaring",
+        "NaN: pow is only defined for x ≥ 0",
+        "a very large number"
+      ],
+      answer: 2,
+      explain: "GLSL and HLSL leave pow undefined for a negative base, and most GPUs return NaN (black pixels). −2 is a real cube root of −8, but the general pow machinery cannot see it. Apply the power to |x| and put the sign back, or use a cube-root function."
+    }
+  ]}
+/>
+
+## By hand
+
+Work these on paper before opening the answers.
+
+1. $3^4$
+2. $5^0$
+3. $2^{-3}$
+4. $16^{1/2}$
+5. $27^{1/3}$
+6. $8^{2/3}$
+7. $2^3 \cdot 2^5$
+8. $10^{-2}$
+9. $4^{1.5}$
+
+<details>
+<summary>Answers</summary>
+
+1. $3^4 = 3 \cdot 3 \cdot 3 \cdot 3 = 81$.
+2. $5^0 = 1$. One tile.
+3. $2^{-3} = 1/2^3 = 1/8 = 0.125$.
+4. $16^{1/2} = \sqrt{16} = 4$, because $4 \cdot 4 = 16$.
+5. $27^{1/3} = 3$, because $3 \cdot 3 \cdot 3 = 27$.
+6. $8^{2/3} = (8^{1/3})^2 = 2^2 = 4$.
+7. $2^3 \cdot 2^5 = 2^8 = 256$. Add the exponents, do not multiply them.
+8. $10^{-2} = 1/100 = 0.01$.
+9. $4^{1.5} = 4^{3/2} = (4^{1/2})^3 = 2^3 = 8$.
+
+</details>
+
+## In NumPy
+
+```python
+import numpy as np
+
+x = 2.0
+print(x**1, x**2, x**3)                 # 2.0 4.0 8.0   a length, an area, a volume
+print(x**0, x**-1, x**-2)               # 1.0 0.5 0.25  each step down divides by 2
+print(x**0.5, np.sqrt(x))               # 1.4142135623730951 1.4142135623730951
+print(8.0**(1/3), np.cbrt(8.0))         # 2.0 2.0
+print(8.0**(2/3))                       # 3.9999999999999996  (8^(1/3))^2 = 4, up to rounding
+
+print(2**3 * 2**4, 2**7)                # 128 128      x^m * x^n = x^(m+n)
+print((2**3)**4, 2**12)                 # 4096 4096    (x^m)^n = x^(m*n)
+
+n = np.arange(3, -4, -1)                # the ladder, 3 down to -3
+print(n)                                # [ 3  2  1  0 -1 -2 -3]
+print(2.0**n)                           # [8.    4.    2.    1.    0.5   0.25  0.125]
+
+v = 0.5                                 # gamma 2.2 encode, then decode with 1/2.2
+print(round(v**2.2, 4), round((v**2.2)**(1/2.2), 4))   # 0.2176 0.5
+
+r = np.array([1.0, 2.0, 4.0])           # inverse-square falloff
+print(r**-2)                            # [1.     0.25   0.0625]
+
+d = 64                                  # attention: 1/sqrt(d) is d^(-1/2)
+print(d**-0.5, 1 / np.sqrt(d))          # 0.125 0.125
+
+print(0.1 * 0.5**np.arange(5))          # [0.1     0.05    0.025   0.0125  0.00625]  learning-rate decay
+
+m, e = np.frexp(6.0)                    # a float is mantissa * 2^exponent
+print(m, e, m * 2.0**e)                 # 0.75 3 6.0
+
+print((-8.0)**(1/3))                    # (1.0000000000000002+1.7320508075688772j)  not -2: see the warnings
+print(np.cbrt(-8.0))                    # -2.0  the real cube root, by name
+with np.errstate(invalid='ignore', divide='ignore'):
+    print(np.power(-8.0, 1/3))          # nan
+    print(np.float64(0.0)**-1)          # inf
+print(0.0**0)                           # 1.0  by convention, not by the ladder
+```
+
+<details>
+<summary>Machine layer: how pow is computed, and why x² is not pow(x, 2)</summary>
+
+Hardware has no "raise to a power" instruction for general exponents. A library `pow(x, y)` computes
+$\exp(y \cdot \ln x)$: take the logarithm of the base, multiply by the exponent, exponentiate. That costs dozens of
+instructions and two polynomial approximations, and it is the reason a negative base fails: $\ln x$ does not exist for
+$x < 0$, so the whole route is closed even when a real answer ($-2$ for $(-8)^{1/3}$) exists.
+
+Whole exponents never need that route. $x^2$ is one multiply; $x^3$ is two; compilers and shader languages turn
+small integer exponents into multiplies, and large ones into repeated squaring ($x^{16}$ is four squarings, not
+fifteen multiplies). $x^{-2}$ is `1.0 / (x * x)`; $x^{1/2}$ is the `sqrt` instruction; $x^{-1/2}$ is `rsqrt`, the fast
+inverse square root that every `normalize` uses. Write `x * x`, not `pow(x, 2.0)`: the same number, a fraction of the
+cost, and no `ln` of a negative input to worry about.
+
+</details>
+
+## What this opens
+
+Back to areas. The previous lesson ended with a point $(-2, 3)$, two squares on its two legs, and a total area of
+$13$. The next lesson, [Distance and Pythagoras](lesson:pythagoras), shows what $\sqrt{13} = 13^{1/2}$ measures: the
+straight-line distance from the origin to the point.

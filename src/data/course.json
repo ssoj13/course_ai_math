@@ -6,6 +6,7 @@
       "summary": "Squares, Pythagoras, the unit circle and the law of cosines — everything the dot product is built from.",
       "lessons": [
         { "slug": "squares-and-plane", "title": "Squares, roots and the plane", "short": "Squares and the plane", "summary": "A square is an area, a root undoes it, a point is two readings on two rulers." },
+        { "slug": "powers", "title": "Powers: whole, zero, negative and fractional", "short": "Powers", "summary": "x³ is a volume, x⁰ = 1, x⁻¹ undoes x, x^½ is the side of a square." },
         { "slug": "pythagoras", "title": "Distance and Pythagoras", "summary": "Distance between points in 2D, 3D and any number of dimensions." },
         { "slug": "unit-circle", "title": "Angles, radians and the unit circle", "short": "The unit circle", "summary": "cos and sin are the shadows of a point on the unit circle." },
         { "slug": "law-of-cosines", "title": "The law of cosines", "summary": "Pythagoras plus a correction term for a corner that is not square; two-bone IK." }
