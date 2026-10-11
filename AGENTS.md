@@ -72,6 +72,36 @@ Nodes = terms with a one-line "X is Y built on Z" definition and depth level; ty
 to the roots, depth stack, glossary, auto flashcards ("variance is built on ___"). Build-time validation: all refs
 exist, no cycles in `built-on`. Example: attention → softmax + dot product → cosine → law of cosines → Pythagoras.
 
+Implemented (Task 9, 2026-10-11):
+- `src/data/terms.json` (62 terms: Part 0/1 + forward terms `float`, `matrix`, `determinant`, `attention` with
+  `lessons: []`). English fields top-level, Russian under `ru` (course.json convention). `lessons[0]` = where the
+  term is introduced. Depth: ground | vectors | matrices | ai | machine. Edges are stored once on the term they read
+  from (`X built-on Y`); `is-a` counts as a foundation edge with `built-on` (acyclic, genealogy follows both); a
+  `used-in` that restates a reversed `built-on` is rejected; `equivalent-to` is stored on one side only.
+- `src/viz/terms/graph.ts` (pure: validate, ancestry, neighborhood, genealogy, relations), `data.ts` (server/tests:
+  parsed graph, `mapData` resolves locale texts + lesson/glossary URLs; islands never load terms.json),
+  `TermMap.tsx` (SSR entry: card, legend, accessible list view; `local` | `genealogy` mode), lazy
+  `TermMap.impl.tsx` (React Flow) + `layout.ts` (ELK protocol client) + `elk.worker.ts`.
+- TRAP: `elkjs/lib/elk.bundled.js` cannot run inside a Web Worker (its embedded worker build hijacks `self.onmessage`
+  and its constructor throws). The worker imports `elkjs/lib/elk-worker.min.js` (installs ELK's dispatcher) and
+  layout.ts speaks its `{ id, cmd }` protocol, registering `layered` first.
+- Placement: `<LessonMap />` under `## Term map` / `## Карта терминов` at the end of every lesson (route-derived
+  lesson; Russian fallback pages get a Russian map); `<Glossary />` in `glossary.mdx` + `ru/glossary.mdx`.
+  `tests/js/terms.test.ts` requires both; `UiStrings ns={['terms']}`.
+- Lesson card (fix round 1, controller ruling I2): focus = terms the lesson INTRODUCES (`lessons[0]`); the card draws
+  them + their direct foundations (`foundationsIn`; machine terms not expanded), <= 12 nodes, box height from
+  `layerCount` (`mapHeight`, server-reserved via `--lab-tm-box`). Full screen + list = the 1-hop neighbourhood.
+  Labels > 12 chars wrap onto two lines (`wrapLabel`, shared by server height and client boxes). Opening zoom floor
+  0.88 (10.6 px labels): below it the card opens on the focus terms; one-finger drag pans inside the box (touch too).
+  Genealogy always opens on the whole tree (floor 0) and also shows the foundations of its machine terms.
+- `validate()` enforces course order: no foundation edge to a term introduced in a later lesson.
+- TRAP: React Flow store reuse across a genealogy retarget fitted the OLD nodes; the provider is keyed by the view
+  and the opening view goes through React Flow's own `fitView` + `fitViewOptions` (`openView`).
+- ELK `nodePlacement: NETWORK_SIMPLEX` packs layers tighter than the default (measured on the DP card).
+- Budget (`bun run build`, 2026-10-11): elk worker 439 kB gz + map impl 60 kB gz = 499 kB lazy (<= 600 kB); entry
+  2.7 kB gz + 3.7 kB gz CSS on map pages only; no map code on pages without a map.
+- [ ] Depth stack view, flashcards and the roadmap overlay (C6) are not built yet (out of Task 9 scope; C6 open).
+
 ## "Why squares everywhere" (statistics spine)
 
 1. Pythagoras: Euclidean distance; squared error = squared distance between data and prediction vectors.
@@ -180,6 +210,12 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
   before other sides. `Label` takes `away`/`gap`. Registration order = priority (region names after values).
 - Derived geometry (projection foot etc.) is computed in the lesson with `useVal` and passed as literals; guard zero
   vectors (`project` throws on zero).
+- 0.2 powers: `FnCurve` (`scene/FnCurve.tsx`: y = f(t, vals) sampled uniformly on [from, to] on `Stroke`; a non-finite
+  sample throws). TileGrid `fill` may be a function returning undefined (a plain row). TileGrid lays out from the
+  store's `shown` record only; a prop that changes with React state (role) does not re-layout by itself, so the ladder
+  remounts a rung (`key`) when its colour changes. A card's mode is fixed: 0.2-4 switches 2D/3D by remounting the
+  card on the `d3` key (focus moved to the new checkbox). The ladder division glides with the eased `kf` (lesson link
+  `ladderLink`: k cuts, kf eases), not with a TileGrid morph.
 
 ### Viewport chrome ([6d](docs/acceptance/6d.md))
 
@@ -276,6 +312,35 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - Pyodide/wasm has no FP exception flags: NumPy prints `nan` for `arccos(-1.625)` without the `RuntimeWarning`, and
   fp32 `np.dot` sums differ from desktop BLAS. Lesson comments promising either describe desktop Python only.
 
+### Tensor core (`src/core`, completion map P5)
+
+Three-free, DOM-free; import from `src/core` (index re-exports errors/dtype/tensor/einsum). It enters a page bundle
+only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over NumPy fixtures
+(`python -I scripts/tensor-fixtures.py` -> `tests/fixtures/tensor/core.json`).
+- `Tensor {data: Float64Array|Float32Array, shape, strides, offset, writable}`; strides/offset in ELEMENTS (NumPy
+  bytes / itemsize). The constructor checks every reachable element lies in `data`. Views share `data`: `slice`
+  (NumPy basic slicing, negative steps), `transpose(axes?)`, `reshape` (contiguous only, one -1; a non-contiguous view
+  goes through `contiguous()` explicitly), `expandDims`, `squeeze`, `broadcastTo` (stride 0, read-only).
+  `contiguous` returns the SAME tensor when already contiguous and writable: never use it to get a private copy.
+- `tensor(nested)`, `zeros`, `full`, `arange`, `rand(shape, {seed, range=[-3,3], step?})` over `mulberry32(seed)`
+  (bit-exact Python port in the fixture script); `flat`/`toNested` read logical order; `item()` for one element.
+- Elementwise `add/sub/mul/div/zip/map` with NumPy broadcasting (plain numbers are weak scalars: no f32->f64
+  promotion). Reductions `sum/mean/max {axis, keepdims, arith, order}`; empty max/mean throw; NaN propagates in max.
+- Accumulation (`dtype.ts`): default fp64 arithmetic and `sequential` order whatever the storage; `arith: 'fp32'` =
+  `Math.fround` on every operand, product and partial sum; `order: 'pairwise'` = bottom-up adjacent pairs, odd node
+  carried (`sumSteps` lists the exact merges). `fp16/bf16/int8` ids throw `DtypeError` until Branch Q passes an
+  `Arith {id, round}` object. Result storage is f32 only if every operand is f32.
+- `parseEinsum(op, arity?)` -> kept/summed letters; `planEinsum(op, shapes | {letter: extent})` -> `Plan` (outShape,
+  sumShape, `sumLen` = shaft length, cells); `einsum(op | plan, ...tensors, opts?)` reads through strides (transposes
+  are never materialized); `products(plan, ts, cell)` = the tiles of one cell; `explain(plan, cell, ts?, opts)` =
+  per term the operand indices/values/product plus the merges with partial values (`value` equals the einsum element
+  bit for bit). Grammar = course subset: explicit `->`, a-z only, no ellipsis/traces/whitespace, >= 1 operand (the
+  DotUnit passes arity 2); an outer product has a shaft of length 1. Summed letters flatten row-major (last innermost).
+  `matmul` (NumPy: 1-D promotion, broadcast batch) and `dot` (1-D -> number) are einsum wrappers.
+- Typed errors (`errors.ts`): `SpecError {op, token, pos}`, `ShapeError`, `IndexError`, `DtypeError`, all
+  `CoreError` with `code`; nothing is silently repaired. Fixture example of order: ten 0.1 sum to 0.9999999999999999
+  (fp64), 1.0000001 (fp32 sequential), 1.0 (fp32 pairwise).
+
 ## Authoring rules
 
 - Math in prose: `$a\cdot b$` inline; display math fenced (`$$` on its own lines; a one-line `$$x$$` is inline).
@@ -339,7 +404,8 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - [ ] Phone chip rows keep invisible slots for rows a later step reveals (LC-0 at 360 has a blank band); a reflow on
   reveal would be input-driven, but chips.ts / the SSR frame contract would have to change.
 - [ ] Merge to main, deploy, check live (nothing deployed since 8868525).
-- [ ] 1.4 dot product scenes DP-1..4; 0.G / 0.2 powers scenes (TileGrid, FnCurve, "square is an area" 2D + 3D).
+- [ ] 1.4 dot product scenes DP-1..4; 0.G scenes. [x] 0.2 powers scenes 0.2-1..5 EN + RU (batch report
+  `.superpowers/sdd/2026-10-11-recover/batch-powers-report.md`); open: layer explode hover of 0.2-2.
 - [ ] Remaining lessons in course-completion order (P3 services → P4 Part 0/1 → P5..P15), each EN + RU, scenes,
   Python/Colab, term map; implementer → reviewer (different model) → visual verifier.
 - [x] Task 8 (Pyodide cells) implemented; awaiting review. 0.G squares-and-plane python block not wrapped yet
@@ -350,6 +416,13 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - [ ] Brittle `Function.toString()` comparison in `tests/js/i18n-course.test.ts:37`.
 - [ ] Clean leftover worktrees/branches (with operator approval).
 - [ ] Covers: regenerate to exact geometry or accept drafts (user decision).
+- [x] "Start here" module (`start`: `why-this-course`, `how-it-connects`; EN + RU prose; terms `model`, `parameter`,
+  `multiply-add`) precedes Ground in course.json (2026-10-11). Scenes INTRO-1..3 are `{/* scene: … */}` slots; the
+  procedural DotUnit system (`scene = f(einsum spec, values)`, presets for 1.4/2.2/2.4/3.6/3.7/attention, zoom ladder)
+  is specified in `docs/design/intro-and-dotunit.md`. Trap: terms.json enforces course order on `built-on`/`is-a`
+  edges, so terms introduced in `start` must be roots (later terms may point at them, not the reverse).
+- [x] Tensor core `src/core` (einsum plan/explain, fp32/pairwise, NumPy fixtures).
+- [ ] Build INTRO-1..3 and the DotUnit (`src/viz/dotunit/`: `layoutEinsum`, LOD, Tiles) per that spec, on `Plan`.
 
 ## Changelog
 

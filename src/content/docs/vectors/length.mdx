@@ -9,6 +9,7 @@ import SceneIsland from '../../../viz/SceneIsland.astro';
 import { LengthScene, LengthControls } from '../../../viz/lessons/length';
 import { rowsFor } from '../../../viz/lessons/length.rows';
 import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
 
 export const locale = 'en';
 
@@ -289,3 +290,7 @@ A second trap matters for AI. Half precision (`fp16`) cannot store numbers above
 ## What this opens
 
 We can measure how long any arrow is. Two arrows, though, also have an *angle* between them, and we have no way to compute it from components yet. The [law of cosines](lesson:law-of-cosines) from Part 0 already relates the sides of a triangle to its angle; combining it with lengths gives a new operation: [the dot product](lesson:dot-product).
+
+## Term map
+
+<LessonMap />

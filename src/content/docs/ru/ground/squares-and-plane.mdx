@@ -1,7 +1,7 @@
 ---
 title: "Квадраты, корни и плоскость"
 description: "Квадрат — это площадь, корень возвращает сторону, точка — два показания на двух линейках."
-translatedFrom: 52f08f7b99ecb24f3d023856287caf600aac0e54
+translatedFrom: 461b1e6935136ea6202402ce767889fe124bc584
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
@@ -10,6 +10,7 @@ import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { SquaresScene, SquaresControls } from '../../../../viz/lessons/squares-and-plane';
 import { rowsFor } from '../../../../viz/lessons/squares-and-plane.rows';
 import PyCell from '../../../../components/PyCell.astro';
+import LessonMap from '../../../../components/LessonMap.astro';
 
 export const locale = 'ru';
 
@@ -243,3 +244,7 @@ print(p[0]**2 + p[1]**2)      # 13.0 -> lesson 0.3
 ## Что дальше
 
 $x^2$ — площадь. Тогда что такое $x^3$ и что могут означать $x^0$, $x^{-1}$ или $x^{1/2}$? Следующий урок, [Степени: целые, нулевые, отрицательные и дробные](lesson:powers), ответит с помощью одного правила и тех же плиток. Затем [Расстояние и теорема Пифагора](lesson:pythagoras) возьмёт два квадрата на отрезках точки $(-2, 3)$ и покажет, что измеряет $\sqrt{13}$.
+
+## Карта терминов
+
+<LessonMap />
