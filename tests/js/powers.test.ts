@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import '../../src/i18n/ui';
 import { checkTiles, layoutTiles, tileBuf, tileCount } from '../../src/viz/scene/tiles';
-import { powersLinks } from '../../src/viz/links';
 import { lessonStore } from '../../src/viz/store';
 import {
-	bandMid, CHECKS, cubeBox, derive, fmt4, fmtAmt, fmtSci, fmtVal, fmtX, INITIAL, LADDER_TOP, powerBox, PRESETS, RUNG_GAP, RUNGS, rungBands, rungId,
-	rungShape, rungTop, SPEC, squareBox, sup, WRAP,
+	bandMid, CHECKS, cubeBox, derive, fmt4, fmtAmt, fmtSci, fmtVal, fmtX, INITIAL, LADDER_TOP, powerBox, powersLessonLinks, PRESETS, RUNG_GAP,
+	RUNGS, rungBands, rungId, rungShape, rungTop, SPEC, squareBox, sup, WRAP,
 } from '../../src/viz/lessons/powers.math';
 import { rowsFor } from '../../src/viz/lessons/powers.rows';
 
@@ -58,7 +57,7 @@ describe('x^n bodies count x^n unit pieces', () => {
 });
 
 describe('linked x / A / V store writes (powersLinks)', () => {
-	const fresh = (name: string) => lessonStore('powers-test-' + name, INITIAL, powersLinks());
+	const fresh = (name: string) => lessonStore('powers-test-' + name, INITIAL, powersLessonLinks());
 	test('initial snapshot is coherent and n / k mirror into the timelines', () => {
 		const s = fresh('init').getState();
 		expect([s.vals.x, s.vals.A, s.vals.V, s.vals.from]).toEqual([3, 9, 27, 0]);
@@ -90,6 +89,11 @@ describe('linked x / A / V store writes (powersLinks)', () => {
 		expect(st.getState().vals.k).toBe(0);
 		st.getState().set('k', -3);
 		expect(st.getState().step.ladder).toBe(6);
+		// The drawn ladder position follows k in the same update (its truth equals k; only `shown` eases).
+		expect(st.getState().vals.kf).toBe(-3);
+		st.getState().set('k', 2.7);
+		expect([st.getState().vals.k, st.getState().vals.kf]).toEqual([2, 2]);
+		expect(() => st.getState().set('kf', 1)).toThrow();
 	});
 });
 
@@ -105,23 +109,40 @@ describe('ladder geometry (§7.9)', () => {
 		expect(prevBottom).toBe(-7);
 		expect(() => rungTop(4)).toThrow();
 	});
-	test('every rung fits its slot at every base of the range, and every rung is a valid TileGrid row', () => {
+	test('every rung fits its slot at every base and every (eased) ladder position, as a valid TileGrid row', () => {
 		const buf = tileBuf();
+		const bottom = (j: number) => (j === -3 ? -7 : rungTop(j - 1) + RUNG_GAP);
 		for (let base = SPEC.base.min; base <= SPEC.base.max; base += SPEC.base.step) {
-			for (const k of RUNGS) {
+			// Integer rungs and every position in between (a step down glides kf from k + 1 to k).
+			for (let p = -3; p <= 3 + 1e-9; p += 0.05) {
 				for (const j of RUNGS) {
-					const { shape, fill } = rungShape(base, j, k);
+					const { shape, fill } = rungShape(base, j, p);
 					const opts = { origin: [0, rungTop(j) - 1], fill };
 					checkTiles(shape, opts);
 					layoutTiles(shape, opts, buf);
 					for (let i = 0; i < buf.n; i++) {
 						expect(buf.hi[3 * i + 1]).toBeLessThanOrEqual(rungTop(j) + 1e-12);
+						expect(buf.lo[3 * i + 1]).toBeGreaterThanOrEqual(bottom(j) - 1e-12);
 						expect(buf.lo[3 * i]).toBeGreaterThanOrEqual(0);
 						expect(buf.hi[3 * i]).toBeLessThanOrEqual(WRAP);
 					}
 				}
 			}
 		}
+	});
+	test('the step down to rung j starts as the rung above and shrinks to b^j (the division made visible)', () => {
+		const len = (base: number, j: number, p: number) => {
+			const r = rungShape(base, j, p);
+			return r.fill ?? (r.shape.kind === 'row' ? r.shape.len : NaN);
+		};
+		expect(len(2, 2, 3)).toBe(0);
+		expect(len(2, 2, 2.9999)).toBeCloseTo(8, 2);
+		expect(len(2, 2, 2.5)).toBe(6);
+		expect(len(2, 2, 2)).toBe(4);
+		expect(len(2, -1, -0.5)).toBe(0.75);
+		expect(len(2, -1, -1)).toBe(0.5);
+		// 3³ = 27 would overflow rung 2's two bands: the copy starts at the 16 pieces the slot holds.
+		expect(len(3, 2, 2.999)).toBeCloseTo(16, 1);
 	});
 	test('base 3: 3³ = 27 pieces in 4 bands (8 + 8 + 8 + 3); base 2.5: 15.625 in 2 bands; fractions are one band', () => {
 		expect(rungBands(3, 3)).toBe(4);

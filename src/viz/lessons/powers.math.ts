@@ -9,7 +9,7 @@
  * are plain keys.
  */
 import { powersLinks } from '../links';
-import type { LessonLinks } from '../links';
+import type { LessonLinks, LinkGroup } from '../links';
 import { finite } from '../links';
 import type { LessonState, Val } from '../store';
 import { tileCount, type TileShape } from '../scene/tiles';
@@ -41,10 +41,18 @@ export const PRESETS = [
 	{ id: 'spec32', g: 32, label: '32' },
 ] as const;
 
-/** Coherent defaults: x = 3, A = 9, V = 27 (the links reject an incoherent triple), from = 0 (x). */
-export const INITIAL: Record<string, Val> = { x: 3, A: 9, V: 27, from: 0, n: 2, k: 3, base: 2, d3: 0, g: 2.2, t: 0.5 };
+/**
+ * Coherent defaults: x = 3, A = 9, V = 27 (the links reject an incoherent triple), from = 0 (x); the ladder at the top
+ * rung (k = kf = 3).
+ */
+export const INITIAL: Record<string, Val> = { x: 3, A: 9, V: 27, from: 0, n: 2, k: 3, kf: 3, base: 2, d3: 0, g: 2.2, t: 0.5 };
 
-export const LINKS: LessonLinks = powersLinks();
+/** x/A/V and the n/k timeline adapters (links.ts), plus the eased ladder position (`ladderLink`). */
+export function powersLessonLinks(): LessonLinks {
+	const base = powersLinks();
+	return { groups: [...(base.groups ?? []), ladderLink()], timelines: base.timelines };
+}
+export const LINKS: LessonLinks = powersLessonLinks();
 
 type Vals = LessonState['vals'];
 const num = (v: Val | undefined, key: string): number => {
@@ -104,14 +112,43 @@ export const rungBands = (base: number, j: number): number => (j > 0 ? Math.max(
 export const bandMid = (j: number, b: number): number => rungTop(j) - b - 0.5;
 
 /**
- * Rung j at base b with the ladder standing at k: a row of b^j unit pieces (j >= 1), or one unit outline filled to
- * b^j (j <= 0). A rung below the current one (j < k, not reached yet) is empty: its slot and its exponent stay, its
- * value is the answer the next step reveals.
+ * Rung j at base b with the ladder standing at p (the drawn, possibly eased, ladder position `kf`): a row of b^j unit
+ * pieces, or for an amount of at most one tile a unit outline filled to it (b^0 = 1 is the full outline). A rung below
+ * the position (p <= j - 1, not reached yet) is empty: its slot and its exponent stay, its value is the answer the next
+ * step reveals.
+ *
+ * The step down to rung j (p gliding from j + 1 to j) is the division made visible: the rung starts as a copy of the
+ * rung above (capped to its own slot: 3³ = 27 pieces would not fit the two bands of rung 2) and shrinks to b^j, so
+ * the pieces beyond b^j disappear from the end and, below one tile, the filled part of the tile shrinks. Stepping up
+ * plays it backwards.
  */
-export function rungShape(base: number, j: number, k: number): { shape: TileShape; fill: number | undefined } {
-	if (j < k) return { shape: { kind: 'row', len: 0, wrap: WRAP }, fill: undefined };
-	if (j >= 1) return { shape: { kind: 'row', len: base ** j, wrap: WRAP }, fill: undefined };
-	return { shape: { kind: 'row', len: 1, wrap: WRAP }, fill: base ** j };
+export function rungShape(base: number, j: number, p: number): { shape: TileShape; fill: number | undefined } {
+	if (p >= j + 1) return { shape: { kind: 'row', len: 0, wrap: WRAP }, fill: undefined };
+	const to = base ** j;
+	const from = Math.min(base ** (j + 1), SLOT_BANDS[j] * WRAP);
+	const v = p > j ? to + (from - to) * (p - j) : to;
+	if (v > 1) return { shape: { kind: 'row', len: v, wrap: WRAP }, fill: undefined };
+	return { shape: { kind: 'row', len: 1, wrap: WRAP }, fill: v };
+}
+
+/**
+ * The drawn ladder position: `kf` is written with every write of `k` (the authoritative rung, an integer the
+ * timeline mirrors) and is the canonical key of this group, so a timeline or field step eases it while k itself cuts.
+ * The rungs are laid out from the eased `kf` (`rungShape`), which is what animates the division between two rungs.
+ */
+export function ladderLink(): LinkGroup {
+	const clampK = (v: Val | undefined, key: string): number => Math.max(SPEC.k.min, Math.min(SPEC.k.max, Math.trunc(num(v, key))));
+	return {
+		keys: ['k', 'kf'],
+		canonical: 'kf',
+		resolve(input) {
+			if (!Object.hasOwn(input, 'k')) throw new Error('powers: the ladder position follows k; write k');
+			const k = clampK(input.k, 'k');
+			if (Object.hasOwn(input, 'kf') && num(input.kf, 'kf') !== k) throw new Error('powers: conflicting k and kf');
+			return { k, kf: k };
+		},
+		shown: () => ({}),
+	};
 }
 
 /** Every number the formulas, rows, labels, readouts and challenges show (storyboard §7.6 "Derived"). */

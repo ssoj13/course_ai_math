@@ -184,7 +184,8 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
   sample throws). TileGrid `fill` may be a function returning undefined (a plain row). TileGrid lays out from the
   store's `shown` record only; a prop that changes with React state (role) does not re-layout by itself, so the ladder
   remounts a rung (`key`) when its colour changes. A card's mode is fixed: 0.2-4 switches 2D/3D by remounting the
-  card on the `d3` key (focus moved to the new checkbox).
+  card on the `d3` key (focus moved to the new checkbox). The ladder division glides with the eased `kf` (lesson link
+  `ladderLink`: k cuts, kf eases), not with a TileGrid morph.
 
 ### Viewport chrome ([6d](docs/acceptance/6d.md))
 
@@ -345,7 +346,7 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
   reveal would be input-driven, but chips.ts / the SSR frame contract would have to change.
 - [ ] Merge to main, deploy, check live (nothing deployed since 8868525).
 - [ ] 1.4 dot product scenes DP-1..4; 0.G scenes. [x] 0.2 powers scenes 0.2-1..5 EN + RU (batch report
-  `.superpowers/sdd/2026-10-11-recover/batch-powers-report.md`); open: ladder split animation, layer explode hover.
+  `.superpowers/sdd/2026-10-11-recover/batch-powers-report.md`); open: layer explode hover of 0.2-2.
 - [ ] Remaining lessons in course-completion order (P3 services → P4 Part 0/1 → P5..P15), each EN + RU, scenes,
   Python/Colab, term map; implementer → reviewer (different model) → visual verifier.
 - [x] Task 8 (Pyodide cells) implemented; awaiting review. 0.G squares-and-plane python block not wrapped yet

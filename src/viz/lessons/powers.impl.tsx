@@ -154,11 +154,12 @@ function Ladder() {
 			const id = rungId(j);
 			const y = bandMid(j, 0);
 			return <group key={j}>
-				{/* Shape and fill are functions of the drawn values (laid out in the frame that sees them); the colour of a
-				    reached rung is a prop, so the rung is remounted when it becomes reached rather than repainted a frame late. */}
-				<TileGrid key={j > k ? 'reached' : 'live'} lesson={LESSON} id={id} origin={[0, rungTop(j) - 1]} morph
-					shape={(s) => rungShape(s.base as number, j, s.k as number).shape}
-					fill={(s) => rungShape(s.base as number, j, s.k as number).fill}
+				{/* Shape and fill are functions of the drawn values: the eased ladder position kf animates the division
+				    (rungShape), so no TileGrid morph. The colour of a reached rung is a prop, so the rung is remounted when it
+				    becomes reached rather than repainted a frame late. */}
+				<TileGrid key={j > k ? 'reached' : 'live'} lesson={LESSON} id={id} origin={[0, rungTop(j) - 1]}
+					shape={(s) => rungShape(s.base as number, j, s.kf as number).shape}
+					fill={(s) => rungShape(s.base as number, j, s.kf as number).fill}
 					role={j > k ? 'muted' : 'vecA'} partialRole={j > k ? 'muted' : 'light'} />
 				{labels && <Label lesson={LESSON} id={id} at={[-0.3, y]} away={[1, y]} gap={GAP_PX}>
 					{b + sup(j) + ' = ' + (j >= k ? fmtVal(base ** j) : '?')}
@@ -373,6 +374,18 @@ function Card({ scene, mode, extent, center, drawIn, children }: {
  * survives the switch (A = 6.25 -> x = 2.5 -> V = 15.625). Clicking the checkbox focused it in the old card; focus
  * moves to the same checkbox of the new card, so keyboard users keep their place.
  */
+/**
+ * 0.2-2 keys 1 / 2 / 3 pick the power while focus is anywhere in the card (handle buttons, header, gizmo), except in a
+ * field, where digits are typed or step a value.
+ */
+function powerKeys(e: React.KeyboardEvent): void {
+	if (e.defaultPrevented || e.repeat || e.ctrlKey || e.altKey || e.metaKey || !['1', '2', '3'].includes(e.key)) return;
+	const el = e.target as HTMLElement;
+	if (el.closest('input, textarea, [contenteditable="true"], [role="slider"], [role="spinbutton"]')) return;
+	e.preventDefault();
+	lessonStore(LESSON).getState().set('n', Number(e.key));
+}
+
 function RootCard() {
 	const d3 = useVal<number>(LESSON, 'd3', 0);
 	const box = useRef<HTMLDivElement>(null);
@@ -394,7 +407,11 @@ function RootCard() {
 
 export function PowersScene({ scene }: { scene: Scene }) {
 	if (scene === 1) return <Card scene={1} mode="2d" extent={4.5} center={[2, 2]} drawIn><SceneGrid extent={4.5} step={1} axes /><Square /></Card>;
-	if (scene === 2) return <Card scene={2} mode="3d" extent={4.5}><SceneGrid extent={4.5} step={1} axes /><Power /></Card>;
+	if (scene === 2) {
+		return <div style={{ display: 'contents' }} onKeyDown={powerKeys}>
+			<Card scene={2} mode="3d" extent={4.5}><SceneGrid extent={4.5} step={1} axes /><Power /></Card>
+		</div>;
+	}
 	if (scene === 3) return <Card scene={3} mode="2d" extent={7.7} center={[2.5, 0]}><SceneGrid extent={11} step={1} axes={false} /><Ladder /></Card>;
 	if (scene === 4) return <RootCard />;
 	// The grid extent is its tick range around the origin: 1.2 so that the t = 1 tick is numbered.
