@@ -1,25 +1,32 @@
 /**
- * Engine demo scenes (loaded lazily via engine.tsx): three ViewportCards on the shared `demo` store showing every
- * element of the visual language: header (2D/3D, Persp/Ortho, Overlays, Reset view), gizmo or XY corner, shader grid
- * with ticks, beams with halos and hot outlines, labels, the angle arc, the projection shadow band with its drop line
- * and right-angle mark, square tiles, the signed area bar and the signed parallelogram (hatched when negative), a
- * point, the N-panel (vector fields, a number field, read-only rows, separators, tooltips) and the status bar.
+ * Engine demo scenes (loaded lazily via engine.tsx): ViewportCards on the shared `demo` store showing every element of
+ * the visual language: header (2D/3D, Persp/Ortho, Overlays, Reset view), gizmo or XY corner, shader grid with ticks,
+ * beams with halos and hot outlines, labels, the angle arc, the projection shadow band with its drop line and
+ * right-angle mark, square tiles, the signed area bar and the signed parallelogram (hatched when negative), a point,
+ * the N-panel (vector fields, number fields, read-only rows, a checkbox row, separators, tooltips) and the status bar;
+ * and the lesson primitives of Task 6e: custom drag mappings (polar vertex, x-only vertex, magnet to the perpendicular,
+ * light kept outside a sphere, a point kept on it), magnet ticks, half-planes (2D and the 3D disc), the lit sphere,
+ * circles (2D locus, 3D terminator) and per-axis leg ids. Rows and drag mappings live in engine.rows.ts.
  */
-import { angleBetween, cross, dot, isRight, norm, project, scale, signedArea2, sub, type V } from '../geom';
+import { add, cross, dot, isRight, norm, project, scale, signedArea2, sub, type V } from '../geom';
+import { STYLE } from '../palette';
+import { Circle } from '../scene/Circle';
+import { HalfPlane } from '../scene/HalfPlane';
+import { LitSphere } from '../scene/LitSphere';
+import { angleOf, lamp, MAGNET, moveA, moveB, moveLight, moveP, moveSb, ROWS2, ROWS3, ROWSLAMP, ROWSLC, ROWSPOLAR, ROWSSIGN, SPHERE_R, tri, vec } from './engine.rows';
 import { AngleArc } from '../scene/AngleArc';
 import { AreaTile } from '../scene/AreaTile';
 import { Arrow } from '../scene/Arrow';
 import { Grid } from '../scene/Grid';
 import { Show, type OverlayDef } from '../scene/handles';
 import { Label } from '../scene/Label';
-import type { Row } from '../scene/NPanel';
 import { Parallelogram } from '../scene/Parallelogram';
 import { Point } from '../scene/Point';
 import { RightAngle } from '../scene/RightAngle';
 import { Segment } from '../scene/Segment';
 import type { StatusSpec } from '../scene/StatusBar';
 import { ViewportCard } from '../scene/ViewportCard';
-import { useVal } from '../store';
+import { useVal, useVals } from '../store';
 
 const O2: V = [0, 0];
 const O3: V = [0, 0, 0];
@@ -30,9 +37,6 @@ const TIP: readonly [number, number] = [10, -12];
 const deg = (d: number) => `${d.toFixed(1)}°`;
 // A true minus sign (U+2212), matching the N-panel fields.
 const num = (x: number) => x.toFixed(1).replace('-', '−');
-/** Angle in degrees, 0 for a zero vector (a reader can drag a tip onto the origin; angleBetween throws there). */
-const angleOf = (a: V, b: V) => (norm(a) && norm(b) ? (angleBetween(a, b) * 180) / Math.PI : 0);
-const vec = (vals: Record<string, unknown>, k: string) => vals[k] as V;
 
 const use2 = (k: string) => useVal<readonly number[]>('demo', k, O2);
 
@@ -74,18 +78,6 @@ const OV2: readonly OverlayDef[] = [
 	{ id: 'shadow', label: 'Shadow', on: true },
 	{ id: 'square', label: 'Square on a', on: true },
 	{ id: 'par', label: 'Parallelogram b×a', on: false },
-];
-
-const XY = { min: -4, max: 4, step: 0.1 };
-const ROWS2: readonly Row[] = [
-	{ id: 'a', label: 'a', kind: 'vec', key: 'a', spec: XY, tip: { text: 'Vector a: drag its tip in the viewport or scrub here.', tex: String.raw`a = (a_x, a_y)` } },
-	{ id: 'b', label: 'b', kind: 'vec', key: 'b', spec: XY, tip: { text: 'Vector b.', tex: String.raw`b = (b_x, b_y)` } },
-	{ id: 'p', label: 'P', kind: 'vec', key: 'p', spec: XY },
-	{ id: 'th', label: 'θ', kind: 'ro', value: (v) => angleOf(vec(v, 'a'), vec(v, 'b')), fmt: (x) => `${x.toFixed(1)}°`, tip: { text: 'Angle between a and b.', tex: String.raw`\theta = \arccos\frac{a\cdot b}{\lvert a\rvert\,\lvert b\rvert}` } },
-	{ id: 'r', label: 'arc r', kind: 'num', key: 'r', spec: { min: 0.3, max: 2, step: 0.1 }, snap: 0.5, tip: { text: 'Radius of the angle arc (a plain number field).' } },
-	{ id: 'dot', label: 'a·b', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'b')), group: 'Numbers', tip: { title: 'Dot product', text: 'Sum of products of matching components.', tex: String.raw`a\cdot b = a_x b_x + a_y b_y` } },
-	{ id: 'sqa', label: '|a|²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')) },
-	{ id: 'par', label: 'b×a', kind: 'ro', value: (v) => signedArea2(vec(v, 'b'), vec(v, 'a')), tip: { title: 'Signed area', text: 'Negative (hatched) when the second vector is clockwise from the first.', tex: String.raw`b_x a_y - b_y a_x` } },
 ];
 
 const STATUS2: StatusSpec = {
@@ -139,15 +131,7 @@ const OV3: readonly OverlayDef[] = [
 	{ id: 'labels', label: 'Labels', on: true },
 	{ id: 'angle', label: 'Angle', on: true },
 	{ id: 'par', label: 'Parallelogram', on: true },
-];
-
-const XYZ = { min: -3, max: 3, step: 0.1 };
-const ROWS3: readonly Row[] = [
-	{ id: 'u', label: 'u', kind: 'vec', key: 'u', spec: XYZ },
-	{ id: 'v', label: 'v', kind: 'vec', key: 'v', spec: XYZ },
-	{ id: 'phi', label: 'φ', kind: 'ro', value: (v) => angleOf(vec(v, 'u'), vec(v, 'v')), fmt: (x) => `${x.toFixed(1)}°` },
-	{ id: 'dot3', label: 'u·v', kind: 'ro', value: (v) => dot(vec(v, 'u'), vec(v, 'v')), group: 'Numbers' },
-	{ id: 'par3', label: '|u×v|', kind: 'ro', value: (v) => norm(cross(vec(v, 'u'), vec(v, 'v'))), tip: { title: 'Area', text: 'Area of the parallelogram of u and v.', tex: String.raw`\lvert u\times v\rvert` } },
+	{ id: 'disc', label: 'u·x = 0 disc', on: true },
 ];
 
 const STATUS3: StatusSpec = {
@@ -168,6 +152,11 @@ export const Demo3D = () => (
 		<Show ov="par">
 			<Parallelogram lesson="demo" id="par3" a="u" b="v" role="vecC" />
 		</Show>
+		<Show ov="disc">
+			{/* DP-3's perpendicular set: one disc, two single-sided faces (u's side tinted, the far side muted). */}
+			<HalfPlane lesson="demo" id="disc_pos" normal="u" side="pos" role="vecA" opacity={0.12} />
+			<HalfPlane lesson="demo" id="disc_neg" normal="u" side="neg" role="muted" opacity={0.12} />
+		</Show>
 		<Show ov="angle">
 			<AngleArc lesson="demo" id="phi" at={O3} from="u" to="v" r={0.7} normal={UP} label={deg} />
 		</Show>
@@ -185,15 +174,6 @@ const OVLC: readonly OverlayDef[] = [
 	{ id: 'squares', label: 'Squares on the sides', on: true },
 	{ id: 'corr', label: 'Correction −2a·b', on: true },
 	{ id: 'labels', label: 'Labels', on: true },
-];
-
-const ROWSLC: readonly Row[] = [
-	{ id: 'a', label: 'a', kind: 'vec', key: 'a', spec: XY },
-	{ id: 'b', label: 'b', kind: 'vec', key: 'b', spec: XY },
-	{ id: 'sqa', label: 'a²', kind: 'ro', value: (v) => dot(vec(v, 'a'), vec(v, 'a')), group: 'Areas' },
-	{ id: 'sqb', label: 'b²', kind: 'ro', value: (v) => dot(vec(v, 'b'), vec(v, 'b')) },
-	{ id: 'corr', label: '−2a·b', kind: 'ro', value: (v) => -2 * dot(vec(v, 'a'), vec(v, 'b')), tip: { title: 'Correction', text: 'Hatched when negative (angle below 90°).', tex: String.raw`-2\,a\cdot b` } },
-	{ id: 'sqc', label: 'c²', kind: 'ro', value: (v) => { const c = sub(vec(v, 'a'), vec(v, 'b')); return dot(c, c); } },
 ];
 
 const STATUSLC: StatusSpec = {
@@ -239,6 +219,156 @@ export const DemoCosines = () => (
 		<Show ov="labels">
 			<Label lesson="demo" id="a" at="a" role="vecA" offset={TIP}>a</Label>
 			<Label lesson="demo" id="b" at="b" role="vecB" offset={TIP}>b</Label>
+		</Show>
+	</ViewportCard>
+);
+
+// ---------------------------------------------------------------------------------------------------------------
+// Task 6e lesson primitives.
+
+const OVPOLAR: readonly OverlayDef[] = [
+	{ id: 'grid', label: 'Grid', on: true },
+	{ id: 'labels', label: 'Labels', on: true },
+	{ id: 'locus', label: 'Circle |CA| = b', on: true },
+];
+
+const STATUSPOLAR: StatusSpec = {
+	hints: {
+		'A:pt': { mouse: 'LMB drag A · b and θ follow · θ sticks at 30°, 45°, 60°, 90° …', touch: 'Drag A · θ sticks at the ticks' },
+		'B:pt': { mouse: 'LMB drag B along a · sets a', touch: 'Drag B along a' },
+		locus: 'Every place A can be with this b: a circle around C',
+	},
+};
+
+/** The triangle of the polar card: C fixed, B on the x axis (moveB), A in polar terms with the magnet (moveA). */
+function PolarTriangle(): React.JSX.Element {
+	const v = useVals('demo');
+	const t = tri(v);
+	return (
+		<>
+			<Segment lesson="demo" id="la" a={O2} b={t.B} role="vecA" />
+			<Segment lesson="demo" id="lb" a={O2} b={t.A} role="vecB" />
+			<Segment lesson="demo" id="lc" a={t.B} b={t.A} role="vecC" />
+			<AngleArc lesson="demo" id="lth" at={O2} from={t.B} to={t.A} r={0.8} ticks={MAGNET} label={(d) => `${Math.round(d)}°`} />
+			{t.cos === 0 && <RightAngle lesson="demo" id="lth" at={O2} u={t.B} v={t.A} />}
+			<Point lesson="demo" id="C" at={O2} drag={false} />
+			<Point lesson="demo" id="B" at={(x) => tri(x).B} keys={['la']} move={moveB} label="B" />
+			<Point lesson="demo" id="A" at={(x) => tri(x).A} keys={['lb', 'lth']} move={moveA} label="A" />
+			<Show ov="labels">
+				<Label lesson="demo" at={O2} offset={[-12, 12]}>C</Label>
+				<Label lesson="demo" id="B" at={t.B} offset={[10, 12]}>B</Label>
+				<Label lesson="demo" id="A" at={t.A} offset={TIP}>A</Label>
+			</Show>
+		</>
+	);
+}
+
+/** Polar drag (LC-0 vertices), magnet ticks on the arc, a 2D circle (the locus of A); the Ledger sits under the card. */
+export const DemoPolar = () => (
+	<ViewportCard lesson="demo" id="pol" name="DEMO-POLAR · Vertex drags" mode="2d" extent={5} center={[1, 1.5]} overlays={OVPOLAR} rows={ROWSPOLAR} status={STATUSPOLAR}>
+		<Show ov="grid">
+			<Grid lesson="demo" extent={5} step={1} />
+		</Show>
+		<Show ov="locus">
+			<Circle lesson="demo" id="locus" center={O2} r={(x) => x.lb as number} role="muted" dashPx={STYLE.dash} />
+		</Show>
+		<PolarTriangle />
+	</ViewportCard>
+);
+
+const OVSIGN: readonly OverlayDef[] = [
+	{ id: 'grid', label: 'Grid', on: true },
+	{ id: 'half', label: 'Half-planes', on: true },
+	{ id: 'legs', label: 'Legs', on: true },
+];
+
+const STATUSSIGN: StatusSpec = {
+	hints: {
+		'sb:tip': { mouse: 'LMB drag tip of b · snaps to ⊥ near 90°', touch: 'Drag b · snaps to ⊥ near 90°' },
+		'sa:tip': { mouse: 'LMB drag tip of a · the half-planes turn with it', touch: 'Drag a' },
+		hp_pos: 'a·v > 0 here',
+		hp_neg: 'a·v < 0 here',
+		'sa:x': (v) => `a₁ = ${num(vec(v, 'sa')[0])}`,
+		'sa:y': (v) => `a₂ = ${num(vec(v, 'sa')[1])}`,
+	},
+	state: (v) => (Math.abs(dot(vec(v, 'sa'), vec(v, 'sb'))) < 1e-9 ? 'a ⊥ b · a·b = 0' : null),
+};
+
+function SignRight(): React.JSX.Element | null {
+	const a = use2('sa');
+	const b = use2('sb');
+	return norm(a) && norm(b) && Math.abs(dot(a, b)) < 1e-9 ? <RightAngle lesson="demo" id="sdot" at={O2} u={a} v={b} show /> : null;
+}
+
+/** DP-2: the plane pre-coloured by the sign of a·v, b's magnet to the perpendicular, per-axis leg ids of a. */
+export const DemoSign = () => (
+	<ViewportCard lesson="demo" id="sign" name="DEMO-SIGN · Half-planes" mode="2d" extent={4} overlays={OVSIGN} rows={ROWSSIGN} status={STATUSSIGN}>
+		<Show ov="grid">
+			<Grid lesson="demo" extent={4} step={1} />
+		</Show>
+		<Show ov="half">
+			<HalfPlane lesson="demo" id="hp_pos" normal="sa" side="pos" role="vecA" />
+			<HalfPlane lesson="demo" id="hp_neg" normal="sa" side="neg" role="muted" />
+		</Show>
+		<Arrow lesson="demo" id="sa" to="sa" role="vecA" legs label="a" />
+		<Arrow lesson="demo" id="sb" to="sb" role="vecB" move={moveSb} label="b" />
+		<SignRight />
+		<Label lesson="demo" id="sa" at="sa" role="vecA" offset={TIP}>a</Label>
+		<Label lesson="demo" id="sb" at="sb" role="vecB" offset={TIP}>b</Label>
+	</ViewportCard>
+);
+
+const OVLAMP: readonly OverlayDef[] = [
+	{ id: 'term', label: 'Terminator', on: true },
+	{ id: 'vecs', label: 'N and L', on: true },
+	{ id: 'labels', label: 'Labels', on: true },
+];
+
+const STATUSLAMP: StatusSpec = {
+	hints: {
+		'light:pt': { mouse: 'LMB drag light · stays outside the sphere', touch: 'Drag the light' },
+		'P:pt': { mouse: 'LMB drag P on the surface', touch: 'Drag P on the surface' },
+		term: 'N·L = 0 here · the ⊥ line of the sign scene, wrapped around a sphere',
+		N: 'Surface normal at P',
+		L: 'Direction from P to the light',
+	},
+};
+
+/** N and L at the probe, and the terminator circle (all derived from the store). */
+function LampGuides(): React.JSX.Element {
+	const v = useVals('demo');
+	const l = lamp(v);
+	const P = vec(v, 'nl_pt');
+	return (
+		<>
+			{l.term && (
+				<Show ov="term">
+					<Circle lesson="demo" id="term" center={l.term.c} r={l.term.r} normal={l.term.n} role="muted" dashPx={STYLE.dash} />
+				</Show>
+			)}
+			<Show ov="vecs">
+				<Arrow lesson="demo" id="N" from={P} to={add(P, scale(l.N, 1.2))} role="vecB" />
+				<Arrow lesson="demo" id="L" from={P} to={add(P, scale(l.L, 1.2))} role="vecA" />
+			</Show>
+		</>
+	);
+}
+
+function LampSphere(): React.JSX.Element {
+	const raw = useVal('demo', 'nl_raw', 0);
+	return <LitSphere lesson="demo" id="sphere" center={O3} r={SPHERE_R} light="nl_light" mode={raw ? 'raw' : 'lambert'} roles={{ base: 'vecC' }} />;
+}
+
+/** DP-4: Lambert's max(0, N·L) as a picture; the checkbox row shows the raw (negative) N·L. */
+export const DemoLamp = () => (
+	<ViewportCard lesson="demo" id="lamp" name="DEMO-LAMP · N·L" mode="3d" extent={3} overlays={OVLAMP} rows={ROWSLAMP} status={STATUSLAMP}>
+		<LampSphere />
+		<LampGuides />
+		<Point lesson="demo" id="light" at="nl_light" move={moveLight} role="light" label="light" />
+		<Point lesson="demo" id="P" at="nl_pt" move={moveP} label="P" />
+		<Show ov="labels">
+			<Label lesson="demo" id="light" at="nl_light" role="light" offset={TIP}>light</Label>
+			<Label lesson="demo" id="P" at="nl_pt" offset={TIP}>P</Label>
 		</Show>
 	</ViewportCard>
 );

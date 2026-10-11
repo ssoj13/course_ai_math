@@ -59,7 +59,7 @@ test('one labelled button per draggable; arrows move by 0.1, Shift by 1', () => 
 	expect(vals(lesson).b).toEqual([0.9, 2]);
 });
 
-test('focus lights the owner and shows a ring at the projected handle; blur clears both', () => {
+test('focus lights the owner and shows a ring at the projected handle; blur clears both', async () => {
 	const lesson = 'hdom-focus';
 	lessonStore(lesson, { a: [3, 1], o: [0, 0], b: [1, 2] });
 	const host = mount(<DragKeys reg={stage(lesson)} />);
@@ -69,7 +69,11 @@ test('focus lights the owner and shows a ring at the projected handle; blur clea
 	const ring = host.querySelector<HTMLElement>('.lab-handle-ring')!;
 	expect([ring.style.left, ring.style.top]).toEqual(['30px', '-10px']);
 	key(a, 'ArrowRight');
-	expect(host.querySelector<HTMLElement>('.lab-handle-ring')!.style.left).toBe('31px'); // follows the value
+	// A key press is an indirect change (Ruling U): the value jumps, the drawn handle (and its ring) eases after it.
+	expect(lessonStore(lesson).getState().vals.a).toEqual([3.1, 1]);
+	expect(host.querySelector<HTMLElement>('.lab-handle-ring')!.style.left).toBe('30px');
+	await act(() => new Promise((r) => setTimeout(r, 450)));
+	expect(host.querySelector<HTMLElement>('.lab-handle-ring')!.style.left).toBe('31px');
 	act(() => a.blur());
 	expect(lessonStore(lesson).getState().hot.size).toBe(0);
 	expect(host.querySelector('.lab-handle-ring')).toBeNull();

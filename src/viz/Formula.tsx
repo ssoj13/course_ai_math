@@ -95,7 +95,8 @@ export function Formula(p: FormulaProps): React.JSX.Element {
 		const v = keyStep(store.getState().vals[k] as number, e.key, spec);
 		if (v === null) return;
 		e.preventDefault();
-		store.getState().set(k, v);
+		// An indirect change (Ruling U): the scene eases to the new value, the number jumps.
+		store.getState().set(k, v, 'ease');
 	};
 
 	return (

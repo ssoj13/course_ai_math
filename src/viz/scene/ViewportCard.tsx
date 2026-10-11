@@ -17,6 +17,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import type { V } from '../geom';
 import { createStage, type OverlayDef } from './handles';
 import { Icon, Overlays } from './Header';
+import { chipLines } from './chips';
 import { NPanel, useTip, type Row } from './NPanel';
 import { Stage } from './Stage';
 import { StatusBar, type StatusSpec } from './StatusBar';
@@ -33,7 +34,7 @@ export interface ViewportCardProps {
 	center?: V;
 	/** Overlay flags the scene declares (each read with `useOverlay`/`Show`). */
 	overlays?: readonly OverlayDef[];
-	/** N-panel rows; SceneIsland must reserve the chip row (`panel`, the default) iff there are rows. */
+	/** N-panel rows: the same array SceneIsland gets (it reserves the phone chip row from them). */
 	rows?: readonly Row[];
 	status?: StatusSpec;
 	/** The lesson's one first-view draw-in. */
@@ -67,12 +68,17 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	toggleRef.current = toggle;
 	const tip = useTip();
 
-	// The server frame reserves the chip row only for cards with a panel; a mismatch would shift layout on phones.
+	// The server frame reserves the chip row from the rows SceneIsland was given; other rows here would shift the layout
+	// on phones, so a mismatch is an authoring error (pass the same rows array to both).
 	useEffect(() => {
-		const fig = root.current?.closest('.lab-vp');
-		if (fig && fig.hasAttribute('data-panel') !== hasPanel)
-			throw new Error(`ViewportCard "${p.id}": SceneIsland panel=${fig.hasAttribute('data-panel')} but the card has ${rows.length} N-panel rows`);
-	}, [hasPanel]);
+		const fig = root.current?.closest<HTMLElement>('.lab-vp');
+		if (!fig) return;
+		if (fig.hasAttribute('data-panel') !== hasPanel)
+			throw new Error(`ViewportCard "${p.id}": SceneIsland has ${fig.hasAttribute('data-panel') ? '' : 'no '}rows but the card has ${rows.length} N-panel rows`);
+		const lines = hasPanel ? chipLines(rows) : 0;
+		if (hasPanel && !fig.hasAttribute('data-chip-override') && Number(fig.dataset.chipLines) !== lines)
+			throw new Error(`ViewportCard "${p.id}": SceneIsland reserved ${fig.dataset.chipLines} chip lines, the card's rows need ${lines} (pass the same rows to both)`);
+	}, [hasPanel, rows]);
 
 	// Sidebar inset: the open desktop sidebar covers the viewport's right edge (region overlap); chips do not.
 	useLayoutEffect(() => {
@@ -89,9 +95,9 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 		};
 	}, [open, hasPanel, panelId]);
 
-	// Wrapped chips (< 720 px, Ruling V): the frame reserved `chipLines` lines server-side. If the chips need more, grow
-	// the row to fit (a shift, so authors size chipLines from the 360 px layout); never shrink below the reservation,
-	// so a wider phone keeps a little spare room instead of a jump.
+	// Wrapped chips (< 720 px, Ruling V): the frame reserved the chip model's height at the 320 px basis. A safety net
+	// only: if the chips ever need more (a read-only value longer than its `chars` budget), grow the row to fit (a
+	// shift); never shrink below the reservation, so a wider phone keeps a little spare room instead of a jump.
 	useLayoutEffect(() => {
 		const panel = document.getElementById(panelId);
 		const fig = root.current?.closest<HTMLElement>('.lab-vp');

@@ -15,7 +15,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { useStore } from 'zustand';
 import type { V } from '../geom';
 import { roleVar, type SceneRole } from '../palette';
-import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
+import { hotOff, hotOn, lessonStore, type LessonState, type Val, type WriteHow } from '../store';
 import { hitHandle, keyDelta, moved, pushAway } from './drag';
 
 type Vals = LessonState['vals'];
@@ -28,10 +28,21 @@ export interface Draggable {
 	/** Accessible name of the keyboard button, e.g. "Move tip of a". */
 	label: string;
 	lesson: string;
-	/** Store keys moved together; keys[0] is the anchor that snaps to the grid (see `moved`). */
+	/**
+	 * Store keys the handle writes. Without `move`: moved together, keys[0] is the anchor that snaps to the grid (see
+	 * `moved`). With `move`: documentation and identity only (the keys `move` returns are what is written).
+	 */
 	keys: readonly string[];
 	/** Handle position in data coordinates for the given store values. */
 	at(vals: Vals): readonly number[];
+	/**
+	 * Custom mapping from a raw move to store writes, replacing `moved` (a vertex dragged in polar terms writes a length
+	 * and an angle, a point is kept on a sphere, an angle snaps to magnet targets). `vals` are the values the raw move
+	 * is measured from: the press-time values for a pointer drag (raw = pointer travel on the drag plane since the
+	 * press), the current values for a key press (raw = one `keyDelta` step). `raw` has the dimension of `at`. `src`
+	 * lets a magnet be one-way for keyboard steps (see `magnet`). Returned keys may hold numbers or vectors.
+	 */
+	move?(vals: Vals, raw: readonly number[], src: 'drag' | 'key'): Record<string, Val>;
 }
 
 /**
@@ -55,11 +66,13 @@ export interface LabelSpec {
 	away?(vals: Vals): readonly number[] | null;
 	gap?: number;
 	/**
-	 * Angle labels: the opening (radians) of the wedge the label sits in, with `away` at its corner. The label moves
-	 * further out along the bisector until its box fits between the two sides (a narrow wedge on a phone would put
-	 * the text on a side's stroke otherwise), at most WEDGE_MAX_PX beyond its `gap` position.
+	 * Angle labels: one point on each side of the wedge (the arc's end points), with `away` at its corner. The wedge is
+	 * measured on SCREEN: the label sits on the projected bisector at the arc's projected radius, then moves out until
+	 * its box fits between the two projected sides (at most WEDGE_MAX_PX beyond its `gap` position). In 3D perspective
+	 * the world bisector does not project onto the screen bisector, so a world-space wedge put the label on a side's
+	 * beam at phone sizes; in 2D (orthographic) both agree.
 	 */
-	wedge?(vals: Vals): number | null;
+	sides?(vals: Vals): readonly [readonly number[], readonly number[]] | null;
 	/** Fixed screen offset in CSS px, y down (e.g. up and to the right of an arrow tip). */
 	offset?: readonly [number, number];
 }
@@ -131,6 +144,8 @@ export interface StageReg {
 	gizmo: ((q: readonly number[]) => void) | null;
 	/** Draw-in progress 0..1 read per frame by the primitives (1 = fully drawn; see DrawIn in view.tsx). */
 	reveal: number;
+	/** Half-size of the stage's data area in world units (Stage `extent`; set by Stage before its scene renders). */
+	extent: number;
 }
 
 /** An overlay flag a card declares (Blender's Overlays popover): `on` is the default. */
@@ -203,13 +218,16 @@ function hoverStore(): Hover {
 	};
 }
 
-/** Writes every key of a move; values that did not change are skipped so a still pointer causes no re-render. */
-export function writeMove(lesson: string, next: Record<string, number[]>): void {
+const sameVal = (a: Val | undefined, b: Val): boolean =>
+	typeof a === 'number' || typeof b === 'number' ? a === b : a !== undefined && a.length === b.length && a.every((x, i) => x === b[i]);
+
+/**
+ * Writes every key of a move (numbers or vectors); values that did not change are skipped so a still pointer causes
+ * no re-render. `how`: a pointer drag is a cut (1:1), a key press eases the glyph (Ruling U, see store.ts).
+ */
+export function writeMove(lesson: string, next: Record<string, Val>, how: WriteHow = 'cut'): void {
 	const st = lessonStore(lesson).getState();
-	for (const [k, v] of Object.entries(next)) {
-		const cur = st.vals[k];
-		if (typeof cur === 'number' || !cur || cur.length !== v.length || cur.some((x, i) => x !== v[i])) st.set(k, v);
-	}
+	for (const [k, v] of Object.entries(next)) if (!sameVal(st.vals[k], v)) st.set(k, v, how);
 }
 
 export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): StageReg {
@@ -221,6 +239,7 @@ export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): St
 		nav: null,
 		gizmo: null,
 		reveal: 1,
+		extent: 1,
 		list: handles.list,
 		subscribe: handles.subscribe,
 		add(d) {
@@ -237,7 +256,8 @@ export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): St
 			if (!project) return null;
 			const list = handles.list();
 			const px = list.flatMap((d) => {
-				const at = project(d.at(lessonStore(d.lesson).getState().vals));
+				// Picked where it is drawn (an eased glyph may still be on its way to the stored value).
+				const at = project(d.at(lessonStore(d.lesson).getState().shown));
 				return at ? [{ id: d.id, at }] : [];
 			});
 			const id = hitHandle([x, y], px, radius);
@@ -245,11 +265,9 @@ export function createStage(mode: '2d' | '3d', card: CardInfo | null = null): St
 		},
 		nudge(d, key, shift) {
 			const vals = lessonStore(d.lesson).getState().vals;
-			const anchor = vals[d.keys[0]];
-			if (anchor === undefined || typeof anchor === 'number') throw new Error(`store key "${d.keys[0]}" is not a vector`);
-			const delta = keyDelta(key, shift, anchor.length);
+			const delta = keyDelta(key, shift, d.at(vals).length);
 			if (!delta) return false;
-			writeMove(d.lesson, moved(vals, d.keys, delta));
+			writeMove(d.lesson, d.move ? d.move(vals, delta, 'key') : moved(vals, d.keys, delta), 'ease');
 			return true;
 		},
 	};
@@ -266,11 +284,11 @@ export function useStage(): StageReg {
 }
 
 /**
- * A position that is either a literal or a store key. A key that is missing or holds a number throws: drawing a
- * fallback would hide a typo in a lesson.
+ * A position that is either a literal or a store key (read as drawn, i.e. `shown`, see store.ts). A key that is
+ * missing or holds a number throws: drawing a fallback would hide a typo in a lesson.
  */
 export function usePos(lesson: string, v: V | string): V {
-	const stored = useStore(lessonStore(lesson), (s) => (typeof v === 'string' ? s.vals[v] : undefined));
+	const stored = useStore(lessonStore(lesson), (s) => (typeof v === 'string' ? s.shown[v] : undefined));
 	if (typeof v !== 'string') return v;
 	if (stored === undefined || typeof stored === 'number') throw new Error(`lesson "${lesson}": store key "${v}" is not a vector`);
 	return stored;
@@ -284,11 +302,14 @@ export function useDraggable(d: Draggable | null): void {
 	const reg = useStage();
 	const at = useRef(d?.at);
 	at.current = d?.at;
-	const sig = d && JSON.stringify([d.id, d.owner, d.label, d.lesson, d.keys]);
+	const mv = useRef(d?.move);
+	mv.current = d?.move;
+	const sig = d && JSON.stringify([d.id, d.owner, d.label, d.lesson, d.keys, Boolean(d.move)]);
 	useEffect(() => {
 		if (!d) return;
-		return reg.add({ ...d, at: (v) => at.current?.(v) ?? [] });
-		// `d` is represented by `sig`; its function member is read via the ref.
+		const move: Draggable['move'] = d.move && ((v, raw, src) => mv.current!(v, raw, src));
+		return reg.add({ ...d, at: (v) => at.current?.(v) ?? [], move });
+		// `d` is represented by `sig`; its function members are read via the refs.
 	}, [reg, sig]);
 }
 
@@ -305,7 +326,7 @@ export function DragKeys({ reg }: { reg: StageReg }): React.JSX.Element {
 }
 
 function KeyHandle({ reg, d }: { reg: StageReg; d: Draggable }): React.JSX.Element {
-	const vals = useStore(lessonStore(d.lesson), (s) => s.vals);
+	const vals = useStore(lessonStore(d.lesson), (s) => s.shown);
 	const [focused, setFocused] = useState(false);
 	const px = focused ? (reg.project?.(d.at(vals)) ?? null) : null;
 	return (
@@ -343,7 +364,7 @@ export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
 	const [owner] = useState(() => ({}));
 	const fns = useRef(spec);
 	fns.current = spec;
-	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.small, spec.hot, spec.gap, spec.offset, Boolean(spec.away), Boolean(spec.wedge)]);
+	const sig = spec && JSON.stringify([spec.lesson, spec.text, spec.role, spec.small, spec.hot, spec.gap, spec.offset, Boolean(spec.away), Boolean(spec.sides)]);
 	useEffect(() => {
 		if (sig === null) return;
 		const s = fns.current!;
@@ -353,7 +374,7 @@ export function useLabel(spec: Omit<LabelSpec, 'id'> | null): void {
 				id,
 				at: (v) => fns.current?.at(v) ?? null,
 				away: s.away && ((v) => fns.current?.away?.(v) ?? null),
-				wedge: s.wedge && ((v) => fns.current?.wedge?.(v) ?? null),
+				sides: s.sides && ((v) => fns.current?.sides?.(v) ?? null),
 			},
 			owner,
 		);
@@ -408,7 +429,7 @@ export function placeLabels(reg: StageReg): void {
 	for (const s of reg.labels.list()) {
 		const el = reg.labelEls.get(s.id);
 		if (!el) continue;
-		const p = project && labelPx(s, lessonStore(s.lesson).getState().vals, project, el);
+		const p = project && labelPx(s, lessonStore(s.lesson).getState().shown, project, el);
 		if (!p) {
 			el.style.visibility = 'hidden';
 			continue;
@@ -431,9 +452,11 @@ function labelPx(s: LabelSpec, vals: Vals, project: NonNullable<StageReg['projec
 	// The label's own size (layout box; transforms do not change it) keeps its near edge `gap` px from the anchor.
 	if (q) {
 		const box: [number, number] = [el.offsetWidth, el.offsetHeight];
+		const sides = s.sides?.(vals);
+		const w = sides && screenWedge(q, p, project(sides[0]), project(sides[1]));
+		if (w) p = w.at;
 		p = pushAway(p, q, s.gap ?? 0, box);
-		const w = s.wedge?.(vals);
-		if (w) p = fitWedge(p, q, w, box);
+		if (w) p = fitWedge(p, q, w.angle, box);
 	}
 	const o = s.offset;
 	return o ? [p[0] + o[0], p[1] + o[1]] : p;
@@ -531,6 +554,34 @@ export function gateWheel(stage: HTMLElement, signal?: AbortSignal): void {
 		},
 		{ capture: true, signal },
 	);
+}
+
+/**
+ * The wedge at corner `q` between projected side points `a` and `b`, measured on screen: its opening angle and the
+ * point on its bisector at the arc's projected radius (the furthest of `a`, `b` and the projected arc middle `mid`
+ * from `q`, so the label starts clear of a foreshortened arc). A straight (180 degree) wedge has no bisector between
+ * the sides, so `mid` gives the direction. Null when a side is off screen or projects onto the corner.
+ */
+export function screenWedge(
+	q: readonly [number, number],
+	mid: readonly [number, number],
+	a: readonly [number, number] | null,
+	b: readonly [number, number] | null,
+): { at: [number, number]; angle: number } | null {
+	if (!a || !b) return null;
+	const unit = (x: number, y: number): [number, number] | null => {
+		const l = Math.hypot(x, y);
+		return l < 1e-6 ? null : [x / l, y / l];
+	};
+	const ua = unit(a[0] - q[0], a[1] - q[1]);
+	const ub = unit(b[0] - q[0], b[1] - q[1]);
+	if (!ua || !ub) return null;
+	const r = Math.max(Math.hypot(a[0] - q[0], a[1] - q[1]), Math.hypot(b[0] - q[0], b[1] - q[1]), Math.hypot(mid[0] - q[0], mid[1] - q[1]));
+	const angle = Math.acos(Math.min(1, Math.max(-1, ua[0] * ub[0] + ua[1] * ub[1])));
+	// Near-straight wedges: the sum of the side directions is rounding noise, so the arc middle decides the side.
+	const bis = (angle < Math.PI - 1e-3 ? unit(ua[0] + ub[0], ua[1] + ub[1]) : null) ?? unit(mid[0] - q[0], mid[1] - q[1]);
+	if (!bis) return null;
+	return { at: [q[0] + bis[0] * r, q[1] + bis[1] * r], angle };
 }
 
 /** Furthest extra push of a wedge label, in px (a near-zero angle would otherwise send it far away). */

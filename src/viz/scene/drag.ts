@@ -1,5 +1,5 @@
 /**
- * Pure drag math for scene handles: pixel hit-test, grid snapping, keyboard steps, pixel sizing, drag-plane rays.
+ * Pure drag math for scene handles: pixel hit-test, grid snapping, magnets, keyboard steps, pixel sizing, drag-plane rays.
  * Pointer hit-test in screen pixels: only a hit may start a drag
  * (and lock touch scrolling); a miss returns null so the browser keeps scrolling the page.
  */
@@ -59,6 +59,30 @@ export function moved(vals: Vals, keys: readonly string[], raw: readonly number[
 			return [k, v.map((x, i) => clean(x + d[i]))];
 		}),
 	);
+}
+
+/**
+ * Magnet snap for a dragged or nudged value (e.g. an angle in degrees): the nearest of `targets` when `v` is within
+ * `zone` of it (inclusive), else `v` unchanged. Used inside a handle's `move`, never on a scrubbed number.
+ *
+ * `from` (the value before this step) makes a magnet one-way: a target is caught only by a step that moves toward
+ * it (or crosses it), never by a step that leaves it. A keyboard nudge passes the current value: without `from`, a
+ * nudge smaller than `zone` (0.1 world units at radius 4 is 1.4 degrees against a 2.5 degree zone) is pulled back
+ * onto the target it left and the keyboard could never move off it. A pointer drag passes nothing (its raw delta is
+ * measured from the press, so it leaves the zone by travelling, not by steps).
+ */
+export function magnet(v: number, targets: readonly number[], zone: number, from?: number): number {
+	let best = v;
+	let bestD = Infinity;
+	for (const t of targets) {
+		const d = Math.abs(v - t);
+		if (d > zone || d >= bestD) continue;
+		// Toward (or across) t means v moved from `from` to t's side; a step off t itself (t === from) never catches it.
+		if (from !== undefined && !((t - from) * (v - from) > 0)) continue;
+		best = t;
+		bestD = d;
+	}
+	return best;
 }
 
 // [axis, sign]. PageUp/PageDown drive z because a 2D keyboard has no third arrow pair.

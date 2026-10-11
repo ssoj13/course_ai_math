@@ -25,7 +25,8 @@ export function Num(p: { lesson: string; k: string; spec: ScrubSpec; fmt?: (v: n
 				const next = keyStep(cur(), e.key, p.spec);
 				if (next === null) return;
 				e.preventDefault();
-				store.getState().set(p.k, next);
+				// An indirect change (Ruling U): the scene eases to the new value, the number jumps.
+				store.getState().set(p.k, next, 'ease');
 			}}
 		>
 			{p.fmt ? p.fmt(v) : String(Math.round(v * 100) / 100)}

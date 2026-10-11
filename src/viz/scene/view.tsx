@@ -216,6 +216,8 @@ interface Drag {
 	p0: number[];
 	n: number[];
 	h0: number[];
+	/** Dimension of the handle position (the raw move passed to `move`). */
+	dims: number;
 }
 
 /**
@@ -290,7 +292,7 @@ export function DragLayer(): null {
 				el.style.cursor = 'grabbing';
 				hotOn(d.lesson, d.owner);
 				reg.hover.set({ handle: d.id });
-				active = { d, start, p0, n, h0 };
+				active = { d, start, p0, n, h0, dims: d.at(start).length };
 				const a = active;
 				const id = e.pointerId;
 				let raf = 0;
@@ -300,7 +302,10 @@ export function DragLayer(): null {
 					if (!last) return;
 					const h = hitPlane(last[0], last[1], a);
 					last = null;
-					if (h) writeMove(a.d.lesson, moved(a.start, a.d.keys, sub(h, a.h0)));
+					if (!h) return;
+					const raw = sub(h, a.h0);
+					// A custom mapping gets the raw move in the handle's own dimension (a 2D handle moves on z = 0).
+					writeMove(a.d.lesson, a.d.move ? a.d.move(a.start, raw.slice(0, a.dims), 'drag') : moved(a.start, a.d.keys, raw));
 				};
 				const drag = new AbortController();
 				const opts = { signal: drag.signal };
