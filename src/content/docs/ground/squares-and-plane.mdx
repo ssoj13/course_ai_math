@@ -8,6 +8,7 @@ import UiStrings from '../../../components/UiStrings.astro';
 import SceneIsland from '../../../viz/SceneIsland.astro';
 import { SquaresScene, SquaresControls } from '../../../viz/lessons/squares-and-plane';
 import { rowsFor } from '../../../viz/lessons/squares-and-plane.rows';
+import PyCell from '../../../components/PyCell.astro';
 
 export const locale = 'en';
 
@@ -246,6 +247,8 @@ Work these on paper before opening the answers.
 
 ## In NumPy
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -261,6 +264,8 @@ print(-3**2, (-3)**2)         # -9 9  -> precedence trap
 p = np.array([-2.0, 3.0])     # a point as two numbers
 print(p[0]**2 + p[1]**2)      # 13.0 -> lesson 0.3
 ```
+
+</PyCell>
 
 <details>
 <summary>Machine layer: why CG code compares squared distances</summary>

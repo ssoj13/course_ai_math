@@ -1,7 +1,7 @@
 ---
 title: "Квадраты, корни и плоскость"
 description: "Квадрат — это площадь, корень возвращает сторону, точка — два показания на двух линейках."
-translatedFrom: bc2181b90c54e1438c892c49e1d8a08596b44c98
+translatedFrom: 52f08f7b99ecb24f3d023856287caf600aac0e54
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
@@ -9,6 +9,7 @@ import UiStrings from '../../../../components/UiStrings.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { SquaresScene, SquaresControls } from '../../../../viz/lessons/squares-and-plane';
 import { rowsFor } from '../../../../viz/lessons/squares-and-plane.rows';
+import PyCell from '../../../../components/PyCell.astro';
 
 export const locale = 'ru';
 
@@ -208,6 +209,8 @@ $$
 
 ## В NumPy
 
+<PyCell>
+
 ```python
 import numpy as np
 
@@ -223,6 +226,8 @@ print(-3**2, (-3)**2)         # -9 9  -> precedence trap
 p = np.array([-2.0, 3.0])     # a point as two numbers
 print(p[0]**2 + p[1]**2)      # 13.0 -> lesson 0.3
 ```
+
+</PyCell>
 
 <details>
 <summary>Машинный уровень: почему CG-код сравнивает квадраты расстояний</summary>
