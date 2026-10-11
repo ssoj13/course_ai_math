@@ -2,14 +2,7 @@
   "course/roadmap",
   "dev/engine",
   "dev/math",
-  "ground/powers",
-  "ground/pythagoras",
-  "ground/unit-circle",
   "index",
   "vectors/cosine-similarity",
-  "vectors/cross-product",
-  "vectors/length",
-  "vectors/projection",
-  "vectors/vector",
-  "vectors/vector-arithmetic"
+  "vectors/cross-product"
 ]

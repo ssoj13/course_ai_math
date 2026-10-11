@@ -9,6 +9,13 @@ The spine in one sentence: *measure distance (Pythagoras) → measure angle (law
 `y = xWᵀ + b` → how wrong is W (loss) → how to change W (derivatives, gradient) → why this loss (probability,
 statistics, "why squares") → train machines (regression → MLP) → attention, built only from parts we already own.*
 
+## Start here (module `start`, first in the sidebar; added 2026-10-11)
+
+| id | lesson | built on | → leaves open |
+|---|---|---|---|
+| 0.0a | **Why this course: what AI actually computes** — a model is a function from numbers to numbers made of multiply-adds (≈ one per parameter per token, Kaplan et al. 2020; GPT-2 small ≈ 85 M per token, Llama 3 8B ≈ 8 G); the CG bridges (N·L, xforms, blend shapes, Graph Editor, H×W×C); the spine sentence; the parts with "you will be able to…"; where it is used; why learn it; how to use the course (scenes, timelines, Python cells, maps); honest expectations. Scene INTRO-1 = the DotUnit playing once (`docs/design/intro-and-dotunit.md`) | — | what does "one dot product, scaled up" look like? |
+| 0.0b | **How it all connects: one dot product, scaled up** — one number, two faces (shadow × \|a\| = stack of tiles, a = (3, 1, 2), b = (1, 2, −1), both 3.00); the zoom ladder tile → dot product → matmul cube → layer y = xWᵀ + b → stack of cubes / attention heads, with click-to-dive (INTRO-2); the einsum playground teaser "the axis that disappears is the stack axis" (INTRO-3); the same numbers in NumPy | 0.0a | why is a square an area, and how do we measure anything? → 0.G |
+
 ## Part 0 — Ground
 
 | id | lesson | built on | → leaves open |
