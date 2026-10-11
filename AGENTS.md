@@ -164,9 +164,20 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
   `src/lib/challenges.ts`; step tasks read `step['<timeline>:max']`), N-panel `bool` rows.
 - 7 ([7](docs/acceptance/7.md)): NumTable (op components/product/square/diff; cell ids a0…/p0…/sq0…/d0…, totals
   `sum`), CodeView (plain pre/code; linked `lines` 1-based), Timeline (`steps: {id,text,phases?,focus?}[]`, no
-  autoplay, writes `step[id]`, `id:max`, `id:phases`), Formula (`tex`, `texNarrow` below 420 px, `scrub`, `marks`
-  hidden/struck, `tips`), Poly (`pts(vals, step)`, optional `path` for piece motion; values cut, steps spring),
+  autoplay, writes `step[id]`, `id:max`, `id:phases`), Formula (`tex`, `texNarrow`, `scrub`, `marks`
+  hidden/struck/dim, `tips`), Poly (`pts(vals, step)`, optional `path` for piece motion; values cut, steps spring),
   FieldCell (`{lesson,row,size}`).
+- Formula layouts (fix wave 2026-10-11): with `texNarrow` BOTH layouts are server-rendered (`data-variant`
+  wide/narrow) and a container query on the formula's own width (< 420 px, `.lab-formula.has-narrow`) shows one: no
+  hydration switch, no height reserved for the hidden layout (that reserve was the 100-380 px hole under DP/LC
+  timelines). Multi-line derivations use `alignedRows(rows, marks)` (tex.ts): a line whose mark is `hidden` is left
+  OUT of the TeX (KaTeX positions aligned lines absolutely, so CSS-hidden lines kept their height); revealing a line is a
+  timeline step = reader input (hadRecentInput, not CLS). `is-hidden` still hides terms INSIDE a shown line. An empty
+  source renders no math. Focus restore (`formulaFocus.ts`) stays inside the variant that had focus.
+- Label placement (`separate` in handles.tsx): tick numbers are fixed obstacles for object labels (a tick printed over
+  another tick is hidden), the navigation widget (gizmo / XY corner) is an obstacle, a slot cutting the label at the
+  free stage edge (N-panel inset excluded) is not free, and a label with `away` keeps moving in its push direction
+  before other sides. `Label` takes `away`/`gap`. Registration order = priority (region names after values).
 - Derived geometry (projection foot etc.) is computed in the lesson with `useVal` and passed as literals; guard zero
   vectors (`project` throws on zero).
 
@@ -184,7 +195,11 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
   `camera.setViewOffset`. Under 720 px it becomes wrapping chips; the reserved height is derived by
   `scene/chips.ts` from the SAME rows passed to SceneIsland and ViewportCard (card throws on mismatch). `N` toggles it.
 - Navigation (Ruling T): plain wheel scrolls the page (`gateWheel`); Ctrl/Cmd+wheel and pinch zoom. 2D: MMB/RMB pan.
-  3D: LMB/MMB orbit, Shift+MMB pan. Home camera `fitDistance(FRAME_3D * extent, ...)`; 2D margin 16 px.
+  3D: LMB/MMB orbit, Shift+MMB pan. Home view = View All of the content (`contentBox`, aux furniture excluded).
+  2D (`fit2d`): margin 24 px; the figure stays clear of the XY corner widget (CORNER_2D 50 px on the left OR the
+  bottom, whichever keeps it larger). 3D (`fit3d`): per-object enclosure = the tighter of its box and bounding sphere
+  (`Part[]`; a sphere's box corners left DP-4's ball at a third of the view), and the figure stays left of or below the
+  gizmo square (measured from `.lab-gizmo`).
 - Gizmo is DOM/SVG (`Gizmo.tsx`): drei GizmoHelper renders into the wrong View on a shared canvas. Grid = drei `Grid`.
 - Status hints: `status={{ hints: { [id]: Hint }, idle?, state? }}`, Hint = text or `(vals) => string|null` or
   `{ mouse, touch }`; tokens like `[N]` are explicit. Tooltips via `useTip` (500 ms).
@@ -296,7 +311,10 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - [ ] Engine `hotLinks` option for lessonStore (replace lesson-local `SemanticLinks`), NPanel row `emphasis` flag.
 - [ ] Palette bypass literals (Grid.tsx, Background.tsx clay sky, Instruments gradient stops, look.ts 35 %).
 - [ ] Browser smoke tests in `tests/browser/` + CI (glow/glass/floor/fullscreen/CLS are not regression-protected).
-- [ ] Baseline media/font CLS before reference C7/C9 acceptance (open since 6f).
+- [ ] Baseline media/font CLS before reference C7/C9 acceptance (open since 6f). Fix wave measured the same no-input
+  KaTeX/text entries before and after (dp-ru-1280 0.0438, others < 0.0002); nothing new.
+- [ ] Phone chip rows keep invisible slots for rows a later step reveals (LC-0 at 360 has a blank band); a reflow on
+  reveal would be input-driven, but chips.ts / the SSR frame contract would have to change.
 - [ ] Merge to main, deploy, check live (nothing deployed since 8868525).
 - [ ] 1.4 dot product scenes DP-1..4; 0.G / 0.2 powers scenes (TileGrid, FnCurve, "square is an area" 2D + 3D).
 - [ ] Remaining lessons in course-completion order (P3 services → P4 Part 0/1 → P5..P15), each EN + RU, scenes,
@@ -314,3 +332,6 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - 2026-10-11 night: 6h (`90c522a`), 6g (`df00473`), 6f (`ce5f0ab`), 7 (`8b2f0c3`) accepted; powers prose merged
   (`0dca77d`); LC interactive slice (`b448484`, `ca25dba`).
 - 2026-10-11: recover audits (visual, LC, process); AGENTS.md slimmed, history moved to docs/acceptance/.
+- 2026-10-11: live-check fix wave (report `.superpowers/sdd/2026-10-11-recover/fixwave-report.md`): formula
+  container query + alignedRows, label obstacles, corner-aware 2D/3D framing, LC-2 detail triangle piece, LC cards
+  followed by their own controls (`tests/js/lesson-composition.test.ts`), DP three-faces panel.
