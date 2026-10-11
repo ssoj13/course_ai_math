@@ -8,7 +8,8 @@ import { Timeline } from '../Timeline';
 import { Challenge, type ChallengeProps } from '../Challenge';
 import { CodeView } from '../CodeView';
 import { NumGrid, type GridRow } from '../NumTable';
-import { FieldCell } from '../scene/NPanel';
+import { Glyph } from '../Glyph';
+import type { Row } from '../scene/NPanel';
 import { reducedMotion } from '../scene/motion';
 import type { Marks } from '../marks';
 import { COMP_COLS, INITIAL, LESSON, LINKS, STRIKE_GAP_MS, derive, derive3, lamp, fmt, fmtCos, fmtDeg, newestColumn, strikeTarget, tex as texFmt } from './dot-product.math';
@@ -286,6 +287,25 @@ function SignWord({ id, text, active }: { id: string; text: string; active: bool
 		onPointerEnter={() => hotOn(LESSON, id)} onPointerLeave={() => hotOff(LESSON, id)} onFocus={() => hotOn(LESSON, id)} onBlur={() => hotOff(LESSON, id)}>{text}</span>;
 }
 
+/**
+ * One face of the strip: glyph, math label and live value in a wrapping flex row. Not the N-panel FieldCell: its
+ * value is placed at a computed label width, which at 360 px put the value over the label (review I4); here the
+ * value simply follows the label and wraps under it when the cell is narrow. Hover/focus link like any row.
+ */
+function FaceCell({ row }: { row: Row }) {
+	const v = useVals(LESSON), hot = useHot(LESSON, row.id);
+	const value = row.value!(v) as number, glyph = row.glyphValue!(v);
+	return <div data-t={row.id} tabIndex={0}
+		style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '.3rem .6rem', padding: '.3rem .5rem', borderRadius: 6,
+			border: '1px solid var(--viz-chrome-2)', outline: hot ? '2px solid var(--viz-hot)' : undefined }}
+		onPointerEnter={() => hotOn(LESSON, row.id)} onPointerLeave={() => hotOff(LESSON, row.id)}
+		onFocus={() => hotOn(LESSON, row.id)} onBlur={() => hotOff(LESSON, row.id)}>
+		<Glyph kind={row.glyph!} value={glyph} size="lg" />
+		<span style={{ fontFamily: 'var(--lab-font-mono)' }}>{row.label}</span>
+		<output style={{ fontFamily: 'var(--lab-font-mono)', fontVariantNumeric: 'tabular-nums', marginLeft: 'auto' }}>{row.fmt!(value)}</output>
+	</div>;
+}
+
 function FacesStrip() {
 	const locale = useLocale(), z = derive(useVals(LESSON));
 	const sign = z.dot > 1e-9 ? 'pos' : z.dot < -1e-9 ? 'neg' : 'zero';
@@ -294,7 +314,7 @@ function FacesStrip() {
 		<div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
 			{/* Each cell: glyph, math label and value; the words go under it, so at 360 px no value chip covers a label. */}
 			{facesFor(locale).map(({ row, caption }) => <figure key={row.id} style={{ margin: 0, display: 'grid', gap: '.2rem' }}>
-				<FieldCell lesson={LESSON} row={row} size="lg" />
+				<FaceCell row={row} />
 				<figcaption style={{ fontSize: '.85em', color: 'var(--viz-muted)' }}>{caption}</figcaption>
 			</figure>)}
 		</div>

@@ -94,7 +94,7 @@ for (const locale of ['en', 'ru'] as const) {
 		try {
 			const hover = async (sel: string) => { const el = m.host.querySelector<HTMLElement>(sel)!; await act(async () => el.dispatchEvent(new Event('pointerover', { bubbles: true }))); await act(async () => el.dispatchEvent(new Event('pointerenter', { bubbles: false }))); return el; };
 			const leave = async (el: HTMLElement) => { await act(async () => el.dispatchEvent(new Event('pointerout', { bubbles: true }))); await act(async () => el.dispatchEvent(new Event('pointerleave', { bubbles: false }))); };
-			const sum = await hover('[data-dp-faces] .lab-np-row[data-id="sum"]');
+			const sum = await hover('[data-dp-faces] [data-t="sum"]');
 			for (const id of ['sum', 'dot', 'rect', 'bright', 'rhs', 'a', 'b', 'shadow']) expect(m.store.getState().hot.has(id)).toBe(true);
 			// One hop only: `cross` is reached from nothing here, and `th` (only rhs links it) stays dark.
 			expect(m.store.getState().hot.has('th')).toBe(false);
