@@ -64,7 +64,7 @@ src/viz/tex.ts                       KaTeX render with term ids + scrub markers 
 src/viz/Formula.tsx  Num.tsx  NumTable.tsx  Timeline.tsx  CodeView.tsx
 src/viz/scene/{SceneHost.tsx,Stage.tsx,Grid.tsx,Arrow.tsx,Point.tsx,Segment.tsx,AngleArc.tsx,AreaTile.tsx,Parallelogram.tsx,Label.tsx,webgl.ts}
 src/viz/SceneIsland.astro            wrapper: caption + reserved height + client:only island
-src/viz/py/{py.worker.ts,pyclient.ts,PyCell.tsx}
+src/viz/py/{py.worker.ts,pyclient.ts,protocol.ts,fence.ts,cell.ts} + src/components/PyCell.astro (as built, Task 8)
 src/viz/terms/{graph.ts,TermMap.tsx,elk.worker.ts}
 tests/js/*.test.ts                   bun tests
 scripts/size-report.ts               bundle budget check
@@ -1068,6 +1068,21 @@ test('length mismatch is an error', () => {
 ---
 
 ### Task 8: Spike D — Pyodide cell
+
+> **As built and accepted (2026-10-11, review `task8-review.md`: ACCEPT).** The text below is the original plan;
+> these deviations are the contract now:
+> - The cell is a server-rendered Astro component `src/components/PyCell.astro` wrapping an unchanged ```` ```python ````
+>   fence, plus the `<lab-py>` custom element `src/viz/py/cell.ts` (LabElement pattern, like Quiz), not React
+>   `PyCell.tsx`: no react-dom on Python-only pages, reserved SSR layout (no shift), readable no-JS state. Props:
+>   `colab?` (notebook name), `rows?` (output pane height). The code text comes from the fence (`src/viz/py/fence.ts`),
+>   so the MDX fence is the single source (C5).
+> - `createPyClient(spawn, { loadMs = 120 s, runMs = 30 s })` returns `{ out, err?, fail?: 'load' | 'py' | 'timeout' }`;
+>   the cell renders the message in the page locale (i18n contract: no English in library code), so tests check
+>   `fail`, not an English regex. The client also exposes `loaded`, `runMs` and `watch(fn)`.
+> - Protocol additions: before its one reply the worker posts `{ id, ready: true }` when Python and the cell's
+>   packages are loaded; the client times the download with `loadMs` and the code with `runMs` from that notice.
+>   NumPy loads on demand (`loadPackagesFromImports`), each run gets fresh globals, stdout/stderr use `write` +
+>   `isatty` (line-buffered, ordered).
 
 **Files:**
 - Create: `src/viz/py/py.worker.ts`, `src/viz/py/pyclient.ts`, `src/viz/py/PyCell.tsx`

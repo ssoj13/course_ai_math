@@ -250,8 +250,11 @@ exist, no cycles in `built-on`. Example: attention → softmax + dot product →
 - Runtime: `<lab-py>` (`src/viz/py/cell.ts`, ~1.5 kB gz) -> `sharedPy()` (`pyclient.ts`) -> one module worker per
   page (`py.worker.ts`) importing Pyodide 314.0.7 from jsDelivr only on the first Run (9.2 MB cold, measured); NumPy
   via `loadPackagesFromImports`; each run in fresh globals; stdout+stderr one stream (`isatty` = line-buffered).
-  First run of a worker 120 s (timeout = `fail: 'load'`), later runs 30 s (`'timeout'`, worker terminated), worker
-  load errors `'load'`, Python exceptions `'py'` via `cleanTrace` (drops `/lib/` runner frames). Run again = retry.
+  Two clocks per run, split by the worker's `{ id, ready }` notice (Python + packages loaded): 120 s before it
+  (timeout = `fail: 'load'`), 30 s after it (`'timeout'`, worker terminated). Worker load errors, `error` events and a
+  `new Worker` that throws are `'load'`; Python exceptions `'py'` via `cleanTrace` (drops `/lib/` runner frames).
+  Every run settles (queue never poisoned); Run again = retry. Idle cells `watch()` the client and switch between
+  the first-run note and "Python is loaded" for the whole page.
 - Layout: SSR with reserved sizes (status 2 lines, 3 under 40rem; output pane `--py-rows`); Edit swaps views inside
   one `.py-code` box at the sub-pixel height. Change status classes with `classList` only: assigning `className`
   dropped Astro's scoped class and its min-height (a measured shift).

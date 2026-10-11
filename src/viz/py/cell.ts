@@ -5,6 +5,7 @@
  *
  * States, shown in the one-line status (`role=status`, so screen readers hear them):
  *   idle (first-run note or "loaded") -> loading (first run) / running -> done | failLoad | failPy | failTimeout.
+ * An idle cell follows the shared client: once any cell of the page has loaded Python, every idle cell says so.
  * Every failure leaves Run enabled: pressing it again is the retry (the client has already dropped a dead worker).
  *
  * Editing: "Edit" swaps the highlighted block for a textarea of the same height holding the code; Ctrl/Cmd+Enter
@@ -12,18 +13,26 @@
  */
 import { t, docLocale } from '../../i18n/core';
 import { LabElement, define } from '../../lib/element';
-import { DEFAULT_TIMEOUTS, sharedPy, type PyClient, type RunResult } from './pyclient';
+import { sharedPy, type PyClient, type RunResult } from './pyclient';
 import { DOWNLOAD_MB } from './protocol';
 
 type Status = { text: string; kind?: 'ok' | 'err' };
 
 export class LabPy extends LabElement {
-	/** The Python runtime; the page-wide shared client unless a test assigns one before the first run. */
+	/** The Python runtime; the page-wide shared client unless a test assigns one before the element connects. */
 	py: PyClient | null = null;
+
+	private get client(): PyClient {
+		// Creating the shared client spawns nothing: the worker starts on its first run.
+		return (this.py ??= sharedPy());
+	}
 
 	private readonly locale = docLocale();
 	private busy = false;
 	private editing = false;
+	/** The status shows the idle note (first-run note or "loaded"), which follows the client's state. */
+	private idle = true;
+	private unwatch: (() => void) | null = null;
 
 	private get code(): string {
 		return this.editing ? this.ref<HTMLTextAreaElement>('edit').value : (this.dataset.code ?? '');
@@ -32,6 +41,10 @@ export class LabPy extends LabElement {
 	protected mount(): void {
 		for (const name of ['run', 'edit-btn']) this.ref<HTMLButtonElement>(name).disabled = false;
 		this.syncButtons();
+		this.unwatch = this.client.watch(() => {
+			if (this.idle) this.idleNote();
+		});
+		if (this.idle) this.idleNote();
 		this.on(this, 'click', (e) => {
 			const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-ref]');
 			if (!btn || btn.disabled) return;
@@ -47,19 +60,32 @@ export class LabPy extends LabElement {
 		});
 	}
 
+	protected unmount(): void {
+		this.unwatch?.();
+		this.unwatch = null;
+	}
+
 	/** Runs the current code (queued behind other cells of the page by the shared client). */
 	async run(): Promise<void> {
 		if (this.busy) return;
-		const py = (this.py ??= sharedPy());
+		const py = this.client;
 		this.busy = true;
+		this.idle = false;
 		this.syncButtons();
 		const out = this.ref('out');
 		out.setAttribute('aria-busy', 'true');
 		this.status({ text: t(this.locale, py.loaded ? 'py.running' : 'py.loading') });
 		const started = performance.now();
-		const r = await py.run(this.code);
-		this.busy = false;
-		out.removeAttribute('aria-busy');
+		let r: RunResult;
+		try {
+			r = await py.run(this.code);
+		} catch (e) {
+			// The client settles every run itself; this only keeps Run usable if that contract is ever broken.
+			r = { out: '', err: e instanceof Error ? e.message : String(e), fail: 'load' };
+		} finally {
+			this.busy = false;
+			out.removeAttribute('aria-busy');
+		}
 		this.show(r, (performance.now() - started) / 1000);
 		this.syncButtons();
 	}
@@ -74,7 +100,7 @@ export class LabPy extends LabElement {
 		if (!r.fail) this.status({ text: t(this.locale, 'py.done', { s: secs.toFixed(2) }), kind: 'ok' });
 		else if (r.fail === 'py') this.status({ text: t(this.locale, 'py.failPy'), kind: 'err' });
 		else if (r.fail === 'timeout') {
-			this.status({ text: t(this.locale, 'py.failTimeout', { s: DEFAULT_TIMEOUTS.runMs / 1000 }), kind: 'err' });
+			this.status({ text: t(this.locale, 'py.failTimeout', { s: this.client.runMs / 1000 }), kind: 'err' });
 		} else this.status({ text: t(this.locale, 'py.failLoad'), kind: 'err' });
 	}
 
@@ -87,6 +113,7 @@ export class LabPy extends LabElement {
 		src.hidden = true;
 		box.hidden = false;
 		this.editing = true;
+		this.idle = false;
 		box.focus();
 		this.status({ text: t(this.locale, 'py.editing') });
 		this.syncButtons();
@@ -102,13 +129,17 @@ export class LabPy extends LabElement {
 		out.classList.add('is-empty');
 		out.textContent = t(this.locale, 'py.placeholder');
 		this.ref('colab').hidden = true;
-		const py = this.py ?? null;
-		this.status({
-			text: py?.loaded ? t(this.locale, 'py.ready') : t(this.locale, 'py.first', { mb: DOWNLOAD_MB }),
-		});
+		this.idle = true;
+		this.idleNote();
 		this.syncButtons();
 		// Focus would otherwise stay on the now hidden textarea or the disabled Reset button.
 		if (wasEditing || this.contains(document.activeElement)) this.ref<HTMLButtonElement>('run').focus();
+	}
+
+	private idleNote(): void {
+		this.status({
+			text: this.client.loaded ? t(this.locale, 'py.ready') : t(this.locale, 'py.first', { mb: DOWNLOAD_MB }),
+		});
 	}
 
 	private status({ text, kind }: Status): void {

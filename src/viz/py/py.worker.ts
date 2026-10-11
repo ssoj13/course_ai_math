@@ -8,7 +8,7 @@
  * printed numbers must match the comments in the lesson no matter which cell ran before, and "Reset" really resets.
  * Packages are loaded on demand from the cell's imports (`loadPackagesFromImports`): NumPy only when a cell uses it.
  */
-import { cleanTrace, PYODIDE_URL, type PyReply, type PyRequest } from './protocol';
+import { cleanTrace, PYODIDE_URL, type PyMessage, type PyRequest } from './protocol';
 
 /** The part of Pyodide's API this worker uses (the package's types are not a dependency: it is loaded at runtime). */
 interface PyProxyDict {
@@ -38,7 +38,7 @@ function pyodide(): Promise<Pyodide> {
 	return boot;
 }
 
-const post = (r: PyReply) => (self as unknown as { postMessage(r: PyReply): void }).postMessage(r);
+const post = (m: PyMessage) => (self as unknown as { postMessage(m: PyMessage): void }).postMessage(m);
 const detail = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 async function handle({ id, code }: PyRequest): Promise<void> {
@@ -78,6 +78,7 @@ async function handle({ id, code }: PyRequest): Promise<void> {
 		return;
 	}
 
+	post({ id, ready: true }); // from here on the client times the code, not the download
 	const globals = py.globals.get('dict')();
 	try {
 		await py.runPythonAsync(code, { globals });

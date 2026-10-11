@@ -2,7 +2,8 @@
  * Message protocol between the page (`pyclient.ts`) and the Pyodide worker (`py.worker.ts`), plus the pure helpers
  * both sides share. DOM-free and worker-free, so the tests import it directly.
  *
- * One request `{ id, code }` gets exactly one reply `{ id, out, err?, fail? }`. There is no separate init message:
+ * One request `{ id, code }` gets exactly one reply `{ id, out, err?, fail? }`, preceded by a `{ id, ready }` notice
+ * once Python and the packages are in place (see `PyReady`). There is no separate init message:
  * the worker loads Pyodide inside the handling of its first request, so a page that never presses Run never
  * downloads anything (C5 / Task 8: "Pyodide starts on Run").
  */
@@ -40,6 +41,21 @@ export interface PyReply {
 	err?: string;
 	fail?: Exclude<Fail, 'timeout'>;
 }
+
+/**
+ * Worker -> page, before the reply of a request: Python and the cell's packages are loaded, the code starts now.
+ * It is a progress notice, not a reply (still exactly one reply per request). It lets the client time the download
+ * and the code separately: a timeout before it means Python could not be loaded, after it that the code ran too long.
+ */
+export interface PyReady {
+	id: number;
+	ready: true;
+}
+
+/** Everything the worker posts. */
+export type PyMessage = PyReply | PyReady;
+
+export const isReady = (m: PyMessage): m is PyReady => 'ready' in m;
 
 /**
  * Drops Pyodide's own frames from a Python traceback. Every exception raised by user code first passes through

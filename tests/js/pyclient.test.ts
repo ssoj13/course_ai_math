@@ -7,8 +7,13 @@ import { createPyClient, type WorkerLike } from '../../src/viz/py/pyclient';
 import { cleanTrace, type PyReply, type PyRequest } from '../../src/viz/py/protocol';
 import { decodeAttr, fenceCode, MAX_ROWS, outputRows } from '../../src/viz/py/fence';
 
-/** A fake worker whose replies are scripted by `answer` (return undefined = never answer). */
-function fake(answer: (m: PyRequest, n: number) => Omit<PyReply, 'id'> | undefined) {
+
+/**
+ * A fake worker scripted per request by `answer`: `undefined` = silent (never even ready), `'hang'` = ready but no
+ * reply (code that never ends), a reply = `ready` then the reply, except a load failure, which comes without `ready`
+ * (the worker could not start Python).
+ */
+function fake(answer: (m: PyRequest, n: number) => Omit<PyReply, 'id'> | 'hang' | undefined) {
 	const sent: PyRequest[] = [];
 	let terminated = 0;
 	const w: WorkerLike = {
@@ -18,7 +23,11 @@ function fake(answer: (m: PyRequest, n: number) => Omit<PyReply, 'id'> | undefin
 		postMessage(m) {
 			sent.push(m);
 			const r = answer(m, sent.length);
-			if (r) queueMicrotask(() => w.onmessage?.({ data: { id: m.id, ...r } }));
+			if (r === undefined) return;
+			queueMicrotask(() => {
+				if (r === 'hang' || r.fail !== 'load') w.onmessage?.({ data: { id: m.id, ready: true } });
+				if (r !== 'hang') w.onmessage?.({ data: { id: m.id, ...r } });
+			});
 		},
 	};
 	return { w, sent, terminated: () => terminated };
@@ -33,19 +42,24 @@ describe('pyclient', () => {
 		expect(spawned).toBe(0);
 	});
 
-	test('echoes output from the worker protocol and reuses one worker', async () => {
+	test('echoes output from the worker protocol, reuses one worker and reports loaded to watchers', async () => {
 		let spawned = 0;
 		const f = fake((m) => ({ out: `ran ${m.code}\n` }));
 		const py = createPyClient(() => (spawned++, f.w), T);
+		const seen: boolean[] = [];
+		py.watch((v) => seen.push(v));
 		expect(py.loaded).toBe(false);
 		expect(await py.run('print(11)')).toEqual({ out: 'ran print(11)\n', err: undefined, fail: undefined });
 		expect(py.loaded).toBe(true);
 		await py.run('x');
 		expect(spawned).toBe(1);
 		expect(f.sent.map((m) => m.id)).toEqual([1, 2]);
+		expect(seen).toEqual([true]); // changes only, not every run
+		py.dispose();
+		expect(seen).toEqual([true, false]);
 	});
 
-	test('a worker that never answers fails as "load" and is terminated; Run again respawns (retry)', async () => {
+	test('a worker that is never ready fails as "load" and is terminated; Run again respawns (retry)', async () => {
 		const workers = [fake(() => undefined), fake(() => ({ out: '11\n' }))];
 		let i = 0;
 		const py = createPyClient(() => workers[i++]!.w, T);
@@ -56,13 +70,15 @@ describe('pyclient', () => {
 		expect(i).toBe(2);
 	});
 
-	test('a loaded worker that stops answering is a run timeout, then a fresh worker reloads', async () => {
-		const first = fake((_, n) => (n === 1 ? { out: 'ok\n' } : undefined));
+	test('code that never ends is a run timeout on runMs, even as the first run of a fresh worker', async () => {
+		const first = fake(() => 'hang');
 		const second = fake(() => ({ out: 'again\n' }));
 		const queue = [first, second];
-		const py = createPyClient(() => queue.shift()!.w, T);
-		await py.run('a');
+		// The load clock is far longer than the run clock: the result must come from the run clock.
+		const py = createPyClient(() => queue.shift()!.w, { loadMs: 5_000, runMs: 20 });
+		const t0 = performance.now();
 		expect(await py.run('while True: pass')).toEqual({ out: '', fail: 'timeout' });
+		expect(performance.now() - t0).toBeLessThan(1_000);
 		expect(first.terminated()).toBe(1);
 		expect(py.loaded).toBe(false);
 		expect((await py.run('b')).out).toBe('again\n');
@@ -94,6 +110,17 @@ describe('pyclient', () => {
 			},
 		};
 		expect(await createPyClient(() => w, T).run('x')).toEqual({ out: '', err: 'NetworkError', fail: 'load' });
+	});
+
+	test('a worker that cannot be created is a "load" failure and does not poison the queue', async () => {
+		let calls = 0;
+		const ok = fake(() => ({ out: 'fine\n' }));
+		const py = createPyClient(() => {
+			if (calls++ === 0) throw new Error('Refused to create a worker (CSP worker-src)');
+			return ok.w;
+		}, T);
+		expect(await py.run('a')).toEqual({ out: '', err: 'Refused to create a worker (CSP worker-src)', fail: 'load' });
+		expect((await py.run('b')).out).toBe('fine\n');
 	});
 
 	test('runs are serialised: the second request is posted after the first reply', async () => {
