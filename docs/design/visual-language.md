@@ -274,16 +274,18 @@ Cover = still image for a module/lesson card; it must show the lesson's actual g
 
 ```
 Holographic technical diagram on a deep-space background: near-black navy (#05070F) with a faint vertical gradient to
-#0C1220, sparse small white-blue stars, two very faint blurred nebula patches (dark blue, dark purple), soft vignette.
+#0C1220, a starfield of small white-blue stars, colourful spiral galaxies and nebulae (blue, purple, magenta) in the
+corners and background exactly like a deep-space photograph, soft vignette.
 Geometry drawn as glowing cyan (#4FD8FF) light filaments with a soft bloom; key faces as translucent glass plates with a
 fine inner grid and brighter glowing edges; highlighted parts in magenta (#D85CC8); results in mint (#3DF0B4).
-Technical rulers with tick marks and small circular dial instruments along the left and right edges, thin and faint.
+HUD instruments along the left and right edges: vertical rulers with tick marks, circular dials and target rings, small
+framed panels showing a galaxy, a small planet in a ring instrument at the lower right.
 A dark reflective floor below; the figure floats above it and mirrors softly in it.
 At the bottom, a framed glass plate with chamfered corners containing exactly this text and nothing else: "<FORMULA>".
 Exact geometry: <GEOMETRY — e.g. "a triangle ABC with C at bottom-left, B at bottom-right, A top-center; squares built
 outward on each of its three sides; a dashed perpendicular from A onto side CB; a magenta rectangle inside the bottom
 square whose width equals the length from C to the foot of that perpendicular; labels a, b, c on the sides, theta at C">.
-No other text, no logos, no people, no planets, no extra shapes. Clean, sharp, 3:2.
+No other text, no logos, no people, no extra geometric shapes. Clean, sharp, 3:2.
 ```
 
 ### Clay cover prompt template
@@ -303,7 +305,7 @@ exactly this text: "<FORMULA>". No other text, no logos, no people, no backgroun
    right angles, dashed lines are perpendicular where the text says so.
 3. Signs/colors: magenta/orange only on the parts the prompt names as highlighted; nothing hatched that is positive.
 4. Text: exactly the formula/labels we specified, correct glyphs (θ, superscripts), no invented words or numbers.
-5. Holo: stars sparse, no planets/galaxies-with-structure, no spaceship, no extra plates; floor reflection matches the figure.
+5. Holo: background, galaxies, HUD instruments and the formula plate as in the reference (docs/design/refs/holo-style-ref.png); no spaceship, no extra geometry; floor reflection matches the figure.
 6. Clay: one light direction, shadows consistent, no text on the tiles except the given labels.
 7. Reject and regenerate on any failure; never retouch geometry by hand (it must be regenerable).
 
