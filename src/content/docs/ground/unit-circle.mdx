@@ -4,8 +4,16 @@ description: "cos and sin are the shadows of a point on the unit circle."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { UnitScene, UnitControls } from '../../../viz/lessons/unit-circle';
+import { rowsFor } from '../../../viz/lessons/unit-circle.rows';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'uc']} />
 
 **Built on:** [Distance and Pythagoras](lesson:pythagoras) (the unit circle is "all points at distance 1") and
 [Squares, roots and the plane](lesson:squares-and-plane) (a point is two coordinates).
@@ -39,17 +47,25 @@ $$
 That is Pythagoras with hypotenuse 1: the two legs' squares add up to one tile of area.
 
 Now put the angle on the circle. Start at $(1, 0)$, the point on the circle straight to the right. Turn by
-$\theta$ degrees counter-clockwise, sliding along the circle. You land on one point. Its coordinates are the
-two numbers we are after:
+$\theta$ degrees counter-clockwise, sliding along the circle. You land on one point; call it $P$. Its coordinates
+are the two numbers we are after, and they have names:
 
 $$
-(\cos\theta,\ \sin\theta) = \text{the point on the unit circle at angle } \theta
+P = (\cos\theta,\ \sin\theta)
 $$
 
 **cos θ is the x coordinate** of that point, **sin θ is the y coordinate**. That is the definition. There is
 no triangle to memorize and no "opposite over hypotenuse" to recite; those are the same thing in older clothing.
 
-{/* scene: 0.4-1 — a point on the unit circle; scrub θ (drag the point or the number in "θ = 60°"): cos θ is the dashed x-shadow, sin θ the y-shadow, both linked to the formula terms and table cells; a degrees/radians toggle unrolls the arc onto a ruler */}
+Try it. Drag the point $P$ around the circle (or scrub the $\theta$ in the formula under the scene, or type it in the
+panel). The red band on the x axis is $\cos\theta$, the green band on the y axis is $\sin\theta$. The point sticks
+for a moment at the special angles (the small marks on the circle): $30^\circ$, $45^\circ$, $60^\circ$, $90^\circ$
+and so on, all the way round.
+
+<SceneIsland caption="UC-1 · The point at angle θ on the unit circle: cos θ is its shadow on the x axis, sin θ its shadow on the y axis, with the signs of each quadrant." rows={rowsFor(1, locale)}>
+  <UnitScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<UnitControls scene={1} locale={locale} client:load />
 
 Think of it as shadows. Shine a light straight down from above: the point's shadow on the x axis lands at
 $\cos\theta$. Shine a light from the right: the shadow on the y axis lands at $\sin\theta$. The two dashed legs
@@ -92,13 +108,23 @@ The full unit circle has circumference $2\pi \approx 6.283$. So a full turn is $
 $\pi \approx 3.142$ radians, a quarter is $\pi/2 \approx 1.571$. One radian is the angle whose arc is exactly as
 long as the radius: about $57.3^\circ$.
 
-To convert, scale by $\pi / 180$:
+Call the angle in degrees $d$ and the same angle in radians $\theta$. To convert, scale by $\pi / 180$:
 
 $$
-\text{radians} = \text{degrees} \cdot \frac{\pi}{180}
+\theta = d \cdot \frac{\pi}{180}
 $$
 
 For $60^\circ$: $60 \cdot 3.14159 / 180 = 1.0472$ radians. And back the other way: $1.0472 \cdot 180 / 3.14159 = 60^\circ$.
+
+See it as a length. Below, the arc of the angle is drawn on the unit circle; press "Unroll onto the ruler" and the
+arc straightens out onto a ruler whose unit is the radius. Where it ends is the angle in radians. At $60^\circ$ it
+ends at $1.047$; a full turn, $360^\circ$, ends at $2\pi \approx 6.283$, the length of the whole circle. Drag the end
+of the arc to change the angle, before or after unrolling.
+
+<SceneIsland caption="UC-2 · The arc of the angle unrolled onto a ruler whose unit is the radius: its length is the angle in radians." rows={rowsFor(2, locale)}>
+  <UnitScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<UnitControls scene={2} locale={locale} client:load />
 
 "Radians are harder" is the usual reaction. They are not harder, they are more honest: a radian is measured as
 a length on the unit circle, so arc length on a circle of radius $r$ is simply $r \cdot \theta$ with no conversion factor, and for small
@@ -119,7 +145,17 @@ starts at 1, crosses 0 at $90^\circ$, bottoms out at $-1$ at $180^\circ$, and co
 $\sin\theta$ is the same wave shifted a quarter turn: it starts at 0, peaks at 1 at $90^\circ$, is 0 again at
 $180^\circ$, hits $-1$ at $270^\circ$.
 
-{/* scene: 0.4-2 — the circle on the left, the cos and sin curves on the right; drag on either, the other follows; the negative cos past 90° is visible as the x-shadow flipping to the left */}
+Watch both curves being drawn. The circle is on the left; the graph on the right has $\theta$ along the horizontal
+axis, measured in radians exactly like the ruler above (one radius of length per radian, so a full turn is $6.28$
+wide). Step through the quarter turns with Next, or drag $P$ on the circle or either point on the graph: everything
+follows. The part of each curve already swept is solid, the part still ahead is dashed. Past $90^\circ$ watch the red
+band on the circle flip to the left of the origin while the red curve dips below the axis: the same negative number,
+seen twice.
+
+<SceneIsland caption="UC-3 · The cos and sin curves traced as the angle sweeps: the curve is the shadow laid out along θ." rows={rowsFor(3, locale)}>
+  <UnitScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<UnitControls scene={3} locale={locale} client:load />
 
 You have seen these curves in the Graph Editor: `sin(time)` is the oscillation that makes a buoy bob or a wing
 flap. Each frame is a point sliding around the unit circle, and the curve is its y shadow laid out over time.
@@ -140,13 +176,21 @@ proof in this course. Exact values first, decimals after.
 | $120^\circ$ | $2\pi/3 \approx 2.094$ | $-1/2 = -0.5$ | $\sqrt{3}/2 \approx 0.866$ |
 | $180^\circ$ | $\pi \approx 3.142$ | $-1$ | $0$ |
 
-{/* scene: 0.4-3 — special angles with snap: the point snaps to 0, 30, 45, 60, 90, 120, 180 and the table row lights up */}
-
 Notice $45^\circ$: cos and sin are equal, because the point sits on the diagonal, as far along x as along y.
 Check Pythagoras: $0.707^2 + 0.707^2 \approx 0.5 + 0.5 = 1$. And notice $30^\circ$ and $60^\circ$ swap their
 values. The point at $60^\circ$ is $30^\circ$ short of the y axis, exactly as the point at $30^\circ$ is $30^\circ$
 past the x axis: the two points are mirror images across the $45^\circ$ diagonal, and mirroring across that diagonal
 swaps x and y.
+
+Here is that mirror. $P$ is at $\theta$, $Q$ is its mirror image across the line $y = x$, so $Q$ sits at
+$90^\circ - \theta$ and its coordinates are $P$'s, swapped. Put $P$ at $30^\circ$: $Q$ lands at $60^\circ$, and the
+$0.866$ and $0.5$ trade places. The buttons jump to the special angles; the row of the table for the current angle
+stays bright. In symbols: $\cos(90^\circ - \theta) = \sin\theta$, and $\sin(90^\circ - \theta) = \cos\theta$.
+
+<SceneIsland caption="UC-4 · Special angles and the 45° mirror: P at θ and its mirror image Q at 90° − θ swap their cos and sin." rows={rowsFor(4, locale)}>
+  <UnitScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<UnitControls scene={4} locale={locale} client:load />
 
 ## Going back: from a point to its angle
 
@@ -161,6 +205,11 @@ Examples: `atan2(0.866, 0.5)` gives $1.047$ radians, which is $60^\circ$. `atan2
 which is $135^\circ$: the point $(-1, 1)$ is up and left, three eighths of a turn. `atan2(-1, 0)` gives $-1.571$
 radians, $-90^\circ$: the point $(0, -1)$ is straight down, a quarter turn *clockwise*, which is the same direction
 as $270^\circ$ counter-clockwise.
+
+Every time you dragged $P$ above, the scene did exactly this: it read the pointer's $(x, y)$, called `atan2(y, x)`
+and turned the radians into degrees. A result below zero, say $-90^\circ$, gets a full turn added,
+$-90^\circ + 360^\circ = 270^\circ$, so that $\theta$ stays between $0^\circ$ and $360^\circ$. Adding or removing whole
+turns never moves the point: $270^\circ$ and $-90^\circ$ are the same direction.
 
 > **Say it simpler.** cos θ is how much of a length-1 arrow points along x; sin θ is how much points along y.
 > A radian is the arc you slid along the unit circle. Libraries want radians; artists type degrees.

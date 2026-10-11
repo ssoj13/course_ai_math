@@ -1,0 +1,148 @@
+---
+title: "How it all connects: one dot product, scaled up"
+description: "The spine of the course in one animation: shadow, tiles, stack; then rows, cubes and stacks of cubes."
+---
+
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+**Built on:** [Why this course](lesson:why-this-course)
+
+The previous page said that a model is mostly dot products. This page shows what that looks like, with one pair of
+small vectors that you will meet again in lessons 1.4, 2.2, 2.4 and 3.6. Nothing here is a metaphor: the same
+tiles and stacks are drawn by the same code at every level, and the numbers are computed once.
+
+## One number, two faces
+
+Take two arrows, $a = (3, 1, 2)$ and $b = (1, 2, -1)$. There are two ways to get one number out of them, and the
+whole point of the first part of the course is that they give the same number.
+
+**Face 1: a shadow.** Shine a light perpendicular to $a$. The arrow $b$ casts a shadow on the line of $a$. Measure the
+shadow's length on a ruler laid along $a$ (about $0.80$), and multiply it by the length of $a$ (about $3.74$):
+
+$$
+|a| \cdot \text{shadow} = 3.74 \cdot 0.80 = 3.00
+$$
+
+**Face 2: tiles.** Forget the picture and write each arrow as its three numbers. Lay $a$'s numbers in a row and
+$b$'s in a column; pass the column along the row. Where matching numbers meet, they multiply, and the product is a tile
+whose area is the product: $3 \cdot 1 = 3$, $1 \cdot 2 = 2$, $2 \cdot (-1) = -2$. A negative product is a hatched tile.
+Now drop the tiles into a stack: $3$ up, $2$ up, $2$ down.
+
+$$
+a \cdot b = 3 \cdot 1 + 1 \cdot 2 + 2 \cdot (-1) = 3
+$$
+
+The stack is exactly as tall as the shadow times $|a|$. That is the dot product: one number, two faces. The shadow
+face is what the number *means* (how much $b$ points along $a$); the tile face is what the machine *computes*
+(multiply, multiply, multiply, add). Lesson 1.4 derives why these agree, from the law of cosines; here you only need
+to see that they do.
+
+{/* scene: INTRO-2 — the zoom ladder (docs/design/intro-and-dotunit.md §4): rung 1 one tile 3·1; rung 2 the DotUnit face 2 with the stack beside the projection bar, both 3.00; rung 3 the 2×3 by 3×2 matmul cube with shaft (0,0) hot; rung 4 the layer cube y = xWᵀ + b; rung 5 two attention cubes beside it; click any number to dive down to its tiles, Escape to climb */}
+
+## The ladder: the same stack, five sizes up
+
+Everything above the dot product is the dot product repeated with bookkeeping. The animation above climbs five rungs;
+here is what each rung is.
+
+**Rung 1: one tile.** A single multiplication, $3 \cdot 1$, drawn as a 3-by-1 rectangle. Area is the product; a
+negative factor hatches the tile.
+
+**Rung 2: one dot product.** Three tiles dropped into one stack. The height of the stack is the number. In a model,
+this is one weight row meeting one input: one *neuron* looking at one token.
+
+**Rung 3: a matrix times a matrix.** Put the rows of one matrix on the left face of a cube and the columns of the
+other on its top face. Every cell of the front face owns a shaft through the cube; along that shaft a row meets a
+column, tile by tile, and the tiles fall onto the front face as that cell's stack. With
+
+$$
+A = \begin{pmatrix} 3 & 1 & 2 \\ 1 & 0 & 2 \end{pmatrix},
+\qquad
+B = \begin{pmatrix} 1 & 0 \\ 2 & 1 \\ -1 & 2 \end{pmatrix},
+\qquad
+AB = \begin{pmatrix} 3 & 5 \\ -1 & 4 \end{pmatrix}
+$$
+
+the top-left cell of $AB$ is our dot product again: row $(3, 1, 2)$ meets column $(1, 2, -1)$, stack height $3$.
+A matrix times a *vector* is the special case of one column: one shaft per row (lesson 2.2 shows it two ways,
+by rows and by columns, and they agree the way the two faces agree).
+
+**Rung 4: a layer.** A layer of a network is exactly that cube: the rows of the left matrix are tokens (each token is
+a list of numbers, its *embedding*), the columns of the right matrix are the layer's weights, and every cell of the
+output is one token dotted with one weight column. The formula you will see in every paper,
+$y = xW^{\mathsf{T}} + b$, is the cube plus one translation of the output face by the bias $b$.
+
+**Rung 5: a stack of cubes.** A batch of inputs is a stack of such cubes, one per example; attention heads are a row
+of stacks. An attention head compares every token with every other token: the left face holds the *queries*, the top
+face the *keys*, and every cell of the front face is a dot product saying how much one token should look at another.
+A transformer block is a handful of these cubes in a row, repeated a few dozen times.
+
+The rule that connects every rung: in each product, one axis *disappears*. That is the axis along which the column
+passes the row, the axis the tiles are stacked along. Everything that does not disappear becomes a position of an
+output cell. In Part 3 this rule gets a name (`einsum`) and you will be able to read `"ij,jk->ik"` as "the j axis is
+the stack".
+
+{/* scene: INTRO-3 — the einsum playground (docs/design/intro-and-dotunit.md §3.5): preset buttons i,i-> / ij,j->i / ij,jk->ik / bij,bjk->bik / bhqd,bhkd->bhqk; sliders for every index extent (1..8); the layout re-forms live and the status bar names the summed axis */}
+
+## The same numbers in Python
+
+Every rung above is one call. Run the cell: the printed numbers are the ones in the scenes.
+
+<PyCell>
+
+```python
+import numpy as np
+
+a = np.array([3.0, 1.0, 2.0])
+b = np.array([1.0, 2.0, -1.0])
+
+tiles = a * b                      # rung 1: [ 3.  2. -2.]
+print(tiles, tiles.sum())          # rung 2: the stack is 3.0
+
+shadow = a @ b / np.linalg.norm(a) # face 1: shadow of b on a, 0.80
+print(np.linalg.norm(a) * shadow)  # |a| * shadow = 3.0, the same number
+
+A = np.array([[3.0, 1.0, 2.0],
+              [1.0, 0.0, 2.0]])
+B = np.array([[1.0, 0.0],
+              [2.0, 1.0],
+              [-1.0, 2.0]])
+print(A @ B)                       # rung 3: [[ 3.  5.] [-1.  4.]]
+print(A @ b)                       # matrix times vector: [ 3. -1.]
+
+x = np.array([[1.0, 2.0, -1.0],    # rung 4: two tokens, three numbers each
+              [0.0, 1.0, 1.0]])
+bias = np.array([0.5, -0.5])
+print(x @ A.T + bias)              # y = x W^T + b with W = A
+
+Q = np.array([[1.0, 2.0], [0.0, 1.0]])               # rung 5: two queries
+K = np.array([[3.0, 1.0], [1.0, 0.0], [2.0, 2.0]])   # three keys
+print(np.einsum("qd,kd->qk", Q, K))                   # scores: [[5. 1. 6.] [1. 0. 2.]]
+```
+
+</PyCell>
+
+Notice the last line: `"qd,kd->qk"`. The letter that appears on the left and not on the right, `d`, is the axis that
+disappears, the stack axis. You can read that string already.
+
+## How to read the rest of the course
+
+You have now seen the whole spine: tile, dot product, matrix cell, layer, block. The lessons fill in what each rung
+needs so that nothing is taken on faith:
+
+- Part 0 builds the shadow face honestly (distance, angle, the law of cosines).
+- Part 1 proves that the two faces agree and shows what the number means (projection, cosine, embeddings).
+- Part 2 is the cube: matrices as transformations, the four views of a product, inverses, eigenvectors.
+- Part 3 is the stack of cubes and the `einsum` rule, plus how the numbers sit in memory.
+- Parts 4 to 10 answer the question the ladder leaves open: the cubes are full of numbers; **who chose them, and how?**
+  The answer is derivatives (Part 4), a loss and probability (Parts 7 and 8), and training (Part 9), ending in a
+  transformer block (Part 10) made only of what you have seen here.
+
+## What this opens
+
+Two faces of one number: we have taken the shadow face on trust. The first lesson of Part 0 starts from the ground:
+why a square is an area, and why that is the beginning of measuring anything.
+
+## Term map
+
+<LessonMap />

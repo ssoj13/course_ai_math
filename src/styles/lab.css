@@ -1265,6 +1265,7 @@ h1#_top,
 .lab-formula .is-dim { opacity: .35; }
 @media (prefers-reduced-motion: reduce) { .lab-formula [data-t], .lab-formula [data-m] { transition: none; } }
 .lab-formula .is-struck, .lab-num-table .is-struck { text-decoration: line-through; text-decoration-thickness: 2px; }
+.lab-num-table .is-dim { opacity: .35; }
 .lab-num-table { font-family: var(--lab-font-mono); font-variant-numeric: tabular-nums; border-collapse: collapse; width: 100%; }
 .lab-num-table td,.lab-num-table th { padding: .35rem .6rem; text-align: right; border-bottom: 1px solid var(--sl-color-gray-5); }
 .lab-num-table caption { text-align: left; padding-block: .4rem; }
