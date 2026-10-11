@@ -26,6 +26,7 @@ import { Parallelogram } from '../scene/Parallelogram';
 import { Point } from '../scene/Point';
 import { RightAngle } from '../scene/RightAngle';
 import { Segment } from '../scene/Segment';
+import { TileGrid } from '../scene/TileGrid';
 import type { StatusSpec } from '../scene/StatusBar';
 import { ViewportCard } from '../scene/ViewportCard';
 import { useVal, useVals } from '../store';
@@ -386,3 +387,20 @@ export const DemoLamp = () => {
 		</Show>
 	</ViewportCard>
 );};
+
+/**
+ * DEMO-TILES: TileGrid in 3D, the primitive proof for the powers lesson. A cube of side 3 (27 unit bodies, seams
+ * between them), a cube of side 2.5 (8 whole bodies, clipped slabs on its three far faces in the partial colour) and a
+ * slab of 2.5 x 1.5 lying in the xz plane (thin y). Hover outlines a whole shape.
+ */
+export const DemoTiles = () => {
+	const locale = useLocale();
+	return (
+		<ViewportCard lesson="demo" id="tiles" name={t(locale, 'demo.nameTiles')} mode="3d" extent={4}>
+			<Grid lesson="demo" extent={4} step={1} />
+			<TileGrid lesson="demo" id="cube3" origin={[-4, 0, -1.5]} shape={{ kind: 'box', size: [3, 3, 3], thin: [false, false, false] }} role="vecA" count label />
+			<TileGrid lesson="demo" id="cube25" origin={[-0.5, 0, -1.25]} shape={{ kind: 'box', size: [2.5, 2.5, 2.5], thin: [false, false, false] }} role="vecB" count label />
+			<TileGrid lesson="demo" id="slab" origin={[2.6, 0, -0.75]} shape={{ kind: 'box', size: [2.5, 0, 1.5], thin: [false, true, false] }} plane="xz" role="vecC" count label />
+		</ViewportCard>
+	);
+};

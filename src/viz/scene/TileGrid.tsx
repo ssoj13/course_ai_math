@@ -27,7 +27,7 @@ import { lessonStore, useHot, useVals, type LessonState } from '../store';
 import { HOVER_RANK, useHoverable, useLabel, useStage, type StageReg } from './handles';
 import { reducedMotion } from './motion';
 import {
-	boxMatrix, checkTiles, layoutTiles, MAX_TILES, retarget, stepMotion, tileBounds, tileBuf, tileCount, tileMotion, tileTotal,
+	boxMatrix, checkTiles, dimmed, frameVerts, layoutTiles, MAX_TILES, mixHex, share, retarget, stepMotion, tileBounds, tileBuf, tileCount, tileMotion, tileTotal,
 	type TileOpts, type TilePlane, type TileShape,
 } from './tiles';
 import { useWorldPx } from './view';
@@ -64,11 +64,6 @@ export interface TileGridProps {
 
 const resolve = <T,>(v: Of<T>, vals: Vals): T => (typeof v === 'function' ? (v as (x: Vals) => T)(vals) : v);
 
-/** Share of the role colour in a body's fill (the rest is the viewport background): a muted, opaque 6d fill. */
-const FILL = 0.38;
-/** Share kept by a dimmed (non-matching) piece. */
-const DIM = 0.35;
-
 /** Flat shading by face orientation: `up` faces 1, its opposite 0.55, x faces 0.82, the rest 0.68. No lights. */
 const VS = /* glsl */ `
 varying vec3 vN;
@@ -98,23 +93,11 @@ void main() {
 const unitBox = new BoxGeometry(1, 1, 1);
 const noRaycast = () => {};
 
-// Frame temporaries (one grid updates at a time inside the render loop).
+// Module temporaries, shared by the React render path (label centre) and useFrame (`update`/`write`): both run on the
+// one main thread and never interleave, and nothing keeps a reference across calls.
 const TARGET = tileBuf();
 const BLO = [0, 0, 0];
 const BHI = [0, 0, 0];
-
-/**
- * sRGB mix of two '#rrggbb' colours written raw into `out` at `at` (the shader outputs instance colours unconverted,
- * like the flat canvas renders palette hex exactly).
- */
-function mixInto(a: string, b: string, t: number, out: Float32Array, at: number): void {
-	const pa = parseInt(a.slice(1), 16);
-	const pb = parseInt(b.slice(1), 16);
-	for (let c = 0; c < 3; c++) {
-		const s = 16 - 8 * c;
-		out[at + c] = (((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t) / 255;
-	}
-}
 
 export function TileGrid(p: TileGridProps): React.JSX.Element {
 	const vals = useVals(p.lesson);
@@ -129,7 +112,8 @@ export function TileGrid(p: TileGridProps): React.JSX.Element {
 	else center.current = [...(p.origin ?? [0, 0]), 0].slice(0, 3);
 	const text = p.label ? (typeof p.label === 'function' ? p.label(tileTotal(shape, count.total, fill)) : tileTotal(shape, count.total, fill)) : null;
 	const reg = useStage();
-	useLabel(text === null ? null : { lesson: p.lesson, text, hot: p.id, at: () => (reg.mode === '2d' ? center.current.slice(0, 2) : center.current) });
+	// An empty shape keeps its label (e.g. "x² = 0") but lifts it off the anchor, where other marks of the origin sit.
+	useLabel(text === null ? null : { lesson: p.lesson, text, hot: p.id, offset: count.pieces ? undefined : [0, -20], at: () => (reg.mode === '2d' ? center.current.slice(0, 2) : center.current) });
 	const pal = usePalette();
 	const invalidate = useThree((s) => s.invalidate);
 	const hot = useHot(p.lesson, p.id);
@@ -144,8 +128,8 @@ export function TileGrid(p: TileGridProps): React.JSX.Element {
 		mesh.count = 0;
 		mesh.userData.aux = true;
 		// Edge frames: 12 box edges per piece (3D) or 4 per piece (2D), plus a filled row's unit outline.
-		const lines = new BufferGeometry().setAttribute('position', new Float32BufferAttribute(new Float32Array((MAX_TILES + 1) * 24 * 3), 3));
-		lines.setAttribute('color', new Float32BufferAttribute(new Float32Array((MAX_TILES + 1) * 24 * 3), 3));
+		const lines = new BufferGeometry().setAttribute('position', new Float32BufferAttribute(new Float32Array((MAX_TILES + 1) * frameVerts(false) * 3), 3));
+		lines.setAttribute('color', new Float32BufferAttribute(new Float32Array((MAX_TILES + 1) * frameVerts(false) * 3), 3));
 		const frame = new LineSegments(lines, new LineBasicMaterial({ vertexColors: true }));
 		frame.frustumCulled = false;
 		frame.raycast = noRaycast;
@@ -276,9 +260,8 @@ function write(g: Parts, p: TileGridProps, f: Look, reg: StageReg, reveal: numbe
 		boxMatrix(m.cur, 6 * s, grow, mesh.instanceMatrix.array as Float32Array, 16 * k);
 		const whole = m.whole[s] === 1;
 		const role = pal[whole ? (p.role ?? 'vecA') : (p.partialRole ?? 'light')];
-		// `whole` lit: clipped pieces dim; `partial` lit: whole pieces dim; both lit (a sum): nothing dims.
-		const dim = (f.lit === 1 && !whole) || (f.lit === 2 && whole);
-		mixInto(bg, role, dim ? FILL * DIM : FILL, ic, 3 * k);
+		const dim = dimmed(whole, f.lit);
+		mixHex(bg, role, share('fill', dim), ic, 3 * k);
 		k++;
 		for (let a = 0; a < 3; a++) {
 			BLO[a] = Math.min(BLO[a], m.cur[6 * s + a]);
@@ -290,7 +273,7 @@ function write(g: Parts, p: TileGridProps, f: Look, reg: StageReg, reveal: numbe
 		v = flat
 			? edges(pos, v, m.cur[6 * s], m.cur[6 * s + 1], m.cur[6 * s + 3], m.cur[6 * s + 4], m.cur[6 * s + 5] + 1e-3, false)
 			: boxEdges(pos, v, m.cur, 6 * s);
-		for (let i = v0; i < v; i++) mixInto(bg, role, dim ? DIM : 1, col, 3 * i);
+		for (let i = v0; i < v; i++) mixHex(bg, role, share('edge', dim), col, 3 * i);
 	}
 	mesh.count = k;
 	mesh.instanceMatrix.needsUpdate = true;
@@ -304,7 +287,7 @@ function write(g: Parts, p: TileGridProps, f: Look, reg: StageReg, reveal: numbe
 		const xz = p.plane === 'xz';
 		const v0 = v;
 		v = edges(pos, v, o.lo[0], xz ? o.lo[2] : o.lo[1], o.hi[0], xz ? o.hi[2] : o.hi[1], (xz ? o.hi[1] : o.hi[2]) + 1e-3, xz);
-		for (let i = v0; i < v; i++) mixInto(bg, pal.ink, 1, col, 3 * i);
+		for (let i = v0; i < v; i++) mixHex(bg, pal.ink, 1, col, 3 * i);
 	}
 	const lines = g.frame.geometry;
 	lines.setDrawRange(0, v);

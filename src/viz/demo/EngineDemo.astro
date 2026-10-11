@@ -2,9 +2,9 @@
 import { pageLocale, t } from '../../i18n/ui';
 import UiStrings from '../../components/UiStrings.astro';
 import SceneIsland from '../SceneIsland.astro';
-import { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout } from './engine';
+import { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoTiles, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout } from './engine';
 import { ROWS2, ROWS3, ROWSLC, ROWSPOLAR, ROWSSIGN, ROWSLAMP } from './engine.rows';
-const components = { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout };
+const components = { Demo2D, Demo3D, DemoCosines, DemoPolar, DemoSign, DemoLamp, DemoTiles, DemoDotFormula, DemoLedger, DemoChallenges, DemoVecReadout };
 interface Props { kind: keyof typeof components }
 const locale = pageLocale(Astro);
 const kind = Astro.props.kind;
@@ -24,6 +24,7 @@ const scenes = {
 {kind === 'DemoPolar' && <SceneIsland {...scenes.DemoPolar}><DemoPolar locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoSign' && <SceneIsland {...scenes.DemoSign}><DemoSign locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoLamp' && <SceneIsland {...scenes.DemoLamp}><DemoLamp locale={locale} client:only="react" /></SceneIsland>}
+{kind === 'DemoTiles' && <SceneIsland caption={t(locale, 'demo.captionDemoTiles')}><DemoTiles locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'DemoDotFormula' && <DemoDotFormula locale={locale} client:load />}
 {kind === 'DemoLedger' && <DemoLedger locale={locale} client:load />}
 {kind === 'DemoChallenges' && <DemoChallenges locale={locale} client:load />}

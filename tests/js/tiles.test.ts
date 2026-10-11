@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import {
-	boxMatrix, checkTiles, layoutTiles, MAX_TILES, retarget, stepMotion, stubBox, THIN, tileBounds, tileBuf, tileCount, tileMotion, tileTotal,
+	boxMatrix, checkTiles, dimmed, DIM, FILL, frameVerts, layoutTiles, mixHex, share, MAX_TILES, retarget, stepMotion, stubBox, THIN, tileBounds, tileBuf, tileCount, tileMotion, tileTotal,
 	type TileBuf, type TileOpts, type TileShape,
 } from '../../src/viz/scene/tiles';
 import { omegaFor, SPRING_MS, springStep } from '../../src/viz/scene/motion';
@@ -218,5 +218,26 @@ describe('TileGrid transitions (no pop, counts are target truth)', () => {
 		stepMotion(m, 16);
 		const ref = springStep({ x: before, v: 0 }, 2, omegaFor(SPRING_MS), 0.016);
 		expect(near(m.cur[6 * s + 3], ref.x, 1e-12)).toBe(true);
+	});
+});
+
+describe('TileGrid colour and frame recipe (write())', () => {
+	test('hover dims: whole lit dims the cut pieces, partial lit dims the whole ones, both or none dim nothing', () => {
+		expect([dimmed(true, 0), dimmed(false, 0), dimmed(true, 1), dimmed(false, 1), dimmed(true, 2), dimmed(false, 2), dimmed(true, 3), dimmed(false, 3)])
+			.toEqual([false, false, false, true, true, false, false, false]);
+		expect(share('fill', false)).toBe(FILL);
+		expect(share('fill', true)).toBe(FILL * DIM);
+		expect(share('edge', false)).toBe(1);
+		expect(share('edge', true)).toBe(DIM);
+	});
+	test('colours are opaque sRGB mixes of the background and the role, written raw', () => {
+		const out = new Float32Array(6);
+		mixHex('#000000', '#ffffff', 0.38, out, 0);
+		mixHex('#202020', '#ffe27a', 1, out, 3);
+		expect([...out].map((x) => Math.round(x * 255))).toEqual([97, 97, 97, 255, 226, 122]);
+	});
+	test('edge frames: 4 edges per piece in 2D, all 12 in 3D', () => {
+		expect(frameVerts(true)).toBe(8);
+		expect(frameVerts(false)).toBe(24);
 	});
 });

@@ -395,3 +395,33 @@ export function stepMotion(m: TileMotion, dtMs: number): boolean {
 	}
 	return moving;
 }
+
+/** Share of the role colour in a body's fill (the rest is the viewport background): a muted, opaque 6d fill. */
+export const FILL = 0.38;
+/** Factor a dimmed (non-matching) piece keeps of its fill and edge. */
+export const DIM = 0.35;
+
+/**
+ * Hover dim rule of §7.1: with the `whole` term lit (lit = 1) the clipped pieces dim, with `partial` lit (2) the whole
+ * pieces dim, with both or neither nothing dims.
+ */
+export const dimmed = (whole: boolean, lit: number): boolean => (lit === 1 && !whole) || (lit === 2 && whole);
+
+/** Share of the role colour in a piece's body (`fill`) or edge frame over the background. */
+export const share = (part: 'fill' | 'edge', dim: boolean): number => (part === 'fill' ? FILL : 1) * (dim ? DIM : 1);
+
+/**
+ * sRGB mix a + (b - a) t of two '#rrggbb' colours, written raw into `out` at `at` (the tile shader outputs instance
+ * colours unconverted, as the flat canvas renders palette hex exactly).
+ */
+export function mixHex(a: string, b: string, t: number, out: Float32Array, at: number): void {
+	const pa = parseInt(a.slice(1), 16);
+	const pb = parseInt(b.slice(1), 16);
+	for (let c = 0; c < 3; c++) {
+		const sh = 16 - 8 * c;
+		out[at + c] = (((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t) / 255;
+	}
+}
+
+/** Edge-frame vertices of one drawn piece: 4 edges in 2D (its face toward the camera), 12 in 3D; 2 vertices each. */
+export const frameVerts = (flat: boolean): number => (flat ? 8 : 24);
