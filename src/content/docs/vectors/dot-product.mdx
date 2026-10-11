@@ -3,4 +3,344 @@ title: "The dot product, derived from the law of cosines"
 description: "Σ aᵢbᵢ = |a||b| cos θ, and what its sign means."
 ---
 
-This lesson is being written. See the [course roadmap](page:roadmap).
+import Quiz from '../../../components/Quiz.astro';
+
+**Built on:** [Length, Σ notation and normalization](lesson:length) · [The law of cosines](lesson:law-of-cosines) · [Distance and Pythagoras](lesson:pythagoras)
+
+Two arrows $a$ and $b$ start at the origin with some angle $\theta$ between them. We can already measure $\lvert a \rvert$ and $\lvert b \rvert$ ([lesson 1.3](lesson:length)) and the distance between their tips, $\lvert a - b \rvert$ ([lesson 0.3](lesson:pythagoras)). The [law of cosines](lesson:law-of-cosines) ties those three lengths to the angle. Put the two together and a new operation falls out, one that every `dot(N, L)` in every shader computes. This is the centerpiece of Part 1; take it slowly.
+
+## 1. The setup: one triangle, three sides we can measure
+
+Take concrete arrows so that every number is checkable:
+
+$$
+a = (3, 1), \qquad b = (1, 2)
+$$
+
+The third side of the triangle is the arrow from the tip of $b$ to the tip of $a$, which [lesson 1.1](lesson:vector) taught us to write as $a - b$:
+
+$$
+a - b = (3 - 1,\; 1 - 2) = (2, -1)
+$$
+
+Squared lengths, by Pythagoras over the components:
+
+$$
+\lvert a \rvert^2 = 3^2 + 1^2 = 10, \qquad \lvert b \rvert^2 = 1^2 + 2^2 = 5, \qquad \lvert a - b \rvert^2 = 2^2 + (-1)^2 = 5
+$$
+
+Three squares, three sums. We have not used the angle yet.
+
+## 2. The derivation
+
+{/* scene: DP-1 — derivation timeline: triangle a, b, a − b with squares on the sides; steps expand |a − b|² in components, strike |a|² and |b|² from both sides, and leave Σ aᵢbᵢ = |a||b| cos θ as two live, equal numbers */}
+
+**Step 1: the law of cosines.** In the triangle with sides $\lvert a \rvert$, $\lvert b \rvert$ and $\lvert a - b \rvert$, the angle $\theta$ sits between $a$ and $b$, opposite the side $a - b$. [Lesson 0.5](lesson:law-of-cosines) says:
+
+$$
+\lvert a - b \rvert^2 = \lvert a \rvert^2 + \lvert b \rvert^2 - 2\,\lvert a \rvert\,\lvert b \rvert \cos\theta
+$$
+
+With our numbers: $5 = 10 + 5 - 2 \cdot \sqrt{10} \cdot \sqrt{5} \cdot \cos\theta$. Since $\sqrt{10}\sqrt{5} = \sqrt{50} \approx 7.071$, this says $5 = 15 - 14.142 \cos\theta$, so $\cos\theta = 10 / 14.142 \approx 0.7071$ and $\theta = 45^\circ$. Keep that: we will get the same number by a second road.
+
+**Step 2: the same left side, in components.** $\lvert a - b \rvert^2$ is a sum of squared differences, one per component:
+
+$$
+\lvert a - b \rvert^2 = \sum_i (a_i - b_i)^2
+$$
+
+Expand each square the way you expand $(x - y)^2 = x^2 - 2xy + y^2$:
+
+$$
+(a_i - b_i)^2 = a_i^2 - 2\,a_i b_i + b_i^2
+$$
+
+Check it on the first component: $a_1 = 3$, $b_1 = 1$: $(3 - 1)^2 = 4$ and $9 - 2 \cdot 3 + 1 = 4$. Good. Second component: $(1 - 2)^2 = 1$ and $1 - 2 \cdot 2 + 4 = 1$. Good.
+
+**Step 3: regroup.** Add the expansions over all components and sort the three kinds of term into three sums:
+
+$$
+\sum_i (a_i - b_i)^2 = \sum_i a_i^2 \;-\; 2 \sum_i a_i b_i \;+\; \sum_i b_i^2
+$$
+
+With numbers: $4 + 1 = (9 + 1) - 2\,(3 \cdot 1 + 1 \cdot 2) + (1 + 4) = 10 - 10 + 5 = 5$. Correct.
+
+Now look at the first and last sums. $\sum a_i^2$ is $\lvert a \rvert^2$, and $\sum b_i^2$ is $\lvert b \rvert^2$, by the length formula of [lesson 1.3](lesson:length). The only new thing is the middle: the sum of the *products of matching components*, $\sum a_i b_i = 3 \cdot 1 + 1 \cdot 2 = 5$.
+
+**Step 4: face to face.** We now have two expressions for the same $\lvert a - b \rvert^2$. Set them equal:
+
+$$
+\lvert a \rvert^2 + \lvert b \rvert^2 - 2 \sum_i a_i b_i \;=\; \lvert a \rvert^2 + \lvert b \rvert^2 - 2\,\lvert a \rvert\,\lvert b \rvert \cos\theta
+$$
+
+**Step 5: cancel.** $\lvert a \rvert^2$ appears on both sides; subtract it from both. $\lvert b \rvert^2$ too. Only the two cross terms survive:
+
+$$
+-2 \sum_i a_i b_i = -2\,\lvert a \rvert\,\lvert b \rvert \cos\theta
+$$
+
+**Step 6: divide by $-2$.**
+
+$$
+\sum_i a_i b_i = \lvert a \rvert\,\lvert b \rvert \cos\theta
+$$
+
+Check with our numbers. Left: $5$. Right: $\sqrt{10} \cdot \sqrt{5} \cdot \cos 45^\circ = 7.071 \cdot 0.7071 = 5.000$. Two completely different computations, one number. Drag the arrows in the scene and the two readouts stay equal, always.
+
+**Step 7: name it.** This quantity is the **dot product** of $a$ and $b$, written $a \cdot b$:
+
+$$
+a \cdot b \;=\; \sum_i a_i b_i \;=\; \lvert a \rvert\,\lvert b \rvert \cos\theta
+$$
+
+The left formula is how you *compute* it: multiply matching components, add. No angle, no square root, no trigonometry. The right formula is what it *means*: the product of the two lengths, shrunk by the cosine of the angle between them. The law of cosines is the bridge that makes them equal.
+
+**Misconception to drop, the most important one:** "to compute $a \cdot b$ you need to know the angle." No. You need the components. The angle is what you *get out*: $\cos\theta = a \cdot b / (\lvert a \rvert \lvert b \rvert)$. That is the whole reason the dot product exists.
+
+## 3. One number, three faces
+
+{/* scene: DP-2 — sign explorer: drag a and b; the plane is pre-tinted by the sign of a·v, the perpendicular line is a·v = 0 (snap, ⊥ badge), the rectangle |a| × shadow(b) is the area face, hatched when negative; the three-faces strip shows sum, area and brightness as one number */}
+
+**Face 1: a sum of products.** $a \cdot b = 3 \cdot 1 + 1 \cdot 2 = 5$. This is what the hardware does.
+
+**Face 2: an area.** Shine a light straight down onto the line of $a$. The arrow $b$ casts a shadow of length $\lvert b \rvert \cos\theta$ on it ([lesson 0.4](lesson:unit-circle): cosine is the shadow of a length-1 stick, scaled by $\lvert b \rvert$ here). Then
+
+$$
+a \cdot b = \lvert a \rvert \cdot (\lvert b \rvert \cos\theta) = \text{length of } a \times \text{shadow of } b \text{ on } a
+$$
+
+That is the area of a rectangle with base $\lvert a \rvert$ and height equal to the shadow. With our numbers: the shadow is $5 / \sqrt{10} \approx 1.581$ and the rectangle is $3.162 \times 1.581 = 5.00$. You have seen this rectangle before: it is exactly the strip that [lesson 0.5](lesson:law-of-cosines) cut out of the square on $a$. The law of cosines reads $\lvert a - b \rvert^2 = \lvert a \rvert^2 + \lvert b \rvert^2 - 2\,(a \cdot b)$: Pythagoras with two rectangles of area $a \cdot b$ removed.
+
+**Face 3: brightness.** If $a$ and $b$ were unit vectors, $a \cdot b$ would be $\cos\theta$ alone, and that is the brightness a Lambert surface shows. Section 5 makes this the whole scene.
+
+### The sign
+
+Because $\lvert a \rvert$ and $\lvert b \rvert$ are never negative, the sign of $a \cdot b$ is the sign of $\cos\theta$:
+
+| angle between $a$ and $b$ | cosine | dot product | meaning |
+|---|---|---|---|
+| less than 90° | positive | positive | the arrows agree |
+| exactly 90° | zero | zero | perpendicular |
+| more than 90° | negative | negative | the arrows disagree |
+
+Draw the line through the origin perpendicular to $a$. Every $b$ with its tip on one side gives a positive dot product, every $b$ on the other side a negative one, and every $b$ on the line gives exactly zero. The rectangle face shows the same thing: past 90° the shadow points backwards and the rectangle's area counts as negative (hatched in the scene).
+
+Example: $(2, 2) \cdot (1, -1) = 2 - 2 = 0$. Neither arrow is zero; they are perpendicular. Two vectors with $a \cdot b = 0$ are called **orthogonal**.
+
+**Misconception to drop:** "$a \cdot b = 0$ means one of them is zero." Usually it means they are perpendicular. (A zero vector also gives zero, but that is the boring case.)
+
+### Two checkpoints you will use constantly
+
+1. **A vector dotted with itself is its squared length:** $a \cdot a = \sum a_i^2 = \lvert a \rvert^2$. For $(3, 4)$: $9 + 16 = 25 = 5^2$. In the geometric formula, $\theta = 0$ and $\cos 0 = 1$, so $\lvert a \rvert \lvert a \rvert \cdot 1$. Both faces agree.
+2. **Order does not matter:** $a \cdot b = b \cdot a$, because $a_i b_i = b_i a_i$. (In 0.5 this was the fact that the two strips have the same area.) Keep this in mind for Part 2, where matrix products do *not* commute; the dot product does.
+
+Also useful: the dot product is a plain **number**, not a vector. And for unit vectors it is trapped between $-1$ and $1$, because that is the range of the cosine. A value of $1.5$ for two unit vectors is impossible, and a value slightly above 1 is a rounding error that `acos` will turn into `NaN`, so code clamps first.
+
+### The angle from the components
+
+Rearrange the definition:
+
+$$
+\cos\theta = \frac{a \cdot b}{\lvert a \rvert\,\lvert b \rvert}, \qquad \theta = \arccos\!\left(\frac{a \cdot b}{\lvert a \rvert\,\lvert b \rvert}\right)
+$$
+
+Example: the angle between $(1, 0)$ and $(1, 1)$. Dot product $1 \cdot 1 + 0 \cdot 1 = 1$; lengths $1$ and $\sqrt 2$; $\cos\theta = 1/\sqrt 2 \approx 0.7071$; $\theta = 45^\circ$. No protractor was used.
+
+> **Say it simpler.** Multiply matching components, add them up. The result is big when the arrows agree, zero when they are perpendicular, negative when they disagree. It equals "length times length times cosine", and it equals the area of the rectangle "length of one, shadow of the other".
+
+## 4. Nothing changes in 3D
+
+{/* scene: DP-3 — 3D explorer with orbit: a·b = 0 is now a disc through the origin; the component table gets a third row */}
+
+Add a component to each vector and the sum gets one more term. Take $a = (2, 1, 1)$ and $b = (1, 2, -1)$:
+
+$$
+a \cdot b = 2 \cdot 1 + 1 \cdot 2 + 1 \cdot (-1) = 2 + 2 - 1 = 3
+$$
+
+Lengths: $\lvert a \rvert = \sqrt{4 + 1 + 1} = \sqrt 6$, $\lvert b \rvert = \sqrt{1 + 4 + 1} = \sqrt 6$. So $\cos\theta = 3 / 6 = 0.5$ and $\theta = 60^\circ$. The set of all vectors perpendicular to $a$ is no longer a line but a whole plane through the origin; orbit the scene and you see it as a disc. The formula did not notice.
+
+## 5. The N·L lamp
+
+{/* scene: DP-4 — a sphere shaded with max(0, N·L); drag the point light; a probe point P shows its N, the L arrow, θ and the number driving its brightness; a toggle shows raw N·L with negatives tinted */}
+
+Lambert shading, the first lighting model every shader writer meets, *is* the dot product. At a surface point with unit normal $N$ and unit direction to the light $L$:
+
+$$
+\text{brightness} = \max(0,\; N \cdot L) = \max(0,\; \cos\theta)
+$$
+
+Both vectors have length 1, so the dot product is the bare cosine of the angle between the normal and the light direction. Facing the light ($\theta = 0$): brightness 1. Light grazing the surface ($\theta = 90^\circ$): brightness 0. Light behind the surface ($\theta$ past 90°): the cosine is negative, and `max` clamps it to 0. There is no negative light.
+
+Numbers: $N = (0, 1, 0)$, $L = (0.6, 0.8, 0)$ (a unit vector, since $0.36 + 0.64 = 1$): $N \cdot L = 0 + 0.8 + 0 = 0.8$. Brightness $0.8$. Flip the light below the surface, $L = (0.6, -0.8, 0)$: $N \cdot L = -0.8$, brightness $\max(0, -0.8) = 0$.
+
+The dashed circle on the sphere where $N \cdot L = 0$, the terminator, is the perpendicular line of section 3 wrapped around a ball. The back-face test `dot(N, V) < 0` in a rasterizer is the same sign test with the view direction instead of the light.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "The dot product of two 3D vectors is…",
+      options: [
+        "a 3D vector perpendicular to both of them",
+        "a 3D vector pointing between them",
+        "a single number",
+        "a 2D vector (the angle and the length)"
+      ],
+      answer: 2,
+      explain: "Σ aᵢbᵢ adds three products into one number. A perpendicular vector is what the cross product (lesson 1.8) gives; the dot product is a scalar."
+    },
+    {
+      q: "You compute a·b = 0. What can you conclude?",
+      options: [
+        "At least one of a and b is the zero vector, since a product of non-zero things is never zero",
+        "The two vectors are perpendicular, or at least one of them is zero",
+        "The two vectors point in opposite directions",
+        "The two vectors have the same length"
+      ],
+      answer: 1,
+      explain: "|a||b| cos θ = 0 needs either a zero length or cos θ = 0, i.e. θ = 90°. For non-zero vectors, zero dot product means perpendicular: (2, 2)·(1, −1) = 0."
+    },
+    {
+      q: "How do a·b and b·a compare?",
+      options: [
+        "They are always equal",
+        "They have opposite signs",
+        "They are equal only when the vectors are perpendicular",
+        "They are equal only when the vectors have the same length"
+      ],
+      answer: 0,
+      explain: "aᵢbᵢ = bᵢaᵢ for every component, so the sums are equal. In lesson 0.5 this was the fact that the two strips a·(b cos θ) and b·(a cos θ) have the same area. Matrix products in Part 2 will not commute; the dot product does."
+    },
+    {
+      q: "a and b are unit vectors and your code prints a·b = 1.5. This is…",
+      options: [
+        "possible when the angle between them is small, since the products of components then add up strongly",
+        "possible only in 3D or higher",
+        "impossible: for unit vectors a·b = cos θ, which cannot exceed 1",
+        "possible when the vectors point the same way"
+      ],
+      answer: 2,
+      explain: "a·b = |a||b| cos θ = cos θ for unit vectors, and the cosine lies between −1 and 1. A printed 1.5 means the vectors are not unit, or there is a bug. Even 1.0000001 from rounding must be clipped before acos."
+    },
+    {
+      q: "To compute a·b from a = (3, 1) and b = (1, 2) you first need to…",
+      options: [
+        "measure the angle θ between them with a protractor",
+        "compute both lengths and then the angle between them, and multiply the three numbers",
+        "multiply matching components and add: 3·1 + 1·2 = 5, no angle needed",
+        "normalize both vectors"
+      ],
+      answer: 2,
+      explain: "The component formula needs no angle. The angle is what you get out of the dot product afterwards: cos θ = a·b / (|a||b|) = 5 / √50 ≈ 0.707, so θ = 45°."
+    },
+    {
+      q: "The rectangle with base |a| and height equal to the shadow of b on a has area…",
+      options: [
+        "|a| + |b| cos θ",
+        "a·b, counted as negative (hatched) when θ is more than 90°",
+        "|a||b|, independent of the angle",
+        "always positive, because areas cannot be negative whatever the angle between the arrows"
+      ],
+      answer: 1,
+      explain: "Base |a| times height |b| cos θ is |a||b| cos θ = a·b. Past 90° the shadow points backwards, so this signed area is negative; lesson 0.5 drew it hatched and added it instead of subtracting."
+    },
+    {
+      q: "Lambert brightness for N·L = −0.3 is…",
+      options: [
+        "−0.3, a slightly darkened pixel on the far side of the sphere",
+        "0.3, the sign does not matter for light",
+        "0.7, because 1 − 0.3",
+        "0, because max(0, N·L) clamps negative light"
+      ],
+      answer: 3,
+      explain: "The light is behind the surface (θ is more than 90°). There is no negative light, so the shader clamps: max(0, −0.3) = 0."
+    },
+    {
+      q: "np.dot(a, b) and (a*b).sum() on the same float32 arrays of a million elements…",
+      options: [
+        "always give exactly the same number, because the mathematics is identical and floating-point addition is exact",
+        "can differ in the last digits, because the summation order differs and rounding is not associative",
+        "differ by exactly a factor of 2",
+        "cannot be compared, because one returns a vector"
+      ],
+      answer: 1,
+      explain: "Both compute Σ aᵢbᵢ, but a BLAS kernel sums in SIMD lanes in a different order than a sequential sum, and each rounding step depends on the order. Both results are scalars; the difference sits in the last digits."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. $(1, 2) \cdot (3, 4)$
+2. $(1, 0) \cdot (0, 1)$
+3. $(2, 2) \cdot (1, -1)$. What does the result say about the two arrows?
+4. The angle between $(1, 0)$ and $(1, 1)$.
+5. Check $a \cdot a = \lvert a \rvert^2$ for $a = (3, 4)$.
+6. $a = (2, 1, 1)$, $b = (1, 2, -1)$: compute $a \cdot b$, both lengths and the angle.
+7. $a = (3, 1)$, $b = (1, 2)$: the length of the shadow of $b$ on $a$, and the area of the rectangle $\lvert a \rvert \times$ shadow.
+8. $N = (0, 1, 0)$. Brightness for $L = (0.6, 0.8, 0)$ and for $L = (0.6, -0.8, 0)$.
+
+<details>
+<summary>Answers</summary>
+
+1. $3 + 8 = 11$.
+2. $0 + 0 = 0$.
+3. $2 - 2 = 0$: perpendicular (neither vector is zero).
+4. $\cos\theta = 1 / (1 \cdot \sqrt 2) = 0.7071$, so $\theta = 45^\circ$.
+5. $(3, 4) \cdot (3, 4) = 9 + 16 = 25 = 5^2$.
+6. $a \cdot b = 2 + 2 - 1 = 3$; $\lvert a \rvert = \lvert b \rvert = \sqrt 6$; $\cos\theta = 3/6 = 0.5$; $\theta = 60^\circ$.
+7. Shadow $= a \cdot b / \lvert a \rvert = 5 / \sqrt{10} \approx 1.581$; rectangle $= \sqrt{10} \cdot 1.581 = 5 = a \cdot b$.
+8. $N \cdot L = 0.8$, brightness $0.8$; $N \cdot L = -0.8$, brightness $0$.
+
+</details>
+
+## Python
+
+Three spellings of the same sum, the angle recovered from it (with the clip that every real codebase needs), the derivation checked numerically, Lambert, and one machine-layer surprise at the end.
+
+```python
+import numpy as np
+
+a = np.array([3., 1.]); b = np.array([1., 2.])
+
+# face 1: components (no angle needed)
+s = (a * b).sum()
+print(s, np.dot(a, b), a @ b)          # 5.0 5.0 5.0
+
+# face 2: lengths and the angle (law of cosines rearranged)
+na, nb = np.linalg.norm(a), np.linalg.norm(b)
+cos_t = (a @ b) / (na * nb)
+theta = np.degrees(np.arccos(np.clip(cos_t, -1, 1)))   # clip: rounding can give 1.0000000002
+print(theta)                              # 45.0
+print(na * nb * np.cos(np.radians(theta)))  # 5.000000000000001 - same number, rounded differently
+
+# face 2b: the rectangle |a| x shadow(b on a)
+shadow = (a @ b) / na
+print(na * shadow)                        # 5.0
+
+# the derivation, numerically: |a-b|^2 = |a|^2 + |b|^2 - 2 a.b
+print(((a - b)**2).sum(), (a**2).sum() + (b**2).sum() - 2 * (a @ b))   # 5.0 5.0
+
+# face 3: Lambert brightness is a clamped dot product of unit vectors
+N = np.array([0., 1., 0.]); L = np.array([0.6, 0.8, 0.])
+print(max(0.0, N @ L), max(0.0, N @ np.array([0.6, -0.8, 0.])))   # 0.8 0.0
+
+# machine layer: summation order changes fp32 results in the last digits
+rng = np.random.default_rng(0)
+x = rng.standard_normal(1_000_000).astype(np.float32)
+y = rng.standard_normal(1_000_000).astype(np.float32)
+print(np.dot(x, y), np.dot(x[::-1], y[::-1]), float(np.sum((x * y).astype(np.float64))))
+```
+
+<details>
+<summary>Machine layer: FMA chains, lanes and summation order</summary>
+
+A dot product on hardware is an accumulator loop: `acc = fma(a[i], b[i], acc)`, where FMA (fused multiply-add) computes $a_i b_i + \text{acc}$ with a single rounding. A SIMD kernel runs 8 or 16 such accumulators in parallel lanes and merges them at the end with a horizontal reduction; BLAS `sdot` is this loop, tuned per CPU. Because every partial sum is rounded, the *order* of the additions changes the result in the last digits: the Python cell above shows `np.dot`, the reversed arrays and a float64 sum disagreeing slightly. Floating-point addition is not associative. GPU tensor cores take this further: they multiply `fp16` inputs but accumulate the products in `fp32`, for the same overflow reason as the norm in [lesson 1.3](lesson:length).
+
+</details>
+
+## What this opens
+
+We now know the number $a \cdot b$ equals $\lvert a \rvert \lvert b \rvert \cos\theta$, and we have glimpsed it as a shadow. The next lesson looks at that shadow directly, and finds that the components of a vector were shadows all along: [Projection: shadows on an axis](lesson:projection). Two later lessons lean on the sign and the unit-vector range found here: [Cosine similarity](lesson:cosine-similarity) and, as a side branch, [the cross product](lesson:cross-product).
