@@ -133,6 +133,7 @@ every `Stage` is a drei `<View>` living in its own Astro island. No `manualChunk
 - No CLS: `SceneIsland.astro` renders the ViewportCard skeleton `.lab-vp-skel` (28 px header, a 16:10 aspect-ratio
   spacer, the chip row under 720 px when `panel`, 22 px status) that fixes the card height before any script; the
   island (`.lab-vp-card`) fills the same box absolutely. Accessible name = the server `<figcaption>`.
+  Task 6h additionally reserves mobile instrument/formula strips via `hud`/`formula` (contract below).
 - **Stacking (measured in 6d):** Starlight sets `isolation: isolate` on `.main-pane` (TwoColumnContent.astro), so the
   whole article is ONE stacking context painted below the later, fixed canvas host: no z-index inside the article can
   lift DOM above the scene (grid lines were drawn over the N-panel and tooltips; 6b/6c labels were in fact under the
@@ -176,11 +177,12 @@ Upstream / known console noise:
 - `THREE.Clock: This module has been deprecated` is logged by three >= 0.183 because r3f 9.8.1 (current latest)
   creates `new THREE.Clock()`. three 0.182.0 does not warn (checked on unpkg), but we keep 0.186.1: downgrading four
   releases to silence a deprecation notice is worse than the notice. Revisit when r3f moves to `THREE.Timer`.
-- `favicon.svg` 404: there is no `public/` dir yet (predates Task 4).
-- [ ] Scene chunk `engine.impl.*.js` is 1009 kB raw / 269 kB gz since Task 6d (three core is not tree-shaken under
+- `favicon.svg` 404 predates Task 4 and remains in the 6h report; `public/` now contains the clay matcap asset.
+- [ ] Historical Task 6d measurement: scene chunk `engine.impl.*.js` was 1009 kB raw / 269 kB gz (three core is not tree-shaken under
   r3f's `import * as THREE`; drei Line = three-stdlib Line2/LineMaterial added ~32 kB in 6b; 6c primitives + demo ~9 kB;
   6d chrome + drei Grid ~31 kB raw / 10 kB gz). `chunkSizeWarningLimit: 1015` in astro.config.mjs; the real gate is the per-page gzip budget of
-  scripts/size-report.ts (Task 11; Ruling O: viz core <= 300 kB gz).
+  planned scripts/size-report.ts (Task 11; Ruling O: viz core <= 300 kB gz). Current 6h measurements and reviewed
+  ownership classification are recorded below; a warning threshold is not a transfer-budget acceptance.
 
 ### Scene primitives and dragging (Task 6b)
 
@@ -229,7 +231,7 @@ Upstream / known console noise:
   `flip={signedArea2(a, b) < 0}`). `signed` + `area` (number or fn of vals): bar of height area/|b-a| on the base,
   positive outward, negative inward + hatched, zero/degenerate draws nothing.
 - **Parallelogram** 2D: negative orientation (signedArea2 < 0) hatched; 3D plain quad. Collinear -> nothing. `Quad`
-  (in Parallelogram.tsx) is the shared fill (`STYLE.fillA` = 18 % since 6d, polygonOffset so coplanar lines keep their color) + 1.5 px edge +
+  (in Parallelogram.tsx) was the shared flat fill in 6d (`STYLE.fillA` = 18 %, polygonOffset so coplanar lines keep their color) + 1.5 px edge +
   6 px hatch; hatch spacing in px comes from `useWorldPx` (quantized React state, rebuilt only on ~9% scale change).
 - **RightAngle**: px-sized square, auto-shown within `tol` = 0.5 degrees of 90 (or `show`); hidden for zero vectors.
 - Derived geometry (projection foot etc.) is computed in the lesson .tsx with `useVal` inside a child of Stage and passed
@@ -238,6 +240,9 @@ Upstream / known console noise:
 - [ ] Poly / moving rectangles / AngleArc `ticks` for the 0.5 lesson (design doc) are 6e scope.
 
 ### Palette and tokens (Task 5, revised in 6d)
+
+The values below record the 6d baseline; Task 6h's current implementation supersedes its palette and stroke/fill recipe
+as described below, accepted after independent review. CSS roles remain the shared source; clay adds a light studio look.
 
 - Scene colors come from `usePalette()` (`src/viz/palette.ts`), never hex literals in components. Roles = the spec
   table of docs/design/visual-language.md (`ROLE_VARS`: bgTop/bgBottom, chrome/chrome2, field/fieldHover,
@@ -258,6 +263,7 @@ Every scene is a `ViewportCard` (`src/viz/scene/ViewportCard.tsx`), mounted insi
 header (2D/3D tag, Persp/Ortho in 3D, `Overlays` popover, `Reset view`, scene name, sidebar chevron), the Stage
 (viewport), the N-panel (`NPanel.tsx`) and the status bar (`StatusBar.tsx`). Composition API:
 `<ViewportCard lesson id name mode extent center? overlays? rows? status? drawIn?>{scene}</ViewportCard>`.
+Task 6h adds `look?`, `instruments?`, `angleKey?` and `formula?`; see the reservation contract below.
 Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpowers/sdd/2026-10-10-engine-and-spikes/task-6d-evidence/`
 (`final.ts` + `cdp.ts` harness, `final/report.json`, screenshots; `exp*/` = gizmo experiments).
 
@@ -307,7 +313,7 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   2D shows the static `XYCorner`.
 - **Grid**: drei `Grid` shader (infinite, `followCamera`, pixel-thin AA lines; 2D no fade, 3D fades at 7 x extent),
   `depthWrite` off; axes, ticks, tick numbers and axis letters are our primitives/labels. Verified at 0.5x..8x.
-- **Strokes**: `Stroke` (view.tsx) = halo + hot outline + core, all transparent so they sort by render order (three
+- **Strokes (6d baseline; superseded by the 6h recipe below)**: `Stroke` (view.tsx) = halo + hot outline + core, all transparent so they sort by render order (three
   draws opaque before transparent; an opaque core would be painted over by its own halo). Arrow heads are concave
   triangles (2D) / cones (3D) with matching outline/halo heads; points are camera-facing discs with a dark rim.
 - **Hover priority**: in 2D everything is coplanar, so r3f's hit order is scene order; `useHoverable(lesson, id, rank)`
@@ -329,7 +335,7 @@ Demo: `src/viz/demo/engine{,.impl}.tsx` (DEMO-2D, DEMO-3D). Evidence: `.superpow
   title + line + TeX via `renderStaticMath`) on N-panel rows and header buttons.
 - [x] Indirect value changes are eased on screen (Ruling U, done in 6e: `vals`/`shown` in the store).
 - [ ] Formula term tooltips (lessons spec) need a `tips` prop on Formula (Task 7 / lessons).
-- [x] `gridMinor` is #444444 (1.17:1 on `vp-bg-top`, tested >= 1.15 and below the major grid); spec table updated.
+- [x] Task 6d baseline: `gridMinor` was #444444 (1.17:1 on `vp-bg-top`, tested >= 1.15 and below the major grid); spec table updated.
 - [x] Wheel scrolls the page; Ctrl+wheel zooms (Ruling T): `gateWheel` (handles.tsx) stops plain wheels in the
   capture phase; DOM-tested against real OrbitControls (happy-dom's WheelEvent drops modifier init fields: the test
   sets ctrlKey explicitly). Touch devices get `TOUCH_HINTS` and the `touch` side of `{ mouse, touch }` hints.
@@ -404,6 +410,90 @@ screenshots 1280 and 360/320; `cls-probe.ts` finds which elements move during a 
   the 2D demo, `cls-probe.ts`; excluded from CLS by hadRecentInput but an entry): Task 7 should anchor `\s{}` numbers.
 - [ ] Point sizes (DP-4 "sun glyph, larger", LC-0 small feet D/E/F, LC-3 larger joint) and the `nl_light` typed-value
   clamp (outside the sphere) are lesson-task scope (Point `size`, a row-level constraint).
+
+### Holographic and clay rendering (Task 6h, accepted)
+
+Task 6h is accepted through `90c522a`: initial implementation `f295950`, fix 1 and fix 2 have completed independent
+review. This acceptance covers Task 6h, not the whole engine or course. Original report and evidence:
+`.superpowers/sdd/2026-10-10-engine-addendum-6d-6e/task-6h-report.md` and its sibling `task-6h-evidence/`.
+Sibling `task-6h-fix1-report.md` and `task-6h-fix2-report.md` supersede the initial measurements.
+`task-6h-rereview1.md` closed I1–I6/M1–M3 but found N1; `task-6h-rereview2.md` closes N1 with
+0 Critical / 0 Important / 0 Minor findings. No Task 6h finding remains open.
+
+- **Palette / glow**: `ROLE_VARS` now includes stars, nebulae, vignette, floor, formula plate and clay roles. Holo
+  backgrounds are #0c1220 / #05070f; major/minor grids #1e2d4d / #141c30; vector A/B/C are
+  #4fd8ff / #d85cc8 / #3df0b4. `STYLE` defines full stroke widths 2 px core, 7 px inner glow at .38, 18 px
+  outer glow at .10. The core mixes 35% white into the role color; additive glows overlap (inner contribution .48).
+  Pixel probes must use actual half-widths: inner sample radius 2 px, outer 7 px, background beyond 9 px.
+  Arrow heads share the filament recipe; glass edges use their specific .30 inner alpha. Reduced motion keeps
+  the hot state static and retains every visual layer.
+- **Glass / measurements**: `Quad` lazily loads `Glass` for the .12-to-.06 fill gradient, world-space subdivisions
+  (hidden below 14 px per world unit), luminous edges/corners and sign hatch. Its loading material is transparent;
+  Glass invalidates on mount so demand rendering does not leave a white fallback frame. `Ruler` and `Dimension`
+  add measurements and filled arrowheads. Camera/angle instruments use actual scene state, with derived row readouts.
+  Grid coordinates project absolute world positions onto an orthonormal plane basis (global XY in 2D), preserving
+  half-unit world phase under skew/translation; fill-gradient UVs are separate. Dimension constructs its 14 CSS-pixel
+  perpendicular offset on screen and unprojects each endpoint at its depth; invisible/degenerate projections hide.
+  Instrument azimuth uses camera world direction, so pan preserves it and orbit changes it.
+  Two framed miniature galaxy panels and the ringed orientation planet remain part of the instrument strip.
+- **Mobile reservation API**: pass `instruments` and optionally `angleKey` to `ViewportCard`; pass `formula`
+  as a React node for the chamfered `FormulaPlate`. Match these with boolean `hud` and `formula` props on
+  `SceneIsland`, alongside the same `rows` array. Under 720 px the server frame reserves 100 px for instruments,
+  or 176 px for instruments plus formula. Keep this pairing when authoring the combined layout; it prevents
+  hydration shifts. Instrument decoration is pointer-transparent so it does not intercept vertex drags.
+  The mobile ruler has its own 44×80 overview coordinates and 11 px text; clay strip/readout surfaces are light.
+  Tall formula content scrolls within its plate; the reported wheel/End check is not a browser/text-zoom or physical
+  phone-swipe test, and focusable scrub-term access in a tall plate remains unverified.
+- **No automatic omissions**: phones and low-power devices keep backgrounds, galaxies, instruments, glass and floor
+  elements. Do not branch on `hardwareConcurrency` or silently hide reference elements at breakpoints. Existing
+  reader-controlled overlay flags choose visibility; reduced motion changes motion, not content.
+- **Mirrors**: `MirrorCtx` suppresses handle and label registration and hover claims; reflected descendants also
+  receive no-op raycasts. Reflection material shaders fade by world depth, with the floor-plane veil from
+  `FloorFade` (which wraps `Floor`, not an extra screen-space quad). The [1,-1,1] scale has a negative determinant:
+  only `LineMaterial` and `CircleGeometry` reflection materials are forced to `DoubleSide`. This retains elevated
+  Point/halo/glass-corner billboards while preserving clay FrontSide surfaces and BackSide hot outlines. Reflected
+  clay surfaces write depth before the outline. Never restore an unconditional side override. Fix 2 records top/elevated
+  point probes and retained clay-outline checks; this does not establish exhaustive primitive coverage.
+- **Clay**: `look="clay"` selects the separate light studio. Lazy `ClayTile` solids have rounded edges, matcap
+  shading, sign hatch, outline and footprint shadows; bevel radius is .06 times the smallest side. Subject guards
+  cover Arrow, Segment, Point, Quad, Parallelogram and AreaTile before degenerate exits. Clay solids and measurement
+  guides such as Grid/Ruler are allowed. `public/matcap-clay.png` is a deterministic generated lookup (4,276 bytes), not a new dependency.
+- **Lazy boundaries / demos**: Stage → HoloLayer, Quad → Glass, and clay demo → ClayTile are dynamic imports;
+  keep the SSR-safe entry/implementation pattern and no `manualChunks`. `src/viz/demo/holo{,.impl}.tsx` adds
+  DEMO-HOLO (existing law-of-cosines values and vertex drags), DEMO-FLOOR and DEMO-CLAY. The dev/engine page now has
+  nine cards on one shared demand canvas; hidden dev/holo-probe supplies isolated pixel measurements.
+- **Atmosphere**: continuous multi-scale cloud/dust fields, irregular spiral arms and luminous cores replace the
+  initial patterned rings; miniature panels use diffuse wisps. Seeded NDC imagery remains static through zoom/orbit.
+  This is a procedural interpretation of the reference, with all chosen elements retained, not a photographic copy.
+- **GLSL / accounting**: `src/lib/compact-glsl.mjs` compacts the pinned Three module's shader whitespace; tests
+  preserve lexical tokens and preprocessor directive interiors/line breaks for all 86 selected strings. No Three
+  alias, dependency addition, feature removal, `manualChunks` or raised raw warning threshold is used. Hidden source
+  maps support exact generated-byte ownership accounting in `task-6h-evidence/audit.ts`; they are attribution evidence.
+- **Reviewed evidence**: production headless Chrome at 1280/360 px, real CDP drag/hover/orbit,
+  reduced-motion layout checks, glow/glass/matcap/reflection probes and mirror DOM tests. Fix 2 records 189 passing
+  tests, check over 110 files with 0 errors / 0 warnings / 0 hints, and a 20-page warning-free build. These are implementer results, not
+  rerun by this documentation update. The independent reviewer inspected supplied gate completions, reproduced the
+  ownership audit read-only, and checked focused culling/material evidence; broad gates were not independently rerun.
+  Physical-device coverage, exhaustive reflections and long GPU stress remain
+  unproven. Procedural galaxies/SVG panels are stylized, not pixel-identical reference reproductions. UI translation
+  remains Task 6g; this change does not establish bilingual UI.
+
+**Accepted Task 6h measurements (`90c522a`), independently reproduced ownership audit:**
+
+| Measurement | Gzip bytes | Scope |
+| --- | ---: | --- |
+| Attributed reusable core | 299,949 | Ownership metric; 51 bytes below 300,000, not independent network transfer |
+| Full physical scene-entry closure | 453,267 | Includes React/KaTeX; excludes HTML/search/fonts/texture |
+| Preserved `cb0042d` baseline closure | 437,679 | Increase 15,588 bytes against the 18,000-byte delta limit |
+| Actual renderer-containing chunk | 271,291 | 993,290 raw bytes; whole-chunk transfer |
+
+Attribution retains every reusable module/dependency and unbounded/inter-module glue; exclusions are actual
+demo/lesson payload and external React/react-dom/scheduler/KaTeX. Hidden maps identify exact emitted intervals;
+same-source enclosed unmapped runs count with that source. Retained intervals are concatenated in original order
+per chunk and gzipped, not allocated proportionally from mixed-chunk gzip. `audit.json` and `attributed-*.js` retain
+the evidence. The full physical closure remains the transfer measurement; filename subtotals are superseded.
+The 51-byte attributed margin is fragile. `chunkSizeWarningLimit` remains 1015; it is not a transfer budget.
+Task 11's course-wide per-page reporting remains required.
 
 ## Whole-course execution (2026-10-11)
 
