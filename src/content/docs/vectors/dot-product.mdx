@@ -45,7 +45,7 @@ Three squares, three sums. We have not used the angle yet.
 
 ## 2. The derivation
 
-The scene below walks through the whole derivation in nine steps. Step with ◀ ▶ (or the slider), and drag the tips of $\mathbf{a}$ and $\mathbf{b}$ at any step: every number in the formula, the table and the panel is computed from the arrows you see. The text after the scene goes through the same steps slowly, with our fixed numbers.
+The scene below walks through the whole derivation in nine steps. Step with ◀ ▶ (or the slider), and drag the tips of $\mathbf{a}$ and $\mathbf{b}$ at any step: every number in the formula, the table and the panel is computed from the arrows you see. The text after the scene walks through the same derivation slowly, in seven written steps with our fixed numbers.
 
 <SceneIsland caption="DP-1 · Derivation: the law of cosines and the components give the same number." rows={rowsFor(1, locale)} hud formula formulaHeight={100}>
   <DotScene scene={1} locale={locale} client:only="react" />
@@ -137,9 +137,9 @@ $$
 \mathbf{a} \cdot \mathbf{b} = \lvert \mathbf{a} \rvert \cdot (\lvert \mathbf{b} \rvert \cos\theta)
 $$
 
-That is the area of a rectangle with base $\lvert \mathbf{a} \rvert$ and height equal to the shadow. With our numbers the shadow is exactly $5 / \sqrt{10}$, so the rectangle is $\sqrt{10} \cdot (5 / \sqrt{10}) = 5$. With rounded decimals, $3.162 \times 1.581 \approx 5.00$. You have seen this rectangle before: it is exactly the strip that [lesson 0.5](lesson:law-of-cosines) cut out of the square on side $a$. The law of cosines reads $\lvert \mathbf{a} - \mathbf{b} \rvert^2 = \lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2\,(\mathbf{a} \cdot \mathbf{b})$: Pythagoras with two rectangles of area $\mathbf{a} \cdot \mathbf{b}$ removed.
+That is the area of a rectangle whose height is $\lvert \mathbf{a} \rvert$ and whose width is the shadow: in the scene it stands on the line of $\mathbf{a}$, as wide as the shadow, and reaches $\lvert \mathbf{a} \rvert$ away from that line. With our numbers the shadow is exactly $5 / \sqrt{10}$, so the rectangle is $\sqrt{10} \cdot (5 / \sqrt{10}) = 5$. With rounded decimals, $3.162 \times 1.581 \approx 5.00$. You have seen this rectangle before: it is exactly the strip that [lesson 0.5](lesson:law-of-cosines) cut out of the square on side $a$. The law of cosines reads $\lvert \mathbf{a} - \mathbf{b} \rvert^2 = \lvert \mathbf{a} \rvert^2 + \lvert \mathbf{b} \rvert^2 - 2\,(\mathbf{a} \cdot \mathbf{b})$: Pythagoras with two rectangles of area $\mathbf{a} \cdot \mathbf{b}$ removed.
 
-The rectangle's height is always $\lvert \mathbf{a} \rvert$ and its width is the shadow. Drag $\mathbf{b}$ onto the line of $\mathbf{a}$ and the shadow becomes all of $\lvert \mathbf{b} \rvert$: the rectangle is $\lvert \mathbf{a} \rvert$ tall and $\lvert \mathbf{b} \rvert$ wide, a square only when the two lengths match. Pointing $\mathbf{b}$ the opposite way gives the same rectangle on the other side of the origin, hatched.
+Its height stays $\lvert \mathbf{a} \rvert$ whatever you do with $\mathbf{b}$; only the width changes. Drag $\mathbf{b}$ onto the line of $\mathbf{a}$ and the shadow becomes all of $\lvert \mathbf{b} \rvert$: the rectangle is $\lvert \mathbf{a} \rvert$ tall and $\lvert \mathbf{b} \rvert$ wide, a square only when the two lengths match. Pointing $\mathbf{b}$ the opposite way gives the same rectangle on the other side of the origin, hatched.
 
 **Face 3: brightness.** If $\mathbf{a}$ and $\mathbf{b}$ were unit vectors, $\mathbf{a} \cdot \mathbf{b}$ would be $\cos\theta$ alone, and that is the brightness a Lambert surface shows. The strip under the scene shows this face as $\max(0, \cos\theta)$; section 5 makes it the whole scene.
 
@@ -280,7 +280,7 @@ The dashed circle where $\mathbf{N} \cdot \mathbf{L} = 0$ is the terminator: the
       explain: "The component formula needs no angle. The angle is what you get out of the dot product afterwards: cos θ = a·b / (|a||b|) = 5 / √50 ≈ 0.707, so θ = 45°."
     },
     {
-      q: "The rectangle with base |a| and height equal to the shadow of b on a has area…",
+      q: "The rectangle of height |a| and width equal to the shadow of b on a has area…",
       options: [
         "|a| + |b| cos θ",
         "|a||b|, independent of the angle",
@@ -288,7 +288,7 @@ The dashed circle where $\mathbf{N} \cdot \mathbf{L} = 0$ is the terminator: the
         "a·b, counted as negative (hatched) when θ is more than 90°"
       ],
       answer: 3,
-      explain: "Base |a| times height |b| cos θ is |a||b| cos θ = a·b. Past 90° the shadow points backwards, so this signed area is negative; lesson 0.5 drew it hatched and added it instead of subtracting."
+      explain: "Height |a| times width |b| cos θ is |a||b| cos θ = a·b. Past 90° the shadow points backwards, so this signed area is negative; lesson 0.5 drew it hatched and added it instead of subtracting."
     },
     {
       q: "Lambert brightness for N·L = −0.3 is…",

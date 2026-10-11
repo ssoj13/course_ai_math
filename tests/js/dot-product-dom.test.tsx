@@ -57,7 +57,7 @@ for (const locale of ['en', 'ru'] as const) {
 			expect(m.cell('dot')!.textContent).toBe('5');
 			for (const id of ['cross', 'p1', 'p2', 'dot']) expect(m.store.getState().hot.has(id)).toBe(true);
 			// The N-panel row `dot` appears at step 4, `rhs` at 7, `rect` at 8.
-			const rowIds = () => [...m.host.querySelectorAll('.lab-vp-panel .lab-np-row')].map((r) => (r as HTMLElement).dataset.id);
+			const rowIds = () => [...m.host.querySelectorAll('.lab-vp-panel .lab-np-row:not(.is-pending)')].map((r) => (r as HTMLElement).dataset.id);
 			expect(rowIds()).toContain('dot'); expect(rowIds()).not.toContain('rhs');
 			await m.step(5);
 			expect(m.hidden('l3')).toBe(false); expect(m.host.querySelector('[data-m="l1"]')!.classList.contains('is-dim')).toBe(true);
@@ -82,7 +82,7 @@ for (const locale of ['en', 'ru'] as const) {
 			// Drag at a step: a write keeps the step and changes every number (step 8, b antiparallel).
 			await act(async () => m.store.getState().set('b', [-1, -2]));
 			expect(m.store.getState().step.derive).toBe(8);
-			expect(m.cell('dot')!.textContent).toBe('−5');
+			expect(m.cell('dot')!.textContent).toBe('-5');
 			const text = m.host.querySelector('[data-dp-controls="1"] [data-dp-readout] p[aria-live]')!.textContent!;
 			expect(text).toContain('-5.00');
 			expect(text).not.toContain('NaN');

@@ -211,7 +211,7 @@ describe('rows', () => {
 		expect(rowsFor(2, 'en').map((r) => r.id)).toEqual(['a', 'b', 'na', 'nb', 'shadow', 'cosT', 'th', 'dot', 'rect', 'bright', 'aa']);
 		expect(rowsFor(3, 'en').map((r) => r.id)).toEqual(['a3', 'b3', 'na3', 'nb3', 'th3', 'dot3', 'rhs3', 'rect3']);
 		expect(rowsFor(4, 'en').map((r) => r.id)).toEqual(['light', 'P', 'nl_raw', 'N', 'L', 'NdotL', 'thNL', 'brightNL']);
-		expect(facesFor('en').map((r) => r.id)).toEqual(['sum', 'rect', 'bright']);
+		expect(facesFor('en').map((f) => f.row.id)).toEqual(['sum', 'rect', 'bright']);
 	});
 	test('the raw N·L label does not change the reserved chip lines (no hydration shift)', () => {
 		for (const locale of ['en', 'ru'] as const) expect(chipLines(rowsFor(4, locale, 1))).toBe(chipLines(rowsFor(4, locale, 0)));

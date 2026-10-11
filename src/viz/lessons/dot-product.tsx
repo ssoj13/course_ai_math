@@ -190,7 +190,9 @@ export const HOVER_LINKS: Readonly<Record<string, readonly string[]>> = {
 	hp_pos: ['sgn_pos'], hp_neg: ['sgn_neg'], perp: ['sgn_zero', 'badge'],
 	sgn_pos: ['hp_pos'], sgn_neg: ['hp_neg'], sgn_zero: ['perp', 'badge'],
 	aa: ['a', 'na'],
-	L: ['L_dir', 'light'], L_dir: ['L'], term: ['rt'],
+	L: ['L_dir', 'light'], L_dir: ['L', 'light'], term: ['rt'],
+	// DP-3 GLSL line 2 (the cosine) lights the geometric route and the angle it gives.
+	cosT3: ['rhs3', 'th3'],
 	s3: ['amb', 'expand', 'd1sq', 'd2sq'], s4: ['cross', 'p1', 'p2', 'dot'],
 };
 
@@ -240,8 +242,8 @@ function StrikeClock() {
 // ---------------------------------------------------------------------------------------------------------------
 // Tables.
 
-/** Plain numbers for table cells: up to 4 decimals, no trailing zeros, `−` sign, never -0. */
-const fmtCell = (x: number) => String(+x.toFixed(4) + 0).replace('-', '−');
+/** Plain numbers for table cells: up to 4 decimals, no trailing zeros, never -0 (ASCII minus, like every readout). */
+const fmtCell = (x: number) => String(+x.toFixed(4) + 0);
 
 /** DP-1 "comp": two component rows and the sums, columns revealed by step (spec DP-1 NumTable). */
 function CompTable() {
@@ -290,7 +292,11 @@ function FacesStrip() {
 	// The cells are N-panel fields, drawn in the viewport's dark chrome (their colours are calibrated for it).
 	return <div className="not-content" data-dp-faces="" style={{ background: 'var(--viz-chrome)', color: 'var(--viz-ink)', padding: '.4rem', borderRadius: 6 }}>
 		<div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
-			{facesFor(locale).map((r) => <FieldCell key={r.id} lesson={LESSON} row={r} size="lg" />)}
+			{/* Each cell: glyph, math label and value; the words go under it, so at 360 px no value chip covers a label. */}
+			{facesFor(locale).map(({ row, caption }) => <figure key={row.id} style={{ margin: 0, display: 'grid', gap: '.2rem' }}>
+				<FieldCell lesson={LESSON} row={row} size="lg" />
+				<figcaption style={{ fontSize: '.85em', color: 'var(--viz-muted)' }}>{caption}</figcaption>
+			</figure>)}
 		</div>
 		<p style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', alignItems: 'center' }} aria-live="polite">
 			<span>{t(locale, 'dp.signLabel')}</span>

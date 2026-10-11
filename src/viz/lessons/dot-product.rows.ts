@@ -46,7 +46,7 @@ export function rowsFor(scene: Scene, locale: Locale, raw = 0): readonly Row[] {
 			ro('th', 'θ', (v) => derive(v).th, { fmt: fmtDeg, chars: 6, tip: { text: t(locale, 'dp.thTip') } }),
 			ro('dot', 'Σaᵢbᵢ', (v) => derive(v).dot, { group, ...fromStep(4), tip: { text: t(locale, 'dp.dotTip'), tex: String.raw`\sum_i a_i b_i` } }),
 			ro('rhs', '|a||b| cos θ', (v) => derive(v).rhs, { group, ...fromStep(7), tip: { text: t(locale, 'dp.rhsTip'), tex: String.raw`\lvert\mathbf{a}\rvert\,\lvert\mathbf{b}\rvert\cos\theta` } }),
-			ro('rect', t(locale, 'dp.rectLabel'), (v) => derive(v).rect, { group, ...fromStep(8), glyph: 'rect', glyphValue: rectGlyph, tip: { text: t(locale, 'dp.rectTip') } }),
+			ro('rect', t(locale, 'dp.rectLabel'), (v) => derive(v).rect, { group, ...fromStep(8), tip: { text: t(locale, 'dp.rectTip') } }),
 		];
 	}
 	if (scene === 2) {
@@ -55,12 +55,12 @@ export function rowsFor(scene: Scene, locale: Locale, raw = 0): readonly Row[] {
 			...inputs2(locale),
 			ro('na', '|a|', (v) => derive(v).na),
 			ro('nb', '|b|', (v) => derive(v).nb),
-			ro('shadow', 'b·â', (v) => derive(v).shadow, { tip: { text: t(locale, 'dp.shadowTip'), tex: String.raw`\lvert\mathbf{b}\rvert\cos\theta` } }),
+			ro('shadow', t(locale, 'dp.shadow'), (v) => derive(v).shadow, { tip: { text: t(locale, 'dp.shadowTip'), tex: String.raw`\lvert\mathbf{b}\rvert\cos\theta` } }),
 			ro('cosT', 'cos θ', (v) => derive(v).cosT, { fmt: fmtCos }),
 			ro('th', 'θ', (v) => derive(v).th, { fmt: fmtDeg, chars: 6, tip: { text: t(locale, 'dp.thTip') } }),
-			ro('dot', 'Σaᵢbᵢ', (v) => derive(v).dot, { group: faces, glyph: 'sum', glyphValue: products, tip: { text: t(locale, 'dp.dotTip'), tex: String.raw`\sum_i a_i b_i` } }),
-			ro('rect', t(locale, 'dp.rectLabel'), (v) => derive(v).rect, { group: faces, glyph: 'rect', glyphValue: rectGlyph, tip: { text: t(locale, 'dp.rectTip') } }),
-			ro('bright', 'max(0, cos θ)', (v) => derive(v).bright, { group: faces, fmt: fmtCos, glyph: 'disc', glyphValue: (v) => finite(derive(v).bright), tip: { text: t(locale, 'dp.brightTip') } }),
+			ro('dot', 'Σaᵢbᵢ', (v) => derive(v).dot, { group: faces, tip: { text: t(locale, 'dp.dotTip'), tex: String.raw`\sum_i a_i b_i` } }),
+			ro('rect', t(locale, 'dp.rectLabel'), (v) => derive(v).rect, { group: faces, tip: { text: t(locale, 'dp.rectTip') } }),
+			ro('bright', 'max(0,\u00a0cos\u00a0θ)', (v) => derive(v).bright, { group: faces, fmt: fmtCos, tip: { text: t(locale, 'dp.brightTip') } }),
 			ro('aa', 'a·a', (v) => derive(v).aa, { group: t(locale, 'dp.check'), tip: { text: t(locale, 'dp.aaTip') } }),
 		];
 	}
@@ -76,7 +76,7 @@ export function rowsFor(scene: Scene, locale: Locale, raw = 0): readonly Row[] {
 			ro('th3', 'θ', (v) => derive3(v).th, { fmt: fmtDeg, chars: 6, tip: { text: t(locale, 'dp.thTip') } }),
 			ro('dot3', 'Σaᵢbᵢ', (v) => derive3(v).dot, { group, tip: { text: t(locale, 'dp.dotTip'), tex: String.raw`\sum_i a_i b_i` } }),
 			ro('rhs3', '|a||b| cos θ', (v) => derive3(v).rhs, { group, tip: { text: t(locale, 'dp.rhsTip') } }),
-			ro('rect3', t(locale, 'dp.rectLabel'), (v) => derive3(v).rect, { group, glyph: 'rect', glyphValue: (v) => { const z = derive3(v); return [finite(z.shadow), z.na]; }, tip: { text: t(locale, 'dp.rectTip') } }),
+			ro('rect3', t(locale, 'dp.rectLabel'), (v) => derive3(v).rect, { group, tip: { text: t(locale, 'dp.rectTip') } }),
 		];
 	}
 	const probe = t(locale, 'dp.probe');
@@ -96,10 +96,10 @@ export function rowsFor(scene: Scene, locale: Locale, raw = 0): readonly Row[] {
  * DP-2's three-faces strip (spec DP-2): the same number as a sum of products, an area and a brightness, as large field
  * cells with glyphs.
  */
-export function facesFor(locale: Locale): Row[] {
+export function facesFor(locale: Locale): { row: Row; caption: string }[] {
 	return [
-		{ id: 'sum', label: t(locale, 'dp.faceSum'), kind: 'ro', chars: 7, fmt, glyph: 'sum', value: (v) => derive(v).dot, glyphValue: products },
-		{ id: 'rect', label: t(locale, 'dp.faceRect'), kind: 'ro', chars: 7, fmt, glyph: 'rect', value: (v) => derive(v).rect, glyphValue: rectGlyph },
-		{ id: 'bright', label: t(locale, 'dp.faceBright'), kind: 'ro', chars: 7, fmt: fmtCos, glyph: 'disc', value: (v) => derive(v).bright, glyphValue: (v) => finite(derive(v).bright) },
+		{ row: { id: 'sum', label: 'Σaᵢbᵢ', kind: 'ro', chars: 7, fmt, glyph: 'sum', value: (v) => derive(v).dot, glyphValue: products }, caption: t(locale, 'dp.faceSum') },
+		{ row: { id: 'rect', label: '|a|·(b·â)', kind: 'ro', chars: 7, fmt, glyph: 'rect', value: (v) => derive(v).rect, glyphValue: rectGlyph }, caption: t(locale, 'dp.faceRect') },
+		{ row: { id: 'bright', label: 'max(0,\u00a0cos\u00a0θ)', kind: 'ro', chars: 7, fmt: fmtCos, glyph: 'disc', value: (v) => derive(v).bright, glyphValue: (v) => finite(derive(v).bright) }, caption: t(locale, 'dp.faceBright') },
 	];
 }

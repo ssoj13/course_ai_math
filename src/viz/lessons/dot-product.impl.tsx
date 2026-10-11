@@ -1,8 +1,9 @@
 import { t, type Locale } from '../../i18n/core';
 import { useLocale } from '../../i18n/react';
-import { useStep, useVal, useVals } from '../store';
-import { add, norm, scale, type V } from '../geom';
-import { STYLE } from '../palette';
+import { useHot, useStep, useVal, useVals } from '../store';
+import { add, norm, scale, sub, to3, type V } from '../geom';
+import { STYLE, usePalette, type SceneRole } from '../palette';
+import { Stroke } from '../scene/view';
 import { ViewportCard } from '../scene/ViewportCard';
 import { Grid } from '../scene/Grid';
 import { Arrow } from '../scene/Arrow';
@@ -15,7 +16,7 @@ import { HalfPlane } from '../scene/HalfPlane';
 import { LitSphere } from '../scene/LitSphere';
 import { Circle } from '../scene/Circle';
 import { Label } from '../scene/Label';
-import { Show, useOverlay } from '../scene/handles';
+import { HOVER_RANK, Show, useHoverable, useOverlay } from '../scene/handles';
 import type { StatusSpec } from '../scene/StatusBar';
 import { DotFormula } from './dot-product';
 import { rowsFor, type Scene } from './dot-product.rows';
@@ -48,6 +49,25 @@ function Names({ aKey, bKey }: { aKey: string; bKey: string }) {
 	</Show>;
 }
 
+/**
+ * A rectangle's value label at its far corner (the corner opposite O / P), not its centroid: the centroid sits on the
+ * shadow band's label (DP-2) and on P's arrows (DP-4). Follows the `labels` overlay.
+ */
+function RectLabel({ id, pts, at, text, role = 'vecA' }: { id: string; pts: readonly V[]; at?: V; text: string; role?: SceneRole }) {
+	// Just beyond the far corner, along the diagonal from the centre, so the text clears the rectangle's glowing edges.
+	const corner = pts[2], centre = scale(pts.reduce<V>((s, p) => add(s, p), pts[0].map(() => 0)), 1 / pts.length);
+	const where = at ?? add(corner, scale(sub(corner, centre), 0.2));
+	return <Show ov="labels"><Label lesson={LESSON} id={id} at={where} role={role} offset={[0, 0]}>{text}</Label></Show>;
+}
+
+/**
+ * DP-2's boundary a·v = 0: a dashed muted line that gets the hot OUTLINE (not a new colour) while b lies on it, or
+ * while it is hovered/linked (spec DP-2 `perp`).
+ */
+function Boundary({ a, b, lit }: { a: V; b: V; lit: boolean }) {
+	const pal = usePalette(), hot = useHot(LESSON, 'perp'), hover = useHoverable(LESSON, 'perp', HOVER_RANK.guide);
+	return <group {...hover}><Stroke points={[to3(a), to3(b)]} color={pal.muted} hot={hot || lit} width={STYLE.edge} halo={false} dashPx={[7, 5]} order={1} /></group>;
+}
 /** Shadow of b on the line of a: the soft band O → foot and the dashed drop from b's tip (one id: `shadow`). */
 function Shadow({ id, foot, tipKey, zero }: { id: string; foot: V; tipKey: string; zero: V }) {
 	return <>
@@ -76,8 +96,8 @@ function Derivation() {
 		<Show ov="rect">{z.rectPts && <>
 			{/* Collapsed (zero width, hidden) before step 8, so stepping to 8 grows it from O along a with the spring. */}
 			<Poly lesson={LESSON} id="rect" timeline="derive" role="vecA" fill={0.28} hatched={(vals) => derive(vals).shadow < 0}
-				pts={(vals, s) => { const r = derive(vals).rectPts!; return s >= 8 ? r : [r[0], r[0], r[3], r[3]]; }}
-				label={labels && step >= 8 ? (vals) => 'a·b = ' + fmt(derive(vals).rect) : undefined} />
+				pts={(vals, s) => { const r = derive(vals).rectPts!; return s >= 8 ? r : [r[0], r[0], r[3], r[3]]; }} />
+			{step >= 8 && <RectLabel id="rect" pts={z.rectPts} text={'a·b = ' + fmt(z.rect)} />}
 			{step >= 8 && <Shadow id="shadow" foot={z.foot!} tipKey="b" zero={ORIGIN2} />}
 		</>}</Show>
 		<Arrow lesson={LESSON} id="a" to="a" role="vecA" legs={legs} />
@@ -117,15 +137,15 @@ function Sign() {
 			</Show>
 			<Show ov="perp">
 				{/* The boundary a·v = 0: every direction perpendicular to a. Lit while b lies on it. */}
-				<Segment lesson={LESSON} id="perp" a={scale([z.ahat[1], -z.ahat[0]], ext)} b={scale([-z.ahat[1], z.ahat[0]], ext)} dashed role={z.perp ? 'hot' : 'muted'} />
+				<Boundary a={scale([z.ahat[1], -z.ahat[0]], ext)} b={scale([-z.ahat[1], z.ahat[0]], ext)} lit={z.perp} />
 				<Show ov="labels"><Label lesson={LESSON} id="perp" at={scale([-z.ahat[1], z.ahat[0]], 0.85 * ext)} role="muted" offset={[0, -10]}>a·v = 0</Label></Show>
 			</Show>
 			<Show ov="shadow"><Shadow id="shadow" foot={z.foot!} tipKey="b" zero={ORIGIN2} />
 				<Show ov="labels"><Label lesson={LESSON} id="shadow" at={mid(ORIGIN2, z.foot!)} role="muted" offset={[0, 14]}>{'|b| cos θ = ' + fmt(z.shadow)}</Label></Show>
 			</Show>
 			<Show ov="rect">
-				<Poly lesson={LESSON} id="rect" step={0} role="vecA" fill={0.28} pts={(vals) => derive(vals).rectPts!} hatched={(vals) => derive(vals).shadow < 0}
-					label={labels ? (vals) => 'a·b = ' + fmt(derive(vals).rect) : undefined} />
+				<Poly lesson={LESSON} id="rect" step={0} role="vecA" fill={0.28} pts={(vals) => derive(vals).rectPts!} hatched={(vals) => derive(vals).shadow < 0} />
+				<RectLabel id="rect" pts={z.rectPts!} text={'a·b = ' + fmt(z.rect)} />
 			</Show>
 		</>}
 		<Arrow lesson={LESSON} id="a" to="a" role="vecA" legs={legs} />
@@ -151,8 +171,8 @@ function Explorer3() {
 			</Show>
 			<Show ov="rect">
 				<Shadow id="shadow3" foot={z.foot!} tipKey="b3" zero={ORIGIN3} />
-				<Poly lesson={LESSON} id="rect3" step={0} role="vecA" fill={0.28} pts={(vals) => derive3(vals).rectPts!} hatched={(vals) => derive3(vals).shadow < 0}
-					label={labels ? (vals) => 'a·b = ' + fmt(derive3(vals).rect) : undefined} />
+				<Poly lesson={LESSON} id="rect3" step={0} role="vecA" fill={0.28} pts={(vals) => derive3(vals).rectPts!} hatched={(vals) => derive3(vals).shadow < 0} />
+				<RectLabel id="rect3" pts={z.rectPts!} text={'a·b = ' + fmt(z.rect)} />
 			</Show>
 		</>}
 		<Arrow lesson={LESSON} id="a3" to="a3" role="vecA" legs={legs} label="a" />
@@ -201,8 +221,9 @@ function Lamp() {
 		<Show ov="angle"><AngleArc lesson={LESSON} id="thNL" at={z.P} from={z.N} to={z.L} r={0.5} normal={z.arcRef} label={labels ? (d) => 'θ = ' + fmtAngle(d) + '°' : undefined} /></Show>
 		<RightAngle lesson={LESSON} id="rt" at={z.P} u={z.N} v={z.L} show={Math.abs(z.ndotl) < 1e-9} />
 		<Show ov="rect">
-			<Poly lesson={LESSON} id="rectNL" step={0} role="vecB" fill={0.28} pts={(vals) => lamp(vals).rectPts} hatched={(vals) => lamp(vals).ndotl < 0}
-				label={labels ? (vals) => 'N·L = ' + fmtCos(lamp(vals).ndotl) : undefined} />
+			<Poly lesson={LESSON} id="rectNL" step={0} role="vecB" fill={0.28} pts={(vals) => lamp(vals).rectPts} hatched={(vals) => lamp(vals).ndotl < 0} />
+			{/* Controller ruling (DP-4 crowding): the label sits beyond the rectangle's far corner, along h away from P. */}
+			<RectLabel id="rectNL" role="vecB" pts={z.rectPts} at={add(z.rectPts[2], scale(sub(z.rectPts[3], z.P), 0.25))} text={'N·L = ' + fmtCos(z.ndotl)} />
 		</Show>
 		<Point lesson={LESSON} id="light" at="nl_light" move={moveLight} role="light" size={14} label={t(locale, 'dp.light')} />
 		<Point lesson={LESSON} id="P" at="nl_pt" move={moveP} role="ink" label="P" />
