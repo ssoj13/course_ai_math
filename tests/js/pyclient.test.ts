@@ -5,7 +5,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { createPyClient, type WorkerLike } from '../../src/viz/py/pyclient';
 import { cleanTrace, type PyReply, type PyRequest } from '../../src/viz/py/protocol';
-import { decodeAttr, fenceCode, outputRows } from '../../src/viz/py/fence';
+import { decodeAttr, fenceCode, MAX_ROWS, outputRows } from '../../src/viz/py/fence';
 
 /** A fake worker whose replies are scripted by `answer` (return undefined = never answer). */
 function fake(answer: (m: PyRequest, n: number) => Omit<PyReply, 'id'> | undefined) {
@@ -174,10 +174,16 @@ describe('fence', () => {
 		expect(() => decodeAttr('&nbsp;')).toThrow(/unknown character reference/);
 	});
 
-	test('outputRows counts prints within 2..16', () => {
+	test('outputRows: prints, literal loops, documented matrix rows, clamped to 2..MAX_ROWS', () => {
 		expect(outputRows('x = 1')).toBe(2);
 		expect(outputRows('print(1)\nprint(2)\nprint(3)')).toBe(3);
-		expect(outputRows('print(1)\n'.repeat(40))).toBe(16);
+		expect(outputRows('print(1)\n'.repeat(40))).toBe(MAX_ROWS);
+		// A print in a loop over a literal tuple prints once per item; code after the loop counts once again.
+		expect(outputRows('for d in (0, 30, 60, 90):\n    r = d\n    print(r)\nprint("end")')).toBe(5);
+		expect(outputRows('for i in range(2, 5):\n    for j in [1, 2]:\n        print(i, j)')).toBe(6);
+		expect(outputRows('for i in range(n):\n    print(i)\nprint(1)\nprint(2)')).toBe(3); // unknown count: once
+		// A matrix whose rows are documented in the comment lines below its print.
+		expect(outputRows('print(np.round(S, 2))\n# [[1.   0.99]\n#  [0.99 1.  ]]\nprint(1)')).toBe(3);
 	});
 });
 

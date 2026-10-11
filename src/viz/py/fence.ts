@@ -42,12 +42,44 @@ export function fenceCode(html: string): string {
 	return decodeAttr(codes[0]?.[1] ?? '').replace(EC_LINE_SEP, '\n');
 }
 
+/** Tallest pane; longer output (rare in lessons) scrolls. */
+export const MAX_ROWS = 24;
+
+/** Iterations of a `for` header whose iterable is a literal: `(0, 30, 60)`, `[a, b]`, `range(7)`, `range(2, 9)`. */
+function loopCount(header: string): number {
+	const it = /\bin\s+(.+?):\s*(?:#.*)?$/.exec(header)?.[1]?.trim() ?? '';
+	const range = /^range\(\s*(-?\d+)\s*(?:,\s*(-?\d+)\s*)?\)$/.exec(it);
+	if (range) return Math.max(0, range[2] === undefined ? Number(range[1]) : Number(range[2]) - Number(range[1]));
+	const lit = /^[([](.*)[)\]]$/.exec(it);
+	if (lit && !/[([]/.test(lit[1] ?? '')) return (lit[1] ?? '').split(',').filter((s) => s.trim()).length;
+	return 1; // unknown iterable: count the body once
+}
+
+/** Rows of a printed matrix as documented in the comment lines right under its print (`# [[1. 0.]` / `#  [0. 1.]]`). */
+function commentRows(lines: readonly string[], from: number): number {
+	let n = 0;
+	while (/^\s*#\s*\[/.test(lines[from + n] ?? '')) n++;
+	return n;
+}
+
 /**
  * Height of the output pane in text lines, reserved before any run so that output arriving seconds after the click
- * (Pyodide download) does not push the page down. The estimate counts `print(` calls (a call inside a loop prints
- * several lines, a matrix prints several rows: longer output scrolls inside the pane, it never resizes it).
+ * (Pyodide download) does not push the page down. Each `print(` counts one line, times the iterations of the literal
+ * `for` loops around it, or the rows of a matrix written in the comment lines under it. An explicit `rows` on the
+ * cell overrides the estimate; output longer than the pane scrolls inside it, it never resizes the pane.
  */
 export function outputRows(code: string): number {
-	const prints = code.match(/\bprint\(/g)?.length ?? 0;
-	return Math.min(Math.max(prints, 2), 16);
+	const lines = code.split('\n');
+	const loops: { indent: number; n: number }[] = [];
+	let rows = 0;
+	lines.forEach((line, i) => {
+		if (!line.trim() || /^\s*#/.test(line)) return;
+		const indent = line.length - line.trimStart().length;
+		while (loops.length && indent <= (loops.at(-1)?.indent ?? -1)) loops.pop();
+		const mult = loops.reduce((m, l) => m * l.n, 1);
+		const prints = line.match(/\bprint\(/g)?.length ?? 0;
+		if (prints) rows += mult * Math.max(prints, commentRows(lines, i + 1));
+		if (/^\s*for\b/.test(line)) loops.push({ indent, n: loopCount(line) });
+	});
+	return Math.min(Math.max(rows, 2), MAX_ROWS);
 }

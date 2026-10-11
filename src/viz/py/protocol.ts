@@ -17,10 +17,11 @@ export const PYODIDE_VERSION = '314.0.7';
 export const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.mjs`;
 
 /**
- * One-time download of the first run (Pyodide core + stdlib + NumPy), rounded, for the first-run note. Measured in the
- * Task 8 headless run of the production preview (transfer sizes of the jsDelivr responses, see task8-report.md).
+ * One-time download of the first run, rounded up, for the first-run note. Measured 2026-10-11 on the production preview
+ * (encoded response bodies from jsDelivr): pyodide.asm.wasm 3.44 MB, python_stdlib.zip 2.51 MB, numpy wheel 2.93 MB,
+ * pyodide.asm.mjs 0.26 MB, lock + loader 0.03 MB = 9.18 MB (task8-report.md).
  */
-export const DOWNLOAD_MB = 15;
+export const DOWNLOAD_MB = 10;
 
 /** Why a run failed. `load`: Python or a package could not be downloaded; `py`: the code raised; `timeout`: client side. */
 export type Fail = 'load' | 'py' | 'timeout';

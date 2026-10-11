@@ -20,12 +20,14 @@
 import UiStrings from './UiStrings.astro';
 import { pageLocale, t } from '../i18n/ui';
 import { colabUrl } from '../lib/colab';
-import { fenceCode, outputRows } from '../viz/py/fence';
+import { fenceCode, MAX_ROWS, outputRows } from '../viz/py/fence';
 import { DOWNLOAD_MB } from '../viz/py/protocol';
 
 interface Props {
 	/** Notebook (bare file name, see ColabBadge) offered as the alternative when Python cannot run in the browser. */
 	colab?: string;
+	/** Output pane height in lines when `outputRows`' estimate is wrong (e.g. a matrix printed without a comment). */
+	rows?: number;
 }
 
 const locale = pageLocale(Astro);
@@ -33,19 +35,24 @@ const locale = pageLocale(Astro);
 const slot = await Astro.slots.render('default');
 const code = fenceCode(slot);
 const href = Astro.props.colab ? colabUrl(Astro.props.colab) : undefined;
+const { rows = outputRows(code) } = Astro.props;
+if (!Number.isInteger(rows) || rows < 1 || rows > MAX_ROWS) throw new Error(`<PyCell>: rows must be an integer in 1..${MAX_ROWS}, got ${rows}`);
 ---
 
 <lab-py class="lab-card not-content lab-py" data-code={code}>
 	<p class="lab-eyebrow">{t(locale, 'py.eyebrow')}</p>
-	<div class="py-src" data-ref="src"><Fragment set:html={slot} /></div>
-	<textarea
-		class="py-edit"
-		data-ref="edit"
-		hidden
-		spellcheck="false"
-		autocapitalize="off"
-		autocomplete="off"
-		aria-label={t(locale, 'py.code')}></textarea>
+	{/* One box for both views: Edit swaps them inside it, so the box's own margins never change. */}
+	<div class="py-code">
+		<div class="py-src" data-ref="src"><Fragment set:html={slot} /></div>
+		<textarea
+			class="py-edit"
+			data-ref="edit"
+			hidden
+			spellcheck="false"
+			autocapitalize="off"
+			autocomplete="off"
+			aria-label={t(locale, 'py.code')}></textarea>
+	</div>
 	<div class="lab-row py-bar">
 		<button type="button" class="lab-button is-primary" data-ref="run" disabled>{t(locale, 'py.run')}</button>
 		<button type="button" class="lab-button" data-ref="edit-btn" aria-pressed="false" disabled>{t(locale, 'py.edit')}</button>
@@ -58,7 +65,7 @@ const href = Astro.props.colab ? colabUrl(Astro.props.colab) : undefined;
 		data-ref="out"
 		tabindex="0"
 		aria-label={t(locale, 'py.output')}
-		style={`--py-rows: ${outputRows(code)}`}>{t(locale, 'py.placeholder')}</pre>
+		style={`--py-rows: ${rows}`}>{t(locale, 'py.placeholder')}</pre>
 </lab-py>
 <UiStrings ns={['py']} />
 
@@ -67,12 +74,15 @@ const href = Astro.props.colab ? colabUrl(Astro.props.colab) : undefined;
 </script>
 
 <style>
+	.py-code {
+		margin-top: 0.5rem;
+	}
 	.py-src :global(.expressive-code) {
-		margin: 0.5rem 0 0;
+		margin: 0;
 	}
 	.py-edit {
 		display: block;
-		margin: 0.5rem 0 0;
+		margin: 0;
 		font-size: var(--sl-text-xs);
 		line-height: 1.65;
 		white-space: pre;

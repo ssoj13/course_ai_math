@@ -82,7 +82,7 @@ export class LabPy extends LabElement {
 		const src = this.ref('src');
 		const box = this.ref<HTMLTextAreaElement>('edit');
 		// Same height as the highlighted block it replaces, so the swap does not move the page.
-		box.style.height = `${src.offsetHeight}px`;
+		box.style.height = `${src.getBoundingClientRect().height}px`; // sub-pixel exact, offsetHeight rounds
 		box.value = this.dataset.code ?? '';
 		src.hidden = true;
 		box.hidden = false;
@@ -113,7 +113,9 @@ export class LabPy extends LabElement {
 
 	private status({ text, kind }: Status): void {
 		const el = this.ref('status');
-		el.className = `lab-msg py-status${kind ? ` is-${kind}` : ''}`;
+		// classList, not className: the element also carries Astro's scoped-style class (its reserved min-height).
+		el.classList.toggle('is-ok', kind === 'ok');
+		el.classList.toggle('is-err', kind === 'err');
 		el.textContent = text;
 	}
 
