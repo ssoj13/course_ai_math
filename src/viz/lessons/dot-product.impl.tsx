@@ -86,11 +86,14 @@ function Derivation() {
 	// label would sit on top of the rectangle's label inside the square on a.
 	const strike = v.strike as number;
 	const sqLabel = (text: string, key: 'na2' | 'nb2' | 'namb2', gone = false) => (labels && !gone ? (vals: Vals) => text + ' = ' + fmt(derive(vals)[key]) : undefined);
+	// Square names lean out of the triangle O, a, b (each square lies outside its side): on a phone a square is smaller than
+	// its name, and centred names covered the arrows, their names and each other (step 5 at 360 px).
+	const out = scale(add(z.a, z.b), 1 / 3);
 	return <>
 		<Show ov="squares">{step >= 1 && <>
-			{z.sq_a && <Poly lesson={LESSON} id="na2" timeline="derive" pts={square('sq_a')} role="vecA" fill={tileFill(fade.a)} label={sqLabel('|a|²', 'na2', strike >= 1)} />}
-			{z.sq_b && <Poly lesson={LESSON} id="nb2" timeline="derive" pts={square('sq_b')} role="vecB" fill={tileFill(fade.b)} label={sqLabel('|b|²', 'nb2', strike >= 2)} />}
-			{z.sq_amb && <Poly lesson={LESSON} id="namb2" timeline="derive" pts={square('sq_amb')} role="vecC" label={sqLabel('|a − b|²', 'namb2')} />}
+			{z.sq_a && <Poly lesson={LESSON} id="na2" timeline="derive" pts={square('sq_a')} role="vecA" fill={tileFill(fade.a)} label={sqLabel('|a|²', 'na2', strike >= 1)} labelAway={out} labelGap={0} />}
+			{z.sq_b && <Poly lesson={LESSON} id="nb2" timeline="derive" pts={square('sq_b')} role="vecB" fill={tileFill(fade.b)} label={sqLabel('|b|²', 'nb2', strike >= 2)} labelAway={out} labelGap={0} />}
+			{z.sq_amb && <Poly lesson={LESSON} id="namb2" timeline="derive" pts={square('sq_amb')} role="vecC" label={sqLabel('|a − b|²', 'namb2')} labelAway={out} labelGap={0} />}
 		</>}</Show>
 		<Show ov="rect">{z.rectPts && <>
 			{/* Collapsed (zero width, hidden) before step 8, so stepping to 8 grows it from O along a with the spring. */}

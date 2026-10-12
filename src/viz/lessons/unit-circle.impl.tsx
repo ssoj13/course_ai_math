@@ -108,7 +108,6 @@ function Shadows() {
 	const fx: V = [z.cos, 0];
 	const fy: V = [0, z.sin];
 	// Labels sit on the side away from P so they never cover the legs or the point.
-	const below = z.sin >= 0 ? 16 : -16;
 	const side = z.cos >= 0 ? -1 : 1;
 	return <>
 		<Reach lo={[-1.35, -1.35]} hi={[1.35, 1.35]} />
@@ -126,7 +125,9 @@ function Shadows() {
 		<Point lesson={LESSON} id="cosf" at={fx} role="axisX" size={5} />
 		<Point lesson={LESSON} id="sinf" at={fy} role="axisY" size={5} />
 		{labels && <>
-			<Label lesson={LESSON} id="cos" at={[z.cos / 2, 0]} offset={[0, below]} role="axisX">{'cos θ = ' + fmt2(z.cos)}</Label>
+			{/* Pushed off the bar (away from P's side) by its own height + gap, not a fixed 16 px: label separation then keeps
+			    moving it the same way past the tick numbers instead of trying "up", which put the red text on its red bar. */}
+			<Label lesson={LESSON} id="cos" at={[z.cos / 2, 0]} away={[z.cos / 2, z.sin >= 0 ? 1 : -1]} gap={7} role="axisX">{'cos θ = ' + fmt2(z.cos)}</Label>
 			<Label lesson={LESSON} id="sin" at={[0, z.sin / 2]} offset={[side * 48, 0]} role="axisY">{'sin θ = ' + fmt2(z.sin)}</Label>
 			<Label lesson={LESSON} id="P" at={P} away={[0, 0]} gap={10}>{'(' + fmt2(z.cos) + ', ' + fmt2(z.sin) + ')'}</Label>
 		</>}

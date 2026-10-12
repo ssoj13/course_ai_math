@@ -8,6 +8,7 @@ import { add, norm, scale, type V } from '../geom';
 import { usePalette } from '../palette';
 import { ViewportCard } from '../scene/ViewportCard';
 import { Grid } from '../scene/Grid';
+import { Room } from '../scene/Stage';
 import { Arrow } from '../scene/Arrow';
 import { Point } from '../scene/Point';
 import { Segment } from '../scene/Segment';
@@ -165,9 +166,11 @@ function Stamps() {
 function Combo() {
 	const v = useVals(LESSON), z = combo(v);
 	return <>
-		<Reach lo={[-8, -6]} hi={[8, 6]} />
-		<Show ov="lattice">{!z.zero && !z.parallel && lattice(z.a, z.b).map(([p, q], i) =>
-			<Segment key={i} lesson={LESSON} id="lattice" a={p} b={q} role="muted" />)}</Show>
+		{/* Room to scrub and paint into; the home view frames the arrows and as much of it as a phone affords. */}
+		<Room lo={[-8, -6]} hi={[8, 6]} />
+		{/* The lattice is graph paper of a and b (furniture, ux): the home view frames the arrows, not its lines. */}
+		<group userData={{ aux: true }}><Show ov="lattice">{!z.zero && !z.parallel && lattice(z.a, z.b).map(([p, q], i) =>
+			<Segment key={i} lesson={LESSON} id="lattice" a={p} b={q} role="muted" />)}</Show></group>
 		<Stamps />
 		<Arrow lesson={LESSON} id="la" to="la" role="vecA" label="a" />
 		<Arrow lesson={LESSON} id="lb" to="lb" role="vecB" label="b" />

@@ -76,11 +76,13 @@ function crossTex(swap: boolean, narrow: boolean): string {
 			tex`${len}\qquad ${area}`,
 		]);
 	}
-	// Phones: one component per line, then the two routes to the same number.
+	// Phones: one component per line, then the two routes to the same number; the sine route breaks before its result
+	// (on one line it was the formula that still scrolled sideways at 360 px).
 	return alignedRows([
 		...comp.map((c, i) => tex`(${U}\times ${W})_${'xyz'[i]}=${c}=\s{c${i + 1}}`),
 		len,
-		area,
+		tex`\t{area}{\lvert\mathbf{a}\rvert\,\lvert\mathbf{b}\rvert\sin\theta}=\s{na}\cdot\s{nb}\cdot\sin\s{th}`,
+		tex`\quad=\s{area}`,
 	]);
 }
 

@@ -95,7 +95,7 @@ export function derive(v: Vals) {
 		x2: x * x,
 		whole: c1.whole,
 		partial: c1.partial,
-		/** Clipped (orange) pieces of 0.G-1: pieces - whole. */
+		/** Clipped (yellow, role `light`) pieces of 0.G-1: pieces - whole. */
 		partialPieces: c1.pieces - c1.whole,
 		A,
 		sqrtA,

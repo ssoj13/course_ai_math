@@ -84,7 +84,8 @@ function EpiFormula() {
 	const stick = tex`\varphi_j+2\pi k_j t`;
 	const wide = tex`\mathbf{p}(t)=\mathbf{c}_0+\sum_{j=1}^{\s{S}}r_j\big(\cos(${stick}),\,\sin(${stick})\big)`;
 	const err = tex`\t{epiErr}{\overline{\lvert\mathbf{p}-\mathbf{z}\rvert^2}}=\s{epiErr}`;
-	const narrow = [tex`\mathbf{p}(t)=\mathbf{c}_0+\sum_{j=1}^{\s{S}}r_j\,\mathbf{u}_j(t)`, tex`\mathbf{u}_j=\big(\cos(${stick}),\,\sin(${stick})\big)`, err];
+	// Phones: the unit vector of a stick on two lines (on one it still scrolled 11 px sideways at 360 px).
+	const narrow = [tex`\mathbf{p}(t)=\mathbf{c}_0+\sum_{j=1}^{\s{S}}r_j\,\mathbf{u}_j(t)`, tex`\mathbf{u}_j=\big(\cos(${stick}),`, tex`\qquad\sin(${stick})\big)`, err];
 	return <Formula lesson={LESSON} label={t(locale, 'wd.formulaEpi')} block tex={aligned([wide, err])} texNarrow={aligned(narrow)}
 		scrub={{ S: SPEC.S }} derived={epiDerived} fmt={FMT} />;
 }
@@ -127,9 +128,12 @@ function GramGrid() {
 	const locale = useLocale();
 	const b = basis();
 	const g = gram();
-	const cols: GridCol[] = b.map((r) => ({ id: r.id, label: (r.sine ? 'sin' : 'cos') + r.k }));
+	// The page's own names c₂, s₅ (not "cos2", "sin5"): 16 columns of "cos0" ran 23 px past the text column at 1280 px.
+	const SUB = '₀₁₂₃₄₅₆₇₈₉';
+	const name = (r: (typeof b)[number]) => (r.sine ? 's' : 'c') + SUB[r.k];
+	const cols: GridCol[] = b.map((r) => ({ id: r.id, label: name(r) }));
 	const rows: GridRow[] = b.map((r, i) => ({
-		head: (r.sine ? 'sin' : 'cos') + r.k,
+		head: name(r),
 		cells: Object.fromEntries(b.map((c, j) => [c.id, { id: 'g' + r.id + '-' + c.id, value: g[i][j] }])),
 	}));
 	return <NumGrid lesson={LESSON} caption={t(locale, 'wd.gramCaption')} corner="·" cols={cols} rows={rows} fmt={fmtInt} />;

@@ -77,6 +77,29 @@ function laneXY(reg: StageReg, lane: Lane): { x: number; y: number; width: numbe
 	return { x, y, width };
 }
 
+/**
+ * Free stage width (desktop N-panel inset excluded) below which LC-0's laned piece names are left out of the overview:
+ * a phone stage (~330 x 205 px) has no room for five lanes a side, and the names covered the pieces and each other.
+ * The same numbers stay one line below in the chips (row ids = piece ids, so hovering a chip still lights its piece),
+ * and the detail card under the scene shows each piece at a readable scale with its name.
+ */
+const LANES_MIN_PX = 420;
+
+/** Whether the stage is narrower than LANES_MIN_PX (re-evaluated on resize: wide/full modes, a rotated phone). */
+function useNarrowStage(): boolean {
+	const reg = useStage(), [narrow, setNarrow] = useState(false);
+	useEffect(() => {
+		const el = reg.el;
+		if (!el) return;
+		const check = () => setNarrow(el.clientWidth - parseFloat(el.style.getPropertyValue('--lab-vp-inset') || '0') < LANES_MIN_PX);
+		check();
+		const ro = new ResizeObserver(check);
+		ro.observe(el);
+		return () => ro.disconnect();
+	}, [reg]);
+	return narrow;
+}
+
 /** Leader line SVG over the stage; one per laned label. Returns the path element ref. */
 function useLeader(reg: StageReg, visible: boolean, id?: string) {
 	const line = useRef<SVGPathElement | null>(null);
@@ -290,7 +313,7 @@ function Strip({ piece, id, lane, label }: { piece: 1 | 2; id: string; lane: Lan
 /** LC-0: squares, shadows, strips, the moving leftovers and their targets inside the square on c. */
 function Missing() {
 	const locale = useLocale(), v = useVals(LESSON), z = derive(v), step = useStep(LESSON, 'cut'), labels = useOverlay('labels');
-	const reg = useStage();
+	const reg = useStage(), narrow = useNarrowStage(), named = labels && !narrow;
 	// Spec step 3: the two strip rows pulse once together (hot outline 300 ms; nothing under reduced motion).
 	useEffect(() => {
 		if (step !== 3 || reducedMotion()) return;
@@ -304,7 +327,7 @@ function Missing() {
 	}, [step, reg]);
 	// Spec step 4: the squares on a and b recede (fill to 8 %, outline dimmed) so the leftovers stand out.
 	const squareAlpha = step >= 4 ? .08 / STYLE.fillA : 1;
-	const stripLabel = (key: 'strip_a' | 'strip_b', name: string) => (labels ? (vals: Vals) => (step === 11 ? 'a·b = ' : name) + fmt(derive(vals)[key]) : undefined);
+	const stripLabel = (key: 'strip_a' | 'strip_b', name: string) => (named ? (vals: Vals) => (step === 11 ? 'a·b = ' : name) + fmt(derive(vals)[key]) : undefined);
 	return <>
 		<Triangle />
 		<Show ov="squares">
@@ -317,7 +340,7 @@ function Missing() {
 			{!z.degenerate && <LanePoly lesson={LESSON} unfold="c" lane={null} id="sq_c" pts={(vals) => { const d = derive(vals); return square(d.B, d.A); }} role="vecC" fill={STYLE.fillA}
 				label={labels && step < 5 ? (vals) => 'c² = ' + fmt(derive(vals).c2) : undefined} />}
 		</Show>
-		<Show ov="shadows">{step >= 1 && <Shadow lane={[1, 2]} />}{step >= 3 && <Shadow side={2} lane={[1, 3]} />}</Show>
+		<Show ov="shadows">{step >= 1 && <Shadow lane={[1, 2]} names={!narrow} />}{step >= 3 && <Shadow side={2} lane={[1, 3]} names={!narrow} />}</Show>
 		<Show ov="strips">
 			{step >= 2 && <Strip piece={1} id="strip_a" lane={[0, 4]} label={stripLabel('strip_a', 'a·p = ')} />}
 			{step >= 3 && <Strip piece={2} id="strip_b" lane={[0, 1]} label={stripLabel('strip_b', 'b·q = ')} />}
@@ -325,13 +348,13 @@ function Missing() {
 		<Show ov="pieces">
 			{step >= 4 && <>
 				<LanePoly lesson={LESSON} lane={[0, 3]} id="R1" timeline="cut" position={v.cut_position as number} pts={(vals, s) => pieceAt(vals, 1, s)} path={(vals, a, b, f) => pieceAt(vals, 1, a + (b - a) * f)} role="vecA"
-					hatched={(vals) => derive(vals).R1 < 0} label={labels ? (vals) => 'a·DB = ' + fmt(derive(vals).R1) : undefined} />
+					hatched={(vals) => derive(vals).R1 < 0} label={named ? (vals) => 'a·DB = ' + fmt(derive(vals).R1) : undefined} />
 				<LanePoly lesson={LESSON} lane={[0, 0]} id="R2" timeline="cut" position={v.cut_position as number} pts={(vals, s) => pieceAt(vals, 2, s)} path={(vals, a, b, f) => pieceAt(vals, 2, a + (b - a) * f)} role="vecB"
-					hatched={(vals) => derive(vals).R2 < 0} label={labels ? (vals) => 'b·EA = ' + fmt(derive(vals).R2) : undefined} />
+					hatched={(vals) => derive(vals).R2 < 0} label={named ? (vals) => 'b·EA = ' + fmt(derive(vals).R2) : undefined} />
 			</>}
 			{step >= 5 && !z.degenerate && <>
-				<LanePoly lesson={LESSON} lane={[1, 0]} id="R1c" pts={(vals) => pieceAt(vals, 1, 8)} role="vecC" fill={0} edge="dashed" hatched={(vals) => derive(vals).R1c < 0} label={labels && step < 8 ? (vals) => 'c·FB = ' + fmt(derive(vals).R1c) : undefined} />
-				<LanePoly lesson={LESSON} lane={[1, 1]} id="R2c" pts={(vals) => pieceAt(vals, 2, 9)} role="vecC" fill={0} edge="dashed" hatched={(vals) => derive(vals).R2c < 0} label={labels && step < 9 ? (vals) => 'c·AF = ' + fmt(derive(vals).R2c) : undefined} />
+				<LanePoly lesson={LESSON} lane={[1, 0]} id="R1c" pts={(vals) => pieceAt(vals, 1, 8)} role="vecC" fill={0} edge="dashed" hatched={(vals) => derive(vals).R1c < 0} label={named && step < 8 ? (vals) => 'c·FB = ' + fmt(derive(vals).R1c) : undefined} />
+				<LanePoly lesson={LESSON} lane={[1, 1]} id="R2c" pts={(vals) => pieceAt(vals, 2, 9)} role="vecC" fill={0} edge="dashed" hatched={(vals) => derive(vals).R2c < 0} label={named && step < 9 ? (vals) => 'c·AF = ' + fmt(derive(vals).R2c) : undefined} />
 			</>}
 		</Show>
 		<Show ov="altitude">{step >= 5 && !z.degenerate && <>
