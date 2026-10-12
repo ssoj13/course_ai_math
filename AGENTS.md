@@ -73,7 +73,7 @@ to the roots, depth stack, glossary, auto flashcards ("variance is built on ___"
 exist, no cycles in `built-on`. Example: attention → softmax + dot product → cosine → law of cosines → Pythagoras.
 
 Implemented (Task 9, 2026-10-11):
-- `src/data/terms.json` (62 terms: Part 0/1 + forward terms `float`, `matrix`, `determinant`, `attention` with
+- `src/data/terms.json` (Part 0/1/3 terms incl. 1.7 `embedding-table`, `nearest-neighbour`, `semantic-search`, `rag`, `float`, `matrix`, `determinant`, `attention` with
   `lessons: []`). English fields top-level, Russian under `ru` (course.json convention). `lessons[0]` = where the
   term is introduced. Depth: ground | vectors | matrices | ai | machine. Edges are stored once on the term they read
   from (`X built-on Y`); `is-a` counts as a foundation edge with `built-on` (acyclic, genealogy follows both); a
@@ -398,6 +398,11 @@ only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over
 - Pure tests (`tests/js/*.test.ts`) run without DOM; keep the modules they import DOM-free and three-free.
 - DOM tests (`*.test.tsx`) import `./dom` FIRST (happy-dom via `@happy-dom/global-registrator`, sets
   `IS_REACT_ACT_ENVIRONMENT`); mount with `createRoot`, wrap updates in `act`.
+- Frame clock: never assign `requestAnimationFrame`/`cancelAnimationFrame` directly (one process for all files; a
+  leftover stub broke later files in CI order). Use `tests/js/frames.ts` (re-exported by `./dom`): `useFrameStub`
+  (per-test hooks), `stubFrames` (restore fn, call in `finally`), `timerFrames`, `captureFrames(/file\.ts/)` (captures
+  only the code under test; eases other files left running keep the real clock). `frames-guard.test.ts` enforces it.
+  Use test-only store ids in store tests (a real lesson id created without links makes the lesson module throw).
 - Reviewers run gates and browser checks themselves; a reviewer is a different model from the implementer.
 
 ## Traps
@@ -453,12 +458,17 @@ only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over
   procedural DotUnit system (`scene = f(einsum spec, values)`, presets for 1.4/2.2/2.4/3.6/3.7/attention, zoom ladder)
   is specified in `docs/design/intro-and-dotunit.md`. Trap: terms.json enforces course order on `built-on`/`is-a`
   edges, so terms introduced in `start` must be roots (later terms may point at them, not the reverse).
+  Numbering = CURRICULUM.md (`numberCourse`/`numbered` in course-rules.mjs, one rule for sidebar, prev/next,
+  PageTitle, CourseMap): `start` is `"unnumbered": true`, first numbered module = Part 0, lesson ids `P.k`; a module
+  may pin `"part"` (tensors = 3 until Matrices exists; parts must strictly increase). i18n key `course.part`.
 - [x] Tensor core `src/core` (einsum plan/explain, fp32/pairwise, NumPy fixtures).
 - [x] 3.1 tensor road (`tensors/tensor-road`, module `tensors` after `vectors`; Part 2 "Matrices" goes BEFORE it when
   built). Cells reuse DotUnit `Boxes`/`Frame` (one instanced draw, cap 4096); layout/model/examples pure in
   `tensor-road.math.ts`; image channels lie side by side (C = x block axis). Report:
-  `.superpowers/sdd/2026-10-11-recover/tensor-road-report.md`. Open: 3.2-3.7 not built; FieldCell labels are
-  low-contrast on the light page theme (lesson wraps them in a dark strip; engine fix pending).
+  `.superpowers/sdd/2026-10-11-recover/tensor-road-report.md`. Open: 3.2-3.7 not built. FieldCell labels/read-only
+  values use `--lab-np-ink` (page text on `.lab-field-cell`, >= 4.5:1 both themes; dark strip removed).
+  `<DotUnit kind="playground" preset="batched" />` opens the playground on a preset (`playLesson`: one store per
+  starting preset, default id `einsum`).
 - [ ] Build INTRO-1..3 and the DotUnit (`src/viz/dotunit/`: `layoutEinsum`, LOD, Tiles) per that spec, on `Plan`.
 
 ## Changelog
