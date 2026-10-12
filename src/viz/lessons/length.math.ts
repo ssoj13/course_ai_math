@@ -10,6 +10,7 @@
  * Domain rule: the zero vector has length 0 and no direction, so its normalization is undefined (NaN components,
  * shown as a dash with a reason); everything else (squares, sums, the length itself) is always defined.
  */
+import { fixed } from '../fmt';
 import { add, dot, scale, type V } from '../geom';
 import { snap } from '../scene/drag';
 import type { Move } from '../scene/handles';
@@ -53,7 +54,6 @@ const vec = (v: Val | undefined, key: string): number[] => {
 // ---------------------------------------------------------------------------------------------------------------
 // Formatting: fixed decimals so a live number never changes width by a trailing zero; never "-0.00".
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 /** Components (on the 0.1 grid): one decimal. */
 export const fmt1 = (x: number) => (Number.isFinite(x) ? fixed(x, 1) : '–');
 /** Squares, sums, lengths: two decimals. */

@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import { t, type Locale } from '../../i18n/core';
 import type { Row } from '../scene/NPanel';
 import type { V } from '../geom';
@@ -21,7 +22,7 @@ function ro(id: string, label: string, value: (v: Vals) => number | V, extra: Pa
 /** Three decimals, or a dash: unit-vector components in a vector readout. */
 const fmtVec = (x: number) => (Number.isFinite(x) ? fmt3(x) : '–');
 /** One decimal, or a dash: a 3-vector of coordinates must fit the 200 px panel (18 characters); the table has 2. */
-const fmtVec1 = (x: number) => (Number.isFinite(x) ? (+x.toFixed(1) + 0).toFixed(1) : '–');
+const fmtVec1 = (x: number) => (Number.isFinite(x) ? fixed(x, 1) : '–');
 
 /** Dimension of a span as a word ("2 · plane"); the rows of BS-1 and BS-2 share it. */
 function dimText(locale: Locale): (d: number) => string {

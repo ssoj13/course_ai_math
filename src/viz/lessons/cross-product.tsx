@@ -1,3 +1,4 @@
+import { trim } from '../fmt';
 import { t, type Locale } from '../../i18n/core';
 import { localized, useLocale } from '../../i18n/react';
 import { lessonStore, useVals } from '../store';
@@ -116,7 +117,7 @@ function CrossFormula({ scene }: { scene: Scene }) {
 }
 
 /** Plain numbers for table cells: up to 4 decimals, no trailing zeros, never -0. */
-const fmtCell = (x: number) => String(+x.toFixed(4) + 0);
+const fmtCell = (x: number) => trim(x, 4);
 
 /** CP-1 "criss-cross": per component, the two products and their difference (the component itself). */
 function CrissCross() {

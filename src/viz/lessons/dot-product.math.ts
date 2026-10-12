@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import type { LessonState } from '../store';
 import type { LessonLinks } from '../links';
 import type { Move } from '../scene/handles';
@@ -64,9 +65,8 @@ const DEG = 180 / Math.PI;
 
 // ---------------------------------------------------------------------------------------------------------------
 // Readout formatting (spec §0.2). DOM text uses a dash for undefined values; TeX gets `\text{--}` because the formula
-// renderer rejects raw non-ASCII. `+x.toFixed(n)` first so that -0.001 prints 0.00, never -0.00.
+// renderer rejects raw non-ASCII. `fixed` (shared, identical on server and client) never prints -0.00.
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 
 /** Lengths, areas, dot products: 2 decimals. */
 export const fmt = (x: number) => (Number.isFinite(x) ? fixed(x, 2) : '–');

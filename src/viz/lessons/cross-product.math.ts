@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import type { LessonState } from '../store';
 import { add, cross, dot, norm, scale, sub, type V } from '../geom';
 
@@ -148,9 +149,8 @@ export function arcNormal(a: V, c: V): number[] {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Formatting. `+x.toFixed(n) + 0` first, so −0.001 prints 0.00, never −0.00; ASCII minus like every other readout.
+// Formatting. `fixed` (shared, identical on server and client) never prints −0.00; ASCII minus like every other readout.
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 /** Components, lengths, areas: 2 decimals; undefined values read as a dash. */
 export const fmt = (x: number) => (Number.isFinite(x) ? fixed(x, 2) : '–');
 /** Unit-vector components at one decimal: "(0.0, 0.0, 1.0)" fits the 200 px N panel. */

@@ -1,4 +1,5 @@
 import katex, { type KatexOptions } from 'katex';
+import { trim } from './fmt';
 import type { Val } from './store';
 
 /**
@@ -27,7 +28,7 @@ export function renderStaticMath(tex: string, block: boolean): string {
 
 /** TeX shown for scrub value `k`: `fmt[k]` or the value rounded to 2 decimals. */
 export function showVal(k: string, v: number, fmt?: Record<string, (v: number) => string>): string {
-	return fmt?.[k]?.(v) ?? String(Math.round(v * 100) / 100);
+	return fmt?.[k]?.(v) ?? trim(v, 2);
 }
 
 const PLAIN: Record<string, string> = { circ: '°', theta: 'θ', pi: 'π', times: '×', cdot: '·', to: '→' };

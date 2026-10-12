@@ -9,6 +9,7 @@
  * - VA-4 three arrows in 3D: `a3`, `b3`, `c3`, `s3`, `t3`, `u3`.
  * - VA-5 blend shapes: `w1`, `w2` (the weights of the smile and jaw targets).
  */
+import { fixed } from '../fmt';
 import type { LessonState, Val } from '../store';
 import { finite } from '../links';
 import { add, norm, signedArea2, scale, type V } from '../geom';
@@ -155,7 +156,6 @@ export const CHECKS = {
 	frown: (v: Vals) => blend(v).w1 < 0,
 };
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 /** Components: one decimal (drags, keys and scrubs land on a 0.1 grid). */
 export const fmt1 = (x: number): string => fixed(x, 1);
 /** Lengths, weights and blended positions: two decimals. */

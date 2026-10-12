@@ -16,6 +16,7 @@
  * orthonormal basis. Dependent rulers (zero volume) have no unique coordinates: `solve` returns null, never an
  * invented inverse.
  */
+import { fixed } from '../fmt';
 import type { LessonLinks, LinkGroup, Values } from '../links';
 import type { LessonState, Val } from '../store';
 import type { Move } from '../scene/handles';
@@ -71,10 +72,9 @@ const num = (v: Val | undefined, key: string): number => {
 };
 
 // ---------------------------------------------------------------------------------------------------------------
-// Formatting. `+x.toFixed(n)` first so −0.001 prints 0.00, never −0.00; a missing value prints a dash (DOM) or
+// Formatting (`fixed`: the shared formatter, identical on server and client, never −0.00); a missing value prints a dash (DOM) or
 // `\text{--}` (TeX, which rejects raw non-ASCII).
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 /** Lengths, coordinates, dot products, areas: 2 decimals. */
 export const fmt = (x: number) => (Number.isFinite(x) ? fixed(x, 2) : '–');
 /** Ruler components and inputs: 1 decimal when on the 0.1 grid, else 2 (a unit ruler like 0.67). */

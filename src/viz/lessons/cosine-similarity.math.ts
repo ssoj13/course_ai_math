@@ -1,3 +1,4 @@
+import { fixed, int } from '../fmt';
 import type { LessonState } from '../store';
 import type { V } from '../geom';
 
@@ -176,9 +177,8 @@ export function scaled(v: Vals) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// Formatting: a dash for undefined values; `+x.toFixed(n) + 0` first so −0.001 prints 0.00, never −0.00.
+// Formatting: a dash for undefined values; `fixed` (shared, identical on server and client) never prints −0.00.
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 const minus = (s: string) => s.replace('-', '−');
 
 /** Lengths, distances, dot products: 2 decimals. */
@@ -186,17 +186,17 @@ export const fmt2 = (x: number) => (Number.isFinite(x) ? minus(fixed(x, 2)) : '�
 /** Cosines: 3 decimals. */
 export const fmtCos = (x: number) => (Number.isFinite(x) ? minus(fixed(x, 3)) : '–');
 /** Angles: whole degrees (embedding angles are never exact; one decimal would be false precision). */
-export const fmtDeg = (x: number) => (Number.isFinite(x) ? String(Math.round(x) + 0) + '°' : '–');
+export const fmtDeg = (x: number) => (Number.isFinite(x) ? int(x) + '°' : '–');
 /** Percent with one decimal. */
 export const fmtPct = (x: number) => (Number.isFinite(x) ? fixed(x * 100, 1) + '%' : '–');
 /** Grouped thousands with a thin space: 400 001 → "400 001" (same in both languages). */
-export const fmtInt = (x: number) => String(Math.round(x)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+export const fmtInt = (x: number) => int(x).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 /** The same formats for `\s{}` values inside TeX (`\text{--}` for undefined: TeX rejects raw non-ASCII). */
 export const tex = {
 	num: (x: number) => (Number.isFinite(x) ? fixed(x, 2) : String.raw`\text{--}`),
 	cos: (x: number) => (Number.isFinite(x) ? fixed(x, 3) : String.raw`\text{--}`),
-	deg: (x: number) => (Number.isFinite(x) ? String(Math.round(x) + 0) + String.raw`^\circ` : String.raw`\text{--}`),
+	deg: (x: number) => (Number.isFinite(x) ? int(x) + String.raw`^\circ` : String.raw`\text{--}`),
 };
 
 // ---------------------------------------------------------------------------------------------------------------

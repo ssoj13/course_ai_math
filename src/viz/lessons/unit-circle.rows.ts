@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import { t, type Locale } from '../../i18n/core';
 import type { Row } from '../scene/NPanel';
 import { derive, fmt2, fmt3, fmtDeg, SPEC, SPECIAL } from './unit-circle.math';
@@ -28,7 +29,7 @@ export function rowsFor(scene: Scene, locale: Locale): readonly Row[] {
 		const arc = t(locale, 'uc.groupArc');
 		return [
 			th,
-			{ id: 'roll', label: t(locale, 'uc.rowRoll'), kind: 'num', key: 'roll', spec: SPEC.roll, snap: [0, 0.5, 1], fmt: (v) => v.toFixed(2), tip: { text: t(locale, 'uc.tipRoll') } },
+			{ id: 'roll', label: t(locale, 'uc.rowRoll'), kind: 'num', key: 'roll', spec: SPEC.roll, snap: [0, 0.5, 1], fmt: (v) => fixed(v, 2), tip: { text: t(locale, 'uc.tipRoll') } },
 			ro('rad', t(locale, 'uc.rowRad'), arc, fmt3, t(locale, 'uc.tipRad'), (z) => z.rad),
 			ro('arc', t(locale, 'uc.rowTurn'), arc, fmt3, t(locale, 'uc.tipTurn'), (z) => z.turn),
 		];

@@ -1,4 +1,5 @@
 /** A scrubbable number inside prose: drag or arrow-key it and every linked view follows the store. */
+import { trim } from './fmt';
 import { lessonStore, useVal } from './store';
 import { keyStep, scrubValue, type ScrubSpec } from './scrub';
 import { startScrubDrag } from './useScrub';
@@ -29,7 +30,7 @@ export function Num(p: { lesson: string; k: string; spec: ScrubSpec; fmt?: (v: n
 				store.getState().set(p.k, next, 'ease');
 			}}
 		>
-			{p.fmt ? p.fmt(v) : String(Math.round(v * 100) / 100)}
+			{p.fmt ? p.fmt(v) : trim(v, 2)}
 		</span>
 	);
 }

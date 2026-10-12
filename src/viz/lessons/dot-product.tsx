@@ -1,3 +1,4 @@
+import { trim } from '../fmt';
 import { useEffect, useState } from 'react';
 import { t, type Locale } from '../../i18n/core';
 import { localized, useLocale } from '../../i18n/react';
@@ -247,7 +248,7 @@ function StrikeClock() {
 // Tables.
 
 /** Plain numbers for table cells: up to 4 decimals, no trailing zeros, never -0 (ASCII minus, like every readout). */
-const fmtCell = (x: number) => String(+x.toFixed(4) + 0);
+const fmtCell = (x: number) => trim(x, 4);
 
 /** DP-1 "comp": two component rows and the sums, columns revealed by step (spec DP-1 NumTable). */
 function CompTable() {

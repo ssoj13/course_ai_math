@@ -6,6 +6,7 @@
  * - `th`: the angle in whole degrees, 0..360, counter-clockwise from the positive x axis.
  * - `roll`: 0..1, how far the UC-2 arc is unrolled onto the radian ruler (0 = on the circle, 1 = flat on the ruler).
  */
+import { fixed, int } from '../fmt';
 import { finite } from '../links';
 import type { LessonState, Val } from '../store';
 import { magnet } from '../scene/drag';
@@ -241,16 +242,14 @@ export const CHECKS = {
 	onMirror: (v: Vals) => derive(v).th === 45 || derive(v).th === 225,
 };
 
-const clean = (v: number): number => (Math.abs(v) < 5e-10 ? 0 : v);
-
 /** Whole degrees ("60°"), the angle in the N-panel and labels. */
-export const fmtDeg = (v: number): string => String(Math.round(v)) + '°';
+export const fmtDeg = (v: number): string => int(v) + '°';
 /** The same angle in TeX for the formulas ("60^\circ"). */
-export const texDeg = (v: number): string => String(Math.round(v)) + '^\\circ';
+export const texDeg = (v: number): string => int(v) + '^\\circ';
 /** cos and sin: two decimals in the scene labels ("0.50", "−0.87"), the minus as a real minus sign. */
-export const fmt2 = (v: number): string => clean(v).toFixed(2).replace('-', '−');
+export const fmt2 = (v: number): string => fixed(v, 2).replace('-', '−');
 /** Three decimals for radians and arc lengths ("1.047"). */
-export const fmt3 = (v: number): string => clean(v).toFixed(3).replace('-', '−');
+export const fmt3 = (v: number): string => fixed(v, 3).replace('-', '−');
 /** TeX variants keep the ASCII minus (KaTeX typesets it as a minus). */
-export const tex2 = (v: number): string => clean(v).toFixed(2);
-export const tex3 = (v: number): string => clean(v).toFixed(3);
+export const tex2 = (v: number): string => fixed(v, 2);
+export const tex3 = (v: number): string => fixed(v, 3);

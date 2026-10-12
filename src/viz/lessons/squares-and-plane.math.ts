@@ -7,6 +7,7 @@
  * 0.G-1 becomes the principal (positive) root the moment 0.G-3 writes A. Both are published in one store update; the
  * drawn values derive A from the drawn x, so an eased change keeps side and area geometrically coherent.
  */
+import { fixed, int } from '../fmt';
 import type { LessonLinks, LinkGroup } from '../links';
 import { finite } from '../links';
 import type { LessonState, Val } from '../store';
@@ -132,10 +133,10 @@ export const CHECKS = {
 };
 
 /** One decimal for coordinates and sides ("x = -3.0"); a negative zero prints as 0. */
-export const fmt1 = (v: number): string => (Math.abs(v) < 5e-10 ? 0 : v).toFixed(1);
+export const fmt1 = (v: number): string => fixed(v, 1);
 /** Two decimals for areas ("9.00", "2.25"). */
-export const fmt2 = (v: number): string => (Math.abs(v) < 5e-10 ? 0 : v).toFixed(2);
+export const fmt2 = (v: number): string => fixed(v, 2);
 /** Four decimals for roots ("1.4142"). */
-export const fmt4 = (v: number): string => (Math.abs(v) < 5e-10 ? 0 : v).toFixed(4);
+export const fmt4 = (v: number): string => fixed(v, 4);
 /** Whole-tile counts are integers. */
-export const fmtInt = (v: number): string => String(Math.round(v));
+export const fmtInt = (v: number): string => int(v);

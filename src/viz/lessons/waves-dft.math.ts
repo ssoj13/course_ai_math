@@ -14,6 +14,7 @@
  * ruler sin(2 pi k n / N), and rfft(x)[k] = (x . cos_k) - i (x . sin_k). No complex numbers are needed to compute it:
  * two dot products per frequency.
  */
+import { fixed, int } from '../fmt';
 import type { LessonLinks, LinkGroup, StepLink } from '../links';
 import { finite } from '../links';
 import type { LessonState, Val } from '../store';
@@ -477,10 +478,9 @@ export const CHECKS = {
 export const xpos = (u: number): number => (u - (N - 1) / 2) * 0.5;
 
 /**
- * Two decimals ("1.20", "-0.60"); a negative zero prints as 0. The value is first rounded to 6 decimals: the last bits
- * of Math.cos differ between JavaScript engines, and a number such as 0.425 (heart stick) computed as 0.42500000000001
- * on the server and 0.42499999999999 in the browser would print differently and break hydration.
+ * Two decimals ("1.20", "-0.60"); a negative zero prints as 0. The shared ixed settles last-bit engine noise, so a
+ * value such as 0.425 (heart stick) prints the same on the server and in the browser.
  */
-export const fmt2 = (v: number): string => (Math.abs(v) < 5e-10 ? 0 : Math.round(v * 1e6) / 1e6).toFixed(2);
+export const fmt2 = (v: number): string => fixed(v, 2);
 /** Integers ("8"). */
-export const fmtInt = (v: number): string => String(Math.round(v));
+export const fmtInt = (v: number): string => int(v);
