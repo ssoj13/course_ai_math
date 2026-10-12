@@ -81,7 +81,7 @@ export interface BoxesProps {
 	 */
 	update(dtMs: number): 'still' | 'moved' | 'moving';
 	/** A click on an instance (dive into a cell). */
-	onPick?(id: string): void;
+	onPick?(id: string, index: number): void;
 	/** World margin added around the drawn boxes for the home view (their DOM number labels hang outside). */
 	pad?: number;
 }
@@ -160,7 +160,7 @@ export function Boxes({ lesson, frame, update, onPick, pad = 0.6 }: BoxesProps):
 					const id = idAt(e);
 					if (id && onPick) {
 						e.stopPropagation();
-						onPick(id);
+						onPick(id, e.instanceId!);
 					}
 				}}
 			/>

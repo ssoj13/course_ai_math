@@ -322,12 +322,15 @@ const P = [0, 0, 0];
  * tile and its drop into a stack of segments; LOD 2 one bar per cell; LOD 3 one heat square per cell (spec §1.4).
  */
 export function passFrame(d: SceneData, step: number, t: number, focus: number, f: Frame): void {
-	const L = d.L, n = L.plan.sumLen, normalOut = L.axes.shaft;
+	const L = d.L, n = L.plan.sumLen;
+	// A picture with nothing on z (dot, matrix x vector) is read from the front: its flat squares face the viewer.
+	const planar = L.axes.onAxis[2] === null && L.axes.shaft !== 2 && L.axes.stackDir !== 2;
+	const normalOut: Axis = planar ? 2 : L.axes.shaft;
 	let i = 0;
 	for (const o of [0, 1] as const) {
 		const op = L.operands[o];
 		for (let e = 0; e < op.n; e++, i++) {
-			square(f, i, op.pos.subarray(3 * e, 3 * e + 3), SIDE, op.normal);
+			square(f, i, op.pos.subarray(3 * e, 3 * e + 3), SIDE, planar ? 2 : op.normal);
 			f.look(i, o === 0 ? 'vecA' : 'vecB', false, 1, d.vals[o][e] < 0 ? 1 : 0, false);
 		}
 	}

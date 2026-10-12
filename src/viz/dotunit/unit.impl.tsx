@@ -7,7 +7,8 @@
  * by the pure choreography (choreo.ts). Every number comes from the tensor core through `dotOf` (model.ts).
  * Loaded lazily by the entry (dotunit.tsx).
  */
-import { useMemo, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
 import { t, type Locale } from '../../i18n/core';
 import { useLocale } from '../../i18n/react';
 import { add, scale, sub, type V } from '../geom';
@@ -110,6 +111,8 @@ function Face2() {
 		geo.current = g;
 		dirty.current = true;
 	}
+	const invalidate = useThree((st) => st.invalidate);
+	useEffect(() => invalidate(), [g, invalidate]);
 	/** Step whose framing was last requested (face 2 is framed from the front; face 1 gets the home view back). */
 	const framed = useRef(-1);
 	const update = () => {
