@@ -79,6 +79,15 @@ export const STYLE = {
 	dash: [5, 4] as const,
 } as const;
 
+/**
+ * Layer opacities of a stroke (core, halo, hot outline) for a whole-object opacity `o` in [0, 1]: every layer scales
+ * by `o`, so a faded beam keeps its look (the DotUnit's face-1 arrows at 35 % while face 2 takes over).
+ */
+export function fadeAlphas(o: number, hot: boolean): { core: number; halo: number; outline: number } {
+	if (!(o >= 0 && o <= 1)) throw new Error(`opacity must be in [0, 1], got ${o}`);
+	return { core: o, halo: (hot ? STYLE.hotHaloA : STYLE.haloA) * o, outline: o };
+}
+
 /** CSS color of a role for DOM parts of a scene (labels): the var itself. */
 export const roleVar = (role: Role): string => `var(${ROLE_VARS[role]})`;
 

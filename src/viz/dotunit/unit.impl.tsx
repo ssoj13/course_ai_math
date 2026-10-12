@@ -24,7 +24,7 @@ import { Label } from '../scene/Label';
 import { Show, useOverlay, useStage } from '../scene/handles';
 import type { Hint, StatusSpec } from '../scene/StatusBar';
 import { Boxes } from './Boxes';
-import { DOT_BAR, dotCap, dotFrame, dotGeom, dotIds, Frame, unitMs, type DotGeom } from './choreo';
+import { DOT_BAR, dotCap, dotCurrent, dotFrame, dotGeom, dotIds, Frame, unitMs, type DotGeom } from './choreo';
 import { dotOf, LESSON, pad3 } from './dotunit.store';
 import { unitRows } from './dotunit.rows';
 import { fmt, fmtShort } from './model';
@@ -50,24 +50,26 @@ function Face1({ step }: { step: number }) {
 		if (l > 1e-9) return scale(c, 1 / l);
 		return Math.abs(a3[1]) < 0.9 * (len(a3) || 1) ? [0, 1, 0] : [1, 0, 0];
 	})();
+	// Spec §2.4 step 3: the arrows fade to 35 % as the legs unfold out of them, and stay (still draggable) behind face 2.
+	const opacity = step >= 3 ? 0.35 : 1;
 	return <>
-		<Arrow lesson={LESSON} id="a" to="du_a3" role="vecA" label="a" />
-		<Arrow lesson={LESSON} id="b" to="du_b3" role="vecB" label="b" />
-		<Show ov="labels">
+		<Arrow lesson={LESSON} id="a" to="du_a3" role="vecA" label="a" opacity={opacity} />
+		<Arrow lesson={LESSON} id="b" to="du_b3" role="vecB" label="b" opacity={opacity} />
+		{step <= 3 && <Show ov="labels">
 			<Label lesson={LESSON} id="a" at="du_a3" role="vecA" offset={TIP}>a</Label>
 			<Label lesson={LESSON} id="b" at="du_b3" role="vecB" offset={TIP}>b</Label>
-		</Show>
-		<Show ov="angle">{len(a3) > 0 && len(b3) > 0 && <AngleArc lesson={LESSON} id="theta" at={O} from="du_a3" to="du_b3" r={0.6} normal={normal}
-			label={labels ? (deg) => 'θ = ' + Math.round(deg) + '°' : undefined} />}</Show>
-		{!honest && n > 3 && labels && <Label lesson={LESSON} id="more" at={O} role="muted" offset={[0, 26]}>{t(locale, 'du.more', { k: String(n - 3) })}</Label>}
-		{foot && step >= 1 && <>
+		</Show>}
+		{step <= 2 && <Show ov="angle">{len(a3) > 0 && len(b3) > 0 && <AngleArc lesson={LESSON} id="theta" at={O} from="du_a3" to="du_b3" r={0.6} normal={normal}
+			label={labels ? (deg) => 'θ = ' + Math.round(deg) + '°' : undefined} />}</Show>}
+		{step <= 2 && !honest && n > 3 && labels && <Label lesson={LESSON} id="more" at={O} role="muted" offset={[0, 26]}>{t(locale, 'du.more', { k: String(n - 3) })}</Label>}
+		{foot && step >= 1 && step <= 2 && <>
 			<Segment lesson={LESSON} id="shadow" a={O} b={foot} band role="vecC" />
 			<Segment lesson={LESSON} id="perp" a="du_b3" b={foot} dashed role="muted" />
 			<Point lesson={LESSON} id="foot" at={foot} drag={false} role="vecC" size={7} />
 			{len(sub(b3, foot)) > 1e-6 && <RightAngle lesson={LESSON} id="rt" at={foot} u={ahat!} v={sub(b3, foot)} show />}
 			<Show ov="labels"><Label lesson={LESSON} id="shadow" at={scale(foot, 0.5)} role="vecC" offset={[0, 16]}>{t(locale, 'du.shadow') + ' = ' + fmt(d.shadow)}</Label></Show>
 		</>}
-		{ahat && step >= 2 && <>
+		{ahat && step === 2 && <>
 			<Segment lesson={LESSON} id="ruler" a={scale(ahat, -1.5)} b={scale(ahat, d.lenA + 1.5)} dashed role="muted" />
 			<Show ov="labels">
 				<Label lesson={LESSON} id="len_a" at={scale(a3, 0.5)} role="vecA" offset={[-12, -16]}>{'|a| = ' + fmt(d.lenA)}</Label>
@@ -78,26 +80,34 @@ function Face1({ step }: { step: number }) {
 }
 
 /** Number labels of face 2: leg values, tile products, the running sum on the stack and the projection bar's value. */
-function Face2Tags({ g, f, clock }: { g: DotGeom; f: Frame; clock: { step: number; t: number } }) {
+function Face2Tags({ g, f, clock, sumText }: { g: DotGeom; f: Frame; clock: { step: number; t: number }; sumText: string }) {
 	const labels = useOverlay('labels');
 	if (!labels) return null;
 	const n = g.n;
 	const centre = (k: number, dy = 0): number[] | null => (f.alpha[k] > 0.5 ? [f.c[3 * k], f.c[3 * k + 1] + dy, f.c[3 * k + 2]] : null);
 	const face2 = () => clock.step >= 4;
 	return <>
-		{g.d.a.map((x, i) => <Tag key={'a' + i} lesson={LESSON} hot={'a' + i} role="ink" small text={fmtShort(x)} offset={[0, 14]} at={() => (face2() ? centre(i) : null)} />)}
-		{g.d.b.map((x, i) => <Tag key={'b' + i} lesson={LESSON} hot={'b' + i} role="ink" small text={fmtShort(x)} offset={[-16, 0]} at={() => (face2() ? centre(n + i) : null)} />)}
+		{g.d.a.map((x, i) => <Tag key={'a' + i} lesson={LESSON} hot={'a' + i} role="ink" small dense text={fmtShort(x)} offset={[0, 14]} at={() => (face2() ? centre(i) : null)} />)}
+		{g.d.b.map((x, i) => <Tag key={'b' + i} lesson={LESSON} hot={'b' + i} role="ink" small dense text={fmtShort(x)} offset={[-16, 0]} at={() => (face2() ? centre(n + i) : null)} />)}
 		{g.d.prods.map((p, i) => <Tag key={'p' + i} lesson={LESSON} hot={'p' + i} role="ink" text={fmtShort(p)} at={() => (clock.step >= 5 ? centre(2 * n + i) : null)} />)}
-		<Tag lesson={LESSON} hot="sum" role="ink" text={'Σ = ' + fmt(g.d.dot)} offset={[-44, -10]}
-			at={() => (clock.step > 7 || (clock.step === 7 && clock.t >= 1) ? [g.stackX + 0.5, g.run[n - 1], 0] : null)} />
-		<Tag lesson={LESSON} hot="proj" role="vecC" text={'|a|·s = ' + fmt(g.proj)} offset={[0, -24]}
-			at={() => (clock.step >= 8 ? [g.barX + 0.3, f.c[3 * DOT_BAR(n) + 1] * 2, 0] : null)} />
+		{/* The two "3.00" sit on opposite sides (left of the stack, right of the bar), pushed off their boxes by the
+		    engine's placement, so they never share a line. */}
+		<Tag lesson={LESSON} hot="sum" role="ink" text={'Σ = ' + sumText} gap={6}
+			at={() => (clock.step > 7 || (clock.step === 7 && clock.t >= 1) ? [g.stackX - 0.1, g.run[n - 1], 0] : null)}
+			away={() => [g.stackX + 0.5, g.run[n - 1], 0]} />
+		<Tag lesson={LESSON} hot="proj" role="vecC" text={'|a|·s = ' + fmt(g.proj)} gap={6}
+			at={() => (clock.step >= 8 ? [g.barX + 0.7, f.c[3 * DOT_BAR(n) + 1] * 2, 0] : null)}
+			away={() => [g.barX + 0.3, f.c[3 * DOT_BAR(n) + 1] * 2, 0]} />
 	</>;
 }
 
 function Face2() {
-	const v = useVals(LESSON), d = dotOf(v), n = d.a.length;
+	const v = useVals(LESSON), d = dotOf(v), n = d.a.length, pairwise = v.du_pair === 1;
 	const g = useMemo(() => dotGeom(d), [d]);
+	// A new order makes a new d (dotOf keys on it), so the frame is rewritten through the geometry change.
+	const pair = useRef(pairwise);
+	pair.current = pairwise;
+	const cur = useRef(-1);
 	const frame = useMemo(() => {
 		const f = new Frame(dotCap(n));
 		dotIds(n, f);
@@ -119,7 +129,15 @@ function Face2() {
 		const changed = tick();
 		if (!changed && !dirty.current) return 'still' as const;
 		dirty.current = false;
-		dotFrame(geo.current, clock.step, clock.t, frame);
+		dotFrame(geo.current, clock.step, clock.t, frame, pair.current);
+		// The tile being formed or dropped: the code view follows it and the formula / table light it (guide, spec §2.4).
+		const now = dotCurrent(geo.current, clock.step, clock.t, pair.current);
+		if (now !== cur.current) {
+			cur.current = now;
+			const st = lessonStore(LESSON).getState();
+			st.set('du_cur', now);
+			if (st.hotSource !== 'interaction') st.setHot(now >= 0 ? ['p' + now] : [], 'guide');
+		}
 		// Camera choreography (spec §2.4 step 3): smooth view to the front as face 2 starts, and View All from the front
 		// again once a step's motion has played (the row, the stack and the bar widen the figure).
 		const key = clock.step * 2 + (clock.t >= 1 ? 1 : 0);
@@ -135,8 +153,8 @@ function Face2() {
 		return clock.t < 1 ? ('moving' as const) : ('moved' as const);
 	};
 	return <>
-		<Boxes lesson={LESSON} frame={frame} update={update} />
-		<Face2Tags g={g} f={frame} clock={clock} />
+		<Boxes lesson={LESSON} frame={frame} update={update} pad={1.2} />
+		<Face2Tags g={g} f={frame} clock={clock} sumText={fmt(d.acc.value)} />
 	</>;
 }
 

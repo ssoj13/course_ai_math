@@ -229,6 +229,38 @@ export function genealogyIn(order: readonly string[], edges: readonly MapEdge[],
 }
 
 /**
+ * A spine view (the Start-here pages): the given terms only, each joined to the NEAREST given terms it rests on. The
+ * foundation edges are followed down through terms outside the set (dot product -> law of cosines -> ... -> distance
+ * becomes one dot product -> distance edge), so the course's backbone reads as one small connected chain. Order
+ * follows `order`; an edge is never duplicated.
+ */
+export function spineIn(order: readonly string[], edges: readonly MapEdge[], ids: readonly string[]): Slice {
+	const set = new Set(ids);
+	for (const id of ids) if (!order.includes(id)) throw new Error(`spine: unknown term "${id}"`);
+	const parents = foundationParents(edges);
+	const out: MapEdge[] = [];
+	const seenEdge = new Set<string>();
+	for (const from of ids) {
+		const stack = [...(parents.get(from) ?? [])], visited = new Set<string>();
+		while (stack.length) {
+			const t = stack.pop()!;
+			if (visited.has(t)) continue;
+			visited.add(t);
+			if (set.has(t)) {
+				const k = from + '>' + t;
+				if (!seenEdge.has(k)) out.push({ from, to: t, type: 'built-on' });
+				seenEdge.add(k);
+				continue;
+			}
+			stack.push(...(parents.get(t) ?? []));
+		}
+	}
+	// Direct non-foundation relations among the given terms (multiply-add used-in dot product) are kept as they are.
+	for (const e of edges) if (!isFoundation(e.type) && set.has(e.from) && set.has(e.to)) out.push(e);
+	return { ids: order.filter((id) => set.has(id)), edges: out };
+}
+
+/**
  * The inline slice of a lesson map: the focus terms and the DIRECT foundations (one `built-on`/`is-a` hop down) of
  * the `expand` ones (default: all focus terms), with every edge among them. Small enough to read without zooming; the wider neighbourhood is the full-screen view.
  */

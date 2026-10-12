@@ -11,6 +11,7 @@ import { lazyIsland } from '../island';
 import { Formula } from '../Formula';
 import { Timeline } from '../Timeline';
 import { CodeView } from '../CodeView';
+import { Challenge, type ChallengeProps } from '../Challenge';
 import { NumGrid, type GridRow } from '../NumTable';
 import { HotLinks, type HotLinkMap } from '../HotLinks';
 import { FieldCell } from '../scene/NPanel';
@@ -44,8 +45,9 @@ const num = (x: number) => (Number.isFinite(x) ? fmt(x) : dash);
 const derived: Record<string, (v: Vals) => number> = {
 	len_a: (v) => dotOf(v).lenA,
 	shadow: (v) => dotOf(v).shadow,
-	dot: (v) => dotOf(v).dot,
-	...Object.fromEntries(Array.from({ length: N_MAX }, (_, i) => ['p' + i, (v: Vals) => dotOf(v).prods[i] ?? 0])),
+	// The printed numbers follow the chosen arithmetic / order (spec §1.3); |a| and the shadow are fp64 geometry.
+	dot: (v) => dotOf(v).acc.value,
+	...Object.fromEntries(Array.from({ length: N_MAX }, (_, i) => ['p' + i, (v: Vals) => dotOf(v).acc.prods[i] ?? 0])),
 };
 const formats: Record<string, (x: number) => string> = {
 	len_a: num, shadow: num, dot: num,
@@ -71,32 +73,67 @@ function formulaTex(n: number, prods: readonly number[], narrow: boolean): strin
 function UnitFormula() {
 	const locale = useLocale(), d = dotOf(useVals(LESSON)), n = d.a.length;
 	return <Formula lesson={LESSON} block label={t(locale, 'du.formula')} derived={derived} fmt={formats}
-		tex={formulaTex(n, d.prods, false)} texNarrow={formulaTex(n, d.prods, true)}
+		tex={formulaTex(n, d.acc.prods, false)} texNarrow={formulaTex(n, d.acc.prods, true)}
 		tips={{ shadow: { text: t(locale, 'du.shadowTip') }, len_a: { text: t(locale, 'du.lenTip') }, dot: { text: t(locale, 'du.dotTip') } }} />;
 }
 
-/** aᵢ, bᵢ, aᵢbᵢ and the running sum per component; the last row is the stack's height (spec §2.1 NumTable ids). */
+/**
+ * aᵢ, bᵢ, aᵢbᵢ and the additions as the machine executes them (spec §2.1 NumTable ids): sequential = the running sum
+ * after each tile; pairwise = the merges in execution order (row k holds merge k). The last row is the result.
+ */
 function UnitTable() {
-	const locale = useLocale(), d = dotOf(useVals(LESSON));
-	const rows: GridRow[] = d.a.map((x, i) => ({
-		head: String(i + 1),
-		cells: { a: { id: 'a' + i, value: x }, b: { id: 'b' + i, value: d.b[i] }, p: { id: 'p' + i, value: d.prods[i] }, run: { id: 'run' + i, value: d.run[i] } },
-	}));
-	rows.push({ head: 'Σ', cells: { p: { id: 'sum', value: d.dot } } });
+	const locale = useLocale(), v = useVals(LESSON), d = dotOf(v), pair = v.du_pair === 1;
+	const merge = (i: number) => (i === 0 ? (pair ? undefined : d.acc.prods[0]) : d.acc.merges[i - 1]?.value);
+	const rows: GridRow[] = d.a.map((x, i) => {
+		const m = merge(i);
+		return {
+			head: String(i + 1),
+			cells: { a: { id: 'a' + i, value: x }, b: { id: 'b' + i, value: d.b[i] }, p: { id: 'p' + i, value: d.acc.prods[i] }, run: m === undefined ? undefined : { id: 'run' + i, value: m } },
+		};
+	});
+	rows.push({ head: 'Σ', cells: { p: { id: 'sum', value: d.acc.value } } });
 	return <NumGrid lesson={LESSON} caption={t(locale, 'du.tableCaption')} corner="i" rows={rows} fmt={fmtShort}
-		cols={[{ id: 'a', label: 'aᵢ' }, { id: 'b', label: 'bᵢ' }, { id: 'p', label: 'aᵢbᵢ' }, { id: 'run', label: t(locale, 'du.running') }]} />;
+		cols={[{ id: 'a', label: 'aᵢ' }, { id: 'b', label: 'bᵢ' }, { id: 'p', label: 'aᵢbᵢ' }, { id: 'run', label: t(locale, pair ? 'du.merges' : 'du.running') }]} />;
 }
 
-const CODE = 's = 0.0\nfor i in range(n):\n    s += a[i] * b[i]';
+const SEQ = 's = 0.0\nfor i in range(n):\n    s += a[i] * b[i]';
+const PAIR = 'p = [a[i] * b[i] for i in range(n)]\nwhile len(p) > 1:  # pairwise, like BLAS and GPUs\n    p = [p[i] + p[i + 1] if i + 1 < len(p) else p[i] for i in range(0, len(p), 2)]';
 
+/**
+ * The loop with a fourth line that follows the animation (spec §2.1 CodeView): while the column passes or a tile drops,
+ * line 3 is linked to that tile and the comment shows that step's numbers; otherwise it shows the result. Always four
+ * lines, so the block never changes height.
+ */
+function UnitCode() {
+	const v = useVals(LESSON), d = dotOf(v), pair = v.du_pair === 1, cur = Math.round(v.du_cur as number);
+	const p = d.acc.prods;
+	const live = cur < 0 || cur >= p.length ? `# s = ${fmtShort(d.acc.value)}`
+		: pair ? `# tile ${cur + 1}: ${fmtShort(d.a[cur])} * ${fmtShort(d.b[cur])} = ${fmtShort(p[cur])}`
+		: `# i = ${cur}: s = ${fmtShort(cur === 0 ? 0 : cur === 1 ? p[0] : d.acc.merges[cur - 2].value!)} + ${fmtShort(p[cur])} = ${fmtShort(cur === 0 ? p[0] : d.acc.merges[cur - 1].value!)}`;
+	const tile = cur >= 0 ? 'p' + cur : 'prod';
+	const lines = pair ? { 1: tile, 2: 'n', 3: 'sum', 4: 'sum' } : { 1: 'sum', 2: 'n', 3: tile, 4: 'sum' };
+	return <CodeView lesson={LESSON} lang="python" code={(pair ? PAIR : SEQ) + '\n' + live} lines={lines} />;
+}
+
+/** Challenges (1.4 spec "make the stack negative", "make the shadow zero", plus three on tiles, n and rounding). */
+function challengesFor(locale: Locale): Omit<ChallengeProps, 'lesson'>[] {
+	const nz = (xs: readonly number[]) => xs.some((x) => x !== 0);
+	return [
+		{ n: 1, text: t(locale, 'du.ch1'), check: (v) => dotOf(v).dot < -1e-9 },
+		{ n: 2, text: t(locale, 'du.ch2'), hint: [t(locale, 'du.ch2Hint')], check: (v) => { const d = dotOf(v); return d.lenA > 0 && nz(d.b) && Math.abs(d.dot) < 1e-9; } },
+		{ n: 3, text: t(locale, 'du.ch3'), check: (v) => { const d = dotOf(v); return d.prods.every((x) => x > 0) && d.dot < 1; } },
+		{ n: 4, text: t(locale, 'du.ch4'), check: (v) => { const d = dotOf(v); return d.a.length === 4 && [...d.a, ...d.b].every((x) => x !== 0) && Math.abs(d.dot) < 1e-9; } },
+		{ n: 5, text: t(locale, 'du.ch5'), hint: [t(locale, 'du.ch5Hint')], success: t(locale, 'du.ch5Success'), check: (v) => v.du_fp32 === 1 && dotOf(v).acc.err !== 0 },
+	];
+}
 function Fields() {
 	const locale = useLocale(), n = (useVals(LESSON).n as number) ?? 3;
 	const rows = useMemo(() => compRows(locale, n), [locale, n]);
 	return <div className="not-content" data-du-fields="">{rows.map((r) => <FieldCell key={r.id + n} lesson={LESSON} row={r} size="sm" />)}</div>;
 }
 
-export type UnitPart = 'timeline' | 'formula' | 'fields' | 'table' | 'code';
-const ALL: readonly UnitPart[] = ['timeline', 'formula', 'fields', 'table', 'code'];
+export type UnitPart = 'timeline' | 'formula' | 'fields' | 'table' | 'code' | 'challenges';
+const ALL: readonly UnitPart[] = ['timeline', 'formula', 'fields', 'table', 'code', 'challenges'];
 
 function Controls({ parts = ALL }: { parts?: readonly UnitPart[]; locale?: Locale }) {
 	const locale = useLocale();
@@ -107,7 +144,8 @@ function Controls({ parts = ALL }: { parts?: readonly UnitPart[]; locale?: Local
 		{has('formula') && <UnitFormula />}
 		{has('fields') && <Fields />}
 		{has('table') && <UnitTable />}
-		{has('code') && <CodeView lesson={LESSON} lang="python" code={CODE} lines={{ 1: 'sum', 2: 'n', 3: 'prod' }} />}
+		{has('code') && <UnitCode />}
+		{has('challenges') && challengesFor(locale).map((c) => <Challenge key={c.n} lesson={LESSON} {...c} />)}
 	</section>;
 }
 export const DotUnitControls = localized(Controls);

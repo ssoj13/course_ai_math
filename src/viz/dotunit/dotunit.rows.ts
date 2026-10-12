@@ -16,7 +16,11 @@ export function unitRows(locale: Locale): readonly Row[] {
 		ro('len_a', '|a|', (v) => dotOf(v).lenA, t(locale, 'du.lenTip')),
 		ro('shadow', t(locale, 'du.shadow'), (v) => dotOf(v).shadow, t(locale, 'du.shadowTip')),
 		ro('proj', '|a|·' + t(locale, 'du.shadowShort'), (v) => dotOf(v).proj, t(locale, 'du.projTip')),
-		ro('dot', 'Σ aᵢbᵢ', (v) => dotOf(v).dot, t(locale, 'du.dotTip')),
+		ro('dot', 'Σ aᵢbᵢ', (v) => dotOf(v).acc.value, t(locale, 'du.dotTip')),
+		// The printed arithmetic and order (spec §1.3); geometry stays fp64, the difference is a number, not a height.
+		{ id: 'fp32', label: 'fp32', kind: 'bool', key: 'du_fp32', group: t(locale, 'du.machine'), tip: { text: t(locale, 'du.fp32Tip') } },
+		{ id: 'pairwise', label: t(locale, 'du.pairwise'), kind: 'bool', key: 'du_pair', group: t(locale, 'du.machine'), tip: { text: t(locale, 'du.pairTip') } },
+		{ id: 'err', label: t(locale, 'du.err'), kind: 'ro', chars: 9, fmt: (x) => (x === 0 ? '0' : x.toExponential(1)), value: (v) => dotOf(v).acc.err, group: t(locale, 'du.machine'), tip: { text: t(locale, 'du.errTip') } },
 	];
 }
 

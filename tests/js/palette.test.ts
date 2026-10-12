@@ -6,7 +6,7 @@
  * The getter is injected, so these tests stay DOM-free.
  */
 import { expect, test } from 'bun:test';
-import { readPalette } from '../../src/viz/palette';
+import { fadeAlphas, readPalette, STYLE } from '../../src/viz/palette';
 
 test('reads every role from --viz-* custom properties', () => {
 	const css: Record<string, string> = { '--viz-vec-a': ' #1f77b4 ', '--viz-vec-b': '#ff7f0e' };
@@ -18,4 +18,15 @@ test('reads every role from --viz-* custom properties', () => {
 
 test('missing variable is an error, not a silent black', () => {
 	expect(() => readPalette(() => '')).toThrow(/--viz-/);
+});
+
+test('fadeAlphas scales core, halo and outline alike; 1 is the plain recipe', () => {
+	expect(fadeAlphas(1, false)).toEqual({ core: 1, halo: STYLE.haloA, outline: 1 });
+	expect(fadeAlphas(1, true).halo).toBe(STYLE.hotHaloA);
+	const f = fadeAlphas(0.35, false);
+	expect(f.core).toBe(0.35);
+	expect(f.halo).toBeCloseTo(STYLE.haloA * 0.35, 12);
+	expect(f.outline).toBe(0.35);
+	expect(() => fadeAlphas(1.2, false)).toThrow();
+	expect(() => fadeAlphas(Number.NaN, false)).toThrow();
 });

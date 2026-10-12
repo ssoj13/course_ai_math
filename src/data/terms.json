@@ -24,7 +24,7 @@
       "def": "A multiply-add is one multiplication followed by one addition into a running sum: the single step every dot product, matrix product and layer is made of.",
       "depth": "machine",
       "lessons": ["how-it-connects"],
-      "edges": [],
+      "edges": [{ "type": "used-in", "to": "dot-product" }],
       "ru": { "label": "Умножение со сложением", "def": "Умножение со сложением — одно умножение и одно прибавление к накопленной сумме: единственный шаг, из которого состоят скалярное произведение, произведение матриц и слой сети." }
     },
     {
@@ -693,8 +693,26 @@
       "def": "Attention weighs tokens by the dot products of their query and key embeddings, then mixes their values.",
       "depth": "ai",
       "lessons": [],
-      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "embedding" }],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "embedding" }, { "type": "built-on", "to": "tensor" }],
       "ru": { "label": "Внимание (attention)", "def": "Внимание взвешивает токены скалярными произведениями эмбеддингов запросов и ключей, а затем смешивает их значения." }
+    },
+    {
+      "id": "tensor",
+      "label": "Tensor",
+      "def": "A tensor is an n-dimensional grid of numbers stored as one flat buffer with strides; its products are stacks of matrix products.",
+      "depth": "matrices",
+      "lessons": [],
+      "edges": [{ "type": "built-on", "to": "matrix" }],
+      "ru": { "label": "Тензор", "def": "Тензор — это n-мерная таблица чисел, хранящаяся как один плоский буфер с шагами; его произведения — стопки произведений матриц." }
+    },
+    {
+      "id": "gradient",
+      "label": "Gradient",
+      "def": "The gradient is the vector of how fast a loss changes along every parameter: the direction training steps against.",
+      "depth": "ai",
+      "lessons": [],
+      "edges": [{ "type": "built-on", "to": "vector" }, { "type": "built-on", "to": "parameter" }],
+      "ru": { "label": "Градиент", "def": "Градиент — это вектор того, как быстро меняется ошибка по каждому параметру: направление, против которого шагает обучение." }
     }
   ]
 }

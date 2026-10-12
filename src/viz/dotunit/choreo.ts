@@ -123,7 +123,8 @@ export function dotGeom(d: DotData): DotGeom {
 		y += colH[i] + GAP;
 	}
 	const rowEnd = x - GAP;
-	const stackX = rowEnd + 1.75;
+	// Room left of the stack for its sum label (the column parks between the row and the stack).
+	const stackX = rowEnd + 2.75;
 	return { n, rowX, rowW, rowEnd, colY, colH, colX0: -1.5, colX1: rowEnd + 0.75, passX, stackX, barX: stackX + 1.6, run: d.run, proj: Number.isFinite(d.proj) ? d.proj : 0, d };
 }
 
@@ -187,7 +188,7 @@ export function columnX(g: DotGeom, step: number, t: number): number {
  * holds the face-2 boxes: legs (out of the arrows at step 3, into row/column at 4), tiles (5, hatched at 6), the drop
  * into the stack (7) and the projection bar with the tick (8).
  */
-export function dotFrame(g: DotGeom, step: number, t: number, f: Frame): void {
+export function dotFrame(g: DotGeom, step: number, t: number, f: Frame, pairwise = false): void {
 	const n = g.n, { a, b } = g.d;
 	const colX = columnX(g, step, t);
 	for (let v = 0; v < 2; v++) {
@@ -241,7 +242,9 @@ export function dotFrame(g: DotGeom, step: number, t: number, f: Frame): void {
 		segBox(g, i, SC, SS);
 		// Appear as the column passes (5), hatch wipe (6), drop one after another (7).
 		const shown = step < 5 ? 0 : step > 5 ? 1 : clamp01((colX - g.passX[i]) / 0.4 + 0.5);
-		const drop = step < 7 ? 0 : step > 7 ? 1 : ease(t * n - i);
+		// Drop order follows the printed summation order: one tile after another, or pairwise (0+1, 2+3, ...).
+		const slots = pairwise ? Math.ceil(n / 2) : n, slot = pairwise ? i >> 1 : i;
+		const drop = step < 7 ? 0 : step > 7 ? 1 : ease(t * slots - slot);
 		f.lerp(k, TC, TS, SC, SS, drop);
 		if (shown < 1) for (let ax = 0; ax < 2; ax++) f.s[3 * k + ax] *= shown;
 		const hatch = !neg ? 0 : step < 6 ? 0 : step > 6 ? 1 : t;
@@ -253,9 +256,27 @@ export function dotFrame(g: DotGeom, step: number, t: number, f: Frame): void {
 	f.box(DOT_BAR(n), g.barX, g.barX + 0.6, 0, top, 0, FLAT);
 	f.look(DOT_BAR(n), 'vecC', false, step < 8 ? 0 : 1, g.proj < 0 ? 1 : 0, false);
 	const sum = g.run[n - 1];
-	f.box(DOT_TICK(n), g.stackX - 0.2, g.barX + 0.8, sum - 0.02, sum + 0.02, 0.04, 0.05);
+	// The tick joins the stack's end and the bar's top in the gap between them (both edges stay visible).
+	f.box(DOT_TICK(n), g.stackX + 1.05, g.barX - 0.05, sum - 0.02, sum + 0.02, 0.04, 0.05);
 	f.look(DOT_TICK(n), 'hot', true, step < 8 ? 0 : rise, 0, false);
 	f.n = dotCap(n);
+}
+
+/**
+ * The tile the animation is working on: the pair the column is passing (step 5) or the tile dropping into the stack
+ * (step 7), else -1. The code view follows it (spec §2.1 CodeView 3 -> p{current}).
+ */
+export function dotCurrent(g: DotGeom, step: number, t: number, pairwise = false): number {
+	if (step === 5) {
+		const x = columnX(g, step, t);
+		for (let i = 0; i < g.n; i++) if (Math.abs(x - g.passX[i]) < 0.3) return i;
+		return -1;
+	}
+	if (step === 7 && t < 1) {
+		const slots = pairwise ? Math.ceil(g.n / 2) : g.n, s = Math.min(slots - 1, Math.floor(t * slots));
+		return pairwise ? 2 * s : s;
+	}
+	return -1;
 }
 
 /** Top of the stack (drawn) and of the projection bar: the "aha" pair of step 8 (spec §2.3, §7). */
@@ -275,7 +296,8 @@ export function passMs(step: number, sumLen: number): number {
 /** Instance count of a scene: operand elements, then one box per tile (LOD 1) or per cell (bar / heat square). */
 export function passCap(d: SceneData): number {
 	const L = d.L;
-	return L.operands[0].n + L.operands[1].n + (L.lod === 1 ? L.cells.n * L.plan.sumLen : L.cells.n);
+	// LOD 2 adds one thin shaft line per cell, LOD 3 one sweeping plane (spec §1.4).
+	return L.operands[0].n + L.operands[1].n + (L.lod === 1 ? L.cells.n * L.plan.sumLen : L.cells.n) + (L.lod === 2 ? L.cells.n : L.lod === 3 ? 1 : 0);
 }
 
 /** Term ids of a pass frame (static per data). */
@@ -285,6 +307,8 @@ export function passIds(d: SceneData, idOf: { elem(o: 0 | 1, e: number): string;
 	for (const o of [0, 1] as const) for (let e = 0; e < L.operands[o].n; e++) f.id[i++] = idOf.elem(o, e);
 	if (L.lod === 1) for (let c = 0; c < L.cells.n; c++) for (let k = 0; k < L.plan.sumLen; k++) f.id[i++] = idOf.tile(c, k);
 	else for (let c = 0; c < L.cells.n; c++) f.id[i++] = idOf.cell(c);
+	if (L.lod === 2) for (let c = 0; c < L.cells.n; c++) f.id[i++] = idOf.cell(c);
+	if (L.lod === 3) f.id[i++] = 'sweep';
 	f.n = i;
 }
 
@@ -298,6 +322,8 @@ function square(f: Frame, i: number, p: ArrayLike<number>, w: number, normal: Ax
 }
 
 const LO = [0, 0, 0], HI = [0, 0, 0];
+/** [lo, hi] of a box side: the segment's own extent along the shaft axis, a thin w across it. */
+const span = (a: number, b: number, along: boolean, w: number): [number, number] => (along ? [Math.min(a, b) - 0.5, Math.max(a, b) + 0.5] : [(a + b) / 2 - w / 2, (a + b) / 2 + w / 2]);
 
 /**
  * Stack segment of cell c from value lo to hi along the stack direction, cross-section `w`. A negative product's
@@ -365,6 +391,30 @@ export function passFrame(d: SceneData, step: number, t: number, focus: number, 
 			}
 			const heat = L.lod === 3 ? (d.maxAbsOut > 0 ? 0.15 + 0.85 * Math.abs(v) / d.maxAbsOut : 0.15) : 1;
 			f.look(i, v < 0 ? 'vecB' : 'vecC', L.lod === 2, step < 3 ? 0 : (step === 3 ? ease(t) : 1) * heat, v < 0 ? 1 : 0, false);
+		}
+		const s = L.axes.shaft, far = n - 1;
+		if (L.lod === 2) {
+			// One thin line per shaft while the shafts pass (the focus cell's alone at step 1, every cell at step 2).
+			for (let c = 0; c < L.cells.n; c++, i++) {
+				tileAt(L, c, 0, LO);
+				tileAt(L, c, far, HI);
+				const w = 0.06;
+				f.box(i, ...span(LO[0], HI[0], s === 0, w), ...span(LO[1], HI[1], s === 1, w), ...span(LO[2], HI[2], s === 2, w));
+				const on = step === 1 ? c === focus : step === 2;
+				f.look(i, 'light', true, on ? 1 : 0, 0, step === 1 && c === focus);
+			}
+		} else {
+			// A plane sweeping along the shaft from its far end to the output face (steps 1 and 2).
+			tileAt(L, 0, far, P);
+			const from = P[s], to = L.cells.pos[s];
+			const at = from + (to - from) * (step === 1 || step === 2 ? ease(t) : 1);
+			for (let a = 0; a < 3; a++) {
+				LO[a] = a === s ? at - 0.02 : L.lo[a];
+				HI[a] = a === s ? at + 0.02 : L.hi[a];
+			}
+			f.box(i, LO[0], HI[0], LO[1], HI[1], LO[2], HI[2]);
+			f.look(i, 'light', false, step === 1 || step === 2 ? 1 : 0, 0, false);
+			i++;
 		}
 	}
 	f.n = i;

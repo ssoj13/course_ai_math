@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lessons } from '../../src/lib/course';
 import { EDGES, introducedIn, mapData, ORDER, parseGraph, TERMS, termById, termsOf } from '../../src/viz/terms/data';
-import { ancestorsIn, ancestry, flow, foundationsIn, genealogyIn, layerCount, mapHeight, neighborhood, wrapLabel, neighborhoodIn, validate, type TermGraph } from '../../src/viz/terms/graph';
+import { ancestorsIn, ancestry, flow, foundationsIn, genealogyIn, layerCount, mapHeight, neighborhood, wrapLabel, neighborhoodIn, spineIn, validate, type TermGraph } from '../../src/viz/terms/graph';
 import { exitPoint, openView, splinePath, straightPath } from '../../src/viz/terms/layout';
 
 const g = TERMS;
@@ -29,6 +29,17 @@ describe('shipped graph', () => {
 				expect(EDGES.some((e) => (e.type === 'built-on' || e.type === 'is-a') && own.includes(e.from) && e.to === id)).toBe(true);
 			}
 		}
+	});
+	test('spine maps of the Start-here pages are one connected chain of the backbone terms', () => {
+		const s = spineIn(ORDER, EDGES, ['multiply-add', 'distance', 'angle', 'dot-product', 'matrix', 'tensor', 'embedding', 'attention']);
+		expect(s.ids.length).toBe(8);
+		const has = (from: string, to: string) => s.edges.some((e) => e.from === from && e.to === to);
+		expect(has('dot-product', 'distance') || has('dot-product', 'angle')).toBe(true);
+		expect(has('matrix', 'dot-product') && has('tensor', 'matrix') && has('attention', 'tensor')).toBe(true);
+		expect(has('multiply-add', 'dot-product')).toBe(true);
+		// Every term is reached: no isolated node in the card.
+		for (const id of s.ids) expect(s.edges.some((e) => e.from === id || e.to === id)).toBe(true);
+		expect(() => spineIn(ORDER, EDGES, ['no-such-term'])).toThrow();
 	});
 	test('storyboard §3 seed ids exist', () => {
 		for (const id of ['square', 'sqrt', 'coordinate', 'point', 'distance', 'pythagoras', 'angle', 'radian', 'unit-circle', 'cosine', 'sine', 'law-of-cosines']) {
@@ -209,7 +220,7 @@ describe('placement', () => {
 		for (const l of lessons) {
 			for (const file of [`${l.path}.mdx`, ...(ru.has(`${l.path}.mdx`) ? [`ru/${l.path}.mdx`] : [])]) {
 				const text = read(file);
-				expect({ file, map: /^<LessonMap \/>$/m.test(text) }).toEqual({ file, map: true });
+				expect({ file, map: /^<LessonMap( spine=\{\[[^\]]*\]\})? \/>$/m.test(text) }).toEqual({ file, map: true });
 			}
 		}
 	});

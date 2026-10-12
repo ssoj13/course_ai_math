@@ -352,8 +352,12 @@ only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over
 - Stores: `dotunit` (du_a/du_b n-vectors + du_a3/du_b3 via link groups, n 2..8), `einsum`, `matvec`, `ladder`.
 - `Nav.frame(dir)` (Stage): View All from a direction that stays home until Reset view (face 2 is framed from the front).
 - Playground `extent` follows the drawn bounds (the camera distance range scales with extent).
-- [ ] Open: dtype/order readouts, memory-layout strip, LOD-2 shaft lines, CodeView line per current tile, cube
-  readability (operand faces, label overlap at 360 px), CDP hover-link and CLS acceptance checks, physical-device perf.
+- Polish pass: printed fp64/fp32 + sequential/pairwise via core explain (geometry stays fp64; err row), memory strip,
+  LOD-2 shaft lines / LOD-3 sweep, code line follows `du_cur`, 5 challenges, Arrow `opacity` (palette `fadeAlphas`),
+  cubes framed front-left-top, `Tag dense` = hover-only below 480 px. TRAP: a ShaderMaterial writing to the canvas
+  needs sRGB components (three's Color.set gives linear: Boxes uses `convertLinearToSRGB`).
+- Start-here term maps: `<LessonMap spine={[...]} />` = `spineIn` (backbone terms joined to nearest backbone foundations).
+- [ ] Open: fp16 readout (reserved, DtypeError), physical-device perf, cube readability at 360 px (small figure).
 ## Authoring rules
 
 - Math in prose: `$a\cdot b$` inline; display math fenced (`$$` on its own lines; a one-line `$$x$$` is inline).

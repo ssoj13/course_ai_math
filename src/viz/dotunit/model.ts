@@ -5,7 +5,7 @@
  * results come from `explain` / `einsum` (same kernel, same accumulation), so a tile's area, the table cell and the
  * formula term are the same float.
  */
-import { einsum, explain, planEinsum, rand, tensor, type Nested, type Plan, type Tensor } from '../../core';
+import { einsum, explain, planEinsum, rand, tensor, type AccOpts, type Explain, type Nested, type Plan, type Tensor } from '../../core';
 import { idxId, layoutEinsum, stackScale, type Layout, type LayoutOpts } from './layout';
 
 export type PresetId = 'dot' | 'matvec' | 'matmul' | 'batched' | 'attention' | 'layer';
@@ -133,19 +133,25 @@ export interface DotData {
 	plan: Plan;
 	a: readonly number[];
 	b: readonly number[];
-	/** aᵢ·bᵢ in shaft order and the running sums S₀ … Sₙ₋₁ (sequential), from `explain`. */
+	/** aᵢ·bᵢ in shaft order and the running sums S₀ … Sₙ₋₁ (fp64, sequential), from `explain`: the GEOMETRY. */
 	prods: readonly number[];
 	run: readonly number[];
-	/** a·b (= run[n−1], bit for bit the einsum value). */
+	/** a·b in fp64 (= run[n−1], bit for bit the einsum value). */
 	dot: number;
 	/** |a| = √(a·a), the shadow of b on a's line (a·b/|a|; NaN when a = 0) and |a|·shadow. */
 	lenA: number;
 	shadow: number;
 	proj: number;
+	/**
+	 * The PRINTED computation (spec §1.3): the products and additions in the chosen arithmetic (fp64 or fp32) and order
+	 * (sequential or pairwise), exactly as the core's `explain` executes them; `err` = exact (fp64) − printed. Geometry
+	 * never uses it: a rounding error is a number in the panel, not a visibly wrong height.
+	 */
+	acc: { opts: AccOpts; prods: readonly number[]; merges: Explain['merges']; value: number; err: number };
 }
 
-/** The DotUnit's numbers for `a`, `b` (same length n >= 1). */
-export function dotData(a: readonly number[], b: readonly number[]): DotData {
+/** The DotUnit's numbers for `a`, `b` (same length n >= 1); `o` picks the printed arithmetic and order. */
+export function dotData(a: readonly number[], b: readonly number[], o: AccOpts = {}): DotData {
 	if (a.length !== b.length || a.length < 1) throw new Error(`DotUnit needs two vectors of one length >= 1, got ${a.length} and ${b.length}`);
 	const plan = planEinsum('i,i->', { i: a.length });
 	const ta = tensor([...a]), tb = tensor([...b]);
@@ -155,9 +161,10 @@ export function dotData(a: readonly number[], b: readonly number[]): DotData {
 	const dot = ex.value!;
 	const lenA = Math.sqrt(einsum('i,i->', ta, ta).item());
 	const shadow = lenA > 0 ? dot / lenA : NaN;
-	return { plan, a, b, prods, run, dot, lenA, shadow, proj: lenA > 0 ? lenA * shadow : NaN };
+	const ax = explain(plan, [], [ta, tb], o);
+	const acc = { opts: o, prods: ax.terms.map((tm) => tm.prod!), merges: ax.merges, value: ax.value!, err: dot - ax.value! };
+	return { plan, a, b, prods, run, dot, lenA, shadow, proj: lenA > 0 ? lenA * shadow : NaN, acc };
 }
-
 /** Readout format: two decimals, ASCII minus, never "-0.00"; a dash for undefined values. */
 export const fmt = (x: number): string => (Number.isFinite(x) ? (+x.toFixed(2) + 0).toFixed(2) : '–');
 /** Short value of a tile or element: integers bare, else up to two decimals. */

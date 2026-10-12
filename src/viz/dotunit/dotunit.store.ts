@@ -46,14 +46,23 @@ function vecLink(full: string, three: string, def: readonly number[]): LinkGroup
 }
 
 export const LINKS: LessonLinks = { groups: [vecLink('du_a', 'du_a3', DEF_A), vecLink('du_b', 'du_b3', DEF_B)] };
-export const INITIAL: Record<string, Val> = { n: 3, du_a: [...A_DEF], du_b: [...B_DEF] };
+/**
+ * du_fp32 / du_pair (0/1): the printed arithmetic and summation order (spec §1.3); du_cur: the pair the column is passing
+ * or the tile dropping (-1 = none), written by the scene so the code view can follow it.
+ */
+export const INITIAL: Record<string, Val> = { n: 3, du_a: [...A_DEF], du_b: [...B_DEF], du_fp32: 0, du_pair: 0, du_cur: -1 };
 
 /** The numbers of the current values (cached per pair of vector objects: rows, formula and scene ask often). */
-let memo: { a: unknown; b: unknown; d: DotData } | null = null;
+let memo: { a: unknown; b: unknown; k: string; d: DotData } | null = null;
 export function dotOf(v: Values): DotData {
 	const a = v.du_a as readonly number[], b = v.du_b as readonly number[];
-	if (memo && memo.a === a && memo.b === b) return memo.d;
-	const d = dotData(a, b);
-	memo = { a, b, d };
+	const o = accOf(v), k = o.arith + o.order;
+	if (memo && memo.a === a && memo.b === b && memo.k === k) return memo.d;
+	const d = dotData(a, b, o);
+	memo = { a, b, k, d };
 	return d;
+}
+/** Printed arithmetic and order from the store (fp16 stays reserved for branch Q: the core throws DtypeError). */
+export function accOf(v: Values): { arith: 'fp64' | 'fp32'; order: 'sequential' | 'pairwise' } {
+	return { arith: v.du_fp32 === 1 ? 'fp32' : 'fp64', order: v.du_pair === 1 ? 'pairwise' : 'sequential' };
 }

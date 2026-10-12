@@ -26,6 +26,8 @@ export const PLAY_INIT: Record<string, Val> = {
 	seed: 0,
 	sel: 0,
 	dive: 0,
+	/** Memory strip: show A through a transposed view (0/1). */
+	tA: 0,
 	...Object.fromEntries(PLAY_IDS.flatMap((id) => letters(id).map((l) => [extKey(id, l), PRESETS[id].shapes[l]]))),
 };
 

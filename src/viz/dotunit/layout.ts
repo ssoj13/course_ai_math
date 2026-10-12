@@ -171,8 +171,10 @@ export function layoutEinsum(plan: Plan, o: LayoutOpts = {}): Layout {
 
 	const used = [false, false, false];
 	for (const l of plan.kept) if (place[l] === 'x' || place[l] === 'y' || place[l] === 'z') used[axisOf(place[l])] = true;
-	used[shaft] = true;
+	// Room between rows only when the stacks run along a KEPT axis (matrix x vector); the cube's stacks run along the
+	// shaft itself and grow out of the output face, away from the shaft.
 	const stackKept = used[stackDir];
+	used[shaft] = true;
 	const room = o.room ?? (stackKept ? ROOM_KEPT : ROOM_FREE);
 	const pitch: [number, number, number] = [PITCH, PITCH, PITCH];
 	// A stack running along a kept axis (matrix x vector: rows down y, stacks up y) needs its room between rows.

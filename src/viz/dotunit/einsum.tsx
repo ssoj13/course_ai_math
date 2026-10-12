@@ -6,7 +6,10 @@
 import { useEffect, useMemo } from 'react';
 import { t, type Locale } from '../../i18n/core';
 import { localized, useLocale } from '../../i18n/react';
-import { lessonStore, useStep, useVals } from '../store';
+import { useStore } from 'zustand';
+import { offsets, transpose } from '../../core';
+import { hotOff, hotOn, lessonStore, useStep, useVals } from '../store';
+import { idxId } from './layout';
 import { lazyIsland } from '../island';
 import { Timeline } from '../Timeline';
 import { FieldCell, type Row } from '../scene/NPanel';
@@ -87,6 +90,53 @@ function DiveBar() {
 	</div>;
 }
 
+/**
+ * Memory layout (spec §1.6): each operand as its flat buffer, in buffer order, with its shape and strides from the core.
+ * Hovering a buffer cell lights its element in the scene (and the scene lights the strip). `Aᵀ` shows A through a
+ * transposed VIEW: the same cells in the same order, other strides, so the traversal numbers under the cells change
+ * while nothing moves. At most MEM_MAX cells per operand are listed.
+ */
+const MEM_MAX = 48;
+function MemoryStrip() {
+	const locale = useLocale(), v = useVals(PLAY), b = playData(v), hot = useStore(lessonStore(PLAY), (st) => st.hot);
+	if (!b.ok) return null;
+	const d = b.d, wide = d.wide, tA = v.tA === 1;
+	return <div className="lab-du-mem" aria-label={t(locale, 'du.memory')}>
+		<label style={{ display: 'inline-flex', gap: '.4rem', alignItems: 'center' }}>
+			<input type="checkbox" checked={tA} onChange={(e) => lessonStore(PLAY).getState().set('tA', e.currentTarget.checked ? 1 : 0)} />
+			{t(locale, 'du.transpose')}
+		</label>
+		{([0, 1] as const).map((o) => {
+			const base = d.ts[o], view = o === 0 && tA ? transpose(base) : base;
+			const name = (o === 0 ? 'A' : 'B') + (o === 0 && tA ? 'ᵀ' : '');
+			// Traversal step at which a row-major walk over the view reaches each buffer position.
+			const order = new Map<number, number>();
+			Array.from(offsets(view.shape, view.strides)).forEach((off, k) => order.set(view.offset + off, k));
+			const n = Math.min(base.data.length, MEM_MAX);
+			return <div key={o} style={{ margin: '.4rem 0' }}>
+				<div style={{ fontFamily: 'var(--lab-font-mono)', fontSize: '.8rem' }}>
+					{t(locale, 'du.stridesOf', { name, shape: '(' + view.shape.join(', ') + ')', strides: '(' + view.strides.join(', ') + ')' })}
+				</div>
+				<div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+					{Array.from({ length: n }, (_, k) => {
+						// The element stored at buffer position k, as a multi-index of the ORIGINAL operand (its scene id).
+						let r = k;
+						const idx = base.strides.map((st) => { const q = Math.floor(r / st); r -= q * st; return q; });
+						const id = (o === 0 ? 'a' : 'b') + idxId(idx, 0, idx.length, wide);
+						return <span key={k} data-t={id} tabIndex={0} className={hot.has(id) ? 'is-hot' : undefined}
+							onPointerEnter={() => hotOn(PLAY, id)} onPointerLeave={() => hotOff(PLAY, id)} onFocus={() => hotOn(PLAY, id)} onBlur={() => hotOff(PLAY, id)}
+							style={{ display: 'inline-grid', minWidth: '2.2em', textAlign: 'center', fontFamily: 'var(--lab-font-mono)', fontSize: '.75rem', border: '1px solid var(--sl-color-gray-5)', padding: '1px 2px', background: hot.has(id) ? 'var(--viz-hot-bg)' : undefined }}>
+							<span>{fmtShort(base.data[k])}</span>
+							<span style={{ opacity: 0.6 }}>{order.get(k)}</span>
+						</span>;
+					})}
+					{base.data.length > n && <span>{t(locale, 'du.memMore', { k: String(base.data.length - n) })}</span>}
+				</div>
+			</div>;
+		})}
+	</div>;
+}
+
 function Play() {
 	const locale = useLocale();
 	return <section className="not-content" data-du-scope={PLAY}>
@@ -94,6 +144,7 @@ function Play() {
 		<Extents />
 		<Timeline lesson={PLAY} id="pass" steps={PASS_KEYS.map((k, i) => ({ id: String(i), text: t(locale, k) }))} />
 		<DiveBar />
+		<MemoryStrip />
 	</section>;
 }
 
