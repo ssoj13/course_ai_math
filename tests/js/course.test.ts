@@ -7,7 +7,7 @@ describe('course manifest', () => {
 		expect(lessons[0].slug).toBe('why-this-course');
 		expect(modules[0].slug).toBe('start');
 		expect(modules[1].lessons[0].slug).toBe('squares-and-plane');
-		expect(lessons.at(-1)?.slug).toBe('tensor-road');
+		expect(lessons.at(-1)?.slug).toBe('reductions');
 		expect(modules.at(-1)?.slug).toBe('tensors');
 	});
 	test('CURRICULUM numbering: start is unnumbered, Ground is Part 0, explicit parts hold their number', () => {

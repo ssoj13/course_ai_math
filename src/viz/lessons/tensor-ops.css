@@ -1,0 +1,84 @@
+/*
+ * Lessons 3.4 / 3.5 page-side controls, on top of tensor-road.css (shape boxes, notes, preset buttons). The shape table
+ * prints numbers in the scene's operand colours, tuned for the always-dark viewport, so it sits on the viewport chrome
+ * in both site themes, like lesson 3.1's shape readout.
+ */
+.to-table {
+	border-collapse: collapse;
+	margin: 0;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 0.85rem;
+	border-radius: 0.35rem;
+	overflow: hidden;
+}
+.to-table th,
+.to-table td {
+	padding: 0.25rem 0.6rem;
+	border: none;
+	text-align: right;
+	white-space: nowrap;
+}
+.to-table th {
+	color: var(--viz-muted);
+	font-weight: 400;
+}
+.to-table tr.to-verdict td {
+	color: var(--viz-muted);
+	font-size: 0.75rem;
+	white-space: normal;
+}
+.to-table td.is-bad {
+	color: var(--viz-hot);
+	font-weight: 700;
+}
+.to-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+}
+.to-err {
+	margin: 0;
+	padding: 0.5rem 0.75rem;
+	border-left: 3px solid var(--viz-hot);
+	border-radius: 0.25rem;
+	background: var(--sl-color-gray-6);
+	font-size: 0.9rem;
+}
+.to-err code {
+	overflow-wrap: anywhere;
+}
+.to-ways {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap: 0.5rem;
+}
+.to-way {
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.35rem;
+}
+.to-way-name {
+	margin: 0 0 0.3rem;
+	font-size: 0.85rem;
+	font-weight: 600;
+}
+.to-way dl {
+	margin: 0;
+	display: grid;
+	gap: 0.1rem;
+	font-size: 0.85rem;
+}
+.to-way dl div {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+.to-way dt {
+	font-weight: 400;
+}
+.to-way dd {
+	margin: 0;
+	font-family: var(--lab-font-mono);
+	white-space: nowrap;
+}

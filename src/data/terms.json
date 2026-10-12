@@ -805,6 +805,51 @@
       "ru": { "label": "Пакет (batch)", "def": "Пакет — это новая первая ось, которая складывает независимые примеры в стопку, чтобы одна операция обработала их все сразу." }
     },
     {
+      "id": "elementwise",
+      "label": "Elementwise operation",
+      "def": "An elementwise operation applies one number operation to every pair of cells that sit at the same index of two tensors.",
+      "depth": "matrices",
+      "lessons": ["broadcasting"],
+      "edges": [{ "type": "built-on", "to": "tensor" }],
+      "ru": { "label": "Поэлементная операция", "def": "Поэлементная операция применяет одну операцию над числами к каждой паре ячеек, стоящих на одном и том же индексе двух тензоров." }
+    },
+    {
+      "id": "broadcasting",
+      "label": "Broadcasting",
+      "def": "Broadcasting aligns two shapes from the right and repeats every size-1 or missing axis through stride 0, so an elementwise operation combines tensors of different shapes without copying.",
+      "depth": "matrices",
+      "lessons": ["broadcasting"],
+      "edges": [{ "type": "built-on", "to": "elementwise" }, { "type": "built-on", "to": "shape" }, { "type": "built-on", "to": "stride" }],
+      "ru": { "label": "Бродкастинг", "def": "Бродкастинг выравнивает две формы справа и повторяет каждую ось размера 1 или недостающую ось через шаг 0, чтобы поэлементная операция соединяла тензоры разных форм без копирования." }
+    },
+    {
+      "id": "reduction",
+      "label": "Reduction",
+      "def": "A reduction collapses one or more axes of a tensor, turning each line of cells along them into one number: a sum, a mean or a maximum.",
+      "depth": "matrices",
+      "lessons": ["reductions"],
+      "edges": [{ "type": "built-on", "to": "tensor-axis" }, { "type": "built-on", "to": "sigma-notation" }, { "type": "used-in", "to": "dot-product" }],
+      "ru": { "label": "Редукция", "def": "Редукция схлопывает одну или несколько осей тензора, превращая каждую линию ячеек вдоль них в одно число: сумму, среднее или максимум." }
+    },
+    {
+      "id": "keepdims",
+      "label": "keepdims",
+      "def": "keepdims keeps a reduced axis with size 1 instead of removing it, so the result still broadcasts against the input.",
+      "depth": "matrices",
+      "lessons": ["reductions"],
+      "edges": [{ "type": "built-on", "to": "reduction" }, { "type": "built-on", "to": "broadcasting" }],
+      "ru": { "label": "keepdims", "def": "keepdims оставляет свёрнутую ось с размером 1, а не удаляет её, чтобы результат по-прежнему бродкастился против входа." }
+    },
+    {
+      "id": "mean",
+      "label": "Mean",
+      "def": "The mean is a sum divided by the count of its terms: the reduction statistics is built on.",
+      "depth": "matrices",
+      "lessons": ["reductions"],
+      "edges": [{ "type": "built-on", "to": "reduction" }],
+      "ru": { "label": "Среднее", "def": "Среднее — это сумма, делённая на число слагаемых: редукция, на которой построена статистика." }
+    },
+    {
       "id": "gradient",
       "label": "Gradient",
       "def": "The gradient is the vector of how fast a loss changes along every parameter: the direction training steps against.",
