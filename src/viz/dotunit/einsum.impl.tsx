@@ -86,7 +86,7 @@ function PassTags({ lesson, d, show, cellText, offset = [0, 0, 0] }: { lesson: s
 			<Tag key={o + ':' + e} lesson={lesson} hot={ids.elem(d, o, e)} small={ops > 24} dense role={o === 0 ? 'vecA' : 'vecB'} text={fmtShort(d.vals[o][e])} at={() => at(L.operands[o].pos, e)} />
 		)))}
 		{L.cells.n <= 64 && Array.from({ length: L.cells.n }, (_, c) => (
-			<Tag key={'c' + c} lesson={lesson} hot={ids.cell(d, c)} role="ink" offset={[0, -10]} text={fmtShort(d.out[c]) + (cellText?.(c) ?? '')}
+			<Tag key={'c' + c} lesson={lesson} hot={ids.cell(d, c)} role="ink" offset={[0, -10]} dense={cellText !== undefined} text={fmtShort(d.out[c]) + (cellText?.(c) ?? '')}
 				at={() => (show().step >= 3 ? at(cellTop(d, c, P), 0) : null)} />
 		))}
 	</>;
