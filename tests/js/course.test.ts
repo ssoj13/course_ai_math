@@ -7,7 +7,7 @@ describe('course manifest', () => {
 		expect(lessons[0].slug).toBe('why-this-course');
 		expect(modules[0].slug).toBe('start');
 		expect(modules[1].lessons[0].slug).toBe('squares-and-plane');
-		expect(lessons.at(-1)?.slug).toBe('tensor-road');
+		expect(lessons.at(-1)?.slug).toBe('tensor-memory');
 		expect(modules.at(-1)?.slug).toBe('tensors');
 	});
 	test('slugs are unique', () => {
@@ -18,6 +18,8 @@ describe('course manifest', () => {
 		expect(adjacent('law-of-cosines').next?.slug).toBe('vector');
 		expect(adjacent('vector').prev?.slug).toBe('law-of-cosines');
 		expect(adjacent('waves-dft').next?.slug).toBe('tensor-road');
+		expect(adjacent('tensor-road').next?.slug).toBe('data-as-tensors');
+		expect(adjacent('tensor-memory').prev?.slug).toBe('data-as-tensors');
 	});
 	test('branch flag is carried through', () => {
 		expect(modules[2].lessons.find((l) => l.slug === 'cross-product')?.branch).toBe(true);

@@ -19,6 +19,7 @@ import { reducedMotion } from '../scene/motion';
 import type { Hint, StatusSpec } from '../scene/StatusBar';
 import { Boxes } from '../dotunit/Boxes';
 import { Frame, type BoxRole } from '../dotunit/choreo';
+import { CHANNEL, maxAbsOf, paintCell } from './tensor-cells';
 import { Tag } from '../dotunit/scene';
 import { roadRows } from './tensor-road.rows';
 import {
@@ -29,8 +30,6 @@ import {
 const CAP = SPEC.size.max ** 6;
 /** One rank step of the extrusion (ms). */
 const STEP_MS = 450;
-/** Edge of a cell box (pitch 1): the gap between neighbours keeps every cell readable. */
-const CELL = 0.8;
 /** Value labels on every cell of a row or sheet up to this many cells. */
 const LABEL_ALL = 24;
 /**
@@ -53,7 +52,6 @@ const padOf = (m: Model) => {
 };
 
 const cellId = (i: number) => 'c' + i;
-const CHANNEL: readonly BoxRole[] = ['axisX', 'axisY', 'axisZ'];
 
 /** Layouts of the shapes the road passes through (a rank step draws the larger of the two shapes). */
 const layoutCache = new Map<string, Layout>();
@@ -74,28 +72,14 @@ function writeCells(f: Frame, m: Model, s: number, sel: boolean): void {
 	const shape = m.ex ? m.shape : roadShape(D, m.sizes);
 	const L = layoutOf(shape, m);
 	const n = L.pos.length / 3;
-	const maxAbs = m.ex?.look === 'signed' ? Math.max(1e-9, ...Array.from(m.ex.data, Math.abs)) : 1;
+	const look = m.ex?.look ?? 'cells';
+	const maxAbs = look === 'signed' ? maxAbsOf(m.data) : 1;
 	const c = [0, 0, 0];
 	for (let i = 0; i < n; i++) {
 		const a = grow(L, shape, i, Math.min(1, u), c);
-		const look = m.ex?.look ?? 'cells';
-		if (look === 'signed') {
-			const v = m.data[i];
-			const e = 0.15 + 0.7 * Math.abs(v) / maxAbs;
-			f.box(i, c[0] - e / 2, c[0] + e / 2, c[1] - e / 2, c[1] + e / 2, c[2] - e / 2, c[2] + e / 2);
-			f.look(i, v < 0 ? 'vecB' : 'vecC', false, a, v < 0 ? 1 : 0, false);
-		} else {
-			const h = CELL / 2;
-			f.box(i, c[0] - h, c[0] + h, c[1] - h, c[1] + h, c[2] - h, c[2] + h);
-			// Neutral cells: the colours belong to the axes (rulers, shape readout).
-			if (look === 'cells') f.look(i, 'ink', false, a, 0, false);
-			else {
-				// A byte as brightness over the dark viewport: 0 = background, 255 = the full role colour.
-				const k = m.ex!.channel;
-				const role: BoxRole = look === 'gray' ? 'ink' : CHANNEL[indexOf(m, i)[k!]];
-				f.look(i, role, true, a * (0.06 + 0.94 * m.data[i] / 255), 0, false);
-			}
-		}
+		// Neutral cells are ink (the colours belong to the axes: rulers, shape readout); an RGB byte takes its channel's colour.
+		const role: BoxRole = look === 'rgb' ? CHANNEL[indexOf(m, i)[m.ex!.channel!]] : 'ink';
+		paintCell(f, i, c, look, m.data[i], a, { maxAbs, role });
 	}
 	if (sel && m.offset < n) f.flash[m.offset] = 1;
 	f.n = n;

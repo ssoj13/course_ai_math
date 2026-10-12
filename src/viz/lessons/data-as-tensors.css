@@ -1,0 +1,74 @@
+/* Lesson 3.2 page-side controls (the dark boxes and the strip are shared: tensor-cells.css). */
+.dat-controls {
+	display: grid;
+	gap: 0.6rem;
+	margin-block: 0.75rem 1.5rem;
+}
+.dat-note {
+	margin: 0;
+	font-size: 0.9rem;
+}
+.dat-picks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+.dat-picks button {
+	font: inherit;
+	font-size: 0.85rem;
+	padding: 0.2rem 0.6rem;
+	border: 1px solid var(--sl-color-gray-4);
+	border-radius: 0.3rem;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+.dat-picks button[aria-checked='true'] {
+	font-weight: 700;
+	border-color: var(--viz-hot);
+}
+.dat-tables {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	align-items: flex-start;
+}
+/* Starlight styles content tables; these sit in `not-content`, so they set their own compact look. */
+.dat-table {
+	border-collapse: collapse;
+	font-family: var(--lab-font-mono);
+	font-size: 0.8rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	border-radius: 0.35rem;
+}
+.dat-table caption {
+	caption-side: top;
+	text-align: start;
+	padding: 0.2rem 0;
+	font-size: 0.8rem;
+	color: var(--sl-color-gray-2);
+}
+.dat-table th,
+.dat-table td {
+	padding: 0.15rem 0.5rem;
+	text-align: end;
+	border-bottom: 1px solid var(--viz-grid);
+}
+.dat-table th {
+	color: var(--viz-muted);
+	font-weight: 400;
+}
+.dat-table tr.is-sel td,
+.dat-table tr.is-sel th {
+	color: var(--viz-vec-a);
+}
+.dat-table tr.is-hot {
+	background: var(--viz-hot-bg);
+}
+.dat-table tbody tr {
+	cursor: default;
+}
+.dat-axes td:nth-child(2) {
+	text-align: start;
+}

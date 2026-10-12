@@ -1,0 +1,68 @@
+/*
+ * Shared page-side pieces of the tensor lessons (3.1-3.3): the memory strip (MemStrip.tsx) and the dark readout boxes.
+ * They print numbers in the scene's axis colours, which are tuned for the always-dark viewport, so these boxes use the
+ * viewport chrome background in both site themes (the same tokens as the cards above them).
+ */
+.ts-strip {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	padding: 0.4rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+}
+.ts-cell {
+	display: inline-grid;
+	min-width: 2.6em;
+	padding: 1px 2px;
+	border: 1px solid var(--viz-grid);
+	background: var(--viz-field);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 0.72rem;
+	line-height: 1.25;
+	text-align: center;
+	cursor: pointer;
+}
+.ts-cell.is-dim {
+	opacity: 0.45;
+}
+.ts-cell.is-hot {
+	background: var(--viz-hot-bg);
+	opacity: 1;
+}
+.ts-cell.is-sel {
+	outline: 2px solid var(--viz-hot);
+	outline-offset: -2px;
+}
+.ts-addr,
+.ts-step {
+	color: var(--viz-muted);
+	font-size: 0.65rem;
+}
+.ts-more {
+	align-self: center;
+	padding: 0 0.4rem;
+	color: var(--viz-muted);
+	font-size: 0.75rem;
+}
+.ts-tuple {
+	white-space: nowrap;
+}
+/* A dark readout box: shape, strides, an address sum, a line of code. */
+.ts-box {
+	margin: 0;
+	padding: 0.45rem 0.75rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 0.85rem;
+	overflow-wrap: anywhere;
+}
+.ts-box code {
+	background: none;
+	color: inherit;
+	padding: 0;
+}

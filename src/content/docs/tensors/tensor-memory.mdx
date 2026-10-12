@@ -1,0 +1,246 @@
+---
+title: "Memory: flat buffer, strides, reshape / view / transpose / contiguous"
+description: "The machine layer of tensors: one flat buffer read through shape, strides and offset; views that only rewrite those numbers, the one copy, and why walk order matters for speed."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { ViewScene, CacheScene, MemControls } from '../../../viz/lessons/tensor-memory';
+import { viewRows, cacheRows } from '../../../viz/lessons/tensor-memory.rows';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'mem']} />
+
+**Built on:** [What a tensor is](lesson:tensor-road) · [Data as tensors](lesson:data-as-tensors).
+
+This is the machine layer of every tensor library. In [the tensor road](lesson:tensor-road) you saw that a tensor is
+stored as one flat strip and read with **strides**. Here we take that literally: a tensor is a pointer to a buffer plus
+three things, and almost every "operation" on its shape only rewrites those three things.
+
+## A tensor = buffer + shape + strides + offset
+
+- The **buffer**: one row of numbers in memory, addresses 0, 1, 2, …
+- The **shape**: the size of every axis, $(2, 3, 4)$.
+- The **strides**: how many addresses one step along each axis jumps, $(12, 4, 1)$.
+- The **offset**: the address of the first cell, `x[0, 0, 0]`. Usually 0.
+
+The address of any cell is the offset $o$ plus each index $i$ times its stride $s$:
+
+$$
+a = o + i_0 s_0 + i_1 s_1 + i_2 s_2
+$$
+
+For `x[1, 2, 3]` in the usual layout: $a = 0 + 1 \cdot 12 + 2 \cdot 4 + 3 \cdot 1 = 23$. That is all a tensor library
+does to find a number. In CG terms, it is how a shader finds texel $(u, v)$ in a texture: row times row pitch, plus
+column times bytes per texel.
+
+In the card below, `x` is `np.arange(24)`: the buffer holds 0 to 23, so **every number is also its own address**.
+Whatever view you build, the number printed on a cell tells you where in memory it lives.
+
+## Views: new numbers, same memory
+
+Pick a view under the card. The top of the card is `y` in its own shape; below it is x's buffer. Click a cell of `y`:
+the dashed line goes down to the address it reads, and the readout spells the sum out. Cells of the buffer that `y`
+never reads fade, and the small numbers in the strip show the order in which `y`'s row-major walk visits them.
+
+<SceneIsland caption="3.3-1 · One buffer, many views: y = a view of x = arange(24); the dashed line is the address of the selected cell." rows={viewRows(locale)}>
+  <ViewScene locale={locale} client:only="react" />
+</SceneIsland>
+<MemControls part="view" locale={locale} client:load />
+
+With `x` of shape $(2, 3, 4)$, strides $(12, 4, 1)$, every view below is computed by changing the numbers only:
+
+| view | shape | strides | offset | what changed |
+|---|---|---|---|---|
+| `x.T` | $(4, 3, 2)$ | $(1, 4, 12)$ | 0 | axes and strides reversed |
+| `x[..., ::2]` | $(2, 3, 2)$ | $(12, 4, 2)$ | 0 | every second column: that stride doubles |
+| `x[::-1]` | $(2, 3, 4)$ | $(-12, 4, 1)$ | 12 | first axis backwards: a negative stride, start at sheet 1 |
+| `x[1]` | $(3, 4)$ | $(4, 1)$ | 12 | an integer index drops the axis and moves the offset |
+| `x[..., 1:3]` | $(2, 3, 2)$ | $(12, 4, 1)$ | 1 | a crop: smaller sizes, start one column in |
+
+Check one: in `x[::-1]` the cell `y[0, 0, 0]` is at $12 + 0 = 12$, and `y[1, 0, 0]` at $12 - 12 = 0$. Reading the
+first axis backwards really is just a stride of $-12$.
+
+A **view** shares the buffer. Writing into `y` changes `x`. That is the price of being free.
+
+## Contiguous, reshape and the one copy
+
+A tensor is **contiguous** when its row-major walk reads its buffer in order, $0, 1, 2, \dots$ with no gaps and no
+jumps: its last stride is 1 and each stride before it is the product of the sizes after it. `x` is contiguous; `x.T`,
+`x[..., ::2]` and `x[::-1]` are not.
+
+**Reshape** re-reads the same numbers in the same order with a new shape. For a contiguous tensor that is just new
+strides, $(2, 3, 4) \to (2, 12)$ gives strides $(12, 1)$: a view. For a tensor that is not contiguous, there may be no
+strides at all that read its cells in the new order. In this lesson's model reshape then **refuses**, and you must make
+the copy yourself. (Libraries differ: PyTorch's `view()` refuses like this, NumPy's `reshape` quietly copies, and
+both can sometimes still find strides for special non-contiguous cases.)
+
+The copy is `contiguous()` (PyTorch) or `np.ascontiguousarray` (NumPy). It walks the view in row-major order and writes
+the cells into a **new buffer** in that order. Try it in the card: start from `x.T`, ask for `.reshape(2, -1)`, read the
+refusal, then tick **contiguous()**. A second strip appears: the new buffer holds $0, 12, 4, 16, 8, 20, 1, \dots$, and
+now the reshape is a plain view of it. If the tensor already is contiguous, `contiguous()` returns it unchanged: no
+copy, same buffer.
+
+So there are exactly two kinds of operations:
+
+- **views** (reshape of contiguous data, transpose, slicing, adding or removing an axis of size 1): new shape, strides
+  and offset, $O(1)$ work, shared memory;
+- **copies** (`contiguous`, a reshape that needs one, most arithmetic): a new buffer, work proportional to the size.
+
+## Row-major and column-major
+
+"Row-major" (C order) means the last index moves fastest. "Column-major" (Fortran order) means the **first** index
+moves fastest: strides $(1, 2, 6)$ for shape $(2, 3, 4)$. NumPy and PyTorch default to row-major; Fortran, MATLAB, Eigen (by
+default) and OpenGL's matrix uniforms are column-major.
+
+Tick **column-major x** in the card. The same 24 numbers now sit in another order, and here is the classic CG bug in
+one picture: the transpose of a column-major array is a row-major array. Choose `x.T` and the result is contiguous
+again. A $4 \times 4$ matrix written by one library and read by another with the other convention arrives transposed.
+
+## Why the walk order matters for speed
+
+Memory does not arrive one number at a time. A CPU fetches a whole **cache line**: 64 bytes on current Intel and AMD
+x86 processors (128 bytes on Apple's M-series), 16 `float32` numbers at once. Reading the other 15 is then almost free;
+fetching a new line from RAM takes on the order of a hundred times longer than a read from the nearest cache.
+
+The card walks a $16 \times 16$ `float32` matrix. One row is $16 \cdot 4 = 64$ bytes, exactly one cache line. The toy
+cache on the right holds a few lines and drops the least recently used one when a new one arrives.
+
+<SceneIsland caption="3.3-2 · Cache lines: a 16 × 16 float32 matrix walked by rows or by columns through a small cache." rows={cacheRows(locale)}>
+  <CacheScene locale={locale} client:only="react" />
+</SceneIsland>
+<MemControls part="cache" locale={locale} client:load />
+
+Walking row by row, each line is fetched once and then used 16 times: 16 misses for 256 numbers, whatever the cache
+size. Walking column by column, each step lands on another row, so with 4 lines of cache every single step is a miss:
+256 misses, 16 times the memory traffic, for the same 256 numbers. Only a cache that holds the whole matrix saves the
+column walk, and real tensors are far larger than any cache.
+
+GPUs have the same rule in another form. A warp of 32 threads reads memory together, and the hardware serves it in
+32-byte transactions: when thread $k$ reads the $k$-th consecutive `float32`, four transactions serve all 32 threads.
+With a stride of 2, half of every transaction is wasted (50 % efficiency), and with large strides each thread needs a
+transaction of its own: 32 of them (NVIDIA, *CUDA C++ Best Practices Guide*, section 10.2.1 "Coalesced Access to
+Global Memory", checked 2026-10-11).
+
+This is why libraries call `contiguous()` before heavy kernels, why a transpose is free but the matrix product after it
+may not be, and why the order of axes ($B \times H \times W \times C$ or $B \times C \times H \times W$) is chosen per
+hardware.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "x has shape (3, 4), strides (4, 1), offset 0. What are the shape, strides and offset of x[1:, ::2]?",
+      options: [
+        "(2, 2), strides (4, 2), offset 4",
+        "(2, 2), strides (4, 1), offset 0",
+        "(3, 2), strides (8, 1), offset 4",
+        "(2, 4), strides (4, 2), offset 1"
+      ],
+      answer: 0,
+      explain: "Rows 1 and 2 (size 2, start at row 1 = address 4), every second column (size 2, stride 1 · 2 = 2). The row stride stays 4."
+    },
+    {
+      q: "Which of these makes a new buffer?",
+      options: [
+        "x.T",
+        "x[::-1]",
+        "np.ascontiguousarray(x.T)",
+        "x.reshape(-1) for a contiguous x"
+      ],
+      answer: 2,
+      explain: "A transpose and a slice only rewrite shape, strides and offset. ascontiguousarray copies a non-contiguous tensor into a new buffer in walk order."
+    },
+    {
+      q: "A 4 × 4 matrix is stored column-major. What are its strides, in elements?",
+      options: [
+        "(4, 1)",
+        "(1, 4)",
+        "(4, 4)",
+        "(1, 1)"
+      ],
+      answer: 1,
+      explain: "Column-major: the first index (the row) moves fastest, stride 1; one step along the second index skips a whole column of 4."
+    },
+    {
+      q: "Why does a column-by-column walk of a large row-major matrix run slower than a row-by-row walk?",
+      options: [
+        "It reads more numbers",
+        "Column indices are harder to compute",
+        "Each step touches a different cache line, so most of every fetched line is wasted",
+        "The CPU cannot read columns"
+      ],
+      answer: 2,
+      explain: "Both walks read the same numbers. Memory arrives in whole lines; a row walk uses every number of a line, a column walk uses one number per line before moving on."
+    }
+  ]}
+/>
+
+## By hand
+
+1. Shape $(4, 5)$, row-major. Strides? Address of `x[3, 2]`?
+2. The same `x`, transposed. Shape and strides? Which address does `x.T[2, 3]` read?
+3. `x[::-1]` for shape $(4, 5)$: strides and offset?
+4. Can `x.T` (shape $(5, 4)$) be reshaped to $(20,)$ without a copy? Why?
+5. Shape $(2, 3, 4)$, column-major: strides, and the address of `x[1, 2, 3]`?
+
+<details>
+<summary>Answers</summary>
+
+1. Strides $(5, 1)$; $3 \cdot 5 + 2 = 17$.
+2. Shape $(5, 4)$, strides $(1, 5)$; $2 \cdot 1 + 3 \cdot 5 = 17$: the same cell, of course.
+3. Strides $(-5, 1)$, offset $3 \cdot 5 = 15$ (the first cell read is the start of the last row).
+4. No: its row-major walk reads addresses $0, 5, 10, 15, 1, 6, \dots$, which no single stride can produce. It must be
+   copied (`contiguous()`) first.
+5. Strides $(1, 2, 6)$; $1 + 2 \cdot 2 + 3 \cdot 6 = 23$.
+
+</details>
+
+## In NumPy
+
+<PyCell>
+
+```python
+import numpy as np
+
+x = np.arange(24, dtype=np.int64).reshape(2, 3, 4)
+print(x.strides, x.itemsize)                         # (96, 32, 8) 8: strides in bytes
+
+y = x.T                                              # a view: shape and strides reversed
+print(y.shape, y.strides, np.shares_memory(x, y))    # (4, 3, 2) (8, 32, 96) True
+print(y.flags['C_CONTIGUOUS'])                       # False
+
+s = x[..., ::2]                                      # every second column: that stride doubles
+print(s.shape, s.strides)                            # (2, 3, 2) (96, 32, 16)
+r = x[::-1]                                          # the first axis backwards: a negative stride
+print(r.strides, r[0, 0, 0])                         # (-96, 32, 8) 12
+
+z = np.ascontiguousarray(y)                          # the copy, written in y's walk order
+print(z.ravel()[:6], np.shares_memory(z, x))         # [ 0 12  4 16  8 20] False
+print(z.reshape(2, -1).base is z)                    # True: this reshape is a view of z
+w = y.reshape(2, -1)                                 # NumPy copies here without saying so
+print(np.shares_memory(w, x))                        # False
+
+f = np.arange(24, dtype=np.int64).reshape((2, 3, 4), order='F')
+print(f.strides, f.T.flags['C_CONTIGUOUS'])          # (8, 16, 48) True
+```
+
+</PyCell>
+
+NumPy counts strides in **bytes** ($96 = 12 \cdot 8$ for `int64`); PyTorch's `x.stride()` counts elements, like this
+lesson.
+
+## What this opens
+
+Now you know what a tensor costs: views are free, copies are not, and the walk order decides how much of every fetched
+line is used. The next lessons compute with whole tensors: elementwise operations and broadcasting (which is a view
+with stride 0), then reductions that collapse an axis.
+
+## Term map
+
+<LessonMap />
