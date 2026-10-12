@@ -150,7 +150,8 @@ export function writeGeo(geo: BufferGeometry, pts: readonly V[]): void {
 // drei's Line ref type (Line2 | LineSegments2); taken from drei so we do not import its transitive three-stdlib.
 type LineObj = React.ComponentRef<typeof Line>;
 
-const NO_POINTS: [number, number, number][] = [[0, 0, 0]];
+const NO_POINTS: [number, number, number][] = [[0, 0, 0], [0, 0, 0]];
+const NO_FLAT: number[] = [];
 
 /** drei `Line` props plus `dashPx`: dash and gap lengths in CSS pixels (drei's are world units). */
 export type SLineProps = ComponentProps<typeof Line> & { dashPx?: readonly [number, number] };
@@ -209,16 +210,18 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 	}));
 	// Runs after the children's layout effects (drei sets `points` there), so the override wins on mount.
 	useLayoutEffect(() => {
-		const f = last.current;
+		const f = last.current ?? (points.length ? null : NO_FLAT);
 		if (f) for (const l of [out.current, glow.current]) if (l) writeLine(l.geometry, f, Boolean(segments));
 	}, [hot, halo]);
-	// New `points` reset every line; the owner re-applies its override on the next frame.
+	// New `points` reset every line; the owner re-applies its override on the next frame. An empty stroke draws no
+	// segment at all (the placeholder point drei needs would otherwise paint a round-capped dot).
 	useLayoutEffect(() => {
 		last.current = null;
-	}, [points]);
+		if (!points.length) for (const l of [core.current, out.current, glow.current]) if (l) writeLine(l.geometry, NO_FLAT, Boolean(segments));
+	}, [points, segments]);
 	const outW = width + 2 * STYLE.hotPad;
-	// drei's LineGeometry throws on an empty list; one point is the same picture (no segment) for a stroke that starts
-	// empty and is filled through the handle.
+	// drei's LineGeometry throws on an empty list, and a segment list needs whole pairs (one point gives LineSegmentsGeometry
+	// half an instance and a NaN bound): a stroke that starts empty mounts on a placeholder pair, emptied above.
 	const common = { points: points.length ? points : NO_POINTS, segments, dashPx, transparent: true, depthWrite: false };
 	return (
 		<>
