@@ -928,6 +928,26 @@ h1#_top,
 	font-size: 8.5px;
 	line-height: 9.5px;
 }
+/* Phones: touch hints are whole sentences and the bar is ~330 px wide, so it is two lines tall (the skeleton reserves
+   the same --lab-vp-status, no hydration shift). A hint wraps at the normal 11 px into two 14 px lines; only a hint
+   longer than that (StatusBar fit: it overflows the two lines) drops to three 9 px lines in the same 31 px. Nothing
+   is clipped: the 22 px desktop bar cut the second 9 px line of long Russian hints at 360 px. */
+@media (max-width: 719.98px) {
+	:root {
+		--lab-vp-status: 32px;
+	}
+	.lab-vp-status > span {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		white-space: normal;
+		line-height: 14px;
+	}
+	.lab-vp-status[data-fit='wrap'] > span {
+		-webkit-line-clamp: 3;
+		line-height: 10px;
+	}
+}
 
 /* Tooltips (500 ms, Blender-like): title, one line, and the formula term. */
 .lab-tip {
@@ -1269,6 +1289,12 @@ h1#_top,
 .lab-num-table { font-family: var(--lab-font-mono); font-variant-numeric: tabular-nums; border-collapse: collapse; width: 100%; }
 .lab-num-table td,.lab-num-table th { padding: .35rem .6rem; text-align: right; border-bottom: 1px solid var(--sl-color-gray-5); }
 .lab-num-table caption { text-align: left; padding-block: .4rem; }
+/* A grid wider than the text column (the 16 x 16 Gram table of 1.9) scrolls in its own box: the row names stay in view,
+   and phones get tighter cells so fewer columns hide. */
+.lab-num-grid th[scope='row'], .lab-num-grid thead th:first-child { position: sticky; left: 0; background: var(--sl-color-bg); }
+@media (max-width: 719.98px) {
+	.lab-num-grid .lab-num-table td, .lab-num-grid .lab-num-table th { padding: .3rem .4rem; }
+}
 .lab-num-table .is-hot,.lab-code .is-hot { background: var(--viz-hot-bg); outline: 1px solid var(--viz-hot); }
 .lab-code { overflow-x: auto; font-family: var(--lab-font-mono); }
 .lab-code code>span { display: block; min-width: max-content; }

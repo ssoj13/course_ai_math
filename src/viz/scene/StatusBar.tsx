@@ -141,15 +141,16 @@ export function StatusBar({ reg, lesson, spec }: { reg: StageReg; lesson: string
 	// Only the hint text re-renders the bar, not every store write.
 	const text = useStore(lessonStore(lesson), (s) => hintFor(hover, s.vals, spec, reg.mode, touch, locale));
 	const bar = useRef<HTMLDivElement>(null);
-	// A hint longer than the bar (phones, long lesson hints) is never cut: it switches to two smaller lines, which fit
-	// the same 22 px bar (no layout change, the bar's height is fixed by the server skeleton).
+	// A hint longer than the bar is never cut: it switches to smaller lines that fit the same bar (desktop: two 9 px
+	// lines in 22 px; phones, where the bar is two 11 px lines tall: three 9 px lines). No layout change: the bar's
+	// height is fixed by the server skeleton. Overflow is horizontal for a one-line bar, vertical for a wrapping one.
 	useLayoutEffect(() => {
 		const el = bar.current;
 		if (!el) return;
 		const fit = () => {
 			const line = el.firstElementChild as HTMLElement | null;
 			el.removeAttribute('data-fit');
-			if (line && line.scrollWidth > line.clientWidth + 0.5) el.setAttribute('data-fit', 'wrap');
+			if (line && (line.scrollWidth > line.clientWidth + 0.5 || line.scrollHeight > line.clientHeight + 0.5)) el.setAttribute('data-fit', 'wrap');
 		};
 		fit();
 		const ro = new ResizeObserver(fit);

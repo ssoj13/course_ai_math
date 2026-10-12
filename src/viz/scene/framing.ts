@@ -44,7 +44,62 @@ export function fit2d(b: Bounds, width: number, height: number, inset: number): 
 	};
 }
 
-const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+/** Smallest box holding both. */
+export function union(a: Bounds, b: Bounds): Bounds {
+	return {
+		min: [Math.min(a.min[0], b.min[0]), Math.min(a.min[1], b.min[1]), Math.min(a.min[2], b.min[2])],
+		max: [Math.max(a.max[0], b.max[0]), Math.max(a.max[1], b.max[1]), Math.max(a.max[2], b.max[2])],
+	};
+}
+
+/**
+ * 2D: the drawn figure keeps at least this share of the zoom that would fit it alone, whatever room for dragging a
+ * scene asks for. A room sized for the whole drag range (a board of +-8 around a 3-unit arrow) left the figure in
+ * 40-60 px of a phone stage.
+ */
+export const MIN_FILL_2D = 0.5;
+
+/**
+ * What the 2D home view frames: the drawn figure `fig` plus as much of the scene's optional drag `room` (Stage `Room`)
+ * as the stage allows without the figure dropping below MIN_FILL_2D of its own fit. The room grows the box from the
+ * figure toward the room's bounds evenly on every side (a linear blend of the bounds, bisected), so a room that
+ * extends mostly to one side keeps that bias. Without a room, or when the whole room fits, the result is exact.
+ * The same rule at every stage size: a desktop stage usually shows the whole room, a phone shows less of it, and the
+ * reader who drags beyond it gets the view grown after the drag (`outside`).
+ */
+export function roomFrame(fig: Bounds, room: Bounds | null, width: number, height: number, inset: number): Bounds {
+	if (!room) return fig;
+	const all = union(fig, room);
+	const need = MIN_FILL_2D * fit2d(fig, width, height, inset).zoom;
+	if (fit2d(all, width, height, inset).zoom >= need) return all;
+	const at = (t: number): Bounds => ({
+		min: fig.min.map((x, i) => x + t * (all.min[i] - x)) as unknown as Vec3,
+		max: fig.max.map((x, i) => x + t * (all.max[i] - x)) as unknown as Vec3,
+	});
+	// fit2d's zoom falls monotonically as the box grows: bisect the largest blend that still keeps `need`.
+	let lo = 0, hi = 1;
+	for (let k = 0; k < 24; k++) {
+		const mid = (lo + hi) / 2;
+		if (fit2d(at(mid), width, height, inset).zoom >= need) lo = mid;
+		else hi = mid;
+	}
+	return at(lo);
+}
+
+/**
+ * Whether the figure `fig` now reaches outside the framed box `frame` by more than 1 % of the frame's size: the home
+ * view must grow to keep showing it (a handle dragged past the edge of a figure-fitted view).
+ */
+export function outside(frame: Bounds, fig: Bounds): boolean {
+	// One tolerance from the largest side: a flat 2D frame has no z extent, so a per-axis one would be zero there.
+	const tol = 0.01 * Math.max(frame.max[0] - frame.min[0], frame.max[1] - frame.min[1], frame.max[2] - frame.min[2], 1e-9);
+	for (let i = 0; i < 3; i++) {
+		if (fig.min[i] < frame.min[i] - tol || fig.max[i] > frame.max[i] + tol) return true;
+	}
+	return false;
+}
+
+const dot = (a: Vec3, b: Vec3) =>a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const unit = (a: Vec3): Vec3 => {
 	const n = Math.hypot(...a) || 1;

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { CORNER_2D, fit2d, fit3d, FILL_3D, MARGIN_2D, stepRefitDelay, type Bounds } from '../../src/viz/scene/framing';
+import { CORNER_2D, fit2d, fit3d, FILL_3D, MARGIN_2D, MIN_FILL_2D, outside, roomFrame, stepRefitDelay, union, type Bounds } from '../../src/viz/scene/framing';
 import { hintSegments } from '../../src/viz/scene/StatusBar';
 import { separate, type Placed } from '../../src/viz/scene/handles';
 
@@ -162,4 +162,49 @@ test('label separation: a slot cutting the label at the stage edge is not free',
 	separate([label], [], [300, 200]);
 	expect(label.y + label.h / 2).toBeLessThanOrEqual(200);
 	expect(label.y - label.h / 2).toBeGreaterThanOrEqual(0);
+});
+
+test('2D room: the home view frames the drawn figure first and only the room it can afford (phone vs desktop)', () => {
+	// VE-2: a 3 x 2 arrow, a drag board of -3..8 on both axes.
+	const fig = box(0, 0, 3, 2), room = box(-3, -3, 8, 8);
+	const own = (w: number, h: number) => fit2d(fig, w, h, 0).zoom;
+	for (const [w, h] of [[328, 205], [632, 395]]) {
+		const f = roomFrame(fig, room, w, h, 0);
+		const z = fit2d(f, w, h, 0).zoom;
+		// The figure keeps half of its own fit (the old reach-sized view kept a fifth), within the bisection tolerance.
+		expect(z).toBeGreaterThanOrEqual(MIN_FILL_2D * own(w, h) - 1e-6);
+		expect(z).toBeLessThan(MIN_FILL_2D * own(w, h) * 1.001);
+		expect(fit2d(room, w, h, 0).zoom).toBeLessThan(0.3 * own(w, h));
+		// It always contains the figure, never more than the room.
+		expect(outside(f, fig)).toBe(false);
+		expect(outside(union(fig, room), f)).toBe(false);
+	}
+	// A room that fits at the figure's half zoom is framed whole; no room: exactly the figure.
+	const small = box(-1, -1, 4, 3);
+	expect(roomFrame(fig, small, 632, 395, 0)).toEqual(union(fig, small));
+	expect(roomFrame(fig, null, 328, 205, 0)).toBe(fig);
+});
+
+test('outside: a figure dragged past the framed box (beyond 1 % of its size) grows the home view', () => {
+	const frame = box(-1, -1, 5, 3);
+	expect(outside(frame, box(0, 0, 3, 2))).toBe(false);
+	expect(outside(frame, box(0, 0, 5.05, 2))).toBe(false);
+	expect(outside(frame, box(0, 0, 5.2, 2))).toBe(true);
+	expect(outside(frame, box(-1.2, 0, 3, 2))).toBe(true);
+	// A flat 2D frame: z noise far below the frame's size is not "outside".
+	expect(outside(frame, box(0, 0, 3, 2, 0, 1e-6))).toBe(false);
+});
+test('label separation: a moved label avoids the places of labels still to come; with no free slot it overlaps least', () => {
+	const el = {} as HTMLElement;
+	const mk = (x: number, y: number): Placed => ({ el, x, y, w: 80, h: 12, small: false, hide: false });
+	// LC-2 at 360 px: "DB²" clashes with a point letter above; "down" was the slot of "AD²", the next lane label.
+	const letter = mk(100, 50), db = mk(100, 56), ad = mk(100, 70);
+	separate([letter, db, ad], [], [400, 200]);
+	expect(Math.abs(db.y - ad.y) >= 12 + 2 || Math.abs(db.x - ad.x) >= 80 + 2).toBe(true);
+	expect([ad.x, ad.y]).toEqual([100, 70]);
+	// A stage too small for any free slot: the label does not stay fully on top of the other one.
+	const a = mk(40, 8), b = mk(40, 8);
+	separate([a, b], [], [200, 26]);
+	const shared = Math.max(0, 80 + 2 - Math.abs(a.x - b.x)) * Math.max(0, 12 + 2 - Math.abs(a.y - b.y));
+	expect(shared).toBeLessThan(82 * 14);
 });
