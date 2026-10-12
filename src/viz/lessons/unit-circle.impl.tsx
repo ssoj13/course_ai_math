@@ -220,7 +220,9 @@ function Waves() {
 	const S: V = [gx, z.sin];
 	const P: V = [z.cos, z.sin];
 	return <>
-		<Reach lo={[-1.4, -1.45]} hi={[GRAPH_X0 + TAU + 0.6, 1.45]} />
+		{/* Right of the graph's end: room for the cos/sin value labels beside the curve ends (48 px out + their width); with
+		    0.6 they hit the stage edge at 360 degrees and were moved back onto the curves and the x axis letter. */}
+		<Reach lo={[-1.4, -1.45]} hi={[GRAPH_X0 + TAU + 1.7, 1.45]} />
 		<Circle lesson={LESSON} id="circle" center={[0, 0]} r={1} role="muted" />
 		<GraphFrame />
 		<Show ov="ghost">

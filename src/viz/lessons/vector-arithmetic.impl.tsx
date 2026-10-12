@@ -181,7 +181,8 @@ function Combo() {
 		<Point lesson={LESSON} id="rt" at={z.r} role="vecC" size={8} />
 		<Name id="la" at={z.a} role="vecA" text="a" />
 		<Name id="lb" at={z.b} role="vecB" text="b" />
-		<Show ov="labels"><Label lesson={LESSON} id="r" at={z.r} role="vecC" offset={[14, 14]}>{'r = ' + fmtV(z.r)}</Label></Show>
+		{/* Outward along r, past its tip glyph: a fixed down-right offset was moved by the label separation onto the tip. */}
+		<Show ov="labels"><Label lesson={LESSON} id="r" at={z.r} role="vecC" away={isZero(z.r) ? [-1, -1] : O2} gap={10}>{'r = ' + fmtV(z.r)}</Label></Show>
 	</>;
 }
 
