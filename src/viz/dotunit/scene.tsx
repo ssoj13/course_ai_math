@@ -6,7 +6,7 @@ import { useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import type { SceneRole } from '../palette';
 import { lessonStore } from '../store';
-import { useLabel } from '../scene/handles';
+import { useLabel, useStage } from '../scene/handles';
 import { reducedMotion } from '../scene/motion';
 
 export interface Clock {
@@ -45,10 +45,30 @@ export function useClock(lesson: string, timeline: string, msOf: (step: number) 
 	return { clock: clock.current, tick };
 }
 
-/** A label at a point the scene computes per frame (`at` returns null to hide it). */
-export function Tag(p: { lesson: string; text: string; at: () => readonly number[] | null; role?: SceneRole; hot?: string; offset?: readonly [number, number]; small?: boolean }): null {
-	const at = useRef(p.at);
-	at.current = p.at;
-	useLabel({ lesson: p.lesson, text: p.text, role: p.role, hot: p.hot, offset: p.offset, small: p.small, at: () => at.current() });
+/** Stage width below which `dense` labels show only while their id is hot (phones: numbers on hover / tap). */
+export const DENSE_MIN_PX = 480;
+
+/**
+ * A label at a point the scene computes per frame (`at` returns null to hide it). `away` pushes it off a point (the
+ * engine's label placement: it keeps moving that way past other labels). `dense` labels (many small numbers: operand
+ * cells, leg values) appear on a narrow stage only while their id is hot, so a phone shows the numbers on demand.
+ */
+export function Tag(p: {
+	lesson: string; text: string; at: () => readonly number[] | null; role?: SceneRole; hot?: string;
+	offset?: readonly [number, number]; small?: boolean; away?: () => readonly number[] | null; gap?: number; dense?: boolean;
+}): null {
+	const reg = useStage();
+	const fns = useRef(p);
+	fns.current = p;
+	const shown = () => {
+		const q = fns.current;
+		if (!q.dense || (reg.el?.clientWidth ?? 0) >= DENSE_MIN_PX) return true;
+		return q.hot !== undefined && lessonStore(q.lesson).getState().hot.has(q.hot);
+	};
+	useLabel({
+		lesson: p.lesson, text: p.text, role: p.role, hot: p.hot, offset: p.offset, small: p.small, gap: p.gap,
+		at: () => (shown() ? fns.current.at() : null),
+		away: p.away && (() => fns.current.away?.() ?? null),
+	});
 	return null;
 }

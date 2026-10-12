@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { mulberry32, planEinsum, ShapeError, tensor } from '../../src/core';
 import { assignAxes, FACE, GROUP_GAP, layoutEinsum, lodOf, PITCH, type Place } from '../../src/viz/dotunit/layout';
 import { columnView, dotData, operands, PRESETS, sceneData, type PresetId } from '../../src/viz/dotunit/model';
-import { DOT_BAR, dotCap, dotFrame, dotGeom, dotTops, Frame, passCap, passFrame } from '../../src/viz/dotunit/choreo';
+import { DOT_BAR, dotCap, dotCurrent, dotFrame, dotGeom, dotTops, Frame, passCap, passFrame } from '../../src/viz/dotunit/choreo';
 
 const plan = (id: PresetId) => planEinsum(PRESETS[id].op, PRESETS[id].shapes);
 
@@ -92,6 +92,8 @@ describe('placement', () => {
 		expect([L.operands[1].normal, L.operands[1].side]).toEqual([1, 1]);
 		expect(L.operands[0].pos[0]).toBeLessThan(-0.5);
 		expect(L.operands[1].pos[1]).toBeGreaterThan(0.5);
+		// The shaft keeps the plain pitch (stack room is only needed between rows of a kept stack axis).
+		expect(L.shaftAt[1] - L.shaftAt[0]).toBeCloseTo(-PITCH, 12);
 	});
 
 	test('matrix x vector: W under its tiles, x above the rows, outputs in a vertical column', () => {
@@ -240,7 +242,63 @@ describe('pass frames', () => {
 		const p = planEinsum('ij,jk->ik', { i: 64, j: 64, k: 64 });
 		const d = sceneData(p, [tensor(Array.from({ length: 64 }, () => Array(64).fill(1))), tensor(Array.from({ length: 64 }, () => Array(64).fill(-1)))]);
 		expect(d.L.lod).toBe(3);
-		expect(passCap(d)).toBe(3 * 4096);
+		// Two operand faces and the heat squares, plus the sweeping plane.
+		expect(passCap(d)).toBe(3 * 4096 + 1);
 		expect(d.out[0]).toBe(-64);
+	});
+});
+
+describe('machine layer (spec §1.3) and LOD furniture (§1.4)', () => {
+	test('fp32 changes the printed sum, never the geometry; the error is exact minus shown', () => {
+		const a = [0.1, 0.2, 0.3, 0.7], b = [0.3, 0.7, 0.1, 0.9];
+		const d64 = dotData(a, b), d32 = dotData(a, b, { arith: 'fp32' });
+		expect(d32.run).toEqual(d64.run);
+		expect(d32.acc.value).toBe(Math.fround(d32.acc.value));
+		expect(d32.acc.err).toBe(d64.dot - d32.acc.value);
+		expect(d32.acc.err).not.toBe(0);
+		expect(d64.acc.err).toBe(0);
+	});
+
+	test('pairwise order: n − 1 merges, pairs first; tiles drop two at a time', () => {
+		const d = dotData([1, 2, 3, 4, 5], [1, 1, 1, 1, 1], { order: 'pairwise' });
+		expect(d.acc.merges.length).toBe(4);
+		expect(d.acc.merges.slice(0, 2).map((m) => m.value)).toEqual([3, 7]);
+		expect(d.acc.value).toBe(15);
+		const g = dotGeom(d), f = new Frame(dotCap(5)), rest = new Frame(dotCap(5));
+		dotFrame(g, 6, 1, rest, true);
+		dotFrame(g, 7, 0.3, f, true);
+		const moved = (i: number) => f.c[3 * (10 + i)] !== rest.c[3 * (10 + i)];
+		// Tiles 0 and 1 drop together; tiles 2 and 3 have not started.
+		expect([moved(0), moved(1), moved(2), moved(3)]).toEqual([true, true, false, false]);
+		expect(dotCurrent(g, 7, 0.3, true)).toBe(0);
+		expect(dotCurrent(g, 7, 0.5, true)).toBe(2);
+		expect(dotCurrent(g, 9, 1, true)).toBe(-1);
+	});
+
+	test('the column passing pair i makes i the current tile', () => {
+		const g = dotGeom(dotData([3, 1, 2], [1, 2, -1]));
+		const seen = new Set<number>();
+		for (let t = 0; t <= 1; t += 0.01) seen.add(dotCurrent(g, 5, t));
+		expect([...seen].filter((x) => x >= 0).sort()).toEqual([0, 1, 2]);
+	});
+
+	test('LOD 2 draws a shaft line per cell while the shafts pass; LOD 3 sweeps one plane', () => {
+		const p2 = planEinsum('ij,jk->ik', { i: 4, j: 16, k: 4 });
+		const d2 = sceneData(p2, operands(PRESETS.matmul, p2, 3));
+		expect(d2.L.lod).toBe(2);
+		const f2 = new Frame(passCap(d2));
+		passFrame(d2, 2, 1, 0, f2);
+		const ops = d2.L.operands[0].n + d2.L.operands[1].n, lines = ops + d2.L.cells.n;
+		for (let c = 0; c < d2.L.cells.n; c++) expect(f2.alpha[lines + c]).toBe(1);
+		passFrame(d2, 4, 1, 0, f2);
+		for (let c = 0; c < d2.L.cells.n; c++) expect(f2.alpha[lines + c]).toBe(0);
+		const p3 = planEinsum('ij,jk->ik', { i: 40, j: 40, k: 40 });
+		const d3 = sceneData(p3, operands(PRESETS.matmul, p3, 3));
+		const f3 = new Frame(passCap(d3)), plane = passCap(d3) - 1;
+		passFrame(d3, 1, 0, 0, f3);
+		const z0 = f3.c[3 * plane + 2];
+		passFrame(d3, 1, 1, 0, f3);
+		expect(f3.c[3 * plane + 2]).toBeGreaterThan(z0);
+		expect(f3.alpha[plane]).toBe(1);
 	});
 });

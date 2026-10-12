@@ -11,7 +11,7 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { BufferGeometry, ConeGeometry, DoubleSide, Float32BufferAttribute, Quaternion, Vector3, type Group, type Mesh } from 'three';
 import { norm, scale, sub, to3, type V } from '../geom';
-import { STYLE, usePalette, type SceneRole } from '../palette';
+import { fadeAlphas, STYLE, usePalette, type SceneRole } from '../palette';
 import { useHot } from '../store';
 import { HOVER_RANK, useDraggable, useHoverable, usePos, useStage, type Draggable } from './handles';
 import { Stroke, useReveal, wppAt, type StrokeHandle } from './view';
@@ -33,6 +33,8 @@ export interface ArrowProps {
 	 * N-panel can light exactly one leg.
 	 */
 	legs?: boolean;
+	/** Whole-arrow opacity in [0, 1] (beam, halo, head and legs alike; `fadeAlphas`). The handle stays draggable. */
+	opacity?: number;
 }
 
 const O2: V = [0, 0];
@@ -94,7 +96,7 @@ export function legSegs(t: readonly number[]): { axis: 0 | 1 | 2; pts: [P3, P3] 
 }
 
 /** One component leg: dashed, axis-coloured, hoverable as `${arrow}:${axis}`; appears halfway through the draw-in. */
-function Leg({ lesson, id, axis, pts }: { lesson: string; id: string; axis: 0 | 1 | 2; pts: [P3, P3] }): React.JSX.Element {
+function Leg({ lesson, id, axis, pts, fade }: { lesson: string; id: string; axis: 0 | 1 | 2; pts: [P3, P3]; fade: number }): React.JSX.Element {
 	const pal = usePalette();
 	const hot = useHot(lesson, id);
 	const hover = useHoverable(lesson, id, HOVER_RANK.guide);
@@ -104,7 +106,7 @@ function Leg({ lesson, id, axis, pts }: { lesson: string; id: string; axis: 0 | 
 	});
 	return (
 		<group ref={group} {...hover}>
-			<Stroke points={pts} color={pal[AXIS_ROLE[axis]]} hot={hot} width={STYLE.edge} halo={false} dashPx={STYLE.dash} order={1} />
+			<Stroke points={pts} color={pal[AXIS_ROLE[axis]]} hot={hot} width={STYLE.edge} halo={false} dashPx={STYLE.dash} order={1} fade={fade} />
 		</group>
 	);
 }
@@ -173,24 +175,26 @@ export function Arrow(p: ArrowProps): React.JSX.Element {
 	});
 
 	const color = pal[p.role];
+	const fade = p.opacity ?? 1;
+	const al = fadeAlphas(fade, hot);
 	const geo = reg.mode === '3d' ? CONE : TRI;
 	return (
 		<group>
-			{legs?.map((l) => <Leg key={l.axis} lesson={p.lesson} id={`${p.id}:${AXES[l.axis]}`} axis={l.axis} pts={l.pts} />)}
+			{legs?.map((l) => <Leg key={l.axis} lesson={p.lesson} id={`${p.id}:${AXES[l.axis]}`} axis={l.axis} pts={l.pts} fade={fade} />)}
 			<group visible={g.len > 1e-9} {...hover}>
-				<Stroke ref={shaft} points={g.shaft} color={color} hot={hot} order={2} />
+				<Stroke ref={shaft} points={g.shaft} color={color} hot={hot} order={2} fade={fade} />
 				{/* Sized in screen px per frame: the figure's bounds count only its tip (contentBox). */}
 				<group ref={head} position={g.b} quaternion={g.q} userData={PX_SIZED}>
 					<mesh ref={glow} geometry={geo} renderOrder={1.8}>
-						<meshBasicMaterial color={hot ? pal.hot : color} transparent opacity={hot ? STYLE.hotHaloA : STYLE.haloA} depthWrite={false} side={DoubleSide} />
+						<meshBasicMaterial color={hot ? pal.hot : color} transparent opacity={al.halo} depthWrite={false} side={DoubleSide} />
 					</mesh>
 					{hot && (
 						<mesh ref={out} geometry={geo} renderOrder={1.9}>
-							<meshBasicMaterial color={pal.hot} transparent depthWrite={false} side={DoubleSide} />
+							<meshBasicMaterial color={pal.hot} transparent opacity={al.outline} depthWrite={false} side={DoubleSide} />
 						</mesh>
 					)}
 					<mesh geometry={geo} renderOrder={2}>
-						<meshBasicMaterial color={color} transparent depthWrite={false} side={DoubleSide} />
+						<meshBasicMaterial color={color} transparent opacity={al.core} depthWrite={false} side={DoubleSide} />
 					</mesh>
 				</group>
 			</group>

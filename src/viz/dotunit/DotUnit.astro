@@ -24,7 +24,7 @@ const locale = pageLocale(Astro);
 const { kind, caption = 'plain', parts } = Astro.props;
 const captions = { intro: t(locale, 'du.capIntro'), teaser: t(locale, 'du.capTeaser'), plain: t(locale, 'du.capUnit') };
 ---
-<UiStrings ns={['viewport', 'gizmo', 'status', 'linked', 'du']} />
+<UiStrings ns={['viewport', 'gizmo', 'status', 'linked', 'challenge', 'du']} />
 {kind === 'unit' && <SceneIsland caption={captions[caption]} rows={unitRows(locale)}><DotUnitScene locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'unit' && <DotUnitControls locale={locale} parts={parts} client:load />}
 {kind === 'playground' && <SceneIsland caption={t(locale, 'du.capPlay')} rows={playRows(locale)}><PlaygroundScene locale={locale} client:only="react" /></SceneIsland>}

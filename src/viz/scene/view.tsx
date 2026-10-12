@@ -8,7 +8,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { Box3, BufferGeometry, Camera, Float32BufferAttribute, OrthographicCamera, PerspectiveCamera, Raycaster, Sphere, Vector2, Vector3, type Mesh, type Object3D } from 'three';
 import { sub, to3, type V } from '../geom';
-import { STYLE, usePalette } from '../palette';
+import { fadeAlphas, STYLE, usePalette } from '../palette';
 import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitRadius, ndcToPx, rayPlane, worldPerPx } from './drag';
 import { gateWheel, placeLabels, useStage, type Draggable } from './handles';
@@ -175,6 +175,8 @@ export interface StrokeProps {
 	order?: number;
 	/** Core opacity (a shadow band is a translucent wide stroke). */
 	opacity?: number;
+	/** Whole-stroke opacity: scales core, halo and outline alike (`fadeAlphas`). */
+	fade?: number;
 }
 
 /**
@@ -184,7 +186,7 @@ export interface StrokeProps {
  * an opaque core would be painted over by its own halo); depth writes are off for the same reason.
  */
 export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
-	{ points, color, hot = false, width = STYLE.core, halo = true, dashPx, segments, order = 2, opacity = 1 },
+	{ points, color, hot = false, width = STYLE.core, halo = true, dashPx, segments, order = 2, opacity = 1, fade = 1 },
 	fwd,
 ) {
 	const pal = usePalette();
@@ -211,6 +213,7 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 		last.current = null;
 	}, [points]);
 	const outW = width + 2 * STYLE.hotPad;
+	const a = fadeAlphas(fade, hot);
 	const common = { points, segments, dashPx, transparent: true, depthWrite: false };
 	return (
 		<>
@@ -220,12 +223,12 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 					{...common}
 					color={hot ? pal.hot : color}
 					lineWidth={hot ? Math.max(STYLE.halo, outW + 6) : STYLE.halo}
-					opacity={hot ? STYLE.hotHaloA : STYLE.haloA}
+					opacity={a.halo}
 					renderOrder={order - 0.2}
 				/>
 			)}
-			{hot && <SLine ref={out} {...common} color={pal.hot} lineWidth={outW} renderOrder={order - 0.1} />}
-			<SLine ref={core} {...common} color={color} lineWidth={width} opacity={opacity} renderOrder={order} />
+			{hot && <SLine ref={out} {...common} color={pal.hot} lineWidth={outW} opacity={a.outline} renderOrder={order - 0.1} />}
+			<SLine ref={core} {...common} color={color} lineWidth={width} opacity={opacity * a.core} renderOrder={order} />
 		</>
 	);
 });

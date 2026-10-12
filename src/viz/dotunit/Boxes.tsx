@@ -70,6 +70,8 @@ void main() {
 const unitBox = new BoxGeometry(1, 1, 1);
 const noRaycast = () => {};
 const col = new Color();
+/** c = the sRGB components of hex (three's set() converts to the linear working space). */
+const srgb = (c: Color, hex: string) => c.set(hex).convertLinearToSRGB();
 
 export interface BoxesProps {
 	lesson: string;
@@ -186,7 +188,9 @@ function write(mesh: InstancedMesh, proxy: Mesh, f: Frame, pal: Palette, hot: Re
 		m[o + 4] = 0; m[o + 5] = sy; m[o + 6] = 0; m[o + 7] = 0;
 		m[o + 8] = 0; m[o + 9] = 0; m[o + 10] = sz; m[o + 11] = 0;
 		m[o + 12] = x; m[o + 13] = y; m[o + 14] = z; m[o + 15] = 1;
-		col.set(pal[ROLES[f.role[i]]]);
+		// The shader writes its colour straight to the sRGB canvas (no colour-space chunk, like LitSphere), so it gets the
+		// palette's sRGB components: three's Color.set would hand it linear values (measured: every fill too dark).
+		srgb(col, pal[ROLES[f.role[i]]]);
 		ic[3 * i] = col.r; ic[3 * i + 1] = col.g; ic[3 * i + 2] = col.b;
 		info[4 * i] = a;
 		info[4 * i + 1] = f.hatch[i];
@@ -206,8 +210,8 @@ function write(mesh: InstancedMesh, proxy: Mesh, f: Frame, pal: Palette, hot: Re
 	mesh.boundingSphere = null;
 	mesh.boundingBox = null;
 	const u = (mesh.material as ShaderMaterial).uniforms;
-	(u.bg.value as Color).set(pal.bgBottom);
-	(u.hot.value as Color).set(pal.hot);
+	srgb(u.bg.value as Color, pal.bgBottom);
+	srgb(u.hot.value as Color, pal.hot);
 	u.dpr.value = dpr;
 	if (lx > hx) proxy.scale.set(1e-6, 1e-6, 1e-6);
 	else {

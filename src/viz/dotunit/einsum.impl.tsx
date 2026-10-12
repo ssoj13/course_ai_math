@@ -28,14 +28,21 @@ import { columnView, dotData, fmt, fmtShort, ids, type SceneData } from './model
 import { Tag, useClock } from './scene';
 
 const FRONT = [0, 0, 1] as const;
+/**
+ * Default camera of a cube (spec §3.3 "three-quarter"): from the front-LEFT-top, so all three faces that carry numbers
+ * face the viewer (A on the left face, B on top, C in front); the engine's front-right home sees A from behind.
+ */
+const CUBE = [-1.1, 1, 1.7] as const;
 
 /**
  * Re-frames the home view one frame after the drawn figure changed (Boxes updates its bounds proxy in the frame after
  * the data change), from the front or the three-quarter home direction.
  */
-function useRefit(front: boolean) {
+function useRefit(dir: readonly [number, number, number]) {
 	const reg = useStage();
 	const due = useRef(true);
+	const view = useRef(dir);
+	view.current = dir;
 	return {
 		request: () => void (due.current = true),
 		pending: () => due.current,
@@ -43,8 +50,7 @@ function useRefit(front: boolean) {
 		run: (): boolean => {
 			if (!due.current) return false;
 			due.current = false;
-			if (front) reg.nav?.frame(FRONT);
-			else reg.nav?.reset();
+			reg.nav?.frame(view.current);
 			return true;
 		},
 	};
@@ -77,7 +83,7 @@ function PassTags({ lesson, d, show, cellText, offset = [0, 0, 0] }: { lesson: s
 	const P = [0, 0, 0];
 	return <>
 		{ops <= 72 && ([0, 1] as const).flatMap((o) => Array.from({ length: L.operands[o].n }, (_, e) => (
-			<Tag key={o + ':' + e} lesson={lesson} hot={ids.elem(d, o, e)} small role={o === 0 ? 'vecA' : 'vecB'} text={fmtShort(d.vals[o][e])} at={() => at(L.operands[o].pos, e)} />
+			<Tag key={o + ':' + e} lesson={lesson} hot={ids.elem(d, o, e)} small={ops > 24} dense role={o === 0 ? 'vecA' : 'vecB'} text={fmtShort(d.vals[o][e])} at={() => at(L.operands[o].pos, e)} />
 		)))}
 		{L.cells.n <= 64 && Array.from({ length: L.cells.n }, (_, c) => (
 			<Tag key={'c' + c} lesson={lesson} hot={ids.cell(d, c)} role="ink" offset={[0, -10]} text={fmtShort(d.out[c]) + (cellText?.(c) ?? '')}
@@ -95,7 +101,8 @@ function EinsumView({ lesson, d, timeline, focus, onCell, cellText, offset, fron
 		return f;
 	}, [d]);
 	const { clock, tick } = useClock(lesson, timeline ?? '', (s) => (timeline ? passMs(s, d.L.plan.sumLen) : 0));
-	const refit = useRefit(front);
+	const planar = d.L.axes.onAxis[2] === null && d.L.axes.shaft !== 2;
+	const refit = useRefit(front || planar ? FRONT : CUBE);
 	const dirty = useRef(true);
 	const seen = useRef({ d, focus, frameKey });
 	if (seen.current.d !== d || seen.current.focus !== focus) dirty.current = true;
@@ -118,7 +125,8 @@ function EinsumView({ lesson, d, timeline, focus, onCell, cellText, offset, fron
 	const ops = d.L.operands[0].n + d.L.operands[1].n;
 	const pick = (_: string, i: number) => {
 		if (!onCell || i < ops) return;
-		onCell(d.L.lod === 1 ? Math.floor((i - ops) / d.L.plan.sumLen) : i - ops);
+		const c = d.L.lod === 1 ? Math.floor((i - ops) / d.L.plan.sumLen) : i - ops;
+		if (c < d.L.cells.n) onCell(c);
 	};
 	return <group position={offset ? [offset[0], offset[1], offset[2] ?? 0] : undefined}>
 		<Boxes lesson={lesson} frame={frame} update={update} onPick={pick} />
@@ -135,7 +143,7 @@ function DotStatic({ lesson, a, b, step, onTile, frameKey }: { lesson: string; a
 		dotIds(n, f);
 		return f;
 	}, [n]);
-	const refit = useRefit(true);
+	const refit = useRefit(FRONT);
 	const dirty = useRef(true);
 	const seen = useRef({ g, step, frameKey });
 	if (seen.current.g !== g || seen.current.step !== step) dirty.current = true;
