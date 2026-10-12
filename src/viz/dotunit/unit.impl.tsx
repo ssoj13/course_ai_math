@@ -90,7 +90,7 @@ function Face2Tags({ g, f, clock }: { g: DotGeom; f: Frame; clock: { step: numbe
 		{g.d.prods.map((p, i) => <Tag key={'p' + i} lesson={LESSON} hot={'p' + i} role="ink" text={fmtShort(p)} at={() => (clock.step >= 5 ? centre(2 * n + i) : null)} />)}
 		<Tag lesson={LESSON} hot="sum" role="ink" text={'Σ = ' + fmt(g.d.dot)} offset={[-44, -10]}
 			at={() => (clock.step > 7 || (clock.step === 7 && clock.t >= 1) ? [g.stackX + 0.5, g.run[n - 1], 0] : null)} />
-		<Tag lesson={LESSON} hot="proj" role="vecC" text={'|a|·s = ' + fmt(g.proj)} offset={[52, -10]}
+		<Tag lesson={LESSON} hot="proj" role="vecC" text={'|a|·s = ' + fmt(g.proj)} offset={[0, -24]}
 			at={() => (clock.step >= 8 ? [g.barX + 0.3, f.c[3 * DOT_BAR(n) + 1] * 2, 0] : null)} />
 	</>;
 }

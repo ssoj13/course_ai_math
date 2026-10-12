@@ -160,7 +160,7 @@ function DotStatic({ lesson, a, b, step, onTile, frameKey }: { lesson: string; a
 			{g.d.b.map((x, i) => <Tag key={'b' + i} lesson={lesson} hot={'b' + i} small role="ink" text={fmtShort(x)} offset={[-16, 0]} at={() => centre(n + i)} />)}
 			{g.d.prods.map((p, i) => <Tag key={'p' + i} lesson={lesson} hot={'p' + i} role="ink" text={fmtShort(p)} at={() => centre(2 * n + i)} />)}
 			{step >= 7 && <Tag lesson={lesson} hot="sum" role="ink" text={'Σ = ' + fmt(g.d.dot)} offset={[-44, -10]} at={() => [g.stackX + 0.5, g.run[n - 1], 0]} />}
-			{step >= 8 && <Tag lesson={lesson} hot="proj" role="vecC" text={'|a|·s = ' + fmt(g.proj)} offset={[52, -10]} at={() => [g.barX + 0.3, g.proj, 0]} />}
+			{step >= 8 && <Tag lesson={lesson} hot="proj" role="vecC" text={'|a|·s = ' + fmt(g.proj)} offset={[0, -24]} at={() => [g.barX + 0.3, g.proj, 0]} />}
 		</>}
 	</>;
 }
@@ -215,7 +215,10 @@ function playStatus(locale: Locale): StatusSpec {
 export function PlaygroundCard({ card = 'INTRO-3' }: { card?: string }) {
 	const locale = useLocale();
 	const status = useMemo(() => playStatus(locale), [locale]);
-	return <ViewportCard lesson={PLAY} id={card} name={card + ' · ' + t(locale, 'du.namePlay')} mode="3d" extent={5}
+	// The camera's distance range scales with `extent`: a 64-wide heatmap needs a far camera, a dot product a near one.
+	const b = playData(useVals(PLAY));
+	const extent = b.ok ? Math.max(5, 0.5 * Math.hypot(b.d.L.hi[0] - b.d.L.lo[0], b.d.L.hi[1] - b.d.L.lo[1], b.d.L.hi[2] - b.d.L.lo[2])) : 5;
+	return <ViewportCard lesson={PLAY} id={card} name={card + ' · ' + t(locale, 'du.namePlay')} mode="3d" extent={extent}
 		rows={playRows(locale)} status={status} overlays={overlays(locale)}>
 		<Floor lesson={PLAY} extent={8} />
 		<Playground />
