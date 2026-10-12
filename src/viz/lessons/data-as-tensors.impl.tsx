@@ -5,6 +5,7 @@
  * Boxes); the mesh uses the engine's points, segments and polygon. Loaded lazily by the entry (data-as-tensors.tsx).
  */
 import { useMemo } from 'react';
+import { useStore } from 'zustand';
 import { t, type Locale } from '../../i18n/core';
 import { useLocale } from '../../i18n/react';
 import type { V } from '../geom';
@@ -36,16 +37,21 @@ const byId = (re: RegExp, hint: (m: RegExpExecArray) => Hint): Record<string, Hi
 // ---------------------------------------------------------------------------------------------------------------
 // 3.2-1 image: H x W x C, channels as planes.
 
-/** Distance between colour planes when fully peeled (cell pitch 1). */
-const PEEL = 3;
-const IMG_HOME: readonly [number, number, number] = [1.1, 0.7, 1.3];
+/** Fully peeled, each colour plane stands one image width plus one cell to the right of the previous one, one cell behind. */
+const PEEL_X = IMG_W + 1;
+const IMG_HOME: readonly [number, number, number] = [0.45, 0.5, 1.5];
 const CH_NAME = ['R', 'G', 'B'] as const;
 
-/** Centre of byte (h, w, c): rows down, columns right, channel c one plane behind the previous one. */
-const imgPos = (h: number, w: number, c: number, peel: number): V => [w, -h, -c * (1 + PEEL * peel)];
+/**
+ * Centre of byte (h, w, c): rows down, columns right, channel c one plane behind the previous one. Peeling slides the
+ * planes apart sideways (0 = one solid 8 x 8 x 3 block, 1 = three pictures side by side), so every plane shows.
+ */
+const imgPos = (h: number, w: number, c: number, peel: number): V => [w + c * PEEL_X * peel, -h, -c * (1 + peel)];
 
 function ImageCells({ locale }: { locale: Locale }) {
 	const m = imageModel(useVals(LESSON));
+	// Re-frame once per edit of the peel (its target value), not on every frame of the eased glide.
+	const peelTruth = useStore(lessonStore(LESSON), (s) => s.vals.peel);
 	const labels = useOverlay('labels');
 	const paint = (f: Frame) => {
 		let i = 0;
@@ -62,11 +68,13 @@ function ImageCells({ locale }: { locale: Locale }) {
 	};
 	const sel = imgPos(m.h, m.w, m.c, m.peel);
 	const z = (c: number) => imgPos(0, 0, c, m.peel)[2];
+	// Plane names sit above the middle of each plane's top edge.
+	const top = (c: number) => imgPos(0, (IMG_W - 1) / 2, c, m.peel)[0];
 	return <>
-		<Cells lesson={LESSON} cap={IMG_H * IMG_W * IMG_C} paint={paint} paintKey={m} frameKey={m.peel} home={IMG_HOME} pad={1.2} onPick={pick} />
+		<Cells lesson={LESSON} cap={IMG_H * IMG_W * IMG_C} paint={paint} paintKey={m} frameKey={peelTruth} home={IMG_HOME} pad={1.2} onPick={pick} />
 		{labels && <>
 			{CH_NAME.map((n, c) => (
-				<Label key={c} lesson={LESSON} id={'plane' + c} at={[IMG_W - 0.5, 0.6, z(c)]} role={CHANNEL[c]} away={[IMG_W - 0.6, 0.55, z(c)]} gap={4}>
+				<Label key={c} lesson={LESSON} id={'plane' + c} at={[top(c), 0.6, z(c)]} role={CHANNEL[c]} away={[top(c), 0.55, z(c)]} gap={4}>
 					{t(locale, 'dat.plane', { c, name: n })}
 				</Label>
 			))}
@@ -124,8 +132,9 @@ function TextCells({ locale }: { locale: Locale }) {
 		for (let r = 0; r < VOCAB.length; r++) for (let d = 0; d < TEXT_D; d++, i++) {
 			c[0] = d; c[1] = -r; c[2] = 0;
 			paintCell(f, i, c, 'signed', TABLE.get([r, d]), 1, { maxAbs: TABLE_MAX });
-			f.id[i] = `e${r}_${d}`;
-			f.flash[i] = r === curRow ? 1 : 0;
+			// One id per table row: the row is what a lookup reads, so hovering any of its numbers lights all of them.
+			f.id[i] = 'e' + r;
+			f.flash[i] = 0;
 		}
 		for (let b = 0; b < TEXT_B; b++) for (let k = 0; k < TEXT_T; k++, i++) {
 			const y = -outRow(b, k);
@@ -141,7 +150,8 @@ function TextCells({ locale }: { locale: Locale }) {
 				c[0] = X_OUT + d; c[1] = -outRow(b, k); c[2] = 0;
 				if (alpha > 0.01) paintCell(f, i, c, 'signed', EMBEDDED.get([b, k, d]), alpha, { maxAbs: TABLE_MAX });
 				else paintCell(f, i, c, 'cells', 0, 0.25, { role: 'muted' });
-				f.flash[i] = b === cb && k === ct ? 1 : 0;
+				// No outline on the copied numbers: their colour and hatch (the sign) must stay readable.
+				f.flash[i] = 0;
 				f.id[i] = `x${b}_${k}_${d}`;
 			}
 		}
@@ -149,20 +159,20 @@ function TextCells({ locale }: { locale: Locale }) {
 	};
 	const top = 1;
 	return <>
-		<Cells lesson={LESSON} cap={VOCAB.length * TEXT_D + LOOKUPS * (TEXT_D + 1)} paint={paint} paintKey={look} frameKey={0} home={TEXT_HOME} pad={1.6} />
+		<Cells lesson={LESSON} cap={VOCAB.length * TEXT_D + LOOKUPS * (TEXT_D + 1)} paint={paint} paintKey={look} frameKey={0} home={TEXT_HOME} pad={3} />
 		{cur >= 0 && <Segment lesson={LESSON} id="arrow" a={[X_IDS - ID_W / 2 - 0.1, -outRow(cb, ct), 0]} b={[TEXT_D - 0.5, -curRow, 0]} role="hot" dashed />}
 		{labels && <>
 			{Array.from({ length: TEXT_B * TEXT_T }, (_, n) => {
 				const [b, k] = lookupAt(n);
-				return <Tag key={'id' + n} lesson={LESSON} hot={`i${b}_${k}`} small role="ink" text={String(IDS.get([b, k]))} at={() => [X_IDS, -outRow(b, k), 0]} />;
+				return <Tag key={'id' + n} lesson={LESSON} hot={`i${b}_${k}`} small dense role="ink" text={String(IDS.get([b, k]))} at={() => [X_IDS, -outRow(b, k), 0]} />;
 			})}
+			{/* Each table row is named by its token id: the same number the ids column holds. */}
 			{VOCAB.map((w, r) => (
-				<Label key={w} lesson={LESSON} id={'row' + r} at={[-0.7, -r, 0]} role={r === curRow ? 'hot' : 'muted'} away={[-0.65, -r, 0]} gap={2}>
-					{IDS_OF[r] + ' ' + w}
-				</Label>
+				<Tag key={w} lesson={LESSON} hot={'e' + r} small dense role={r === curRow ? 'hot' : 'muted'} text={String(IDS_OF[r])}
+					at={() => [-0.7, -r, 0]} away={() => [-0.65, -r, 0]} gap={2} />
 			))}
 			<Label lesson={LESSON} id="capE" at={[(TEXT_D - 1) / 2, top, 0]} role="muted">{t(locale, 'dat.capTable')}</Label>
-			<Label lesson={LESSON} id="capIds" at={[X_IDS, top, 0]} role="muted">{'ids ' + '(2, 6)'}</Label>
+			<Tag lesson={LESSON} dense role="muted" text="ids (2, 6)" at={() => [X_IDS, top, 0]} />
 			<Label lesson={LESSON} id="capX" at={[X_OUT + (TEXT_D - 1) / 2, top, 0]} role="muted">{'X (2, 6, 8)'}</Label>
 		</>}
 	</>;
@@ -179,8 +189,8 @@ function textStatus(locale: Locale): StatusSpec {
 				const b = +r[1], k = +r[2], tok = IDS.get([b, k]);
 				return t(locale, 'dat.hintId', { b, t: k, id: tok, word: VOCAB[tableRow(tok)] });
 			}
-			r = /^e(\d)_(\d)$/.exec(id);
-			if (r) return t(locale, 'dat.hintTable', { id: IDS_OF[+r[1]], d: +r[2], v: fmt3(TABLE.get([+r[1], +r[2]])), word: VOCAB[+r[1]] });
+			r = /^e(\d)$/.exec(id);
+			if (r) return t(locale, 'dat.hintTable', { id: IDS_OF[+r[1]], word: VOCAB[+r[1]], row: flat(slice(TABLE, [+r[1]])).map(fmt3).join(', ') });
 			r = /^x(\d)_(\d)_(\d)$/.exec(id);
 			if (r) {
 				const b = +r[1], k = +r[2], d = +r[3];
@@ -196,7 +206,7 @@ export function TextScene() {
 	const locale = useLocale();
 	const rows = useMemo(() => textRows(locale), [locale]);
 	const status = useMemo(() => textStatus(locale), [locale]);
-	return <ViewportCard lesson={LESSON} id="3.2-2" name={'3.2-2 · ' + t(locale, 'dat.nameText')} mode="3d" extent={12} rows={rows} status={status}
+	return <ViewportCard lesson={LESSON} id="3.2-2" name={'3.2-2 · ' + t(locale, 'dat.nameText')} mode="2d" extent={12} panelOpen={false} rows={rows} status={status}
 		overlays={[{ id: 'labels', label: t(locale, 'dat.ovLabels'), on: true }]}>
 		<TextCells locale={locale} />
 	</ViewportCard>;
@@ -254,7 +264,7 @@ export function AudioScene() {
 	const locale = useLocale();
 	const rows = useMemo(() => audioRows(locale), [locale]);
 	const status = useMemo(() => audioStatus(locale), [locale]);
-	return <ViewportCard lesson={LESSON} id="3.2-3" name={'3.2-3 · ' + t(locale, 'dat.nameAudio')} mode="3d" extent={10} rows={rows} status={status}
+	return <ViewportCard lesson={LESSON} id="3.2-3" name={'3.2-3 · ' + t(locale, 'dat.nameAudio')} mode="2d" extent={10} rows={rows} status={status}
 		overlays={[{ id: 'labels', label: t(locale, 'dat.ovLabels'), on: true }]}>
 		<AudioCells locale={locale} />
 	</ViewportCard>;

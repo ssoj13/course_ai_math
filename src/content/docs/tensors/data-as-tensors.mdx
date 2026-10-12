@@ -55,7 +55,11 @@ the same value. Only its **address** changes, and the strip under the card shows
 pixel (0, 6):
 
 $$
-a_{HWC} = 24 \cdot 0 + 3 \cdot 6 + 1 = 19, \qquad a_{CHW} = 64 \cdot 1 + 8 \cdot 0 + 6 = 70
+a_{HWC} = 24 \cdot 0 + 3 \cdot 6 + 1 = 19
+$$
+
+$$
+a_{CHW} = 64 \cdot 1 + 8 \cdot 0 + 6 = 70
 $$
 
 Same picture, same 192 numbers, two orders. Converting one into the other is a transpose of the axes plus one copy
@@ -105,10 +109,10 @@ A microphone measures air pressure many times per second. Each measurement is a 
 samples per second, 48 samples last 6 ms. The card records a pure tone, the A above middle C (440 Hz):
 
 $$
-x_n = 0.8 \sin\left(2\pi \cdot 440 \cdot \frac{n}{8000}\right), \quad n = 0, 1, \dots, 47
+x_n = 0.8 \sin\left(2\pi \cdot 440 \cdot \frac{n}{8000}\right)
 $$
 
-For example $x_1 = 0.8 \sin(0.3456) \approx 0.271$. On its own the recording is a tensor of shape $(48,)$. Speech and
+Here $n = 0, 1, \dots, 47$. For example $x_1 = 0.8 \sin(0.3456) \approx 0.271$. On its own the recording is a tensor of shape $(48,)$. Speech and
 music models first cut it into short **frames** of equal length: with 12 samples per frame, the shape becomes $(4, 12)$,
 four frames of 12 samples.
 

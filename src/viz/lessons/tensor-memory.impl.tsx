@@ -90,9 +90,9 @@ function ViewCells({ locale }: { locale: Locale }) {
 			{c.copied && Array.from({ length: c.res.size }, (_, q) => (
 				<Tag key={'c' + q} lesson={LESSON} small dense role="ink" hot={'a' + c.res.data[q]} text={String(c.res.data[q])} at={() => [q, yCopy, 0]} />
 			))}
-			<Label lesson={LESSON} id="capY" at={[-0.9, 0, 0]} role="vecA" away={[-0.85, 0, 0]} gap={4}>y</Label>
-			<Label lesson={LESSON} id="capX" at={[-0.9, yX, 0]} role="ink" away={[-0.85, yX, 0]} gap={4}>{t(locale, 'mem.capX')}</Label>
-			{c.copied && <Label lesson={LESSON} id="capCopy" at={[-0.9, yCopy, 0]} role="vecC" away={[-0.85, yCopy, 0]} gap={4}>{t(locale, 'mem.capCopy')}</Label>}
+			<Label lesson={LESSON} id="capY" at={[0, 0.6, 0]} role="vecA" away={[0, 0.55, 0]} gap={4}>y</Label>
+			<Label lesson={LESSON} id="capX" at={[1.5, yX + 0.6, 0]} role="ink" away={[1.5, yX + 0.55, 0]} gap={4}>{t(locale, 'mem.capX')}</Label>
+			{c.copied && <Label lesson={LESSON} id="capCopy" at={[1.5, yCopy + 0.6, 0]} role="vecC" away={[1.5, yCopy + 0.55, 0]} gap={4}>{t(locale, 'mem.capCopy')}</Label>}
 		</>}
 	</>;
 }
@@ -118,7 +118,7 @@ export function ViewScene() {
 	const locale = useLocale();
 	const rows = useMemo(() => viewRows(locale), [locale]);
 	const status = useMemo(() => viewStatus(locale), [locale]);
-	return <ViewportCard lesson={LESSON} id="3.3-1" name={'3.3-1 · ' + t(locale, 'mem.nameView')} mode="3d" extent={14} rows={rows} status={status}
+	return <ViewportCard lesson={LESSON} id="3.3-1" name={'3.3-1 · ' + t(locale, 'mem.nameView')} mode="2d" extent={14} panelOpen={false} rows={rows} status={status}
 		overlays={[{ id: 'labels', label: t(locale, 'mem.ovLabels'), on: true }]}>
 		<ViewCells locale={locale} />
 	</ViewportCard>;
@@ -128,7 +128,7 @@ export function ViewScene() {
 // 3.3-2: cache lines.
 
 /** Column where the cache's slots stand, right of the matrix. */
-const X_CACHE = N + 2;
+const X_CACHE = N + 2.5;
 
 function CacheCells({ locale }: { locale: Locale }) {
 	const m = cacheModel(useVals(LESSON));
@@ -148,7 +148,7 @@ function CacheCells({ locale }: { locale: Locale }) {
 		for (let s = 0; s < m.lines; s++, i++) {
 			const line = m.held[s];
 			const h = CELL / 2;
-			f.box(i, X_CACHE - 1, X_CACHE + 1, -s - h, -s + h, -h, h);
+			f.box(i, X_CACHE - 1.6, X_CACHE + 1.6, -s - h, -s + h, -h, h);
 			f.look(i, line === undefined ? 'muted' : 'vecC', false, line === undefined ? 0.4 : 1, 0, line === m.cell[0]);
 			f.id[i] = line === undefined ? 'slot' + s : 'line' + line;
 		}
@@ -189,7 +189,7 @@ export function CacheScene() {
 	const locale = useLocale();
 	const rows = useMemo(() => cacheRows(locale), [locale]);
 	const status = useMemo(() => cacheStatus(locale), [locale]);
-	return <ViewportCard lesson={LESSON} id="3.3-2" name={'3.3-2 · ' + t(locale, 'mem.nameCache')} mode="3d" extent={12} rows={rows} status={status}
+	return <ViewportCard lesson={LESSON} id="3.3-2" name={'3.3-2 · ' + t(locale, 'mem.nameCache')} mode="2d" extent={12} rows={rows} status={status}
 		overlays={[{ id: 'labels', label: t(locale, 'mem.ovLabels'), on: true }]}>
 		<CacheCells locale={locale} />
 	</ViewportCard>;
