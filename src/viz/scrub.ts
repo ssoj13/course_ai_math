@@ -3,6 +3,8 @@
  * snap to `step` multiples from `min` and clamp to [min, max]. One rule set, so a value reached by dragging, by the
  * keyboard or by typing lands on the same grid.
  */
+import { fixed } from './fmt';
+
 export interface ScrubSpec {
 	min: number;
 	max: number;
@@ -75,6 +77,5 @@ export function ctrlSnap(v: number, snap: number | readonly number[], spec: Scru
 export function fmtField(v: number, step: number): string {
 	const off = Math.abs(v / step - Math.round(v / step)) > 1e-6;
 	const d = Math.max(decimals(off ? step / 10 : step), step < 1 ? 2 : 0);
-	const s = v.toFixed(d);
-	return Number(s) === 0 ? (0).toFixed(d) : s.replace('-', '−');
+	return fixed(v, d).replace('-', '−');
 }

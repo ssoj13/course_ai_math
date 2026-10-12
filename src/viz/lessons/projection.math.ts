@@ -14,6 +14,7 @@
  * - "coordinate = dot product with a unit axis" holds only for perpendicular unit axes (orthonormal); PJ-3 computes the
  *   real coordinates (solving s·u₁ + t·u₂ = c) and the rebuild from shadows separately, so the gap is visible.
  */
+import { fixed, int } from '../fmt';
 import { add, cross, dot, planeBasis, scale, sub, type V } from '../geom';
 import type { LessonLinks } from '../links';
 import { radialLink } from '../scene/radialLink';
@@ -66,16 +67,15 @@ const num = (v: Val | undefined, key: string): number => {
 // ---------------------------------------------------------------------------------------------------------------
 // Formatting (fixed decimals: a live number never changes width by a trailing zero; never "-0.00").
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 export const fmt1 = (x: number) => (Number.isFinite(x) ? fixed(x, 1) : '–');
 export const fmt2 = (x: number) => (Number.isFinite(x) ? fixed(x, 2) : '–');
 export const fmtVec = (v: V | null, f: (x: number) => string = fmt2) => (v ? '(' + v.map(f).join(', ') + ')' : '–');
 /** Whole degrees for the PJ-3 angles (the fields step by 1°). */
-export const fmtDeg = (x: number) => (Number.isFinite(x) ? String(Math.round(x) + 0) + '°' : '–');
+export const fmtDeg = (x: number) => (Number.isFinite(x) ? int(x) + '°' : '–');
 export const texFmt = {
 	n: (x: number) => (Number.isFinite(x) ? fixed(x, 2) : String.raw`\text{--}`),
 	c: (x: number) => (Number.isFinite(x) ? fixed(x, 1) : String.raw`\text{--}`),
-	deg: (x: number) => (Number.isFinite(x) ? String(Math.round(x) + 0) + String.raw`^\circ` : String.raw`\text{--}`),
+	deg: (x: number) => (Number.isFinite(x) ? int(x) + String.raw`^\circ` : String.raw`\text{--}`),
 };
 
 const DEG = Math.PI / 180;

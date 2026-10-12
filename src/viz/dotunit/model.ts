@@ -5,6 +5,7 @@
  * results come from `explain` / `einsum` (same kernel, same accumulation), so a tile's area, the table cell and the
  * formula term are the same float.
  */
+import { fixed, trim } from '../fmt';
 import { einsum, explain, planEinsum, rand, tensor, type AccOpts, type Explain, type Nested, type Plan, type Tensor } from '../../core';
 import { idxId, layoutEinsum, stackScale, type Layout, type LayoutOpts } from './layout';
 
@@ -166,9 +167,9 @@ export function dotData(a: readonly number[], b: readonly number[], o: AccOpts =
 	return { plan, a, b, prods, run, dot, lenA, shadow, proj: lenA > 0 ? lenA * shadow : NaN, acc };
 }
 /** Readout format: two decimals, ASCII minus, never "-0.00"; a dash for undefined values. */
-export const fmt = (x: number): string => (Number.isFinite(x) ? (+x.toFixed(2) + 0).toFixed(2) : '–');
+export const fmt = (x: number): string => (Number.isFinite(x) ? fixed(x, 2) : '–');
 /** Short value of a tile or element: integers bare, else up to two decimals. */
-export const fmtShort = (x: number): string => (Number.isFinite(x) ? String(+x.toFixed(2) + 0) : '–');
+export const fmtShort = (x: number): string => (Number.isFinite(x) ? trim(x, 2) : '–');
 
 /**
  * Matrix x vector, column view (spec §3.2): y = Σⱼ xⱼ · W[:, j]. The scaled columns are the same products the row view

@@ -13,6 +13,7 @@ import { hotOff, hotOn, lessonStore, type LessonState } from '../store';
 import { hitRadius, ndcToPx, rayPlane, worldPerPx } from './drag';
 import { gateWheel, placeLabels, useStage, type Draggable } from './handles';
 import { DRAW_MS, reducedMotion, springProgress } from './motion';
+import { writeLine } from './fatLine';
 import type { Part } from './framing';
 
 // Module-level temporaries for the per-frame helpers below (frames run one at a time, so sharing is safe): a frame
@@ -149,12 +150,18 @@ export function writeGeo(geo: BufferGeometry, pts: readonly V[]): void {
 // drei's Line ref type (Line2 | LineSegments2); taken from drei so we do not import its transitive three-stdlib.
 type LineObj = React.ComponentRef<typeof Line>;
 
+const NO_POINTS: [number, number, number][] = [[0, 0, 0], [0, 0, 0]];
+const NO_FLAT: number[] = [];
+
 /** drei `Line` props plus `dashPx`: dash and gap lengths in CSS pixels (drei's are world units). */
 export type SLineProps = ComponentProps<typeof Line> & { dashPx?: readonly [number, number] };
 
 /** Imperative handle of a Stroke: all of its lines share the same points. */
 export interface StrokeHandle {
-	/** Replaces the points of every line of the stroke (flat xyz list), e.g. per frame for a growing beam. */
+	/**
+	 * Replaces the points of every line of the stroke (flat xyz list), e.g. per frame for a growing beam or trace. The
+	 * point count may change at any time, down to none (`writeLine`: in place, reallocating only on growth).
+	 */
 	setPositions(flat: number[]): void;
 	/** Geometry identity of the core line; drei rebuilds it when `points` change, which resets the positions. */
 	geometry(): object | null;
@@ -199,22 +206,26 @@ export const Stroke = forwardRef<StrokeHandle, StrokeProps>(function Stroke(
 	useImperativeHandle(fwd, () => ({
 		setPositions(flat) {
 			last.current = flat;
-			for (const l of [core.current, out.current, glow.current]) l?.geometry.setPositions(flat);
+			for (const l of [core.current, out.current, glow.current]) if (l) writeLine(l.geometry, flat, Boolean(segments));
 		},
 		geometry: () => core.current?.geometry ?? null,
 	}));
 	// Runs after the children's layout effects (drei sets `points` there), so the override wins on mount.
 	useLayoutEffect(() => {
-		const f = last.current;
-		if (f) for (const l of [out.current, glow.current]) l?.geometry.setPositions(f);
+		const f = last.current ?? (points.length ? null : NO_FLAT);
+		if (f) for (const l of [out.current, glow.current]) if (l) writeLine(l.geometry, f, Boolean(segments));
 	}, [hot, halo]);
-	// New `points` reset every line; the owner re-applies its override on the next frame.
+	// New `points` reset every line; the owner re-applies its override on the next frame. An empty stroke draws no
+	// segment at all (the placeholder point drei needs would otherwise paint a round-capped dot).
 	useLayoutEffect(() => {
 		last.current = null;
-	}, [points]);
+		if (!points.length) for (const l of [core.current, out.current, glow.current]) if (l) writeLine(l.geometry, NO_FLAT, Boolean(segments));
+	}, [points, segments]);
 	const outW = width + 2 * STYLE.hotPad;
 	const a = fadeAlphas(fade, hot);
-	const common = { points, segments, dashPx, transparent: true, depthWrite: false };
+	// drei's LineGeometry throws on an empty list, and a segment list needs whole pairs (one point gives LineSegmentsGeometry
+	// half an instance and a NaN bound): a stroke that starts empty mounts on a placeholder pair, emptied above.
+	const common = { points: points.length ? points : NO_POINTS, segments, dashPx, transparent: true, depthWrite: false };
 	return (
 		<>
 			{(halo || hot) && (

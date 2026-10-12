@@ -11,6 +11,7 @@
  * - VE-5 B − A in 2D: `A`, `B`, `rev` (1 = show the trip back, A − B).
  * - VE-6 B − A in 3D: `A3`, `B3`.
  */
+import { fixed } from '../fmt';
 import type { LessonLinks, LinkGroup } from '../links';
 import { finite } from '../links';
 import type { LessonState, Val } from '../store';
@@ -218,7 +219,6 @@ export const CHECKS = {
 	trip3: (v: Vals) => nearV(trip(v, true).d, [3, 4, 0]),
 };
 
-const fixed = (x: number, n: number) => (+x.toFixed(n) + 0).toFixed(n);
 /** Components and coordinates: one decimal (drags and keys land on a 0.1 grid); a negative zero prints as 0.0. */
 export const fmt1 = (x: number): string => fixed(x, 1);
 /** Normals and lengths: two decimals. */

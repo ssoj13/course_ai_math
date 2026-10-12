@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import { t } from '../../i18n/core';
 import { localized, useLocale } from '../../i18n/react';
 /**
@@ -53,7 +54,7 @@ function DemoDotFormulaContent(): React.JSX.Element {
 	return <Formula lesson="demo" tex={String.raw`\t{a}{a}\cdot\t{b}{b} = \t{dot}{\s{dot}}`} derived={DOT} block label={t(locale, 'demo.dotLabel')} />;
 }
 
-const fmtV = (v: readonly number[]) => `(${v.map((x) => x.toFixed(1)).join(', ')})`;
+const fmtV = (v: readonly number[]) => `(${v.map((x) => fixed(x, 1)).join(', ')})`;
 
 /** Live readout of the dragged vectors: shows that scene drags, N-panel fields and keyboard moves write the shared store. */
 export function DemoVecReadout(): React.JSX.Element {

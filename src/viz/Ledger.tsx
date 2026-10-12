@@ -9,6 +9,7 @@
  * Every bar and the rule carry term ids: hovering lights the id everywhere, and a bar gets the hot outline when its id
  * is lit elsewhere. Sign is never colour-only: hatch plus an arrow (down = subtracted, up = added).
  */
+import { fixed } from './fmt';
 import { useId } from 'react';
 import { useStore } from 'zustand';
 import { roleVar, type SceneRole } from './palette';
@@ -49,7 +50,7 @@ const W = 270;
 /** Minimum vertical distance between two label baselines. */
 const LINE = 16;
 
-export const fmt2 = (v: number): string => (Number.isFinite(v) ? (v + 0).toFixed(2).replace(/^-(0\.00)$/, '$1').replace('-', '−') : '–');
+export const fmt2 = (v: number): string => (Number.isFinite(v) ? fixed(v, 2).replace('-', '−') : '–');
 
 export interface LedgerBar {
 	id: string;
@@ -99,7 +100,7 @@ export function spreadLabels(ys: readonly number[], lo: number, hi: number, min 
  * changed `y` attribute is a layout shift (measured: Chrome reported the bars and labels of a drag as shifts) and a
  * transform is not.
  */
-const ty = (y: number): React.CSSProperties => ({ transform: `translateY(${+y.toFixed(2)}px)` });
+const ty = (y: number): React.CSSProperties => ({ transform: `translateY(${+fixed(y, 2)}px)` });
 
 export function Ledger(p: LedgerProps): React.JSX.Element {
 	const vals = useStore(lessonStore(p.lesson), (s) => s.vals);

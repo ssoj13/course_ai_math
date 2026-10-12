@@ -14,6 +14,7 @@
  * Slots: every piece has a slot number that is stable while the shape changes (box: i + 4j + 16k; row: n), so a
  * transition can match "the same piece" in the source and target states.
  */
+import { fixed, int } from '../fmt';
 import { omegaFor, SPRING_MS } from './motion';
 
 export type Vec3 = readonly [number, number, number];
@@ -107,7 +108,7 @@ export function tileCount(shape: TileShape, opts: TileOpts = {}): TileCount {
 /** Plate text of a total: integer when every active size is an integer, else 2 decimals (§7.1 `label`). */
 export function tileTotal(shape: TileShape, total: number, fill?: number): string {
 	const sizes = shape.kind === 'box' ? shape.size.filter((_, a) => !shape.thin[a]) : [fill ?? shape.len];
-	return sizes.every(Number.isInteger) ? String(Math.round(total)) : total.toFixed(2);
+	return sizes.every(Number.isInteger) ? int(total) : fixed(total, 2);
 }
 
 /** Piece boxes of one state, indexed by piece (not slot): `lo`/`hi` hold 3 numbers per piece. */

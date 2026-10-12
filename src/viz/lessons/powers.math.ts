@@ -8,6 +8,7 @@
  * `power` and `ladder` timelines. `base` (the ladder's base), `d3` (0.2-4's 2D/3D view), `g` and `t` (0.2-5's curve)
  * are plain keys.
  */
+import { fixed, int, trim } from '../fmt';
 import { powersLinks } from '../links';
 import type { LessonLinks, LinkGroup } from '../links';
 import { finite } from '../links';
@@ -257,28 +258,27 @@ export const CHECKS = {
 	},
 };
 
-const clean = (v: number): number => (Math.abs(v) < 5e-10 ? 0 : v);
 /** Two decimals ("0.50" for the curve input t). */
-export const fmt2 = (v: number): string => clean(v).toFixed(2);
+export const fmt2 = (v: number): string => fixed(v, 2);
 /**
  * The side x: at least one decimal, up to four ("3.0", "2.5", "1.4142"). A side written from a typed area or volume
  * is a root (√2, ∛2); one decimal would print 1.3 for ∛2 = 1.26, whose square is not the 1.59 shown next to it.
  */
 export const fmtX = (v: number): string => {
-	const s = String(Number(clean(v).toFixed(4)));
+	const s = trim(v, 4);
 	return s.includes('.') ? s : s + '.0';
 };
 /** Four decimals for roots and curve values ("1.4142", "0.2176"). */
-export const fmt4 = (v: number): string => clean(v).toFixed(4);
+export const fmt4 = (v: number): string => fixed(v, 4);
 /** Counts are integers. */
-export const fmtInt = (v: number): string => String(Math.round(v));
+export const fmtInt = (v: number): string => int(v);
 /** Ladder values and bases: up to three decimals, no trailing zeros ("8", "0.5", "15.625", "0.667"). */
-export const fmtVal = (v: number): string => String(Number(clean(v).toFixed(3)));
+export const fmtVal = (v: number): string => trim(v, 3);
 /**
  * Lengths, areas and volumes of the side x: up to four decimals, no trailing zeros ("9", "6.25", "15.625",
  * "1.5874"), the precision of the side itself, so x¹ of x = 1.2599 reads 1.2599, not 1.26.
  */
-export const fmtAmt = (v: number): string => String(Number(clean(v).toFixed(4)));
+export const fmtAmt = (v: number): string => trim(v, 4);
 /** Exponent g: up to three decimals, no trailing zeros ("2.2", "0.455", "32"). */
 export const fmtG = fmtVal;
 /** Scientific form for a curve value too small for four decimals (2.3e-10 is not zero). */

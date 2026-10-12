@@ -9,6 +9,7 @@
  * - 0.3-4 (n dimensions): n and the components p1..p8, q1..q8 (scalar keys, so each one is a scrubbable number).
  * - 0.3-5 (squared distance vs distance): X and r.
  */
+import { fixed, trim } from '../fmt';
 import type { LessonState, Val } from '../store';
 import type { V } from '../geom';
 
@@ -240,8 +241,8 @@ export const CHECKS = {
 };
 
 /** One decimal for coordinates and legs; a negative zero prints as 0. */
-export const fmt1 = (v: number): string => (Math.abs(v) < 5e-10 ? 0 : v).toFixed(1);
+export const fmt1 = (v: number): string => fixed(v, 1);
 /** Two decimals for squares, sums and lengths. */
-export const fmt2 = (v: number): string => (Math.abs(v) < 5e-10 ? 0 : v).toFixed(2);
+export const fmt2 = (v: number): string => fixed(v, 2);
 /** Integers stay integers ("4"), other values get up to 2 decimals ("2.5", "0.25"): table cells. */
-export const fmtCell = (v: number): string => String(+(Math.abs(v) < 5e-10 ? 0 : v).toFixed(2));
+export const fmtCell = (v: number): string => trim(v, 2);

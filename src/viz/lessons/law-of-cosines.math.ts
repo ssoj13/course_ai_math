@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import type { LessonState } from '../store';
 import type { V } from '../geom';
 import { add, sub, scale, dot } from '../geom';
@@ -34,12 +35,12 @@ type Vals = LessonState['vals'];
 
 export const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 
-/** Lengths and areas: 2 decimals; `+x.toFixed(2)` first so that -0.001 prints 0.00, not -0.00 (spec §0.2). */
-export const fmt = (x: number) => (Number.isFinite(x) ? (+x.toFixed(2)).toFixed(2) : '–');
+/** Lengths and areas: 2 decimals; -0.001 prints 0.00, not -0.00 (spec §0.2). */
+export const fmt = (x: number) => (Number.isFinite(x) ? fixed(x, 2) : '–');
 /** Cosines: 3 decimals. */
-export const fmtCos = (x: number) => (Number.isFinite(x) ? (+x.toFixed(3)).toFixed(3) : '–');
+export const fmtCos = (x: number) => (Number.isFinite(x) ? fixed(x, 3) : '–');
 /** Angles: whole degrees when integer, otherwise one decimal (the suffix is added by the caller). */
-export const fmtAngle = (x: number) => (Number.isInteger(x) ? String(x) : (+x.toFixed(1)).toFixed(1));
+export const fmtAngle = (x: number) => (Number.isInteger(x) ? String(x) : fixed(x, 1));
 
 /** Clockwise quarter turn: the outward normal of a CCW polygon edge (spec §0.1). */
 export const cw = (p: V): V => [p[1], -p[0]];

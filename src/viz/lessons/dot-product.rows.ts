@@ -1,3 +1,4 @@
+import { fixed } from '../fmt';
 import { t, type Locale } from '../../i18n/core';
 import type { Row } from '../scene/NPanel';
 import type { V } from '../geom';
@@ -13,7 +14,7 @@ import { RANGE2, RANGE3, derive, derive3, lamp, fmt, fmtCos, fmtDeg } from './do
 export type Scene = 1 | 2 | 3 | 4;
 
 /** Unit vectors and the probe point at one decimal: "(−1.1, −0.6, −0.8)" fits the 200 px sidebar (18 characters). */
-const fmt1 = (x: number) => (Number.isFinite(x) ? (+x.toFixed(1) + 0).toFixed(1) : '–');
+const fmt1 = (x: number) => (Number.isFinite(x) ? fixed(x, 1) : '–');
 
 /** Read-only derived row; `start` is the DP-1 step that reveals it (same reveal as its formula term). */
 function ro(id: string, label: string, value: (v: Readonly<Record<string, number | V>>) => number, extra: Partial<Row> = {}): Row {
