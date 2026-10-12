@@ -171,7 +171,7 @@ The central operation of a transformer, **attention**, starts with exactly the t
 
 <CosAttention locale={locale} client:load />
 
-Two things are missing that the real mechanism adds, and both are Part 10: the vectors are first multiplied by learned matrices (so "cat" can look for its verb rather than for itself, which is why the diagonal dominates here), and the scores are divided by $\sqrt d$ and turned into weights that sum to 1. The comparison itself is the dot product you already know.
+Switch the table to *One head: weights* to see what one attention head does next: every score is divided by $\sqrt d$ (here $\sqrt{300} \approx 17.3$), and each row goes through **softmax**, which turns a row of scores into weights between 0 and 1 that sum to 1. A real head then mixes the words' vectors with these weights, so each word picks up a little of the words it looks at. One thing is left out, and it is Part 10: a real head first multiplies the vectors by learned matrices ($W_Q$ for the word that looks, $W_K$ for the words looked at), so that "cat" can look for its verb rather than for itself. Without them every word looks mostly at itself, which is why the diagonal dominates here. The comparison at the heart of it is the dot product you already know.
 
 > **Say it simpler.** Cosine similarity ignores length and keeps only direction: 1 = same direction, 0 = unrelated, −1 = opposite. An embedding is an arrow that stands for a word or a text; an AI system finds "similar" things by finding arrows that point the same way.
 

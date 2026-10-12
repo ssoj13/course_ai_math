@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { en } from '../../src/i18n/ui';
 import {
-	INITIAL, CHECKS, analogy, angleDeg, cosMatrix, cosine, dist, dot, fmtCos, fmtDeg, fmtInt, nearest, products, rank, scaled, toy, unitRows,
+	INITIAL, CHECKS, analogy, angleDeg, attentionWeights, softmax, cosMatrix, cosine, dist, dot, fmtCos, fmtDeg, fmtInt, nearest, products, rank, scaled, toy, unitRows,
 } from '../../src/viz/lessons/cosine-similarity.math';
 import { ANALOGIES, DOCS, GROUPS, LLM, PROV, QUERIES, SENTENCE, VECS, WORDS, indexOf } from '../../src/viz/lessons/cosine-similarity.data';
 import { DOC_KEY, GROUP_KEY, NOTE_KEY, Q_KEY, rowsFor } from '../../src/viz/lessons/cosine-similarity.rows';
@@ -91,6 +91,21 @@ describe('tables and search', () => {
 		const q = analogy(rows, 0, 1, 2, 4, false);
 		expect(q[0].i).toBe(3);
 		// Here queen is exact; the real table (below) shows the input-wins failure.
+	});
+
+	test('softmax and one-head attention weights', () => {
+		const s = softmax([0, Math.log(3)]);
+		close(s[0], 0.25);
+		close(s[1], 0.75);
+		// Large inputs do not overflow (max subtracted first).
+		close(softmax([1000, 1000])[0], 0.5);
+		// d = 4: scores x·y / 2. Rows sum to 1; the larger dot product gets the larger weight.
+		const w = attentionWeights([[2, 0, 0, 0], [0, 2, 0, 0], [2, 2, 0, 0]]);
+		for (const r of w) close(r.reduce((a, b) => a + b, 0), 1);
+		close(w[0][0] / w[0][1], Math.exp(2));
+		expect(w[2][2]).toBeGreaterThan(w[2][0]);
+		const sentence = attentionWeights(SENTENCE.map((x) => x.v));
+		for (const r of sentence) close(r.reduce((a, b) => a + b, 0), 1, 1e-12);
 	});
 
 	test('rank orders every document', () => {

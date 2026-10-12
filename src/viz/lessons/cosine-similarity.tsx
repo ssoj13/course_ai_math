@@ -9,7 +9,7 @@ import { HotLinks, type HotLinkMap } from '../HotLinks';
 import { roleVar } from '../palette';
 import { rich } from '../rich';
 import {
-	CHECKS, INITIAL, LESSON, analogy, cosine, dot, dotMatrix, fmt2, fmtCos, fmtDeg, fmtInt, len, nearest, products, rank, scaled, tex as texFmt, toy,
+	CHECKS, INITIAL, LESSON, analogy, attentionWeights, cosine, dot, dotMatrix, fmt2, fmtCos, fmtDeg, fmtInt, len, nearest, products, rank, scaled, tex as texFmt, toy,
 } from './cosine-similarity.math';
 import {
 	ANALOGIES, DOCS, GROUPS, GROUP_ROLE, LLM, NEIGHBOURS, PROV, QUERIES, SENTENCE, VECS, WORDS, pairOf, type Group,
@@ -473,23 +473,31 @@ export const CosSearch = localized(Search);
 
 const ATT = dotMatrix(SENTENCE.map((w) => w.v));
 const ATT_MAX = Math.max(...ATT.flat().map(Math.abs));
+/** The same table after one head's scaling and softmax (learned matrices left out): row i = where token i looks. */
+const WEIGHTS = attentionWeights(SENTENCE.map((w) => w.v));
 
 function Attention() {
 	const locale = useLocale();
 	const [hot, setHot] = useState<[number, number] | null>(null);
+	const [head, setHead] = useState(false);
+	const table = head ? WEIGHTS : ATT, max = head ? 1 : ATT_MAX;
 	const ramp = useRef<HTMLTableElement>(null);
 	const colors = useRamp(ramp);
 	const words = SENTENCE.map((w) => w.word);
 	return <figure className="not-content cs-widget cs-fig">
+		<div className="cs-presets" role="group" aria-label={t(locale, 'cs.attMode')}>
+			<button type="button" className={head ? 'cs-chip' : 'cs-chip is-on'} aria-pressed={!head} onClick={() => setHead(false)}>{t(locale, 'cs.attDots')}</button>
+			<button type="button" className={head ? 'cs-chip is-on' : 'cs-chip'} aria-pressed={head} onClick={() => setHead(true)}>{t(locale, 'cs.attHead')}</button>
+		</div>
 		<div className="cs-att-wrap">
 		<table ref={ramp} className="cs-att" aria-label={t(locale, 'cs.attLabel')}>
 			<thead><tr><th scope="col" />{words.map((w, j) => <th key={j} scope="col" className={hot?.[1] === j ? 'is-hot' : undefined}>{w}</th>)}</tr></thead>
 			<tbody>
-				{ATT.map((row, i) => <tr key={i}>
+				{table.map((row, i) => <tr key={i}>
 					<th scope="row" className={hot?.[0] === i ? 'is-hot' : undefined}>{words[i]}</th>
 					{row.map((x, j) => <td key={j} tabIndex={0}
-						style={colors ? { background: rampColor(colors, x / ATT_MAX) } : undefined}
-						className={Math.abs(x) / ATT_MAX > 0.55 ? (x < 0 ? 'is-strong-neg' : 'is-strong-pos') : undefined}
+						style={colors ? { background: rampColor(colors, x / max) } : undefined}
+						className={Math.abs(x) / max > 0.55 ? (x < 0 ? 'is-strong-neg' : 'is-strong-pos') : undefined}
 						onPointerEnter={() => setHot([i, j])} onPointerLeave={() => setHot(null)} onFocus={() => setHot([i, j])} onBlur={() => setHot(null)}>
 						{fmt2(x)}
 					</td>)}
@@ -498,8 +506,10 @@ function Attention() {
 		</table>
 		</div>
 		<figcaption aria-live="polite">{hot
-			? t(locale, 'cs.attRead', { a: words[hot[0]], b: words[hot[1]], dot: fmt2(ATT[hot[0]][hot[1]]), cos: fmtCos(cosine(SENTENCE[hot[0]].v, SENTENCE[hot[1]].v)) })
-			: t(locale, 'cs.attCaption')}</figcaption>
+			? (head
+				? t(locale, 'cs.attWeightRead', { a: words[hot[0]], b: words[hot[1]], w: fmt2(WEIGHTS[hot[0]][hot[1]]) })
+				: t(locale, 'cs.attRead', { a: words[hot[0]], b: words[hot[1]], dot: fmt2(ATT[hot[0]][hot[1]]), cos: fmtCos(cosine(SENTENCE[hot[0]].v, SENTENCE[hot[1]].v)) }))
+			: t(locale, head ? 'cs.attHeadCaption' : 'cs.attCaption')}</figcaption>
 	</figure>;
 }
 export const CosAttention = localized(Attention);

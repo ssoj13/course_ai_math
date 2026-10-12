@@ -84,6 +84,23 @@ export function cosMatrix(rows: readonly V[]): number[][] {
 /** Plain dot product of every pair (the raw score table attention starts from, before its learned matrices). */
 export const dotMatrix = (rows: readonly V[]): number[][] => rows.map((a) => rows.map((b) => dot(a, b)));
 
+/** Softmax of one row: e^(xᵢ − max) / Σ e^(xⱼ − max). Subtracting the max keeps exp from overflowing. */
+export function softmax(row: readonly number[]): number[] {
+	const m = Math.max(...row);
+	const e = row.map((x) => Math.exp(x - m));
+	const s = e.reduce((a, b) => a + b, 0);
+	return e.map((x) => x / s);
+}
+
+/**
+ * One attention head with the learned matrices left out (W_Q = W_K = identity): score of token i for token j is
+ * xᵢ·xⱼ / √d, each row goes through softmax, so row i holds the weights token i gives to every token (summing to 1).
+ */
+export function attentionWeights(rows: readonly V[]): number[][] {
+	const d = rows[0]?.length ?? 1;
+	return dotMatrix(rows).map((r) => softmax(r.map((x) => x / Math.sqrt(d))));
+}
+
 export interface Hit {
 	i: number;
 	cos: number;
