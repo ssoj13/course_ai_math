@@ -374,9 +374,9 @@ function RowView({ lesson, row, vals, hot, reg, tip, size='sm' }: { lesson: stri
 						value={x}
 						spec={row.spec!}
 						snap={row.snap}
-						label={`${row.label} ${AXIS[i]}`}
+						label={`${row.label} ${AXIS[i] ?? i + 1}`}
 						fmt={row.fmt}
-						axis={i as 0 | 1 | 2}
+						axis={i < 3 ? (i as 0 | 1 | 2) : undefined}
 						get={() => (live() as V)[i]}
 						set={(v, how) => store.getState().set(row.key!, (live() as V).map((c, j) => (j === i ? v : c)), how)}
 					/>

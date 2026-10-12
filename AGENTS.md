@@ -341,6 +341,19 @@ only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over
   `CoreError` with `code`; nothing is silently repaired. Fixture example of order: ten 0.1 sum to 0.9999999999999999
   (fp64), 1.0000001 (fp32 sequential), 1.0 (fp32 pairwise).
 
+### DotUnit (`src/viz/dotunit`, docs/design/intro-and-dotunit.md)
+
+- Pure: `layout.ts` (`assignAxes`/`layoutEinsum(plan)`: spec 1.2 axis rules, LOD 1-3, cap 64 -> ShapeError), `model.ts`
+  (presets, seeded values, `sceneData`/`dotData`/`columnView`: every number from core `explain`/`einsum`), `choreo.ts`
+  (`Frame` buffers; `dotFrame` = timeline `unit` 0-9, `passFrame` = timeline `pass` 0-4). Tests: `tests/js/dotunit.test.ts`.
+- Render: `Boxes.tsx` = one InstancedMesh per scene (shader fill/edge/hatch wipe/flash, bounds proxy for framing; refit
+  ONE update after a frame was written). `unit.impl.tsx` (DotUnit, face 1 = engine primitives), `einsum.impl.tsx`
+  (playground, matvec rows/columns, ladder). Entries `dotunit.tsx`, `einsum.tsx`; wrapper `DotUnit.astro kind=...`.
+- Stores: `dotunit` (du_a/du_b n-vectors + du_a3/du_b3 via link groups, n 2..8), `einsum`, `matvec`, `ladder`.
+- `Nav.frame(dir)` (Stage): View All from a direction that stays home until Reset view (face 2 is framed from the front).
+- Playground `extent` follows the drawn bounds (the camera distance range scales with extent).
+- [ ] Open: dtype/order readouts, memory-layout strip, LOD-2 shaft lines, CodeView line per current tile, cube
+  readability (operand faces, label overlap at 360 px), CDP hover-link and CLS acceptance checks, physical-device perf.
 ## Authoring rules
 
 - Math in prose: `$a\cdot b$` inline; display math fenced (`$$` on its own lines; a one-line `$$x$$` is inline).

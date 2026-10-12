@@ -9,6 +9,7 @@ head:
 
 
 import EngineDemo from '../../../viz/demo/EngineDemo.astro';
+import DotUnit from '../../../viz/dotunit/DotUnit.astro';
 
 Every scene is a small DCC viewport: a header (view type, projection, Overlays, Reset view), the dark viewport with
 the navigation gizmo (3D) or the XY corner (2D), the N-panel of draggable number fields (press `N` over the card or
@@ -87,3 +88,24 @@ size. The cube of side 2.5 shows its cut slabs on the three far faces; the slab 
 thickness.
 
 <EngineDemo kind="DemoTiles" />
+
+## DotUnit
+
+The procedural DotUnit (docs/design/intro-and-dotunit.md): the dot product as a projection (face 1) and as tiles that
+drop into a stack (face 2). Step through the timeline; drag a or b at any step; change n in the panel.
+
+<DotUnit kind="unit" />
+
+Every other product is the same renderer with another spec. Pick a preset, change the index sizes (up to 64: the
+level of detail switches from tiles to bars to a heatmap), step the pass, click a cell to dive into its dot product.
+
+<DotUnit kind="playground" />
+
+Matrix times vector two ways, one store: the row view stacks one dot product per row, the column view lays the scaled
+columns head to tail. The readout under each card prints both results.
+
+<DotUnit kind="rows" />
+
+<DotUnit kind="columns" />
+
+<DotUnit kind="ladder" />

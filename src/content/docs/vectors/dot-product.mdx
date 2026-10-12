@@ -5,6 +5,7 @@ description: "Σ aᵢbᵢ = |a||b| cos θ, and what its sign means."
 
 import Quiz from '../../../components/Quiz.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import DotUnit from '../../../viz/dotunit/DotUnit.astro';
 import UiStrings from '../../../components/UiStrings.astro';
 import SceneIsland from '../../../viz/SceneIsland.astro';
 import { DotScene, DotControls } from '../../../viz/lessons/dot-product';
@@ -18,6 +19,8 @@ export const locale = 'en';
 **Built on:** [Length, Σ notation and normalization](lesson:length) · [The law of cosines](lesson:law-of-cosines) · [Distance and Pythagoras](lesson:pythagoras)
 
 Two arrows $\mathbf{a}$ and $\mathbf{b}$ start at the origin with some angle $\theta$ between them. We can already measure $\lvert \mathbf{a} \rvert$ and $\lvert \mathbf{b} \rvert$ ([lesson 1.3](lesson:length)) and the distance between their tips, $\lvert \mathbf{a} - \mathbf{b} \rvert$ ([lesson 0.3](lesson:pythagoras)). The [law of cosines](lesson:law-of-cosines) ties those three lengths to the angle. Put the two together and a new operation falls out, one that every `dot(N, L)` in every shader computes. This is the centerpiece of Part 1; take it slowly.
+
+<DotUnit kind="unit" caption="teaser" parts={['timeline', 'formula']} />
 
 ## 1. The setup: one triangle, three sides we can measure
 
