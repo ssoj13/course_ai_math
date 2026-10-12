@@ -1,6 +1,6 @@
 # HANDOFF — math_en ("Math for AI" interactive textbook)
 
-Updated 2026-10-11 ~19:50 by controller session math-en (Claude). Read this, then [AGENTS.md](AGENTS.md) (working
+Updated 2026-10-11 ~20:15 by controller session math-en (Claude). User ordered: stop agents, commit, merge into main. Read this, then [AGENTS.md](AGENTS.md) (working
 notebook: contracts, traps, TODO), [task.md](task.md) (the user's own words, Russian), the recover plan/ledger
 `.superpowers/sdd/2026-10-11-recover/plan.md` (gitignored, on disk only, append-only log of everything below), and
 [docs/superpowers/plans/2026-10-11-course-completion.md](docs/superpowers/plans/2026-10-11-course-completion.md)
@@ -9,10 +9,9 @@ notebook: contracts, traps, TODO), [task.md](task.md) (the user's own words, Rus
 ## 0. Status in one screen
 
 - Repo `C:\projects\projects.rust.cg\cgprojs\math_en`, GitHub `ssoj13/math-course` (public). Branch `feat/engine`
-  HEAD `4605172`; `main` = `4605172` (pushed; Pages deploy of 569726d verified green, 4605172 pushed after).
+  HEAD `8aef269`; `main` = `8aef269` (pushed). Pages deploys verified green up to 5dc9fef; 8aef269 pushed after.
   Live: https://ssoj13.github.io/math-course/ (RU: /math-course/ru/).
-- Gates on `4605172`: `bun test tests/js` 771 pass / 0 fail (also green in 8 random orders); `bun run check` 0/0/0;
-  `bun run build` 47 pages, 0 warnings; renderer chunk ~268 kB gzip (limit 300,000); largest other 87 kB (limit 100,000);
+- Gates on `8aef269`: `bun test tests/js` 844 pass / 0 fail; `bun run check` 0/0/0; `bun run build` 55 pages, 0 warnings; renderer chunk ~268 kB gzip (limit 300,000); largest other 87 kB (limit 100,000);
   lazy elk 432 kB (limit 600,000).
 - Publish: worktree `scratchpad/mainwt` (= main): `git merge --ff-only feat/engine && git push origin main`, then
   `gh run watch` the "Deploy to GitHub Pages" run (test+build+deploy jobs). Local preview: worktree `scratchpad/preview`
@@ -24,7 +23,8 @@ Start here (why-this-course, how-it-connects — with DotUnit INTRO scenes), 0.G
 0.2 powers, 0.3 pythagoras, 0.4 unit-circle, 0.5 law-of-cosines, 1.1 vector, 1.2 vector-arithmetic, 1.3 length,
 1.4 dot-product (+DotUnit teaser), 1.5 projection, 1.6 basis (orthonormal checkbox scene), 1.7 cosine-similarity +
 embeddings in AI (real GloVe/arctic data, RAG, analogies, 1-head attention preview), 1.8 cross-product,
-1.9 waves-dft (NEW: DFT as dot products + epicycles), **3.1 tensor-road** (rank slider 0→6 in 3D, real data per
+1.9 waves-dft (NEW: DFT as dot products + epicycles), **3.2 data-as-tensors, 3.3 tensor-memory, 3.4 broadcasting,
+3.5 reductions** (merged, not independently reviewed), **3.1 tensor-road** (rank slider 0→6 in 3D, real data per
 rank, memory strip + strides, transpose, DotUnit "axis that disappears"; einsum playground opens on bij,bjk->bik).
 All Part 0/1 lessons passed the consolidated batch review + one fix round (`batch-review.md`, `fixround-report.md`).
 3.1 not independently reviewed yet. Numbering: "Start here" unnumbered; titles/sidebar show CURRICULUM ids (0.2, 1.5,
@@ -72,9 +72,14 @@ animation.**
 
 | Work | Branch (worktree under .claude/worktrees/) | Report (inside its worktree) | Port |
 |---|---|---|---|
-| Lessons 3.2 data-as-tensors + 3.3 tensor-memory | `worktree-agent-abd81b77f93655c11` | `.superpowers/sdd/2026-10-11-recover/batch-tensors-a-report.md` | 4524 |
-| Lessons 3.4 broadcasting + 3.5 reductions | `worktree-agent-a7aabda00755c2cc3` | `batch-tensors-b-report.md` | 4525 |
 | Lessons 2.1 linear-transformations + 2.2 matrix-columns (NEW module matrices, part 2, between vectors and tensors; incl. the 3D basis-projection scene with orthonormal checkbox) | `worktree-agent-a0ddbb0cc8e811414` | `batch-matrices-a-report.md` | 4527 |
+| Lessons 3.6 einsum + 3.7 layer (DotUnit presets, S3 light box, S4 plugs-and-cables) | `worktree-agent-a8d573ce2786a80bd` | `batch-tensors-c-report.md` | 4528 |
+| Lessons 2.3 transform-gallery + 2.4 matrix-multiplication | `worktree-agent-a8aae68300b1dfec5` | `batch-matrices-b-report.md` | 4529 |
+
+All three were told at ~20:15 to STOP: kill processes, WIP-commit, write a resume note. Resume each via SendMessage to
+the same agent (or a new agent pointed at the branch + its report). Merge a branch into feat/engine/main only if its
+gates are green; otherwise push the branch and finish it first. Known small TODOs: link 3.4 "No copy: stride 0" to
+`lesson:tensor-memory` (EN+RU); course.json ordering of matrices lessons (2.1, 2.2, then 2.3, 2.4).
 
 Done today and merged (for reference): engine fix (Stroke `writeLine` in fatLine.ts, shared `src/viz/fmt.ts`), DotUnit
 polish (Arrow opacity, fp32/pairwise, memory strip, LOD visuals, challenges), batch fix round (framing `<Room>`, label
