@@ -645,10 +645,13 @@ h1#_top,
 .lab-np-row.is-pending {
 	display: none;
 }
+/* Labels and read-only values stand on the surface AROUND the fields: the always-dark chrome inside a viewport card,
+   but the page itself under a FieldCell (`.lab-field-cell` below), where --viz-ink was near-white on the light theme.
+   `--lab-np-ink` is that surface's text color; fields keep their own dark box and --viz-ink in both places. */
 .lab-np-label {
 	line-height: 20px;
 	text-align: right;
-	color: var(--viz-ink);
+	color: var(--lab-np-ink, var(--viz-ink));
 	white-space: nowrap;
 }
 /* The column is sized to the longest label (NPanel useLabelColumn); only labels past its maximum wrap. */
@@ -782,8 +785,9 @@ h1#_top,
 	padding: 0 4px;
 	border-radius: 4px;
 	text-align: right;
-	color: var(--viz-ink);
+	color: var(--lab-np-ink, var(--viz-ink));
 	font: 400 11.5px/20px var(--lab-font-mono);
+
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
@@ -1264,7 +1268,9 @@ h1#_top,
 }
 
 /* Linked lesson controls share term IDs and reserve hidden derivation terms. */
-.lab-field-cell { display: inline-block; padding: 6px; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; }
+/* Page-side field: label and read-only text take the page's body text (Starlight keeps it >= 4.5:1 on the page and
+   on lab cards in both themes; tests/js/tokens.test.ts checks it). */
+.lab-field-cell { --lab-np-ink: var(--sl-color-text); display: inline-block; padding: 6px; border: 1px solid var(--sl-color-gray-5); border-radius: 6px; }
 .lab-field-cell.is-lg .lab-np-row { min-height: 48px; grid-template-columns: minmax(100px, auto) 64px; gap: 8px; }
 .lab-field-cell .lab-np-ro { min-height: 28px; }
 /* Long derivations scroll inside their own box instead of widening the page. */

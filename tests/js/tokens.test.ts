@@ -5,6 +5,7 @@
  */
 import { expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { contrast, readPalette, ROLE_VARS, STROKE_ROLES, STYLE, type Role } from '../../src/viz/palette';
 
 const css = readFileSync(new URL('../../src/styles/lab.css', import.meta.url), 'utf8');
@@ -67,4 +68,35 @@ test('style tokens: the stroke recipe of visual-language.md', () => {
 	expect(STYLE.hatchPx).toBe(6);
 	expect(STYLE.sectorA).toBe(0.1);
 	expect([STYLE.pointR * 2, STYLE.rim]).toEqual([6, 1.5]);
+});
+
+/** `hsl(h, s%, l%)` -> `#rrggbb` (Starlight writes its grays as hsl). */
+function hslHex(v: string): string {
+	const m = /^hsl\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)%,\s*(\d+(?:\.\d+)?)%\)$/.exec(v.trim());
+	if (!m) throw new Error(`not an hsl() color: ${v}`);
+	const [h, s, l] = [Number(m[1]), Number(m[2]) / 100, Number(m[3]) / 100];
+	const f = (n: number) => {
+		const k = (n + h / 30) % 12;
+		const c = l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+		return Math.round(c * 255).toString(16).padStart(2, '0');
+	};
+	return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+test('page-side N-panel text (FieldCell labels, read-only values) is >= 4.5:1 on the page and on lab cards in both themes', () => {
+	// The engine routes label/read-only color through --lab-np-ink; a FieldCell sets it to the page body text.
+	expect(css).toMatch(/\.lab-np-label \{[^}]*color: var\(--lab-np-ink, var\(--viz-ink\)\);/);
+	expect(css).toMatch(/\.lab-np-ro \{[^}]*color: var\(--lab-np-ink, var\(--viz-ink\)\);/);
+	expect(css).toMatch(/\.lab-field-cell \{ --lab-np-ink: var\(--sl-color-text\);/);
+	// Starlight's own theme values: --sl-color-text = gray-2, page = black, lab card surface = gray-6 (both themes).
+	// props.css is not in the package exports; markdown.css is, and lives next to it.
+	const sl = readFileSync(join(dirname(Bun.resolveSync('@astrojs/starlight/style/markdown.css', import.meta.dir)), 'props.css'), 'utf8');
+	const dark = sl.slice(0, sl.indexOf(":root[data-theme='light']")), light = sl.slice(sl.indexOf(":root[data-theme='light']"));
+	expect(dark).toMatch(/--sl-color-text: var\(--sl-color-gray-2\);/);
+	expect(light).not.toMatch(/--sl-color-text:/);
+	expect(css).toMatch(/--lab-surface: var\(--sl-color-gray-6\);/);
+	for (const block of [dark, light]) {
+		const v = (name: string) => hslHex(new RegExp(`${name}: (hsl\\([^)]*\\))`).exec(block)![1]);
+		for (const bg of ['--sl-color-black', '--sl-color-gray-6']) expect(contrast(v('--sl-color-gray-2'), v(bg))).toBeGreaterThanOrEqual(4.5);
+	}
 });
