@@ -78,8 +78,10 @@ animation.**
 
 **State after the stop (20:20):** 2.1+2.2 MERGED into feat/engine/main (gates green: 873 tests, 59 pages) but with a
 KNOWN DEFECT: horizontal page scroll at 360 px on both pages (overflow 210/236 px, EN+RU; cause not found) and its
-screenshots were never looked at — fix first. 3.6+3.7: WIP `7c1d4b4` pushed as `origin/wip/einsum-layer` (3.6 code +
-core ExtentError/typed spec reasons; no pages, 3.7 not started, gates not run) — NOT merged. 2.3+2.4: not started
+screenshots were never looked at — fix first. 3.6+3.7: WIP `7c1d4b4` (3.6 code + core ExtentError/typed spec
+reasons) MERGED into feat/engine/main at 20:25 after the controller fixed one type error in its test (gates green);
+the code is not mounted on any page yet — still to do: 3.6 EN/RU pages + course.json line + RU stamp, all of 3.7,
+terms.json entries, screenshot pass (resume note: worktree-agent-a8d573ce2786a80bd/.superpowers/.../batch-tensors-c-report.md). 2.3+2.4: not started
 (branch has only a resume note commit 840e7c9 that force-added a gitignored report; do not merge it).
 
 All three were told at ~20:15 to STOP: kill processes, WIP-commit, write a resume note. Resume each via SendMessage to
