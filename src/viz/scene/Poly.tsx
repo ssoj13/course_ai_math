@@ -50,6 +50,13 @@ export interface PolyProps {
 	hatched?: (vals: Vals) => boolean;
 	edge?: 'solid' | 'dashed' | 'none';
 	label?: (vals: Vals) => string;
+	/**
+	 * Moves the label off the centre, away from this point (e.g. the figure the polygon is drawn on), until its near edge
+	 * is `labelGap` px from the centre; label separation keeps pushing it that way. A square on a triangle's side is
+	 * smaller than its label on a phone: centred, the label covered the arrows and their names.
+	 */
+	labelAway?: V;
+	labelGap?: number;
 }
 
 interface Motion {
@@ -134,7 +141,8 @@ export function Poly(p: PolyProps): React.JSX.Element {
 		geo.setIndex(indices);
 		writeGeo(geo, coords);
 	}, [geo, points, indices]);
-	useLabel(p.label ? { lesson: p.lesson, text: p.label(vals), role: p.role, hot: p.id, at: () => info.center } : null);
+	const away = p.labelAway;
+	useLabel(p.label ? { lesson: p.lesson, text: p.label(vals), role: p.role, hot: p.id, at: () => info.center, away: away && (() => away), gap: p.labelGap } : null);
 	const hover = useHoverable(p.lesson, p.id, HOVER_RANK.fill);
 	const color = pal[p.role];
 	const alpha = p.fill ?? STYLE.fillA;

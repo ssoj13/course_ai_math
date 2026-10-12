@@ -159,11 +159,13 @@ describe('store contract', () => {
 	});
 	test('derive and the challenges read the initial values', () => {
 		const d = derive(INITIAL);
-		expect(d.k).toBe(1);
-		expect(close(d.dot, 0)).toBe(true);
+		// The first readout is the worked example x·s₅ = 4.80 (0.60 copies), not the strongest ruler (challenge 1).
+		expect([d.k, d.sine]).toEqual([5, true]);
+		expect(close(d.dot, 4.8)).toBe(true);
+		expect(close(d.coef, 0.6)).toBe(true);
 		expect(CHECKS.strongest(INITIAL)).toBe(false);
-		expect(CHECKS.strongest({ ...INITIAL, k: 2 })).toBe(true);
-		expect(CHECKS.alias({ ...INITIAL, src: SIGNALS.indexOf('fast'), x: signalOf('fast'), k: 2 })).toBe(true);
+		expect(CHECKS.strongest({ ...INITIAL, k: 2, sine: 0 })).toBe(true);
+		expect(CHECKS.alias({ ...INITIAL, src: SIGNALS.indexOf('fast'), x: signalOf('fast'), k: 2, sine: 0 })).toBe(true);
 		expect(CHECKS.exactEarly({ ...INITIAL, K: 6 })).toBe(true);
 		expect(CHECKS.exactEarly({ ...INITIAL, K: 5 })).toBe(false);
 	});

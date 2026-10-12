@@ -190,7 +190,7 @@ function RootSquare() {
 			<TileGrid lesson={LESSON} id="root" shape={(w) => squareBox(Math.sqrt(w.A as number))} role="vecC" count
 				label={labels ? () => 'A = ' + fmtAmt(A) : false} />
 		</Show>
-		<Measure at={0} len={s} text={'A^½ = ' + fmt4(s)} id="rootside" role="vecC" side="below" />
+		<Measure at={0} len={s} text={'A^(1/2) = ' + fmt4(s)} id="rootside" role="vecC" side="below" />
 		<Point lesson={LESSON} id="o" at={[0, 0]} role="muted" size={6} />
 	</>;
 }
@@ -208,7 +208,7 @@ function RootCube() {
 		</Show>
 		{/* Along the front bottom edge (the camera looks from +x +y +z), as in 0.2-2. */}
 		{s > 0 && <Arrow lesson={LESSON} id="rootside" from={[0, 0, s + EDGE_OFF]} to={[s, 0, s + EDGE_OFF]} role="vecC" drag="none" />}
-		{labels && <Label lesson={LESSON} id="rootside" at={[s / 2, 0, s + EDGE_OFF]} offset={[-10, 16]} role="vecC">{'V^⅓ = ' + fmt4(s)}</Label>}
+		{labels && <Label lesson={LESSON} id="rootside" at={[s / 2, 0, s + EDGE_OFF]} offset={[-10, 16]} role="vecC">{'V^(1/3) = ' + fmt4(s)}</Label>}
 	</>;
 }
 

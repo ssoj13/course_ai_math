@@ -9,7 +9,7 @@ import { useLocale, LocaleContext } from '../../i18n/react';
 import { OrbitControls, OrthographicCamera, PerspectiveCamera, View } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
-import { Box3, MOUSE, OrthographicCamera as OrthoCam, PerspectiveCamera as PerspCam, TOUCH, Vector3, type Group } from 'three';
+import { Box3, MOUSE, OrthographicCamera as OrthoCam, PerspectiveCamera as PerspCam, TOUCH, Vector3, type Group, type Object3D } from 'three';
 import type { V } from '../geom';
 import { usePalette } from '../palette';
 import { lessonStore, ShownCtx } from '../store';
@@ -19,7 +19,7 @@ import { axisPose, lerpPose, positionOf, poseOf, reducedMotion, springProgress, 
 import { ensureSceneHost } from './SceneHost';
 import { useSizeState, viewVisible } from './sizeModes';
 import { contentBox, DragLayer, DrawIn, GizmoSync, LabelLayer } from './view';
-import { fit2d, fit3d, MARGIN_2D, stepRefitDelay, type Bounds, type Part } from './framing';
+import { fit2d, fit3d, MARGIN_2D, outside, roomFrame, stepRefitDelay, union, type Bounds, type Part } from './framing';
 
 export interface StageProps {
 	lesson: string;
@@ -142,6 +142,32 @@ const gizmoCorner = (stage: HTMLElement | null): number => {
 const partsOf = new WeakMap<Box3, Part[]>();
 /** Plain bounds of a three Box3 for the pure framing math. */
 const boundsOf = (b: Box3): Bounds => ({ min: [b.min.x, b.min.y, b.min.z], max: [b.max.x, b.max.y, b.max.z] });
+/** World bounds of every `Room` under `root` (their union), or null when the scene declares none. */
+function roomOf(root: Object3D | null): Bounds | null {
+	if (!root) return null;
+	root.updateWorldMatrix(true, true);
+	const out = new Box3(), one = new Box3();
+	root.traverse((o) => {
+		const r = o.userData.room as Bounds | undefined;
+		if (r) out.union(one.set(new Vector3(...r.min), new Vector3(...r.max)).applyMatrix4(o.matrixWorld));
+	});
+	return out.isEmpty() ? null : boundsOf(out);
+}
+/** Quiet time after the last value change before the home view checks whether the figure left it (`outside`). */
+const GROW_MS = 250;
+
+/**
+ * Room the reader may drag the figure into, beyond what is drawn (Blender's View All frames objects, not a canvas):
+ * the home view frames the drawn figure plus as much of this box as keeps the figure at least MIN_FILL_2D of its own
+ * fit (framing.ts `roomFrame`; 3D: the whole box). Not part of the figure (`aux`), never drawn, never picked. Use it
+ * instead of an invisible mesh over the drag range, which made the figure tiny on phones. A drag past the framed area
+ * grows the home view after the drag.
+ */
+export function Room({ lo, hi }: { lo: V; hi: V }): React.JSX.Element {
+	const room: Bounds = { min: [lo[0], lo[1], lo[2] ?? 0], max: [hi[0], hi[1], hi[2] ?? 0] };
+	return <group userData={{ aux: true, room }} />;
+}
+
 /** Unit direction from the target to the default 3D camera. */
 const HOME_DIR = home3(1 / Math.hypot(...home3(1)));
 
@@ -164,6 +190,8 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 	const ortho = camera instanceof OrthoCam;
 	/** Figure bounds captured by the last home view (null: frame the extent, e.g. nothing drawn yet). */
 	const homeBox = useRef<Box3 | null>(null);
+	/** The scene's `Room` bounds captured with `homeBox` (null: none declared). */
+	const homeRoom = useRef<Bounds | null>(null);
 	/** Direction (target -> camera) of the 3D home view: the three-quarter view, or the one a scene asked for (`nav.frame`). */
 	const homeDir = useRef<typeof HOME_DIR>(HOME_DIR);
 	/** End of the settling period (performance.now()), 0 before the first frame; -1 once the reader took over. */
@@ -179,7 +207,7 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 	};
 	/** Zoom of the home view at this size: the extent until a figure was measured, then the figure. */
 	const fitZoom = (width = w, height = h) => {
-		const box = homeBox.current;
+		const box = framed(width, height);
 		const base = extentZoom(width, height);
 		if (!box) return base;
 		if (mode === '3d') return fit3dFor(box, width, height).zoom;
@@ -196,13 +224,26 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 		partsOf.set(box, parts);
 		return box;
 	};
-	/** Re-measures the figure (the home view frames it). */
+	/** Re-measures the figure and the scene's room (the home view frames them). */
 	const measure = (b: Box3 | null = figure()) => {
 		homeBox.current = b;
+		homeRoom.current = roomOf(content.current);
+	};
+	/**
+	 * The box the home view fits at this size: the measured figure plus the room it can afford (2D `roomFrame`), or
+	 * figure and room together in 3D; null before a figure was measured.
+	 */
+	const framed = (width: number, height: number): Box3 | null => {
+		const box = homeBox.current, room = homeRoom.current;
+		if (!box || !room) return box;
+		const b = mode === '2d' ? roomFrame(boundsOf(box), room, width, height, inset) : union(boundsOf(box), room);
+		const out = new Box3(new Vector3(...b.min), new Vector3(...b.max));
+		partsOf.set(out, [...(partsOf.get(box) ?? [{ box: boundsOf(box) }]), { box: room }]);
+		return out;
 	};
 	/** The home view for a `width` x `height` stage (default: the last measured size). */
 	const home = (width = w, height = h): Pose => {
-		const box = homeBox.current;
+		const box = framed(width, height);
 		if (mode === '2d') {
 			if (!box) return poseOf([center[0], center[1], 10], center, fitZoom(width, height));
 			const f = fit2d(boundsOf(box), width, height, inset);
@@ -422,6 +463,66 @@ function Nav({ reg, mode, extent: e, center, inset, w, h, pose, content }: NavPr
 		}
 		fit.current = f;
 		go(to);
+		atHome.current = true;
+	});
+	// The home view frames the drawn figure (plus what it can afford of the scene's Room), so a handle can be dragged
+	// past its edge. While the view is still home, once the values have been quiet for GROW_MS and no pointer is down
+	// (anywhere: a scrubbed chip under the stage moves the figure too), a figure that reaches outside the framed box grows the home view to hold it (the old figure and the
+	// new one), with the smooth view. It never shrinks on a drag (the view would breathe with every move) and never
+	// moves while the finger or mouse is still dragging.
+	const grow = useRef(0);
+	const pressed = useRef(false);
+	useEffect(() => {
+		const lesson = reg.card?.lesson;
+		if (!lesson) return;
+		const down = () => (pressed.current = true);
+		const up = () => {
+			if (!pressed.current) return;
+			pressed.current = false;
+			if (grow.current) grow.current = performance.now() + GROW_MS;
+			invalidate();
+		};
+		window.addEventListener('pointerdown', down, true);
+		window.addEventListener('pointerup', up, true);
+		window.addEventListener('pointercancel', up, true);
+		const off = lessonStore(lesson).subscribe((s, prev) => {
+			if (s.vals === prev.vals) return;
+			grow.current = performance.now() + GROW_MS;
+			invalidate();
+		});
+		return () => {
+			off();
+			window.removeEventListener('pointerdown', down, true);
+			window.removeEventListener('pointerup', up, true);
+			window.removeEventListener('pointercancel', up, true);
+		};
+	}, [reg, invalidate]);
+	useFrame(({ invalidate: again }) => {
+		const due = grow.current;
+		if (!due || !controls || !h) return;
+		if (settle.current > 0 || !atHome.current || anim.current) {
+			grow.current = 0;
+			return;
+		}
+		if (pressed.current) return;
+		if (performance.now() < due) {
+			again();
+			return;
+		}
+		grow.current = 0;
+		const fig = figure(), was = homeBox.current, frame = framed(w, h);
+		if (!fig || !was || !frame || !outside(boundsOf(frame), boundsOf(fig))) return;
+		const parts = [...(partsOf.get(was) ?? []), ...(partsOf.get(fig) ?? [])];
+		const both = was.clone().union(fig);
+		partsOf.set(both, parts);
+		homeBox.current = both;
+		const f = fitZoom();
+		if (camera instanceof OrthoCam && mode === '2d') {
+			controls.minZoom = f * ZOOM_2D[0];
+			controls.maxZoom = f * ZOOM_2D[1];
+		}
+		fit.current = f;
+		go(home());
 		atHome.current = true;
 	});
 	// A pointer press on the stage (a handle drag, a pan) ends the settling: the view is the reader's now.

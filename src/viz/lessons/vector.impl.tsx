@@ -4,6 +4,7 @@ import { useLocale } from '../../i18n/react';
 import { useVals } from '../store';
 import { add, norm, scale, type V } from '../geom';
 import { ViewportCard } from '../scene/ViewportCard';
+import { Room } from '../scene/Stage';
 import { Grid } from '../scene/Grid';
 import { Arrow } from '../scene/Arrow';
 import { Point } from '../scene/Point';
@@ -31,8 +32,9 @@ const O2: V = [0, 0];
 const TIP: readonly [number, number] = [12, -12];
 
 /**
- * The reach of a scene: an invisible box over everything the reader can make it draw. The home view frames the
- * figure's bounds, so framing the reach keeps the view still while arrows grow and move (same device as lesson 0.G).
+ * 3D: an invisible box over the default figure and its usual range, framed with it (the axes alone are not measured).
+ * 2D scenes declare their drag range as a `Room` instead: the home view frames the drawn arrow and only as much of the
+ * room as keeps the arrow readable on a phone.
  */
 function Reach({ lo, hi }: { lo: V; hi: V }) {
 	const c = lo.map((x, i) => (x + hi[i]) / 2);
@@ -81,7 +83,7 @@ function ArrowList() {
 	const p = v.v as number[];
 	const zero = norm(p) < 1e-9;
 	return <>
-		<Reach lo={[-RANGE_V.max, -RANGE_V.max]} hi={[RANGE_V.max, RANGE_V.max]} />
+		<Room lo={[-RANGE_V.max, -RANGE_V.max]} hi={[RANGE_V.max, RANGE_V.max]} />
 		{legs && <Legs id="v" from={O2} to={p} labels={labels} />}
 		<Arrow lesson={LESSON} id="v" to="v" role="vecA" label="v" />
 		<Point lesson={LESSON} id="o" at={O2} role="muted" size={6} />
@@ -108,7 +110,7 @@ function NoAddress() {
 	const a = arrow2(v);
 	const moved = norm(a.from) > 1e-9;
 	return <>
-		<Reach lo={[BOARD2.min, BOARD2.min]} hi={[BOARD2.max, BOARD2.max]} />
+		<Room lo={[BOARD2.min, BOARD2.min]} hi={[BOARD2.max, BOARD2.max]} />
 		{/* The same vector drawn from the origin: two drawings, one vector. */}
 		{ghost && !a.anchor && moved && <>
 			<Arrow lesson={LESSON} id="ghost" to={a.w} role="muted" />
@@ -149,7 +151,7 @@ function TranslateScene() {
 	const p0 = z.before[0], q0 = z.after[0], p2 = z.before[2], q2 = z.after[2];
 	const moved = norm(z.T) > 1e-9;
 	return <>
-		<Reach lo={[STRIP_LO[0] - 0.5, STRIP_LO[1] - 0.5]} hi={[STRIP_HI[0] + RANGE_T.max + 1, STRIP_HI[1] + RANGE_T.max + 1]} />
+		<Room lo={[STRIP_LO[0] - 0.5, STRIP_LO[1] - 0.5]} hi={[STRIP_HI[0] + RANGE_T.max + 1, STRIP_HI[1] + RANGE_T.max + 1]} />
 		{before && moved && <Strip pts={z.before} n={z.N} role="muted" nRole="muted" ghost />}
 		<Strip pts={z.after} n={z.N2} role="ink" nRole="vecB" ghost={false} />
 		{moved && <Arrow lesson={LESSON} id="T" from={p0} to={q0} role="vecA" drag="none" />}
@@ -205,8 +207,8 @@ function Between({ three }: { three: boolean }) {
 	// Point names are pushed directly away from the other point, so they never cover the arrow between them.
 	const away = (p: V, q: V): V => (zero ? add(p, three ? [-1, -1, 0] : [-1, -1]) : q);
 	return <>
-		{/* 2D: the reach of the board keeps the view still. 3D: a box around the default points (the full board cube looked tiny). */}
-		{three ? <Reach lo={[-2, -1, -2]} hi={[2.5, 2.5, 2]} /> : <Reach lo={[board.min, board.min]} hi={[board.max, board.max]} />}
+		{/* 2D: the board is room to drag into. 3D: a box around the default points (the full board cube looked tiny). */}
+		{three ? <Reach lo={[-2, -1, -2]} hi={[2.5, 2.5, 2]} /> : <Room lo={[board.min, board.min]} hi={[board.max, board.max]} />}
 		{ghost && !zero && <Arrow lesson={LESSON} id="dghost" to={z.d} role="muted" />}
 		{legs && !zero && <Legs id={id} from={z.start} to={z.end} labels={labels} />}
 		{!zero && <Arrow lesson={LESSON} id={id} from={z.start} to={z.end} role="vecA" drag="none" />}

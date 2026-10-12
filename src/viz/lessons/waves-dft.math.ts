@@ -378,11 +378,15 @@ export const LINKS: LessonLinks = {
 	timelines: { 'wd-k': whole('k', SPEC.k.min, SPEC.k.max), 'wd-K': whole('K', SPEC.K.min, SPEC.K.max), 'wd-S': whole('S', SPEC.S.min, SPEC.S.max) },
 };
 
+/**
+ * First state: the k = 5 sine ruler, the page's second worked example (x·s₅ = 4.80, 0.60 copies). At k = 1 every first
+ * readout was 0.00; k = 2 (cosine, 9.60) would hand the reader the answer of challenge 1 (the strongest ruler) on load.
+ */
 export const INITIAL: Record<string, Val> = {
 	src: 0,
 	x: signalOf('mix'),
-	k: 1,
-	sine: 0,
+	k: 5,
+	sine: 1,
 	K: 1,
 	shape: 0,
 	path: shapeOf('heart'),

@@ -1,6 +1,7 @@
 import { BoxGeometry } from 'three';
 import { t, type Locale } from '../../i18n/core';
 import { useLocale } from '../../i18n/react';
+import { Room } from '../scene/Stage';
 import { useStep, useVals } from '../store';
 import { type V } from '../geom';
 import { ViewportCard } from '../scene/ViewportCard';
@@ -60,7 +61,8 @@ function Distance2D() {
 	// away from its centroid. A zero leg has no inside: any side will do.
 	const g: V = legs ? [(z.P[0] + z.R[0] + z.Q[0]) / 3, (z.P[1] + z.R[1] + z.Q[1]) / 3] : [z.P[0] + 1, z.P[1] - 1];
 	return <>
-		<Reach lo={[-3.6, -1.6]} hi={[8.6, 9.6]} />
+		{/* Room for P and Q around the default triangle; the home view frames the drawn squares first. */}
+		<Room lo={[-3.6, -1.6]} hi={[8.6, 9.6]} />
 		<Show ov="squares">
 			<AreaTile lesson={LESSON} id="dx2" a={z.P} b={z.R} role="vecA" flip={flip} label={labels ? (a) => pow2(z.dx) + ' = ' + fmt2(a) : undefined} />
 			<AreaTile lesson={LESSON} id="dy2" a={z.R} b={z.Q} role="vecB" flip={flip} label={labels ? (a) => pow2(z.dy) + ' = ' + fmt2(a) : undefined} />

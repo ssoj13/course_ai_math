@@ -143,11 +143,22 @@ function Bar({ k, side }: { k: number; side: -1 | 1 }) {
 	</group>;
 }
 
+/**
+ * The value of the selected frequency's bar (copies of its ruler) at the bar's end, outward: the bars have no value
+ * axis, so without it the reader had the number only from the readout under the scene.
+ */
+function BarValue({ k, side, value }: { k: number; side: -1 | 1; value: number }) {
+	const x = kx(k) + side * (BAR + 0.03), h = value * BAR_H;
+	return <Label lesson={LESSON} id={(side < 0 ? 'bc' : 'bs') + k} at={[x, h]} away={[x, h >= 0 ? h - 1 : h + 1]} gap={3}
+		role={side < 0 ? 'vecB' : 'vecC'}>{fmt2(value)}</Label>;
+}
+
 function Spectrum() {
 	const v = useVals(LESSON);
 	const labels = useOverlay('labels');
 	const sel = v.k as number;
 	const ks = Array.from({ length: HALF + 1 }, (_, k) => k);
+	const bin = derive(v).bins[sel];
 	return <>
 		<Reach lo={[kx(0) - 0.6, -3.7]} hi={[kx(HALF) + 0.6, 3.2]} />
 		{/* The selected frequency: a faint column behind its two bars. */}
@@ -160,6 +171,10 @@ function Spectrum() {
 			{k !== 0 && k !== HALF && <Bar k={k} side={1} />}
 			{labels && <Label lesson={LESSON} id={'k' + k} at={[kx(k), K_ROW]} role={k === sel ? 'hot' : 'muted'}>{k}</Label>}
 		</group>)}
+		{labels && <>
+			<BarValue k={sel} side={-1} value={coefA(bin)} />
+			{sel !== 0 && sel !== HALF && <BarValue k={sel} side={1} value={coefB(bin)} />}
+		</>}
 	</>;
 }
 

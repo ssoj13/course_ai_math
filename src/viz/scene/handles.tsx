@@ -554,6 +554,9 @@ const LABEL_GAP = 2;
 
 const overlaps = (a: Obstacle, b: Obstacle, dx: number, dy: number) =>
 	Math.abs(a.x + dx - b.x) * 2 < a.w + b.w + 2 * LABEL_GAP && Math.abs(a.y + dy - b.y) * 2 < a.h + b.h + 2 * LABEL_GAP;
+/** Area (px²) by which `a`, moved by (dx, dy), overlaps `b` including the gap: 0 when they are clear. */
+const overlapArea = (a: Obstacle, b: Obstacle, dx: number, dy: number) =>
+	Math.max(0, (a.w + b.w) / 2 + LABEL_GAP - Math.abs(a.x + dx - b.x)) * Math.max(0, (a.h + b.h) / 2 + LABEL_GAP - Math.abs(a.y + dy - b.y));
 
 /**
  * Keeps object labels from printing over each other (e.g. "shoulder" and "min reach" at one point on a phone) and
@@ -591,19 +594,36 @@ function widgetBox(stage: HTMLElement | null): readonly Obstacle[] {
 export function separate(list: Placed[], obstacles: readonly Obstacle[] = noObstacles, stage?: readonly [number, number]): void {
 	// Tick numbers first: two axes' numbers meet only around the origin (x "−1" under the axis, y "−1" left of it);
 	// the later one is dropped rather than moved off its tick.
+	// A tick number cut by the stage edge is hidden too: half a number ("6" of "−6" at LN-1's left edge) misreads.
 	for (let i = 0; i < list.length; i++) {
 		const a = list[i];
-		if (a.small) for (let j = 0; j < i && !a.hide; j++) if (list[j].small && !list[j].hide && overlaps(a, list[j], 0, 0)) a.hide = true;
+		if (!a.small) continue;
+		if (stage && (a.x - a.w / 2 < 0 || a.x + a.w / 2 > stage[0] || a.y - a.h / 2 < 0 || a.y + a.h / 2 > stage[1])) a.hide = true;
+		for (let j = 0; j < i && !a.hide; j++) if (list[j].small && !list[j].hide && overlaps(a, list[j], 0, 0)) a.hide = true;
 	}
 	for (let i = 0; i < list.length; i++) {
 		const a = list[i];
 		if (a.small) continue;
-		const clash = (dx: number, dy: number) => {
-			for (let j = 0; j < list.length; j++) if (j !== i && !list[j].hide && (list[j].small || j < i) && overlaps(a, list[j], dx, dy)) return true;
+		// `ahead`: a NEW slot must also be clear of the labels not settled yet, at their own places. Without it a label
+		// moved down onto the next lane's label (LC-2 "DB²" onto "AD²" at 360 px), which then found no free slot at all.
+		const clash = (dx: number, dy: number, ahead = false) => {
+			for (let j = 0; j < list.length; j++) if (j !== i && !list[j].hide && (list[j].small || j < i || ahead) && overlaps(a, list[j], dx, dy)) return true;
 			for (const o of obstacles) if (overlaps(a, o, dx, dy)) return true;
 			// A slot that cuts the label at the stage edge is not free (DP-4's N·L label at 360 px was pushed out of the view).
 			if (stage && (a.x + dx - a.w / 2 < 0 || a.x + dx + a.w / 2 > stage[0] || a.y + dy - a.h / 2 < 0 || a.y + dy + a.h / 2 > stage[1])) return true;
 			return false;
+		};
+		/** How badly a slot clashes: overlap with settled labels, tick numbers and widgets, plus the area cut by the stage edge. */
+		const cost = (dx: number, dy: number) => {
+			let c = 0;
+			for (let j = 0; j < list.length; j++) if (j !== i && !list[j].hide && (list[j].small || j < i)) c += overlapArea(a, list[j], dx, dy);
+			for (const o of obstacles) c += overlapArea(a, o, dx, dy);
+			if (stage) {
+				const x0 = a.x + dx - a.w / 2, x1 = a.x + dx + a.w / 2, y0 = a.y + dy - a.h / 2, y1 = a.y + dy + a.h / 2;
+				const cut = (Math.max(0, -x0) + Math.max(0, x1 - stage[0])) * a.h + (Math.max(0, -y0) + Math.max(0, y1 - stage[1])) * a.w;
+				c += cut;
+			}
+			return c;
 		};
 		if (!clash(0, 0)) continue;
 		const sy = a.h + LABEL_GAP;
@@ -618,12 +638,19 @@ export function separate(list: Placed[], obstacles: readonly Obstacle[] = noObst
 			return [[o.x - gx - a.x, 0], [0, o.y + gy - a.y], [o.x + gx - a.x, 0], [0, o.y - gy - a.y]];
 		});
 		const tries: readonly (readonly [number, number])[] = [...out, [0, sy], [0, -sy], [sx, 0], [-sx, 0], [0, 2 * sy], [0, -2 * sy], [sx, sy], [-sx, sy], [sx, -sy], [-sx, -sy], ...escape];
-		for (const [dx, dy] of tries) {
-			if (clash(dx, dy)) continue;
-			a.x += dx;
-			a.y += dy;
-			break;
+		// First a slot clear of everything (settled and still to come), then one clear of what is settled; when nothing is
+		// free (a crowded phone stage), the slot that overlaps least instead of staying fully on top of another label.
+		const pick = tries.find(([dx, dy]) => !clash(dx, dy, true)) ?? tries.find(([dx, dy]) => !clash(dx, dy));
+		let best: readonly [number, number] = pick ?? [0, 0];
+		if (!pick) {
+			let least = cost(0, 0);
+			for (const t of tries) {
+				const c = cost(t[0], t[1]);
+				if (c < least - 1e-9) { least = c; best = t; }
+			}
 		}
+		a.x += best[0];
+		a.y += best[1];
 	}
 }
 

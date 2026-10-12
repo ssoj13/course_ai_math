@@ -130,7 +130,7 @@ Implemented (Task 9, 2026-10-11):
   `<SceneIsland caption="...">` (`src/viz/SceneIsland.astro`); DOM-only controls use `client:load` so they take their
   space before hydration. Why: MDX keeps `client:only` imports in the server module, and drei/fiber CJS `main` calls
   `require("three")` → `THREE_CJS_DEPRECATED` at prerender.
-- `SceneIsland` renders the skeleton `.lab-vp-skel` (28 px header, 16:10 spacer, chip rows under 720 px, 22 px status)
+- `SceneIsland` renders the skeleton `.lab-vp-skel` (28 px header, 16:10 spacer, chip rows under 720 px, 22 px status; 32 px = two lines under 720 px)
   so nothing shifts on hydration; the island `.lab-vp-card` fills the same box. Accessible name = server figcaption.
 - **Stacking**: Starlight's `.main-pane` has `isolation: isolate`; lab.css opts out with
   `.main-pane:has(.lab-vp) { isolation: auto }`. Chrome over the viewport uses z-index 1..6. Never add
@@ -207,7 +207,10 @@ Implemented (Task 9, 2026-10-11):
 - Label placement (`separate` in handles.tsx): tick numbers are fixed obstacles for object labels (a tick printed over
   another tick is hidden), the navigation widget (gizmo / XY corner) is an obstacle, a slot cutting the label at the
   free stage edge (N-panel inset excluded) is not free, and a label with `away` keeps moving in its push direction
-  before other sides. `Label` takes `away`/`gap`. Registration order = priority (region names after values).
+  before other sides. A moved label first takes a slot also clear of labels not settled yet (at their own places), then
+  one clear of the settled ones; with no free slot it takes the least-overlap slot (overlap + edge-cut area), never
+  stays fully on another label. Tick numbers cut by the stage edge are hidden. Poly `labelAway`/`labelGap` lean a region
+  name out of the figure (DP-1 squares on phones). `Label` takes `away`/`gap`. Registration order = priority (region names after values).
 - Derived geometry (projection foot etc.) is computed in the lesson with `useVal` and passed as literals; guard zero
   vectors (`project` throws on zero).
 - 0.2 powers: `FnCurve` (`scene/FnCurve.tsx`: y = f(t, vals) sampled uniformly on [from, to] on `Stroke`; a non-finite
@@ -232,11 +235,23 @@ Implemented (Task 9, 2026-10-11):
   `scene/chips.ts` from the SAME rows passed to SceneIsland and ViewportCard (card throws on mismatch). `N` toggles it.
 - Navigation (Ruling T): plain wheel scrolls the page (`gateWheel`); Ctrl/Cmd+wheel and pinch zoom. 2D: MMB/RMB pan.
   3D: LMB/MMB orbit, Shift+MMB pan. Home view = View All of the content (`contentBox`, aux furniture excluded).
+  Drag room is `<Room lo hi />` (Stage.tsx; aux, never drawn), NOT an invisible mesh over the drag range: 2D frames the
+  figure plus as much room as keeps the figure >= MIN_FILL_2D (0.5) of its own fit (framing.ts `roomFrame`, bisected blend),
+  3D the union. After a value change, once values are quiet 250 ms and no pointer is down (window-wide), a figure that left
+  the framed box (`outside`) grows the home view (union) with the smooth view, only while still at home. Converted: VE-1/2/3/5,
+  VA-3 (lattice is aux), 0.3-1. [ ] Other lessons' drag-range Reach meshes (squares, length, projection, basis,
+  cross-product, VA-1/2) are candidates for Room after a visual check.
   2D (`fit2d`): margin 24 px; the figure stays clear of the XY corner widget (CORNER_2D 50 px on the left OR the
   bottom, whichever keeps it larger). 3D (`fit3d`): per-object enclosure = the tighter of its box and bounding sphere
   (`Part[]`; a sphere's box corners left DP-4's ball at a third of the view), and the figure stays left of or below the
   gizmo square (measured from `.lab-gizmo`).
 - Gizmo is DOM/SVG (`Gizmo.tsx`): drei GizmoHelper renders into the wrong View on a shared canvas. Grid = drei `Grid`.
+- Russian register: the whole course (prose, quizzes, UI dictionary incl. status/viewport hints) uses formal «вы»
+  imperatives (Тяните, Введите); never «ты». [ ] `du.*` (DotUnit, other owner) still has «ты» strings.
+- LC-0 overview omits its laned piece names when the free stage is < 420 px (`LANES_MIN_PX`): the chips under the
+  scene carry the same numbers (row id = piece id, hover links) and the detail card names each piece.
+- Status bar on phones: two 11 px lines in 32 px (both skeleton and card read `--lab-vp-status`); only overflow drops to three
+  9 px lines (`data-fit=wrap`, measured by scroll width OR height).
 - Status hints: `status={{ hints: { [id]: Hint }, idle?, state? }}`, Hint = text or `(vals) => string|null` or
   `{ mouse, touch }`; tokens like `[N]` are explicit. Tooltips via `useTip` (500 ms).
 - Motion (`scene/motion.ts`): critically damped `springStep`, `springProgress`, `omegaFor`; draw-in `reg.reveal` over
