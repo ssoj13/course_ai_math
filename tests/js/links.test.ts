@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test';
 import { lessonStore } from '../../src/viz/store';
 import { powersLinks } from '../../src/viz/links';
+import { stubFrames, timerFrames } from './frames';
 const make = () => lessonStore('links-'+Math.random(), {x:3,A:9,V:27,from:0,n:2,k:3}, powersLinks());
 test('every atomic powers snapshot is coherent, including equal input provenance', () => {
  const s=make(); let calls=0;
@@ -23,11 +24,12 @@ test('authoritative integers, bounded timeline history and complete cancellation
  expect(s.getState().vals).toMatchObject({x:3,A:9,V:27,from:0,other:7});
 });
 test('shown powers derive from canonical x through ease and retarget', async () => {
- const old=globalThis.requestAnimationFrame;
- globalThis.requestAnimationFrame=cb=>setTimeout(()=>cb(performance.now()),16) as unknown as number;
+ const {raf,caf}=timerFrames();const restoreFrames=stubFrames(raf,caf);
  const s=make();let intermediate=0;
  const off=s.subscribe(st=>{const x=st.shown.x as number;expect(st.shown.A).toBe(x*x);expect(st.shown.V).toBe(x*x*x);if(x!==3&&x!==2&&x!==4)intermediate++});
+ try{
  s.getState().set('A',4,'ease');await new Promise(r=>setTimeout(r,40));
  s.getState().set('V',64,'ease');await new Promise(r=>setTimeout(r,400));
- off();globalThis.requestAnimationFrame=old;expect(intermediate).toBeGreaterThan(1);
+ }finally{off();restoreFrames()}
+ expect(intermediate).toBeGreaterThan(1);
 });

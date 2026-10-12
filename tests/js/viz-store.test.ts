@@ -1,22 +1,25 @@
 import { expect, test } from 'bun:test';
 import { hotOff, hotOn, lessonStore } from '../../src/viz/store';
 
+// Test-only store ids: a real lesson id would be created here without the lesson's links when this file runs first,
+// and the lesson module's own lessonStore(id, init, links) would then throw (bun shares one registry across files).
+
 test('one store per lesson id, shared by every caller (islands share it via the module singleton)', () => {
-	const a = lessonStore('dot-product', { theta: 60 });
-	const b = lessonStore('dot-product', { theta: 999 }); // later init must not overwrite
+	const a = lessonStore('vs-one', { theta: 60 });
+	const b = lessonStore('vs-one', { theta: 999 }); // later init must not overwrite
 	expect(a).toBe(b);
 	expect(a.getState().vals.theta).toBe(60);
-	expect(lessonStore('projection')).not.toBe(a);
+	expect(lessonStore('vs-other')).not.toBe(a);
 });
 
 test('init merges keys that are missing (two islands may declare different defaults)', () => {
-	lessonStore('basis', { u1: [1, 0] });
-	const s = lessonStore('basis', { u2: [0, 1] });
+	lessonStore('vs-merge', { u1: [1, 0] });
+	const s = lessonStore('vs-merge', { u2: [0, 1] });
 	expect(s.getState().vals).toEqual({ u1: [1, 0], u2: [0, 1] });
 });
 
 test('set, hot and step', () => {
-	const s = lessonStore('length');
+	const s = lessonStore('vs-length');
 	s.getState().set('v', [3, 4]);
 	s.getState().setHot(['norm', 'square']);
 	s.getState().setStep('derive', 2);

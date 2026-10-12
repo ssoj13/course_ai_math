@@ -1,4 +1,4 @@
-import './dom';
+import { stubFrames } from './dom';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
@@ -40,10 +40,8 @@ test('proof current reveal is independent of max history; only current expansion
  await act(async()=>root.unmount());host.remove();
 });
 test('reader pause cancels the single clock; resume and unmount preserve and clean controlled placement',async()=>{
- const originalRaf=globalThis.requestAnimationFrame,originalCancel=globalThis.cancelAnimationFrame;
  let next=0;const pending=new Map<number,FrameRequestCallback>();
- globalThis.requestAnimationFrame=cb=>{pending.set(++next,cb);return next};
- globalThis.cancelAnimationFrame=id=>{pending.delete(id)};
+ const restoreFrames=stubFrames(cb=>{pending.set(++next,cb);return next},id=>{pending.delete(id)});
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host),store=lessonStore(LESSON);
  store.getState().setMany(INITIAL);store.getState().setStep('cut',5);
  try{
@@ -64,7 +62,7 @@ test('reader pause cancels the single clock; resume and unmount preserve and cle
   expect(store.getState().vals.proof_fade_play).toBe(0);expect(store.getState().vals.cut_play).toBe(1);expect(pending.size).toBe(1);
   await act(async()=>root.unmount());
   expect(store.getState().vals.cut_play).toBe(0);expect(pending.size).toBe(0);
- }finally{host.remove();globalThis.requestAnimationFrame=originalRaf;globalThis.cancelAnimationFrame=originalCancel}
+ }finally{host.remove();restoreFrames()}
 });
 test('every actual formula renders both layouts and stage marks',async()=>{
  const st=lessonStore(LESSON).getState();st.setMany(INITIAL);
@@ -86,9 +84,8 @@ test('every actual formula renders both layouts and stage marks',async()=>{
 });
 
 for(const locale of ['en','ru'] as const)test('LC review regressions: live prose, row aliases and length/area readouts '+locale,async()=>{
- // Other DOM fixtures install a synchronous rAF; these text/link assertions do not advance animation time.
- const raf=globalThis.requestAnimationFrame,cancel=globalThis.cancelAnimationFrame;
- let frame=0;globalThis.requestAnimationFrame=()=>++frame;globalThis.cancelAnimationFrame=()=>{};
+ // These text/link assertions do not advance animation time: frames are counted, never run.
+ let frame=0;const restoreFrames=stubFrames(()=>++frame);
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host),store=lessonStore(LESSON);
  store.getState().setMany(INITIAL);store.getState().setStep('cut',0);store.getState().setStep('proof',0);store.getState().setHot([]);
  const text=(id:string)=>host.querySelector('[data-timeline="'+id+'"] p')!.textContent!;
@@ -146,5 +143,5 @@ for(const locale of ['en','ru'] as const)test('LC review regressions: live prose
   expect(readout()).toContain(locale==='en'?'signed area':'площадь со знаком');
   await act(async()=>store.getState().setMany({a:3,b:3,th:0}));
   expect(readout()).toContain(locale==='en'?'Zero signed area':'Нулевая площадь со знаком');
- }finally{await act(async()=>root.unmount());store.getState().setMany(INITIAL);host.remove();globalThis.requestAnimationFrame=raf;globalThis.cancelAnimationFrame=cancel}
+ }finally{await act(async()=>root.unmount());store.getState().setMany(INITIAL);host.remove();restoreFrames()}
 });

@@ -1,4 +1,4 @@
-import './dom';
+import {stubFrames} from './dom';
 import {expect,test} from 'bun:test';
 import {act} from 'react';
 import {createRoot} from 'react-dom/client';
@@ -8,9 +8,8 @@ import {createStage,type Draggable} from '../../src/viz/scene/handles';
 import {lessonStore} from '../../src/viz/store';
 import {ROWSLAMP,moveLight,lightLink,probeLink} from '../../src/viz/demo/engine.rows';
 test('mounted radial field follows large registry truth, steps/types without box bounds and cancels touch',()=>{
- const oldRAF=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
  let frame:FrameRequestCallback|undefined;
- globalThis.requestAnimationFrame=fn=>{frame=fn;return 1};globalThis.cancelAnimationFrame=()=>{frame=undefined};
+ const restoreFrames=stubFrames(fn=>{frame=fn;return 1},()=>{frame=undefined});
  HTMLElement.prototype.setPointerCapture=()=>{};
  const id='radial-field-'+Math.random(),s=lessonStore(id,{nl_light:[3,1.5,-1.2],nl_pt:[0,1.5,0],nl_raw:0},{groups:[lightLink,probeLink]});
  const rows=ROWSLAMP('en'),reg=createStage('3d',{lesson:id,id:'lamp',overlays:[],ranges:rowRanges(rows)});
@@ -36,5 +35,5 @@ test('mounted radial field follows large registry truth, steps/types without box
  expect(x()).toBe(2.4);
  act(()=>void f.dispatchEvent(new PointerEvent('pointercancel',{bubbles:true,pointerId:1,pointerType:'touch'})));
  expect(s.getState().vals.nl_light).toEqual(before.vals.nl_light);expect(s.getState().shown.nl_light).toEqual(before.shown.nl_light);
- }finally{act(()=>root.unmount());host.remove();globalThis.requestAnimationFrame=oldRAF;globalThis.cancelAnimationFrame=oldCancel}
+ }finally{act(()=>root.unmount());host.remove();restoreFrames()}
 });

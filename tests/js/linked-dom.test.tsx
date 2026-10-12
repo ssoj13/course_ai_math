@@ -1,4 +1,4 @@
-import './dom';
+import {useFrameStub} from './dom';
 import {afterEach,beforeEach,expect,test} from 'bun:test';
 import {act,type ReactElement} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
@@ -15,7 +15,8 @@ import {powersLinks} from '../../src/viz/links';
 import '../../src/i18n/ui';
 const roots:Root[]=[];
 let frame:FrameRequestCallback|undefined;
-beforeEach(()=>{HTMLElement.prototype.setPointerCapture=()=>{};globalThis.requestAnimationFrame=cb=>{frame=cb;return 1};globalThis.cancelAnimationFrame=()=>{frame=undefined}});
+useFrameStub(()=>({raf:cb=>{frame=cb;return 1},caf:()=>{frame=undefined}}));
+beforeEach(()=>{HTMLElement.prototype.setPointerCapture=()=>{}});
 afterEach(()=>{for(const r of roots.splice(0))act(()=>r.unmount());document.body.innerHTML='';frame=undefined});
 function mount(el:ReactElement){const host=document.createElement('div');document.body.append(host);const root=createRoot(host);roots.push(root);act(()=>root.render(el));return {host,render:(el:ReactElement)=>act(()=>root.render(el))}}
 const ptr=(type:string,x:number)=>new PointerEvent(type,{bubbles:true,clientX:x,pointerId:1,pointerType:'mouse'});

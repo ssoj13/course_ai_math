@@ -1,4 +1,4 @@
-import './dom';
+import { useFrameStub } from './dom';
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -18,13 +18,9 @@ function mount(el: ReactElement): HTMLElement {
 }
 
 // happy-dom lacks pointer capture; frames run synchronously so each pointermove is applied before the next one.
+useFrameStub(() => ({ raf: (cb) => (cb(0), 1) }));
 beforeEach(() => {
 	HTMLElement.prototype.setPointerCapture = () => {};
-	globalThis.requestAnimationFrame = (cb) => {
-		cb(0);
-		return 1;
-	};
-	globalThis.cancelAnimationFrame = () => {};
 });
 
 afterEach(() => {

@@ -1,4 +1,4 @@
-import './dom';
+import { captureFrames } from './dom';
 import { afterEach, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -105,10 +105,8 @@ test('request targets documentElement; late success after unmount exits browser 
 });
 test('browser-exit chrome reveal restores exact visibility/focus and cancels on mode change or unmount',async()=>{
  const a=fixture('a'),b=fixture('b');
- const savedRAF=globalThis.requestAnimationFrame,savedCancel=globalThis.cancelAnimationFrame;
- let next=0;const frames=new Map<number,FrameRequestCallback>();
- globalThis.requestAnimationFrame=fn=>{frames.set(++next,fn);return next};
- globalThis.cancelAnimationFrame=id=>{frames.delete(id)};
+ // Only sizeModes' own frames are captured: "nothing pending" must not count eases other files left running.
+ const {frames,restore:restoreFrames}=captureFrames(/sizeModes\.ts/);
  const tick=()=>act(()=>{const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn(0))});
  document.documentElement.requestFullscreen=async()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:document.documentElement})};
  const full=async()=>{a.buttons[1].focus();await act(async()=>{a.buttons[1].click();await Promise.resolve()})};
@@ -122,7 +120,7 @@ test('browser-exit chrome reveal restores exact visibility/focus and cancels on 
   expect(a.el.style.visibility).toBe('visible');expect(frames.size).toBe(0);expect(b.buttons[0].getAttribute('aria-pressed')).toBe('true');
   key(b.el,'Escape');await full();exit();act(()=>clean.shift()!());
   expect(a.el.style.visibility).toBe('visible');expect(frames.size).toBe(0);
- } finally {globalThis.requestAnimationFrame=savedRAF;globalThis.cancelAnimationFrame=savedCancel}
+ } finally {restoreFrames()}
 });
 test('system exit normalizes full mode; switching owners keeps single host',async()=>{
  const a=fixture('a'),b=fixture('b');
@@ -162,9 +160,7 @@ test('pending native-exit semantic focus restoration yields to a new owner',asyn
  const root=createRoot(host);roots.push(root);
  const render=(text:string)=>act(()=>root.render(<Formula lesson="pending-focus" label="formula" tex={String.raw`\t{x}{`+text+'}'}/>));
  render('x');act(()=>host.querySelector<HTMLElement>('[data-t=x]')!.focus());
- const oldRAF=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
- const frames=new Map<number,FrameRequestCallback>();let id=0;
- globalThis.requestAnimationFrame=fn=>{frames.set(++id,fn);return id};globalThis.cancelAnimationFrame=n=>{frames.delete(n)};
+ const {frames,restore:restoreFrames}=captureFrames(/sizeModes\.ts/);
  document.documentElement.requestFullscreen=async()=>{Object.defineProperty(document,'fullscreenElement',{configurable:true,value:document.documentElement})};
  try{
   await act(async()=>{toggleSize('pending-formula','full');await Promise.resolve()});
@@ -174,5 +170,5 @@ test('pending native-exit semantic focus restoration yields to a new owner',asyn
   render('z');act(()=>toggleSize('pending-other','wide'));
   expect(frames.size).toBe(0);expect(b.el.contains(document.activeElement)).toBe(true);
   expect(a.el.style.visibility).toBe('');
- }finally{globalThis.requestAnimationFrame=oldRAF;globalThis.cancelAnimationFrame=oldCancel}
+ }finally{restoreFrames()}
 });

@@ -1,4 +1,4 @@
-import './dom';
+import { useFrameStub } from './dom';
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -12,10 +12,9 @@ import '../../src/i18n/ui';
 
 const roots: Root[] = [];
 let frame: FrameRequestCallback | undefined;
+useFrameStub(() => ({ raf: (cb) => { frame = cb; return 1; }, caf: () => { frame = undefined; } }));
 beforeEach(() => {
 	HTMLElement.prototype.setPointerCapture = () => {};
-	globalThis.requestAnimationFrame = (cb) => { frame = cb; return 1; };
-	globalThis.cancelAnimationFrame = () => { frame = undefined; };
 	lessonStore(LESSON).getState().setMany({ ...INITIAL });
 });
 afterEach(() => {

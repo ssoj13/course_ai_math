@@ -15,3 +15,6 @@ if (!globalThis.document) GlobalRegistrator.register();
 // KaTeX checks compatMode when it is first imported and warns in quirks mode; happy-dom documents have no doctype.
 Object.defineProperty(document, 'compatMode', { value: 'CSS1Compat', configurable: true });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Frame-clock stubs that always restore the originals (one process for all files; see frames.ts).
+export { captureFrames, stubFrames, timerFrames, useFrameStub, type FramePair } from './frames';

@@ -1,10 +1,11 @@
 import {expect,test} from 'bun:test';
 import {lessonStore} from '../../src/viz/store';
+import {stubFrames} from './frames';
 import {powersLinks} from '../../src/viz/links';
 
 test('cut to truth target cancels pending and applied independent/canonical springs',async()=>{
- const old=globalThis.requestAnimationFrame;let frame:FrameRequestCallback|undefined;
- globalThis.requestAnimationFrame=cb=>{frame=cb;return 1};
+ let frame:FrameRequestCallback|undefined;
+ const restoreFrames=stubFrames(cb=>{frame=cb;return 1});
  try{
  for(const applied of [false,true])for(const channel of ['q','A','x','V'] as const){
   const s=lessonStore('cut-'+Math.random(),{q:0,x:3,A:9,V:27,from:0,n:2,k:3},powersLinks());
@@ -18,5 +19,5 @@ test('cut to truth target cancels pending and applied independent/canonical spri
   const shown=s.getState().shown;const f=frame;frame=undefined;f?.(performance.now());
   expect(s.getState().shown).toBe(shown);
  }
- }finally{globalThis.requestAnimationFrame=old}
+ }finally{restoreFrames()}
 });

@@ -1,4 +1,4 @@
-import './dom';
+import { useFrameStub } from './dom';
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -10,9 +10,8 @@ import { lessonStore } from '../../src/viz/store';
 import '../../src/i18n/ui';
 
 const roots: Root[] = [];
+useFrameStub(() => ({ raf: () => 1 }));
 beforeEach(() => {
-	globalThis.requestAnimationFrame = () => 1;
-	globalThis.cancelAnimationFrame = () => {};
 	const st = lessonStore(LESSON).getState();
 	st.setMany({ ...INITIAL });
 	st.setStep('dis', 0);

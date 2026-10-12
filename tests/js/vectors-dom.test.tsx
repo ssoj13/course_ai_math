@@ -1,4 +1,4 @@
-import './dom';
+import { useFrameStub } from './dom';
 import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -19,10 +19,9 @@ import { INITIAL as INIT_VA, LESSON as VA } from '../../src/viz/lessons/vector-a
  * write the same keys the scenes draw.
  */
 const roots: Root[] = [];
+useFrameStub(() => ({ raf: () => 1 }));
 beforeEach(() => {
 	HTMLElement.prototype.setPointerCapture = () => {};
-	globalThis.requestAnimationFrame = () => 1;
-	globalThis.cancelAnimationFrame = () => {};
 	lessonStore(VE).getState().setMany({ ...INIT_VE });
 	lessonStore(VA).getState().setMany({ ...INIT_VA });
 	lessonStore(VE).getState().setHot([]);
