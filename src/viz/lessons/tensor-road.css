@@ -1,0 +1,122 @@
+/*
+ * Lesson 3.1 page-side controls. The shape readout and the memory strip print numbers in the scene's axis colours,
+ * which are tuned for the always-dark viewport, so those two boxes use the viewport chrome background in both site
+ * themes (the same tokens as the card above them). Everything else follows the Starlight theme.
+ */
+.tr-controls {
+	display: grid;
+	gap: 0.6rem;
+	margin-block: 0.75rem 1.5rem;
+}
+.tr-hud {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.3rem 1.2rem;
+	padding: 0.45rem 0.75rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 0.85rem;
+}
+.tr-hud code {
+	background: none;
+	color: inherit;
+	padding: 0;
+}
+.tr-tuple {
+	white-space: nowrap;
+}
+.tr-note {
+	margin: 0;
+	font-size: 0.9rem;
+}
+.tr-picks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+	margin-bottom: 0.4rem;
+}
+.tr-picks button {
+	font: inherit;
+	font-size: 0.85rem;
+	padding: 0.2rem 0.6rem;
+	border: 1px solid var(--sl-color-gray-4);
+	border-radius: 0.3rem;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+.tr-picks button[aria-checked='true'] {
+	font-weight: 700;
+	border-color: var(--viz-hot);
+}
+.tr-index {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.4rem 0.6rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+}
+.tr-check {
+	display: inline-flex;
+	gap: 0.5rem;
+	align-items: flex-start;
+}
+.tr-check input {
+	margin-top: 0.35em;
+}
+.tr-formula {
+	margin: 0;
+	padding: 0.45rem 0.75rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 0.9rem;
+	overflow-wrap: anywhere;
+}
+.tr-strip {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	padding: 0.4rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+}
+.tr-cell {
+	display: inline-grid;
+	min-width: 2.6em;
+	padding: 1px 2px;
+	border: 1px solid var(--viz-grid);
+	background: var(--viz-field);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 0.72rem;
+	line-height: 1.25;
+	text-align: center;
+	cursor: pointer;
+}
+.tr-cell.is-hot {
+	background: var(--viz-hot-bg);
+}
+.tr-cell.is-sel {
+	outline: 2px solid var(--viz-hot);
+	outline-offset: -2px;
+}
+.tr-addr,
+.tr-step {
+	color: var(--viz-muted);
+	font-size: 0.65rem;
+}
+.tr-more {
+	align-self: center;
+	padding: 0 0.4rem;
+	color: var(--viz-muted);
+	font-size: 0.75rem;
+}

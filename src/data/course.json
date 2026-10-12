@@ -195,6 +195,18 @@
         "title": "Векторы",
         "summary": "Стрелки как списки чисел: длина, скалярное произведение, проекция, базисы и эмбеддинги."
       }
+    },
+    {
+      "slug": "tensors",
+      "title": "Tensors",
+      "summary": "Numbers on grids with any number of axes: shapes, real data, memory and strides.",
+      "lessons": [
+        { "slug": "tensor-road", "title": "What a tensor is: the road from a number to N dimensions", "short": "What a tensor is", "summary": "Each new axis repeats the whole previous object: scalar, row, sheet, block, stacks of blocks; shape, index, address.", "ru": { "title": "Что такое тензор: дорога от числа к N измерениям", "short": "Что такое тензор", "summary": "Каждая новая ось повторяет весь предыдущий объект: число, строка, лист, блок, стопки блоков; форма, индекс, адрес." } }
+      ],
+      "ru": {
+        "title": "Тензоры",
+        "summary": "Числа в сетках с любым числом осей: формы, реальные данные, память и шаги."
+      }
     }
   ]
 }
