@@ -198,6 +198,20 @@
       }
     },
     {
+      "slug": "matrices",
+      "part": 2,
+      "title": "Matrices",
+      "summary": "A matrix moves the whole grid at once: columns are where the basis lands, rows are dot products.",
+      "lessons": [
+        { "slug": "linear-transformations", "title": "Linear transformations", "short": "Linear transformations", "summary": "Grid lines stay straight and evenly spaced, the origin stays put; where the basis lands decides everything.", "ru": { "title": "Линейные преобразования", "short": "Линейные преобразования", "summary": "Линии сетки остаются прямыми и равномерными, начало координат на месте; всё решает, куда попадает базис." } },
+        { "slug": "matrix-columns", "title": "A matrix = images of the basis vectors; M·v two ways", "short": "Columns and rows", "summary": "Columns are where the basis lands; M·v is a combination of columns and a list of row dot products; new rulers in 3D.", "ru": { "title": "Матрица = образы базисных векторов; M·v двумя способами", "short": "Столбцы и строки", "summary": "Столбцы — это куда попадает базис; M·v — комбинация столбцов и список скалярных произведений строк; новые линейки в 3D." } }
+      ],
+      "ru": {
+        "title": "Матрицы",
+        "summary": "Матрица двигает всю сетку сразу: столбцы — это куда попадает базис, строки — скалярные произведения."
+      }
+    },
+    {
       "slug": "tensors",
       "part": 3,
       "title": "Tensors",
