@@ -1,0 +1,438 @@
+---
+title: "Waves as vectors: the DFT is a list of dot products"
+description: "A sampled wave is a vector; each frequency is a ruler; spinning sticks redraw any drawing."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { WavesScene, WavesControls } from '../../../viz/lessons/waves-dft';
+import { rowsFor } from '../../../viz/lessons/waves-dft.rows';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'wd']} />
+
+**Built on:** [The dot product](lesson:dot-product) · [Projection](lesson:projection) · [Basis](lesson:basis) · [The unit circle](lesson:unit-circle)
+
+An audio clip is a long list of numbers. So is one row of pixels in a texture, and so is an animation curve baked to
+one value per frame. This lesson takes one idea seriously: **a list of numbers is a vector**. Then everything we
+built for arrows (length, the dot product, projection, bases) works on sounds and curves too.
+
+We will ask one question of a signal: *how much of a given wave is in it?* The answer is a single dot product. Ask it
+for every possible wave and you get the famous **discrete Fourier transform** (DFT), the thing behind every audio
+equalizer, JPEG, FFT ocean in a VFX shot and convolution bloom in a game engine. At the end the same numbers turn into
+a toy: sticks spinning on the ends of other sticks, which can redraw any drawing you give them.
+
+Nothing here needs complex numbers. Every step is "multiply matching numbers and add them up".
+
+## 1. A sampled signal is a vector
+
+Take a wave and read its height at 16 evenly spaced moments: $n = 0, 1, 2, \ldots, 15$. You get 16 numbers,
+$x_0, x_1, \ldots, x_{15}$. That list is the **sampled signal** $x$.
+
+Here is the one we start with (rounded to two decimals):
+
+$$
+\begin{aligned} x = (&1.20,\ 1.40,\ -0.42,\ -1.08, \\ &-0.60,\ -1.08,\ -0.42,\ 1.40, \\ &1.20,\ 0.29,\ 0.42,\ -0.62, \\ &-1.80,\ -0.62,\ 0.42,\ 0.29) \end{aligned}
+$$
+
+In [lesson 1.1](lesson:vector) a vector with 3 components was an arrow in 3D. This one has 16 components, so it is an
+arrow in 16-dimensional space. Nobody can draw 16 axes, and we do not need to: the arithmetic does not care how many
+components there are. Length is still the root of the sum of squares, and the dot product is still "multiply matching
+components and add".
+
+What we *can* draw is the list itself: one dot per sample, its height the value. That is the top lane of the scene
+below. Think of a curve in the Graph Editor baked to 16 keys: the keys are the vector.
+
+## 2. Rulers: one wave per frequency
+
+To measure "how much of a wave" we need the waves to measure with. Go back to [the unit circle](lesson:unit-circle):
+a point going around the circle has $\cos$ as its shadow on the x axis. Let the point go around exactly $k$ times
+while $n$ runs from 0 to 16, and read its shadow at every sample:
+
+$$
+c_k[n] = \cos\!\left(2\pi \cdot k \cdot n / 16\right)
+$$
+
+That list of 16 numbers is the **cosine ruler** of frequency $k$. In words: $k$ full waves fit in the window.
+
+- $k = 0$: the point never moves, every number is 1. A flat line, the "average level" ruler.
+- $k = 1$: one slow wave over the whole window.
+- $k = 2$: two waves: $c_2 = (1, 0.71, 0, -0.71, -1, \ldots)$.
+- $k = 8$: the fastest wave 16 samples can hold, $(1, -1, 1, -1, \ldots)$: up, down, up, down.
+
+The **sine ruler** $s_k[n] = \sin(2\pi \cdot k \cdot n / 16)$ is the same wave started a quarter turn later.
+
+Why two rulers per frequency? A wave of frequency $k$ can be shifted left or right in time. Every shifted version is
+some amount of the cosine ruler plus some amount of the sine ruler, just as every direction in the plane is some
+amount of x plus some amount of y. The two rulers of one frequency are its "x and y axes".
+
+## 3. The dot product says how much
+
+Now the question. How much does the signal point along the ruler $r$? Exactly what [lesson 1.4](lesson:dot-product)
+answers:
+
+$$
+x \cdot r = \sum_{n=0}^{15} x_n\, r_n
+$$
+
+Multiply sample by sample, add the 16 products. The scene shows it in three lanes: the signal, the ruler, and the 16
+products. Each product is one stem (dashed when it is negative); the sum of the stems is the dot product.
+
+Drag a dot of the signal, or pick another ruler with $k$ and the **sin** switch in the N panel (on a phone: the chips
+under the scene), or scrub $k$ in the formula.
+
+<SceneIsland caption="WD-1 · Signal, ruler and their products: the 16 products add up to the dot product x·r." rows={rowsFor(1, locale)}>
+  <WavesScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<WavesControls scene={1} locale={locale} client:load />
+
+Read the numbers for our signal:
+
+- $x \cdot c_2 = 9.60$. Big and positive: the signal points strongly along the $k = 2$ cosine ruler.
+- $x \cdot s_5 = 4.80$. Also positive: there is a $k = 5$ sine wave in it too.
+- $x \cdot c_3 = 0$. Zero: the signal is **perpendicular** to this ruler. There is no $k = 3$ wave in it at all.
+- A negative result would mean the wave is in there upside down.
+
+This is the same sentence as `dot(N, L)` in a shader: N·L says how much a normal faces the light; $x \cdot c_k$ says how
+much the signal "faces" the wave $k$.
+
+**How many copies?** A dot product also grows with the length of the ruler. To get the number of *copies* of the ruler,
+divide by the ruler's squared length, exactly the projection coefficient of [lesson 1.5](lesson:projection). The
+number of copies of $r$ in $x$ is
+
+$$
+\frac{x \cdot r}{r \cdot r}
+$$
+
+Every ruler here has $r \cdot r = 8$, except $c_0$ and $c_8$, which have 16 (all their numbers are $\pm 1$). So:
+$9.60 / 8 = 1.2$ copies of $c_2$, and $4.80 / 8 = 0.6$ copies of $s_5$. That is exactly how the signal was made:
+$x = 1.2\, c_2 + 0.6\, s_5$.
+
+One honest oddity: $s_0$ and $s_8$ are all zeros (the sine is 0 at every sample: $\sin 0 = 0$ and $\sin(\pi n) = 0$).
+A ruler of zeros measures nothing, so those two drop out.
+
+**Misconception to drop:** "the DFT is some special wave magic." It is 16 numbers multiplied by 16 numbers and added up,
+once per ruler. You already know the operation.
+
+## 4. The rulers are perpendicular to each other
+
+Here is the fact that makes everything clean. Take any two *different* rulers and dot them: you always get 0.
+
+$$
+\begin{aligned} &c_j \cdot c_k = 0, \quad s_j \cdot s_k = 0 \qquad (j \ne k) \\ &c_j \cdot s_k = 0 \end{aligned}
+$$
+
+The grid under the spectrum below shows all 256 dot products of the 16 rulers ($c_0, \ldots, c_8$ and
+$s_1, \ldots, s_7$): zeros everywhere off the diagonal, 8 or 16 on it.
+
+Why care? [Lesson 1.6](lesson:basis) said: with perpendicular rulers, the coordinates of a vector are just its shadows
+(dot products divided by squared lengths). No equations to solve. And 16 perpendicular non-zero rulers in a
+16-dimensional space are a **basis**: they can describe every possible signal.
+
+Pythagoras comes along for free. The squared length of the signal equals the sum of the squared shadows:
+
+$$
+\sum_n x_n^2 = \sum_k \frac{(x \cdot r_k)^2}{r_k \cdot r_k}
+$$
+
+Check with our signal: the left side is $14.40$. On the right only two rulers are non-zero:
+$9.6^2 / 8 + 4.8^2 / 8 = 11.52 + 2.88 = 14.40$. Same number. This is called **Parseval's theorem**; here it is
+simply Pythagoras in the ruler basis.
+
+## 5. The DFT is the whole list
+
+Do the dot product for every frequency $k = 0, 1, \ldots, 8$, with both rulers. That list is the **DFT** of the signal; we write its entry for frequency $k$ as $X[k]$:
+
+$$
+X[k] = \big(x \cdot c_k,\; x \cdot s_k\big), \qquad k = 0, \ldots, 8
+$$
+
+Drawn as bars, it is the **spectrum**: for each $k$ a left bar (copies of the cosine ruler) and a right bar (copies of
+the sine ruler). Negative bars hang down and are hatched. Click or tap a bar to select its $k$ in every scene.
+
+<SceneIsland caption="WD-2 · Spectrum: for every frequency k, the copies of its cosine ruler (left) and sine ruler (right)." rows={rowsFor(2, locale)}>
+  <WavesScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<WavesControls scene={2} locale={locale} client:load />
+
+Count the numbers: 9 frequencies times 2 rulers is 18, minus the two all-zero sine rulers, is 16. Sixteen numbers in,
+sixteen numbers out. The DFT throws nothing away: it is the same arrow described in another basis (a **change of
+basis**, lesson 1.6).
+
+In NumPy this is `np.fft.rfft(x)`. It packs each pair into one complex number, $x \cdot c_k - i\,(x \cdot s_k)$; the
+complex form and the reason for the minus sign wait for lesson A4. The values are exactly these dot products, and the
+Python cell below checks it.
+
+## 6. Going back: add the scaled rulers
+
+If the DFT says "1.2 copies of $c_2$ and 0.6 copies of $s_5$", then rebuilding the signal is just doing that: take 1.2
+of one ruler, 0.6 of the other, add them sample by sample. That is a [linear combination](lesson:vector-arithmetic),
+and it is the **inverse DFT**:
+
+$$
+x = \sum_k \left( \frac{x \cdot c_k}{c_k \cdot c_k}\, c_k + \frac{x \cdot s_k}{s_k \cdot s_k}\, s_k \right)
+$$
+
+The scene adds the frequencies back one at a time: $K$ says how many (frequencies $0$ to $K - 1$). The solid dots are
+the signal, the small dots and the curve the rebuild, the dashed lines what is still missing.
+
+<SceneIsland caption="WD-3 · Rebuild: frequencies 0 to K−1 added back; the dashed lines are what is still missing." rows={rowsFor(3, locale)}>
+  <WavesScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<WavesControls scene={3} locale={locale} client:load />
+
+Load the **step** signal (eight $+1$, then eight $-1$) and raise $K$. The sum of squared misses goes
+$16 \to 16 \to 2.86 \to 2.86 \to 1.24 \to 1.24 \to 0.52 \to 0.52 \to 0 \to 0$. It never grows (every ruler adds
+something perpendicular, so it can only take error away), and with all 9 frequencies it is exactly 0. A sharp step
+needs the fast rulers: that is why a hard edge in a texture or an image needs high frequencies.
+
+## 7. Two honest surprises: aliasing and leakage
+
+**Aliasing.** Load **too fast (k = 14)**. The dashed curve is a wave making 14 turns in the window, but look at the 16
+dots: they are exactly the dots of the $k = 2$ ruler (times 1.5). Why: one sample later a 14-turn wave has moved
+$14/16$ of a turn forward, which lands in the same place as moving $2/16$ of a turn backward. The cosine cannot see
+the difference:
+
+$$
+\begin{aligned} \tfrac{14}{16} &= 1 - \tfrac{2}{16} \\ \cos\!\left(2\pi \cdot 14 n / 16\right) &= \cos\!\left(2\pi \cdot 2 n / 16\right) \end{aligned}
+$$
+
+No list of 16 samples can tell those two waves apart. You have seen this: wagon wheels spinning backwards on film,
+moiré on a fine fabric texture, a checkerboard shimmering in the distance without mipmaps. The cure is always the same:
+remove frequencies above $N/2$ **before** sampling (blur, prefilter, mip). Frequency 8 here, half the sample count, is
+the highest that survives; it is called the **Nyquist** frequency.
+
+**Leakage.** Load **between rulers (k = 2.5)**. This wave makes two and a half turns in the window, and no ruler does.
+So no single bar takes it all: the spectrum shows something at every $k$, largest around 2 and 3. The DFT is not wrong
+(rebuild it with all $K$ and you get the signal back exactly); it simply describes the signal with the rulers it has.
+Picture it like a tiling texture whose pattern does not fit the tile: the DFT treats the window as if it repeated
+forever, end glued to start, and 2.5 turns leave a jump at the glue line. Real tools soften that jump by fading the
+window's edges first ("windowing").
+
+## 8. The FFT: the same numbers, fast
+
+Computed as written, the DFT of $N$ samples is about $N$ dot products of length $N$: $N^2$ multiplications. For
+$N = 16$ that is 256, nothing. For one second of audio, $N = 48000$, it is over two billion.
+
+The **fast Fourier transform** (FFT) gets *exactly the same numbers* with about $N \log_2 N$ multiplications: for
+$N = 1024$, about 10 thousand instead of a million. The trick is reuse: the rulers of a big DFT are built from the
+rulers of two half-size DFTs, so the work splits in halves again and again. "FFT" is not a different transform; it is
+a faster way to do these dot products. Lesson A4 takes it apart.
+
+## 9. Epicycles: sticks on sticks on sticks
+
+Now the toy. Count on your fingers.
+
+**One stick.** Pin one end of a stick and spin it at a steady speed. The free end draws a circle. That is the unit
+circle of lesson 0.4, made bigger or smaller by the stick's length.
+
+**Two sticks.** Pin a second stick to the free end of the first, and spin it at a different speed. Like a fairground
+ride whose arm turns while the cup on its end turns too, or a Maya hierarchy of two nulls, each rotating at its own
+constant speed. The end of the second stick no longer draws a circle: with one stick turning forward and the other
+backward at the same speed you get an ellipse; with other speeds, a flower with loops or petals.
+
+**Many sticks.** Each extra stick spins faster and is (usually) shorter, so it adds a finer wiggle on top of what the
+others draw. With enough sticks the very last tip can follow **any closed drawing**, a heart, a star, your signature.
+
+Where do the sticks come from? From this lesson. A closed drawing of $M = 64$ points is two lists of numbers: the x
+of every point and the y of every point. Two signals. For every frequency $k$, four dot products with the same rulers
+(now 64 samples long) give the stick's position at the start:
+
+$$
+\begin{aligned} X_k &= \frac{x \cdot c_k + y \cdot s_k}{64} \\ Y_k &= \frac{y \cdot c_k - x \cdot s_k}{64} \end{aligned}
+$$
+
+- the stick's **length** is $\sqrt{X_k^2 + Y_k^2}$ (Pythagoras),
+- its **starting angle** is the angle of the point $(X_k, Y_k)$ (`atan2`, lesson 0.4),
+- its **speed** is $k$ turns per loop; a negative $k$ turns clockwise,
+- the $k = 0$ "stick" does not spin at all: it is the average point of the drawing, where the chain is pinned.
+
+Why does it work? A stick spinning $k$ times per loop is a point on a circle, $(\cos, \sin)$: a cosine ruler in x and
+a sine ruler in y at the same time. Adding sticks end to end is adding rulers, which is exactly the rebuild of section 6,
+done for x and y together.
+
+The heart, for example: pinned at $(0, 0.40)$; the longest stick has length $2.125$, turns once per loop clockwise
+($k = -1$) and starts at $90^\circ$; the next ones are $0.51$ ($k = -3$) and $0.425$ ($k = \pm 2$). The error, measured
+as the average squared miss in percent of the miss with no stick at all, falls as sticks are added:
+
+| sticks | 1 | 2 | 3 | 4 | 5 | 8 |
+|---|---|---|---|---|---|---|
+| error, % | 12.95 | 7.94 | 4.46 | 0.97 | 0.42 | 0.00 |
+
+Press **Play**, change the number of sticks, pick another drawing, or press **Draw your own** and draw a closed shape
+with the mouse or a finger. **Step** moves the pen to the next of the 64 drawn points, where it lands exactly once
+every stick is in.
+
+<SceneIsland caption="WD-4 · Epicycles: a chain of spinning sticks, one per frequency, redraws the drawing; more sticks, smaller error." rows={rowsFor(4, locale)}>
+  <WavesScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<WavesControls scene={4} locale={locale} client:load />
+
+Watch the star and the square: the error drops fast, but sharp corners keep a slight rounding until the small, fast
+sticks join in. Corners are like the step of section 6: they need high frequencies.
+
+> **Say it simpler.** A sampled wave is an arrow with 16 components. Each frequency gives two rulers (cos and sin).
+> The dot product with a ruler says how much of that wave is in the signal; the list of all those dot products is the
+> DFT. The rulers are perpendicular, so adding them back, scaled, rebuilds the signal exactly. Spinning sticks are the
+> same rulers, drawing in x and y at once.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "The dot product of a signal with the k = 3 cosine ruler is 0. What does that mean?",
+      options: [
+        "The signal is all zeros",
+        "There is no k = 3 cosine wave in the signal: it is perpendicular to that ruler",
+        "The signal is a pure k = 3 wave",
+        "The ruler is broken"
+      ],
+      answer: 1,
+      explain: "A zero dot product means perpendicular (lesson 1.4): none of that ruler's direction is in the signal. A pure k = 3 cosine would give the largest value instead."
+    },
+    {
+      q: "Why can the signal be rebuilt just by adding the rulers back, each scaled by (x·r)/(r·r)?",
+      options: [
+        "Because the rulers are perpendicular to each other and there are as many of them as samples, so they form a basis",
+        "Because any 16 waves can rebuild any signal",
+        "Because cosines are always positive",
+        "Because the signal was secretly a cosine all along"
+      ],
+      answer: 0,
+      explain: "With a perpendicular basis the coordinates are the shadows (dot product ÷ squared length), and the vector is the sum of its scaled axes. Sixteen perpendicular non-zero rulers in 16-D space are such a basis."
+    },
+    {
+      q: "A wave makes 14 turns while being sampled 16 times. What does the DFT say?",
+      options: [
+        "Frequency 14",
+        "Nothing: the frequency is too high to register",
+        "Frequency 2: the samples are identical to those of a 2-turn wave (aliasing)",
+        "Frequency 16"
+      ],
+      answer: 2,
+      explain: "Moving 14/16 of a turn forward per sample lands where moving 2/16 backward does. The 16 numbers are those of the k = 2 ruler, so no method can tell them apart. Filter before sampling."
+    },
+    {
+      q: "In the epicycle chain, what is the length of each stick?",
+      options: [
+        "Always 1, only the speed differs",
+        "The size of that frequency in the drawing: √(X² + Y²) from its four dot products",
+        "A random number chosen to look nice",
+        "The distance between two points of the drawing"
+      ],
+      answer: 1,
+      explain: "Each stick is one frequency of the drawing's DFT: its length is how much of that frequency the drawing holds, its starting angle is the angle of (X, Y), and its speed is k turns per loop."
+    }
+  ]}
+/>
+
+## By hand
+
+Work these on paper before opening the answers.
+
+1. Write the cosine ruler $c_4$ for $N = 16$ (hint: four turns in 16 samples is a quarter turn per sample).
+2. $x = (1, 1, 1, 1)$ with $N = 4$. Compute $x \cdot c_0$ and $x \cdot c_1$, where $c_1 = (1, 0, -1, 0)$.
+3. $x = 3\, c_2 - 2\, s_1$ with $N = 16$. How many copies of $c_2$ does the dot product report, and what is $x \cdot s_1$?
+4. With $N = 16$, which ruler has the same samples as a cosine making 15 turns?
+5. One stick of length 2 starting at angle 0, turning once per loop. Where is its tip at a quarter of the loop?
+
+<details>
+<summary>Answers</summary>
+
+1. $c_4 = (1, 0, -1, 0, 1, 0, -1, 0, \ldots)$: the four numbers 1, 0, −1, 0 repeat four times.
+2. $x \cdot c_0 = 1 + 1 + 1 + 1 = 4$; $x \cdot c_1 = 1 + 0 - 1 + 0 = 0$: a constant signal has no wave in it.
+3. $x \cdot c_2 = 3 \cdot (c_2 \cdot c_2) = 3 \cdot 8 = 24$, and $24 / 8 = 3$ copies. $x \cdot s_1 = -2 \cdot 8 = -16$ (every other ruler contributes 0, they are perpendicular).
+4. $c_1$: 15 turns forward per window look like 1 turn backward, and the cosine does not see the direction.
+5. A quarter turn counter-clockwise from angle 0: the tip is at $(0, 2)$ relative to the pin.
+
+</details>
+
+## In NumPy
+
+<PyCell>
+
+```python
+import numpy as np
+
+N = 16
+n = np.arange(N)
+x = 1.2 * np.cos(2 * np.pi * 2 * n / N) + 0.6 * np.sin(2 * np.pi * 5 * n / N)   # "two waves"
+
+def cos_ruler(k):
+    return np.cos(2 * np.pi * k * n / N)
+
+def sin_ruler(k):
+    return np.sin(2 * np.pi * k * n / N)
+
+print(round(x @ cos_ruler(2), 6))            # 9.6 -> 9.6 / 8 = 1.2 copies
+print(round(x @ sin_ruler(5), 6))            # 4.8 -> 4.8 / 8 = 0.6 copies
+print(np.isclose(x @ cos_ruler(3), 0))       # True: perpendicular, no k = 3 in x
+
+# The DFT is the list of these dot products; NumPy packs each pair as x.c - i x.s
+dots = np.array([x @ cos_ruler(k) - 1j * (x @ sin_ruler(k)) for k in range(N // 2 + 1)])
+print(np.allclose(dots, np.fft.rfft(x)))     # True
+
+# 16 rulers: cos 0..8 and sin 1..7. Every pair is perpendicular.
+R = np.array([cos_ruler(k) for k in range(9)] + [sin_ruler(k) for k in range(1, 8)])
+G = R @ R.T
+print(np.allclose(G, np.diag(np.diag(G))))   # True: 0 off the diagonal
+print(np.round(np.diag(G)).astype(int))      # [16  8  8  8  8  8  8  8 16  8  8  8  8  8  8  8]
+
+coef = (R @ x) / np.diag(G)                  # copies of each ruler (projection, lesson 1.5)
+print(np.allclose(coef @ R, x))              # True: adding the scaled rulers back gives x
+print(round(x @ x, 6), round(np.sum((R @ x) ** 2 / np.diag(G)), 6))   # 14.4 14.4  (Parseval)
+
+# Aliasing: 14 turns sampled 16 times look exactly like 2 turns
+print(np.allclose(np.cos(2 * np.pi * 14 * n / N), cos_ruler(2)))       # True
+
+# Epicycles of a figure eight drawn with M = 64 points
+M = 64
+m = np.arange(M)
+X, Y = 3 * np.sin(2 * np.pi * m / M), 1.6 * np.sin(4 * np.pi * m / M)
+
+def stick(k):
+    c, s = np.cos(2 * np.pi * k * m / M), np.sin(2 * np.pi * k * m / M)
+    sx, sy = (X @ c + Y @ s) / M, (Y @ c - X @ s) / M   # four dot products
+    return np.hypot(sx, sy), np.degrees(np.arctan2(sy, sx))
+
+for k in (1, -1, 2):
+    r, a = stick(k)
+    print(k, round(r, 3), round(a))          # 1 1.5 -90 / -1 1.5 90 / 2 0.8 0
+Z = np.fft.fft(X + 1j * Y) / M               # the same numbers, by FFT (lesson A4)
+print(np.allclose(np.abs(Z[[1, -1, 2]]), [stick(k)[0] for k in (1, -1, 2)]))   # True
+```
+
+</PyCell>
+
+<details>
+<summary>Machine layer: N² dot products, N log N butterflies, and rounding</summary>
+
+A direct DFT of $N$ samples is $N$ dot products of length $N$: $N^2$ multiply-adds, each one an FMA of
+[lesson 1.4](lesson:dot-product). The FFT reorganizes the same sums: a size-$N$ DFT is two size-$N/2$ DFTs (even and
+odd samples) combined with $N/2$ small "butterflies", recursively, for about $N \log_2 N$ operations. For
+$N = 2^{20}$ (a million samples) that is roughly 20 million instead of a trillion. Libraries such as FFTW, cuFFT and
+NumPy's pocketfft pick the split per size and per CPU or GPU.
+
+The numbers are not bit-identical between the two routes. Floating-point addition is not associative, so summing the
+same products in another order changes the last bits ([summation order](lesson:dot-product)); in the tests of this
+lesson the dot-product DFT and an FFT agree to about $10^{-14}$. In VFX you meet the FFT in Tessendorf ocean
+displacement (an inverse FFT of a wave spectrum per frame), in convolution bloom and large blurs (multiply spectra
+instead of sliding a huge kernel), and in every audio tool.
+
+</details>
+
+## What this opens
+
+Every dot product of this lesson used the same 16 rulers. Stack them as the rows of a table, and one operation could
+compute all the dot products at once: can a **matrix** do that? Part 2 answers yes; this table is the DFT matrix.
+Lesson A4 then brings the complex numbers that pack each cosine and sine pair into one spinning arrow, takes the FFT
+apart, and shows the same spinning rulers inside RoPE, the position encoding of modern transformers.
+
+## Term map
+
+<LessonMap />

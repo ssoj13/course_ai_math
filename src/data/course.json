@@ -188,7 +188,8 @@
             "short": "Векторное произведение",
             "summary": "Нормали, площадь параллелограмма и ориентация в 3D."
           }
-        }
+        },
+        { "slug": "waves-dft", "title": "Waves as vectors: the DFT is a list of dot products", "short": "Waves and the DFT", "summary": "A sampled wave is a vector; each frequency is a ruler; spinning sticks redraw any drawing.", "ru": { "title": "Волны как векторы: ДПФ — это список скалярных произведений", "short": "Волны и ДПФ", "summary": "Оцифрованная волна — это вектор, каждая частота — линейка, вращающиеся палочки рисуют любой рисунок." } }
       ],
       "ru": {
         "title": "Векторы",

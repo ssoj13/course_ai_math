@@ -589,6 +589,74 @@
       "ru": { "label": "Нормаль", "def": "Нормаль — это единичный вектор, перпендикулярный поверхности, полученный векторным произведением двух рёбер." }
     },
     {
+      "id": "sampled-signal",
+      "label": "Sampled signal",
+      "def": "A sampled signal is a vector: the list of N readings of a wave taken at evenly spaced moments.",
+      "depth": "vectors",
+      "lessons": ["waves-dft"],
+      "edges": [{ "type": "built-on", "to": "vector" }],
+      "ru": { "label": "Оцифрованный сигнал", "def": "Оцифрованный сигнал — это вектор: список из N показаний волны, снятых через равные промежутки времени." }
+    },
+    {
+      "id": "frequency-ruler",
+      "label": "Frequency ruler",
+      "def": "A frequency ruler is the sampled cosine or sine that makes k full turns of the unit circle in the window.",
+      "depth": "vectors",
+      "lessons": ["waves-dft"],
+      "edges": [{ "type": "built-on", "to": "unit-circle" }, { "type": "built-on", "to": "sampled-signal" }],
+      "ru": { "label": "Частотная линейка", "def": "Частотная линейка — это оцифрованный косинус или синус, делающий за окно k полных оборотов по единичной окружности." }
+    },
+    {
+      "id": "dft",
+      "label": "DFT",
+      "def": "The discrete Fourier transform is the list of dot products of a signal with every frequency ruler: its coordinates in the orthogonal ruler basis.",
+      "depth": "vectors",
+      "lessons": ["waves-dft"],
+      "edges": [
+        { "type": "built-on", "to": "dot-product" },
+        { "type": "built-on", "to": "projection" },
+        { "type": "built-on", "to": "basis" },
+        { "type": "built-on", "to": "frequency-ruler" }
+      ],
+      "ru": { "label": "ДПФ", "def": "Дискретное преобразование Фурье — это список скалярных произведений сигнала со всеми частотными линейками: его координаты в ортогональном базисе линеек." }
+    },
+    {
+      "id": "aliasing",
+      "label": "Aliasing",
+      "def": "Aliasing is a fast wave giving exactly the same samples as a slow one, so the samples cannot tell them apart.",
+      "depth": "vectors",
+      "lessons": ["waves-dft"],
+      "edges": [{ "type": "built-on", "to": "sampled-signal" }, { "type": "built-on", "to": "frequency-ruler" }],
+      "ru": { "label": "Алиасинг", "def": "Алиасинг — это когда быстрая волна даёт в точности те же отсчёты, что и медленная, и по отсчётам их не различить." }
+    },
+    {
+      "id": "spectral-leakage",
+      "label": "Spectral leakage",
+      "def": "Spectral leakage is a wave between two rulers spreading its dot products over every frequency of the DFT.",
+      "depth": "vectors",
+      "lessons": ["waves-dft"],
+      "edges": [{ "type": "built-on", "to": "dft" }],
+      "ru": { "label": "Утечка спектра", "def": "Утечка спектра — это когда волна между двумя линейками размазывает свои скалярные произведения по всем частотам ДПФ." }
+    },
+    {
+      "id": "epicycles",
+      "label": "Epicycles",
+      "def": "Epicycles are sticks spinning end to end, one per frequency of a closed drawing's DFT, whose tip redraws the drawing.",
+      "depth": "vectors",
+      "lessons": ["waves-dft"],
+      "edges": [{ "type": "built-on", "to": "dft" }, { "type": "built-on", "to": "unit-circle" }],
+      "ru": { "label": "Эпициклы", "def": "Эпициклы — это палочки, вращающиеся одна на конце другой, по одной на каждую частоту ДПФ замкнутого рисунка; их кончик заново рисует рисунок." }
+    },
+    {
+      "id": "fft",
+      "label": "FFT",
+      "def": "The fast Fourier transform computes exactly the DFT's dot products with about N log N multiplications instead of N².",
+      "depth": "machine",
+      "lessons": ["waves-dft"],
+      "edges": [{ "type": "built-on", "to": "dft" }],
+      "ru": { "label": "БПФ", "def": "Быстрое преобразование Фурье вычисляет в точности те же скалярные произведения ДПФ примерно за N log N умножений вместо N²." }
+    },
+    {
       "id": "float",
       "label": "Floating point",
       "def": "A floating-point number stores a real number as a sign, a power of two and a fixed count of significant bits.",
