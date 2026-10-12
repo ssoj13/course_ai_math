@@ -6,9 +6,9 @@ import { lessonStore, type LessonState } from '../../src/viz/store';
 import { Frame } from '../../src/viz/dotunit/choreo';
 import { flat } from '../../src/core';
 import {
-	CHECKS, code, compute, firstTie, INITIAL, LINKS, model, orderRun, SHEET, source, SUM_NS,
+	CHECKS, code, compute, firstTie, fmtSig, INITIAL, LINKS, model, orderRun, SHEET, source, SUM_NS,
 } from '../../src/viz/lessons/reductions.math';
-import { CAP, geo, instances, linked, writeFrame, writeIds, RESULT } from '../../src/viz/lessons/reductions.scene';
+import { CAP, geo, instances, linked, resultAt, writeFrame, writeIds, RESULT, SLOT } from '../../src/viz/lessons/reductions.scene';
 import { reduceRows } from '../../src/viz/lessons/reductions.rows';
 
 type Vals = LessonState['vals'];
@@ -106,6 +106,13 @@ describe('machine layer: summation order in float32', () => {
 		expect(r.seq.mean).toBe(Math.fround(100958.34375 / 1e6));
 	});
 
+	test('printed with nine significant digits; tiny errors in scientific notation', () => {
+		expect(fmtSig(100958.34375)).toBe('100958.344');
+		expect(fmtSig(Math.fround(1.0000001192092896) - 1)).toBe('1.19e-7');
+		expect(fmtSig(100000)).toBe('100000');
+		expect(fmtSig(0)).toBe('0');
+	});
+
 	test('ten numbers are already off in the last digit when added in order', () => {
 		const r = orderRun(SUM_NS[0]);
 		expect(r.seq.sum).toBe(Math.fround(1.0000001192092896));
@@ -123,11 +130,14 @@ describe('choreography', () => {
 		const g = geo(m);
 		const f = new Frame(CAP);
 		writeIds(m, f);
-		const n = m.x.size, r0 = 2 * n;
+		const n = m.x.size, r0 = resultAt(m, 0);
 		writeFrame(m, g, 0, 1, new Set(), f);
 		expect(f.alpha[0]).toBe(1);
 		expect(f.alpha[n + 3]).toBe(0);
 		expect(f.alpha[r0]).toBe(0);
+		// The empty slots of the result are drawn from the start, at their final places (the frame's bounds never jump).
+		expect(f.alpha[r0 - m.r.size]).toBeCloseTo(SLOT, 6);
+		expect(f.c[3 * (r0 - m.r.size + 2)]).toBeCloseTo(g.output.pos[3 * 2], 6);
 		writeFrame(m, g, 1, 1, new Set(), f);
 		// Result 1 (row 1) sits on its landing cell x[1, 0] = input cell 4.
 		expect(f.c[3 * (r0 + 1)]).toBeCloseTo(g.input.pos[3 * 4], 6);

@@ -7,7 +7,7 @@ import { Frame } from '../../src/viz/dotunit/choreo';
 import {
 	align, CHECKS, CROP, INITIAL, LINKS, model, PRESETS, shapesPatch, SPEC, tintModel, values,
 } from '../../src/viz/lessons/broadcasting.math';
-import { CAP, geo, linked, phases, REPEAT, writeFrame, writeIds } from '../../src/viz/lessons/broadcasting.scene';
+import { CAP, geo, linked, phases, REPEAT, SLOT, writeFrame, writeIds } from '../../src/viz/lessons/broadcasting.scene';
 import { ruleRows, tintRows } from '../../src/viz/lessons/broadcasting.rows';
 import { flatDirs, fmtNum, place, unravel } from '../../src/viz/lessons/tensor-ops';
 
@@ -132,7 +132,7 @@ describe('choreography', () => {
 		// Repeat b5 (row 1, column 1) waits on top of its element b1 (row 0, column 1).
 		expect(f.c[3 * (b + 5)]).toBeCloseTo(f.c[3 * (b + 1)], 6);
 		expect(f.c[3 * (b + 5) + 1]).toBeCloseTo(f.c[3 * (b + 1) + 1], 6);
-		expect(f.alpha[c]).toBe(0);
+		expect(f.alpha[c]).toBeCloseTo(SLOT, 6);
 		writeFrame(m, g, 'num', 1, 1, none, f);
 		expect(f.alpha[b + 5]).toBeCloseTo(REPEAT, 6);
 		expect(f.c[3 * (b + 5) + 1]).toBeCloseTo(posA[3 * 5 + 1], 6);

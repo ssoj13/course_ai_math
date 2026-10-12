@@ -10,6 +10,12 @@ import { layout, type Dir, type Layout } from './tensor-road.math';
 /** Highest rank the 3.4/3.5 scenes draw (shapes are edited per axis in the N-panel). */
 export const OPS_MAX_RANK = 3;
 
+/**
+ * Depth (z) of a cell tile. The figures are read from the front, so cells are thin tiles, not cubes: a cube's side
+ * walls show in perspective near the frame edges and read as extra lines between the numbers.
+ */
+export const TILE_DEPTH = 0.1;
+
 const D = (axis: 0 | 1, level: 0 | 1 = 0): Dir => ({ axis, level });
 
 /**

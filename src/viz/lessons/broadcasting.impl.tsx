@@ -50,7 +50,7 @@ function Bcast({ of, look, timeline, caps, locale }: {
 		},
 	});
 	return <>
-		<Boxes lesson={LESSON} frame={frame} update={update} pad={1.4} />
+		<Boxes lesson={LESSON} frame={frame} update={update} pad={2} />
 		<Labels m={m} g={g} frame={frame} look={look} caps={caps(m, timeline ? step : 2)} locale={locale} />
 	</>;
 }
@@ -75,9 +75,10 @@ function Labels({ m, g, frame, look, caps, locale }: {
 				return <Tag key={p + ':' + k} lesson={LESSON} hot={'abc'[p] + k} small dense role={repeat ? 'muted' : 'ink'} text={fmtNum(v)} at={centre(i)} />;
 			});
 		})}
+		{/* Captions alternate below / above the panels (B above), so neighbouring captions never meet on a narrow stage. */}
 		{g.panels.map((P, p) => (
-			<Tag key={'cap' + p} lesson={LESSON} role={roles[p]} text={caps[p]} offset={[0, 18]}
-				at={() => [P.origin[0] + (P.w - 1) / 2, P.origin[1] - (P.h - 1) - 0.5, 0]} />
+			<Tag key={'cap' + p} lesson={LESSON} role={roles[p]} text={caps[p]} offset={[0, p === 1 ? -18 : 18]}
+				at={() => [P.origin[0] + (P.w - 1) / 2, p === 1 ? P.origin[1] + 0.5 : P.origin[1] - (P.h - 1) - 0.5, 0]} />
 		))}
 		{g.panels.slice(0, -1).map((P, p) => (
 			<Tag key={'sign' + p} lesson={LESSON} role="ink" text={p === 0 ? OPS[m.op] : '='} at={() => [P.origin[0] + P.w - 0.5 + PANEL_GAP / 2, midY, 0]} />
@@ -127,10 +128,11 @@ export function RuleScene() {
 	const caps = (m: BModel, step: number) => [
 		t(locale, 'bc.capA', { shape: fmtShape(m.sa) }),
 		m.ok && step >= 1 && fmtShape(m.sb) !== fmtShape(m.out!) ? t(locale, 'bc.capBto', { shape: fmtShape(m.sb), out: fmtShape(m.out!) }) : t(locale, 'bc.capB', { shape: fmtShape(m.sb) }),
-		m.ok ? t(locale, 'bc.capC', { op: OPS[m.op], shape: fmtShape(m.out!) }) : '',
+		m.ok ? t(locale, 'bc.capC', { shape: fmtShape(m.out!) }) : '',
 	];
+	// Three panels side by side are much wider than tall: the desktop N-panel starts closed (the chevron or N opens it).
 	return <ViewportCard lesson={LESSON} id="3.4-1" name={'3.4-1 · ' + t(locale, 'bc.name1')} mode="3d" extent={extentOf(geo(m, 'num'))}
-		rows={rows} status={status} overlays={overlays(locale)}>
+		rows={rows} status={status} overlays={overlays(locale)} panelOpen={false}>
 		<Bcast of={model} look="num" timeline caps={caps} locale={locale} />
 	</ViewportCard>;
 }

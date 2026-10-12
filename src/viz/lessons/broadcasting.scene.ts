@@ -9,7 +9,7 @@
  */
 import { Frame, type BoxRole } from '../dotunit/choreo';
 import type { BModel, Operand } from './broadcasting.math';
-import { flatDirs, IMAGE_DIRS, place, unravel, type Placed } from './tensor-ops';
+import { flatDirs, IMAGE_DIRS, place, TILE_DEPTH, unravel, type Placed } from './tensor-ops';
 
 /** How the cells look: numbered tiles, or an RGB picture (bytes as brightness of the channel colour). */
 export type Look = 'num' | 'image';
@@ -20,6 +20,11 @@ export const CAP = 3 * 64;
 export const CELL = 0.8;
 /** Empty space between the three panels (room for the operator sign). */
 export const PANEL_GAP = 2;
+/**
+ * Opacity of the empty cells of C before the operation fills them: they show where the result will be, and keep the
+ * figure's bounds (which the home view frames) the same at every step.
+ */
+export const SLOT = 0.08;
 /** Opacity of a stride-0 repeat: it is seen, not stored. */
 export const REPEAT = 0.35;
 /** Largest tint, for the brightness of B's cells in the image look. */
@@ -94,7 +99,7 @@ function box(f: Frame, i: number, pos: ArrayLike<number>, k: number, from: numbe
 	const x = pos[3 * from] + (pos[3 * k] - pos[3 * from]) * u;
 	const y = pos[3 * from + 1] + (pos[3 * k + 1] - pos[3 * from + 1]) * u;
 	const z = pos[3 * k + 2];
-	f.box(i, x - h, x + h, y - h, y + h, z - h, z + h);
+	f.box(i, x - h, x + h, y - h, y + h, z - TILE_DEPTH / 2, z + TILE_DEPTH / 2);
 }
 
 /**
@@ -117,7 +122,7 @@ export function writeFrame(m: BModel, g: Geo, look: Look, step: number, t: numbe
 			const v = o ? o.t.data[o.t.offset + o.src[k]] : vals[p]!.data[k];
 			const real = o ? o.real[k] === 1 : true;
 			let alpha: number;
-			if (p === 2) alpha = fill;
+			if (p === 2) alpha = Math.max(SLOT, fill);
 			else if (!m.ok || real) alpha = 1;
 			else alpha = REPEAT * stretch;
 			box(f, i, P.pos, k, o && !real ? o.from[k] : k, real ? 1 : stretch);

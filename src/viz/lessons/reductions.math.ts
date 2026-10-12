@@ -199,6 +199,16 @@ export function orderRun(n: number): OrderRun {
 	};
 }
 
+/**
+ * Nine significant digits (enough to show a float32 sum to its last printed digit, 100958.344); tiny errors in
+ * scientific notation, so the drift of ten additions (1.19e-7) is not printed as 0.
+ */
+export function fmtSig(x: number): string {
+	if (x === 0) return '0';
+	if (Math.abs(x) < 1e-3) return x.toExponential(2);
+	return String(Number(x.toPrecision(9)));
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // Challenges.
 

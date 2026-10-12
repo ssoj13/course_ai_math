@@ -15,7 +15,7 @@ import { Boxes } from '../dotunit/Boxes';
 import { Frame } from '../dotunit/choreo';
 import { Tag } from '../dotunit/scene';
 import { code, LESSON, model, OP_NAMES, type RModel } from './reductions.math';
-import { CAP, geo, linked, writeFrame, writeIds, type Geo } from './reductions.scene';
+import { CAP, geo, linked, resultAt, writeFrame, writeIds, type Geo } from './reductions.scene';
 import { reduceRows } from './reductions.rows';
 import { fmtNum, fmtShape, unravel } from './tensor-ops';
 import { useStepFrame } from './tensor-ops.view';
@@ -39,7 +39,7 @@ function Reduce({ locale }: { locale: Locale }) {
 		},
 	});
 	return <>
-		<Boxes lesson={LESSON} frame={frame} update={update} pad={1.4} />
+		<Boxes lesson={LESSON} frame={frame} update={update} pad={2} />
 		<Labels m={m} g={g} frame={frame} step={step} locale={locale} />
 	</>;
 }
@@ -59,7 +59,7 @@ function Labels({ m, g, frame, step, locale }: { m: RModel; g: Geo; frame: Frame
 				at={step === 1 && landing.has(k) ? () => null : centre(k)} />
 		))}
 		{m.r.size <= LABEL_MAX && Array.from({ length: m.r.size }, (_, c) => (
-			<Tag key={'r' + c} lesson={LESSON} hot={'r' + c} small={m.r.size > 8} role="ink" text={fmtNum(m.r.data[c])} at={centre(2 * n + c)} />
+			<Tag key={'r' + c} lesson={LESSON} hot={'r' + c} small={m.r.size > 8} role="ink" text={fmtNum(m.r.data[c])} at={centre(resultAt(m, c))} />
 		))}
 		<Tag lesson={LESSON} role="ink" text={'x ' + fmtShape(m.x.shape) + ' · ' + axisText} offset={[0, 18]} at={captionAt(g.input)} />
 		{step >= 2 && <Tag lesson={LESSON} role="vecC" text={code(m) + ' → ' + fmtShape(m.out)} offset={[0, 18]} at={captionAt(g.output)} />}

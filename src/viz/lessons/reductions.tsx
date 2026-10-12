@@ -5,7 +5,7 @@ import { lessonStore, useVals } from '../store';
 import { lazyIsland } from '../island';
 import { Challenge } from '../Challenge';
 import { Timeline } from '../Timeline';
-import { CHECKS, code, firstTie, INITIAL, LESSON, LINKS, model, orderRun, SOURCES, SUM_NS, type RModel, type SrcId } from './reductions.math';
+import { CHECKS, code, firstTie, fmtSig, INITIAL, LESSON, LINKS, model, orderRun, SOURCES, SUM_NS, type RModel, type SrcId } from './reductions.math';
 import { fmtNum, fmtShape, unravel } from './tensor-ops';
 import './tensor-road.css';
 import './tensor-ops.css';
@@ -65,6 +65,9 @@ function Reduce() {
 	</section>;
 }
 
+/** A count with thin-space thousands groups: 1 000 000 (the same in both languages). */
+const fmtCount = (n: number) => n.toLocaleString('en-US').replace(/,/g, ' ');
+
 /** The machine layer: one sum of n copies of 0.1 in float32, in three orders (core `sum`). */
 function Order() {
 	const locale = useLocale();
@@ -77,32 +80,27 @@ function Order() {
 		{ key: 'rd.oTree', v: run.tree },
 		{ key: 'rd.oWide', v: run.wide },
 	] as const;
-	const fmt = (x: number) => x.toLocaleString('en-US', { maximumFractionDigits: 6, useGrouping: false });
 	return <section className="not-content tr-controls" data-to-controls="order">
 		<div role="radiogroup" aria-label={t(locale, 'rd.oCount')} className="tr-picks">
 			{SUM_NS.map((k, i) => (
 				<button key={k} type="button" role="radio" aria-checked={i === sn}
-					onClick={() => lessonStore(LESSON).getState().set('sn', i)}>{'n = ' + k.toLocaleString('en-US').replace(/,/g, ' ')}</button>
+					onClick={() => lessonStore(LESSON).getState().set('sn', i)}>{'n = ' + fmtCount(k)}</button>
 			))}
 		</div>
-		<div className="to-scroll">
-			<table className="to-sums">
-				<thead>
-					<tr><th scope="col">{t(locale, 'rd.oHow')}</th><th scope="col">{t(locale, 'rd.oSum')}</th><th scope="col">{t(locale, 'rd.oMean')}</th><th scope="col">{t(locale, 'rd.oErr')}</th></tr>
-				</thead>
-				<tbody>
-					{rows.map((r) => (
-						<tr key={r.key}>
-							<th scope="row">{t(locale, r.key)}</th>
-							<td>{fmt(r.v.sum)}</td>
-							<td>{fmt(r.v.mean)}</td>
-							<td>{fmt(r.v.sum - ideal)}</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+		{/* One card per way of adding (a grid that wraps), so the nine numbers fit a phone without a sideways scroll. */}
+		<div className="to-ways">
+			{rows.map((r) => (
+				<div key={r.key} className="to-way">
+					<p className="to-way-name">{t(locale, r.key)}</p>
+					<dl>
+						<div><dt>{t(locale, 'rd.oSum')}</dt><dd>{fmtSig(r.v.sum)}</dd></div>
+						<div><dt>{t(locale, 'rd.oMean')}</dt><dd>{fmtSig(r.v.mean)}</dd></div>
+						<div><dt>{t(locale, 'rd.oErr')}</dt><dd>{fmtSig(r.v.sum - ideal)}</dd></div>
+					</dl>
+				</div>
+			))}
 		</div>
-		<p className="tr-note">{t(locale, 'rd.oNote', { n: fmt(n), ideal: fmt(ideal), exact: fmt(run.exact) })}</p>
+		<p className="tr-note">{t(locale, 'rd.oNote', { n: fmtCount(n), ideal: fmtSig(ideal), exact: fmtSig(run.exact) })}</p>
 	</section>;
 }
 
