@@ -18,7 +18,7 @@ import { Label } from '../scene/Label';
 import { HOVER_RANK, Show, useHoverable, useOverlay } from '../scene/handles';
 import type { StatusSpec } from '../scene/StatusBar';
 import { rowsFor, type Scene } from './cross-product.rows';
-import { LESSON, LIGHT, RANGE2, arcNormal, derive, derive2, fmt, fmtAngle, fmtVec, tri } from './cross-product.math';
+import { LESSON, LIGHT, arcNormal, derive, derive2, fmt, fmtAngle, fmtVec, tri } from './cross-product.math';
 
 /**
  * Lesson 1.8 scenes: CP-1 the cross product in 3D (normal, area, order), CP-2 the 2D signed area (orientation), CP-3 a
@@ -34,15 +34,18 @@ const O3: V = [0, 0, 0];
 const O2: V = [0, 0];
 const TIP: readonly [number, number] = [10, -12];
 /** Length of the CP-3 normal and light arrows (unit directions drawn longer, so their heads read at any zoom). */
-const DIR_LEN = 1.2;
+const DIR_LEN = 1.5;
 
 const mid = (p: V, q: V) => scale(add(p, q), 0.5);
+
+/** CP-2 framing half-size: most of the input box (±4) without shrinking the first figure to a corner. */
+const REACH2 = 3;
 
 const noRaycast = () => {};
 const unitBox = new BoxGeometry(1, 1, 1);
 
 /**
- * CP-2's reach: an invisible square over the whole input range. The home view frames the figure's bounds, so framing
+ * CP-2's reach: an invisible square over most of the input range. The home view frames the figure's bounds, so framing
  * the reach keeps every tip the reader can type or drag in view (b dragged below the x axis left the first framing).
  */
 function Reach({ r }: { r: number }) {
@@ -123,7 +126,7 @@ function Signed2() {
 	const locale = useLocale(), v = useVals(LESSON), z = derive2(v);
 	const signed = (x: number) => (x > 0 ? '+' : '') + fmt(x);
 	return <>
-		<Reach r={RANGE2.max} />
+		<Reach r={REACH2} />
 		<Show ov="area">
 			<Parallelogram lesson={LESSON} id="par2" a="a2" b="b2" role="vecC" label={useOverlay('labels') ? (area) => signed(area) : undefined} />
 		</Show>

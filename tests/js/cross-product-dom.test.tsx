@@ -39,13 +39,13 @@ test('CP-1: the formula and table follow the order; parallel inputs read as the 
 	const store = lessonStore(LESSON);
 	const host = mount(<CrossControls scene={1} locale="en" />);
 	const cells = () => [...host.querySelectorAll('td')].map((td) => td.textContent);
-	// a = (0, 0.5, 2), b = (2, 0.5, 0): rows x, y, z = (0 − 1, 4 − 0, 0 − 1).
-	expect(cells()).toEqual(['0', '1', '-1', '4', '0', '4', '0', '1', '-1']);
-	expect(host.textContent).toContain('a × b = (-1.00, 4.00, -1.00)');
+	// a = (0, −1, 2), b = (2, 0.5, 0): rows x, y, z = (0 − 1, 4 − 0, 0 − (−2)).
+	expect(cells()).toEqual(['0', '1', '-1', '4', '0', '4', '0', '-2', '2']);
+	expect(host.textContent).toContain('a × b = (-1.00, 4.00, 2.00)');
 	act(() => store.getState().set('swap', 1));
-	expect(cells()).toEqual(['1', '0', '1', '0', '4', '-4', '1', '0', '1']);
+	expect(cells()).toEqual(['1', '0', '1', '0', '4', '-4', '-2', '0', '-2']);
 	expect(host.textContent).toContain('The order is b × a');
-	act(() => store.getState().setMany({ swap: 0, b: [0, 1, 4] }));
+	act(() => store.getState().setMany({ swap: 0, b: [0, -2, 4] }));
 	expect(host.textContent).toContain('a and b lie on one line');
 	expect(host.querySelectorAll('.lab-challenge.is-done').length).toBeGreaterThan(0);
 });

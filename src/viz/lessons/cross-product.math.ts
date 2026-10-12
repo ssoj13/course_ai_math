@@ -26,12 +26,13 @@ export const RANGE3 = { min: -2.5, max: 2.5, step: 0.1 };
 export const RANGE2 = { min: -4, max: 4, step: 0.1 };
 
 /**
- * Initial store values. CP-1 starts with a and b lying almost flat, so a × b = (−1, 4, −1) stands up like the normal of
- * a floor (and the three-quarter home view frames it well); it is not the textbook x × y, which challenge 1 asks for. The triangle leans toward the default three-quarter camera (normal along (2, 2, 4)):
+ * Initial store values. CP-1: a × b = (−1, 4, 2) stands up like the normal of a tilted floor. The tilt faces the
+ * parallelogram toward the three-quarter home camera (a flat one was seen edge-on), while the result stays clear of the
+ * frame edge; it is not the textbook x × y, which challenge 1 asks for. The triangle leans toward the default three-quarter camera (normal along (2, 2, 4)):
  * in the xy plane, as in the prose example, the camera saw it so obliquely that the face read as a sliver.
  */
 export const INITIAL = {
-	a: [0, 0.5, 2],
+	a: [0, -1, 2],
 	b: [2, 0.5, 0],
 	swap: 0,
 	a2: [3, 1],
@@ -43,8 +44,11 @@ export const INITIAL = {
 	cull: 1,
 };
 
-/** Direction toward the CP-3 light (unit): up, right and toward the default camera, so the front face starts lit. */
-export const LIGHT: readonly number[] = scale([1, 1.5, 2.5], 1 / Math.hypot(1, 1.5, 2.5));
+/**
+ * Direction toward the CP-3 light (unit): up and to the left, so the front face starts lit (N·L about 0.6) and the light
+ * arrow does not point straight at the default camera, where it read as a dot.
+ */
+export const LIGHT: readonly number[] = scale([-1, 2, 1.5], 1 / Math.hypot(-1, 2, 1.5));
 
 type Vals = LessonState['vals'];
 

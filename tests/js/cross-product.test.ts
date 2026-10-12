@@ -25,12 +25,12 @@ describe('CP-1: the 3D cross product', () => {
 
 	test('perpendicular to both inputs; length equals |a||b| sin θ for the initial pair', () => {
 		const z = derive(vals());
-		// a = (0, 0.5, 2), b = (2, 0.5, 0): (0.5·0 − 2·0.5, 2·2 − 0·0, 0·0.5 − 0.5·2).
-		close(z.c, [-1, 4, -1]);
+		// a = (0, −1, 2), b = (2, 0.5, 0): (−1·0 − 2·0.5, 2·2 − 0·0, 0·0.5 − (−1)·2).
+		close(z.c, [-1, 4, 2]);
 		expect(Math.abs(z.ca)).toBeLessThan(1e-12);
 		expect(Math.abs(z.cb)).toBeLessThan(1e-12);
 		expect(Math.abs(z.len - z.area)).toBeLessThan(1e-12);
-		expect(z.len).toBeCloseTo(Math.sqrt(18), 12);
+		expect(z.len).toBeCloseTo(Math.sqrt(21), 12);
 	});
 
 	test('order: b × a = −(a × b), same length', () => {
@@ -108,7 +108,7 @@ describe('CP-3: triangle normal and winding', () => {
 		// A = (0, 0, 1), B = (2, 0, 0), C = (0, 2, 0): e1 = (2, 0, −1), e2 = (0, 2, −1), e1 × e2 = (2, 2, 4).
 		close(t.n, [2, 2, 4]);
 		expect(t.area).toBeCloseTo(Math.sqrt(24) / 2, 12);
-		expect(t.ndotl).toBeCloseTo((2 * 1 + 2 * 1.5 + 4 * 2.5) / (Math.sqrt(24) * Math.hypot(1, 1.5, 2.5)), 12);
+		expect(t.ndotl).toBeCloseTo((2 * -1 + 2 * 2 + 4 * 1.5) / (Math.sqrt(24) * Math.hypot(-1, 2, 1.5)), 12);
 		expect(t.bright).toBe(t.ndotl);
 		const r = tri(vals({ rev: 1 }));
 		expect(r.ndotl).toBeCloseTo(-t.ndotl, 12);
@@ -128,7 +128,7 @@ describe('challenges and formatting', () => {
 		for (const check of Object.values(CHECKS)) expect(check(vals())).toBe(false);
 		expect(CHECKS.plusZ(vals({ a: [1, 0, 0], b: [0, 1, 0] }))).toBe(true);
 		expect(CHECKS.plusZ(vals({ a: [0, 1, 0], b: [1, 0, 0], swap: 1 }))).toBe(false);
-		expect(CHECKS.parallel(vals({ b: [0, 1, 4] }))).toBe(true);
+		expect(CHECKS.parallel(vals({ b: [0, -2, 4] }))).toBe(true);
 		expect(CHECKS.parallel(vals({ b: [0, 0, 0] }))).toBe(false);
 		expect(CHECKS.areaSix(vals({ a: [2, 0, 0], b: [0, 3, 0] }))).toBe(true);
 		expect(CHECKS.swapped(vals({ swap: 1 }))).toBe(true);
@@ -137,7 +137,7 @@ describe('challenges and formatting', () => {
 		expect(CHECKS.line(vals({ b2: [-3, -1] }))).toBe(true);
 		expect(CHECKS.black(vals({ rev: 1, cull: 0 }))).toBe(true);
 		expect(CHECKS.black(vals({ rev: 1 }))).toBe(false);
-		expect(CHECKS.turnAway(vals({ tC: [0, -2, 0] }))).toBe(true);
+		expect(CHECKS.turnAway(vals({ tC: [0, -2, 1] }))).toBe(true);
 		expect(CHECKS.turnAway(vals({ tC: [0, 2, -3] }))).toBe(false);
 	});
 
