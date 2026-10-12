@@ -6,6 +6,14 @@ description: "Rulers for space; orthonormal change of basis."
 import Quiz from '../../../components/Quiz.astro';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { BasisScene, BasisControls } from '../../../viz/lessons/basis';
+import { rowsFor } from '../../../viz/lessons/basis.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'bas']} />
 
 **Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Projection: shadows on an axis](lesson:projection)
 
@@ -23,7 +31,12 @@ $$
 
 Check with $(3, 4)$: $(3 - 4)(1, 0) + 4\,(1, 1) = (-1, 0) + (4, 4) = (3, 4)$. Any point is reachable, so the span of these two arrows is the whole plane.
 
-{/* scene: 1.6-1 — two draggable basis arrows u₁, u₂; the grid of all s·u₁ + t·u₂ for integer s, t is drawn; drag and the grid shears (preview of Part 2) */}
+Try it. The scene draws every point you can reach with whole numbers of steps: lines in the colour of $\mathbf{u}_1$ are the places with a whole $s$, lines in the colour of $\mathbf{u}_2$ the places with a whole $t$. Drag the tips of $\mathbf{u}_1$ and $\mathbf{u}_2$ (or type them in the panel) and the whole grid shears with them; this is the picture of Part 2, where a matrix moves the grid. The light arrow $\mathbf{v}$ is the point $(3, 4)$, and the dashed walk shows how to reach it: $-1$ step of $\mathbf{u}_1$, then $4$ steps of $\mathbf{u}_2$.
+
+<SceneIsland caption="BS-1 · Lattice: every whole-number combination of u₁ and u₂; drag the rulers and the grid follows." rows={rowsFor(1, locale)}>
+  <BasisScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<BasisControls scene={1} locale={locale} client:load />
 
 ## 2. Dependence: when a ruler is useless
 
@@ -31,9 +44,9 @@ Now drag $\mathbf{u}_2$ until it lies on the line of $\mathbf{u}_1$, say $\mathb
 
 Arrows are **linearly independent** when none of them can be built from the rest. $(1, 0)$ and $(1, 1)$ are independent: no multiple of $(1, 0)$ has a non-zero y component. $(1, 2)$ and $(2, 4)$ are not.
 
-{/* scene: 1.6-2 — drag u₂ onto the line of u₁: the grid flattens to a line; a "dependence meter" (the parallelogram area) goes to zero */}
+Watch it happen in the lattice above (type $(1, 2)$ and $(2, 4)$ into the panel if dragging is fiddly). The grid lines squeeze together and fall onto one line, the shaded cell flattens, and the coordinates of $\mathbf{v}$ turn into dashes: a point off the line cannot be reached at all, and a point on it can be reached in infinitely many ways.
 
-A quick test in 2D: two arrows are dependent exactly when the parallelogram they span has zero area. The scene shows that area as a meter; [lesson 1.8](lesson:cross-product) gives it a formula.
+A quick test in 2D: two arrows are dependent exactly when the parallelogram they span has zero area. The scene shades that parallelogram, the cell of the lattice, and the panel shows its area as a meter: $u_{1x}\,u_{2y} - u_{1y}\,u_{2x}$. For $(1, 0)$ and $(1, 1)$ it is $1 \cdot 1 - 0 \cdot 1 = 1$; for $(1, 2)$ and $(2, 4)$ it is $1 \cdot 4 - 2 \cdot 2 = 0$. [Lesson 1.8](lesson:cross-product) explains where this formula comes from.
 
 ## 3. Basis and dimension
 
@@ -43,7 +56,12 @@ Three arrows in the plane are always dependent: once two of them span the plane,
 
 The **dimension** of a space is the number of arrows in any basis of it. Every basis of the plane has exactly two; every basis of 3D space has exactly three. That is the real meaning of "2D" and "3D", and of the "4096-dimensional" embeddings in the next lesson.
 
-{/* scene: 1.6-3 — 3D: three draggable arrows; when they are coplanar the span is a translucent plane, otherwise all of space */}
+In 3D the same test is a volume: three arrows are dependent exactly when the box they span is flat. The scene starts with the three arrows of the example below, all in the wall $z = 0$, so their span is that wall, drawn as a translucent plane. Pull one of them out of the wall (drag it, or focus its tip and press PageUp) and the span becomes all of space; the panel shows the box volume. Drag an arrow close to the plane of the other two and it snaps into it.
+
+<SceneIsland caption="BS-2 · Span in 3D: three arrows span a plane when they lie in one, all of space otherwise." rows={rowsFor(2, locale)}>
+  <BasisScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<BasisControls scene={2} locale={locale} client:load />
 
 Example. What is the dimension of the span of $(1, 0, 0)$, $(0, 1, 0)$, $(1, 1, 0)$? The third is the sum of the first two, so it adds nothing. The first two are independent. The span is the plane $z = 0$, dimension 2, even though three vectors were written down.
 
@@ -57,11 +75,11 @@ Given a basis $\mathbf{u}_1, \mathbf{u}_2$, every vector $\mathbf{v}$ is one spe
 
 Order matters. In the basis $(0, 1), (1, 0)$, the vector $(2, 3)$ has coordinates $(3, 2)$: three of the first ruler $(0, 1)$ and two of the second $(1, 0)$. Same arrow, a different description.
 
-That is the core idea of a basis change: **the arrow does not move; its numbers change.** A vertex does not jump when you read it in object space instead of world space.
+That is the core idea of a basis change: **the arrow does not move; its numbers change.** A vertex does not jump when you read it in object space instead of world space. The table under the lattice scene shows exactly this: one row for the standard basis $\mathbf{e}_1 = (1, 0)$, $\mathbf{e}_2 = (0, 1)$, one row for $\mathbf{u}_1, \mathbf{u}_2$, both describing the same $\mathbf{v}$.
 
 ## 5. Changing basis with perpendicular unit rulers
 
-Finding the coordinates in a general basis means solving for $c_1, c_2$, which needs the matrix inverse of Part 2. There is one case that needs nothing new. If the basis arrows are unit vectors and mutually perpendicular, an **orthonormal basis**, then the coordinates are simply the shadows of [lesson 1.5](lesson:projection):
+Finding the coordinates in a general basis means solving for $c_1, c_2$, which needs the matrix inverse of Part 2 (lesson 2.9). There is one case that needs nothing new. If the basis arrows are unit vectors and mutually perpendicular, an **orthonormal basis**, then the coordinates are simply the shadows of [lesson 1.5](lesson:projection):
 
 $$
 c_1 = \mathbf{v} \cdot \mathbf{u}_1, \qquad c_2 = \mathbf{v} \cdot \mathbf{u}_2
@@ -72,16 +90,54 @@ Why: project $\mathbf{v} = c_1 \mathbf{u}_1 + c_2 \mathbf{u}_2$ onto $\mathbf{u}
 Example. Rotate the axes by 45°: $\mathbf{u}_1 = (1, 1)/\sqrt 2 \approx (0.707, 0.707)$ and $\mathbf{u}_2 = (1, -1)/\sqrt 2 \approx (0.707, -0.707)$. Both have length 1 and $\mathbf{u}_1 \cdot \mathbf{u}_2 = 0.5 - 0.5 = 0$. The coordinates of $\mathbf{v} = (3, 1)$ in this basis:
 
 $$
-c_1 = 3 \cdot 0.707 + 1 \cdot 0.707 = 2.828, \qquad c_2 = 3 \cdot 0.707 - 1 \cdot 0.707 = 1.414
+\begin{aligned}
+c_1 &= 3 \cdot 0.707 + 1 \cdot 0.707 = 2.828 \\
+c_2 &= 3 \cdot 0.707 - 1 \cdot 0.707 = 1.414
+\end{aligned}
 $$
 
 Rebuild to check: $2.828\,(0.707, 0.707) = (2, 2)$ and $1.414\,(0.707, -0.707) = (1, -1)$; the sum is $(3, 1)$. The length also survives: $2.828^2 + 1.414^2 = 8 + 2 = 10 = 3^2 + 1^2$. Pythagoras does not care which perpendicular rulers you use.
 
-{/* scene: 1.6-4 — rotate a pair of perpendicular unit axes; a fixed point's new coordinates are its shadows on the new axes; standard and new coordinate tables side by side */}
+Turn the axes yourself. In the scene, $\mathbf{u}_1$ points at the angle $\theta$ and $\mathbf{u}_2$ is $\mathbf{u}_1$ turned a quarter turn clockwise, so at $\theta = 45^\circ$ they are exactly the pair above. Drag the tip of $\mathbf{u}_1$ (or scrub $\theta$ in the formula): the point $P = (3, 1)$ stays put, the dashed drops from $P$ hit the new axes at its shadows, and the shadows are its new coordinates. The table puts the old and the new description side by side, and the last column checks Pythagoras.
+
+<SceneIsland caption="BS-3 · Rotated axes: the new coordinates of a fixed point are its shadows on two perpendicular unit rulers." rows={rowsFor(3, locale)}>
+  <BasisScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<BasisControls scene={3} locale={locale} client:load />
 
 This is exactly what a tangent-space normal map does. The shader has three unit, mutually perpendicular arrows $\mathbf{T}, \mathbf{B}, \mathbf{N}$ in world space (when the frame is orthonormal, which renderers enforce or approximate by re-normalizing; baked and interpolated frames drift from it). A stored normal $(n_t, n_b, n_n)$ is rebuilt as $n_t\,\mathbf{T} + n_b\,\mathbf{B} + n_n\,\mathbf{N}$, and going the other way, from world to tangent space, is three dot products.
 
-For a basis that is not orthonormal, $\mathbf{v} \cdot \mathbf{u}_1$ picks up contributions from the other rulers and the shadows are no longer the coordinates. That general case needs "undoing a matrix", which arrives in Part 2.
+## 6. In 3D, and when the rulers are not perpendicular
+
+Everything above works in 3D with three rulers: if $\mathbf{u}_1, \mathbf{u}_2, \mathbf{u}_3$ are unit length and mutually perpendicular, the coordinates of $\mathbf{v}$ are the three readings $\mathbf{v} \cdot \mathbf{u}_1$, $\mathbf{v} \cdot \mathbf{u}_2$, $\mathbf{v} \cdot \mathbf{u}_3$. The scene below starts with such a frame, $\mathbf{u}_1 = (2, 2, 1)/3$, $\mathbf{u}_2 = (-2, 1, 2)/3$, $\mathbf{u}_3 = (1, -2, 2)/3$, and $\mathbf{v} = (3, 3, 0)$. Check one reading: $\mathbf{v} \cdot \mathbf{u}_1 = (3 \cdot 2 + 3 \cdot 2 + 0 \cdot 1)/3 = 4$. The three readings are $(4, -1, -1)$, and they rebuild $\mathbf{v}$: $4\,\mathbf{u}_1 - \mathbf{u}_2 - \mathbf{u}_3 = (3, 3, 0)$.
+
+The checkbox **orthonormal** in the panel keeps the rulers honest: while it is on, dragging one ruler turns the other two with it, so all three stay unit length and perpendicular (the repair is called Gram–Schmidt; it gets its own lesson in the advanced track). Switch it off and the rulers become free. Now bend one of them and watch what breaks.
+
+For a basis that is not orthonormal, $\mathbf{v} \cdot \mathbf{u}_1$ picks up contributions from the other rulers and the readings are no longer the coordinates. Write $\mathbf{v} = c_1 \mathbf{u}_1 + c_2 \mathbf{u}_2 + c_3 \mathbf{u}_3$ and take the dot product with $\mathbf{u}_1$, as in section 5:
+
+$$
+\begin{aligned}
+\mathbf{v} \cdot \mathbf{u}_1 &= c_1\,(\mathbf{u}_1 \cdot \mathbf{u}_1) \\
+&\quad + c_2\,(\mathbf{u}_2 \cdot \mathbf{u}_1) + c_3\,(\mathbf{u}_3 \cdot \mathbf{u}_1)
+\end{aligned}
+$$
+
+Only when the brackets are 1, 0 and 0 does the reading equal $c_1$. A concrete case: $\mathbf{u}_1 = (1, 0, 0)$, $\mathbf{u}_2 = (1, 1, 0)$, $\mathbf{u}_3 = (0, 0, 1)$ and $\mathbf{v} = (3, 4, 0)$. The true coordinates are $(-1, 4, 0)$, exactly as in section 1. The readings are $\mathbf{v} \cdot \mathbf{u}_1 = 3$, $\mathbf{v} \cdot \mathbf{u}_2 = 7$, $\mathbf{v} \cdot \mathbf{u}_3 = 0$. Rebuilding from the readings gives $3\,(1, 0, 0) + 7\,(1, 1, 0) = (10, 7, 0)$, which misses $\mathbf{v}$ by $\sqrt{7^2 + 3^2} \approx 7.62$.
+
+The scene draws both stories at once:
+
+- the **shadows**: dashed perpendicular drops from $\mathbf{v}$ onto each ruler, with the readings $\mathbf{u}_i \cdot \mathbf{v}$ in the panel;
+- the **true coordinates**: the dashed walk $c_1 \mathbf{u}_1$, then $c_2 \mathbf{u}_2$, then $c_3 \mathbf{u}_3$, which always ends exactly on $\mathbf{v}$; it appears once the rulers are bent, and its corners (the large dots) no longer sit on the shadows (for orthonormal rulers the corners are the shadow feet, so the walk would only repeat them);
+- the **ghost**: the grey arrow $\sum_i (\mathbf{u}_i \cdot \mathbf{v})\,\mathbf{u}_i$, what "readings as coordinates" would rebuild, with a dashed gap to $\mathbf{v}$. With orthonormal rulers the ghost sits on $\mathbf{v}$ and disappears.
+
+The table under the scene is the **Gram matrix**: every ruler dotted with every ruler, $\mathbf{u}_i \cdot \mathbf{u}_j$. Its diagonal holds the squared lengths, the rest the leaks between rulers. It is the identity (1 on the diagonal, 0 elsewhere) exactly when the rulers are orthonormal, and exactly then do the brackets above collapse to $c_1$. The panel also shows the handedness: whether the frame turns like Maya's axes (right-handed), like their mirror image (left-handed), or lies flat, in which case most vectors have no coordinates at all.
+
+<SceneIsland caption="BS-4 · Shadows on new rulers: readings equal coordinates only for orthonormal rulers; switch the flag off and bend one." rows={rowsFor(4, locale)}>
+  <BasisScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<BasisControls scene={4} locale={locale} client:load />
+
+Getting the true coordinates for bent rulers means solving three equations for $c_1, c_2, c_3$ at once: "undoing a matrix". That is lesson 2.9 in Part 2, where the same scene comes back with the rulers stacked into a matrix.
 
 > **Say it simpler.** A basis is a set of rulers. Coordinates are the readings. Rulers that point the same way are useless (dependent). With perpendicular unit rulers, the readings are shadows.
 

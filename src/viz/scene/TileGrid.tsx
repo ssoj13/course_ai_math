@@ -42,8 +42,8 @@ export interface TileGridProps {
 	/** Box or row; a function of the drawn values follows the store (eased writes glide, drags are 1:1). */
 	shape: Of<TileShape>;
 	plane?: TilePlane;
-	/** Row with len <= 1: width of the single body inside a unit outline. */
-	fill?: Of<number>;
+	/** Row with len <= 1: width of the single body inside a unit outline; a function may return undefined (a plain row). */
+	fill?: Of<number | undefined>;
 	origin?: readonly number[];
 	/** Colour of whole pieces (default vecA). */
 	role?: SceneRole;

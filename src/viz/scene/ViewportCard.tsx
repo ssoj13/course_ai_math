@@ -42,6 +42,12 @@ export interface ViewportCardProps {
 	status?: StatusSpec;
 	/** The lesson's one first-view draw-in. */
 	drawIn?: boolean;
+	/**
+	 * Initial state of the desktop N-panel (default open). A figure much wider than tall (a graph beside a circle, a
+	 * long ruler) starts with it closed, so the scene gets the full card width; the chevron or N opens it. Phones always
+	 * show the rows as chips.
+	 */
+	panelOpen?: boolean;
 	children: ReactNode;
 }
 
@@ -80,7 +86,7 @@ export function ViewportCard(p: ViewportCardProps): React.JSX.Element {
 	// status bar and the header's camera buttons all talk through it.
 	const [reg] = useState(() => createStage(p.mode, { lesson: p.lesson, id: p.id, overlays, ranges: rowRanges(rows) }));
 	const [proj, setProj] = useState<'persp' | 'ortho'>('persp');
-	const [open, setOpen] = useState(true);
+	const [open, setOpen] = useState(p.panelOpen ?? true);
 	const [inset, setInset] = useState(0);
 	const root = useRef<HTMLDivElement>(null);
 	const sizeId = p.lesson + ':' + p.id;

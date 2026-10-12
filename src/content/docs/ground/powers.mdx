@@ -4,8 +4,16 @@ description: "x³ is a volume, x⁰ = 1, x⁻¹ undoes x, x^½ is the side of a 
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { PowersScene, PowersControls } from '../../../viz/lessons/powers';
+import { rowsFor } from '../../../viz/lessons/powers.rows';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'pw']} />
 
 **Built on:** [Squares, roots and the plane](lesson:squares-and-plane) (a square is an area, a root undoes it).
 
@@ -26,7 +34,7 @@ A **power** $x^n$ with a whole number $n$ means "multiply $n$ copies of $x$ toge
 is the **exponent**; the number below, $x$, is the **base**.
 
 $$
-x^1 = x, \qquad x^2 = x \cdot x, \qquad x^3 = x \cdot x \cdot x
+\begin{aligned} x^1 &= x \\ x^2 &= x \cdot x \\ x^3 &= x \cdot x \cdot x \end{aligned}
 $$
 
 Take $x = 2$. Then $2^1 = 2$, $2^2 = 4$, $2^3 = 8$. Take $x = 3$: $3^1 = 3$, $3^2 = 9$, $3^3 = 27$.
@@ -39,13 +47,29 @@ Each of the first three powers is a shape you can hold:
 
 That is why we say "three *squared*" and "three *cubed*". The words are the shapes.
 
-{/* scene: 0.2-1 — "A square is an area": drag the side x; the square fills with unit tiles counted live (x = 3 → 9 tiles; non-integer x shows partial tiles and the exact area); the N-panel shows x, x² and a √ field that drives it backwards */}
+Drag the end of the side (or type $x$ in the N panel; on a phone, in the chips under the scene). The square fills
+with unit tiles. The second field, $A$, works backwards: type an area and the side becomes its square root.
+
+<SceneIsland caption="0.2-1 · A square is an area: the side x, the unit tiles inside it, and the area field A that drives the side backwards through the root." rows={rowsFor(1, locale)}>
+  <PowersScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<PowersControls scene={1} locale={locale} client:load />
 
 A detail that will matter later. The square with side $2.5$ holds four whole tiles, two half tiles along the right
 edge, two along the top, and a quarter tile in the corner: $4 + 2 \cdot 0.5 \cdot 2 + 0.25 = 6.25$, and $2.5^2 = 6.25$. Tiles are a way to
 *see* the number; the multiplication gives the exact value even when the tiles do not come out whole.
 
-{/* scene: 0.2-2 — 3D widget: the same square extrudes into a cube (x³), tiles become unit cubes, orbitable; a "power" slider n = 1, 2, 3 morphs segment → square → cube */}
+Now the same counting in 3D. Pick the power with $x^1$, $x^2$, $x^3$ under the scene (or step the timeline): the
+stick sweeps into a square, the square lifts into a cube. Orbit the cube with the left mouse button. At $x = 3$ it
+is three layers of nine unit cubes, $27$ in all: **$x^3$ is a volume**. At $x = 2.5$ the last half unit of every edge is
+cut: the three faces you see are made of thinner cut (yellow) pieces, and the $8$ whole cubes sit behind them (orbit
+to the back faces to see them). In numbers: $2.5^3 = 15.625$, of which $8$ are whole cubes and $7.625$ is the cut
+part.
+
+<SceneIsland caption="0.2-2 · Length, area, volume: one body morphs from a stick (x¹) to a square (x²) to a cube (x³); the unit pieces inside count x to the power n." rows={rowsFor(2, locale)}>
+  <PowersScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<PowersControls scene={2} locale={locale} client:load />
 
 Beyond three the picture stops (we cannot draw a 4-dimensional cube), but the counting continues: $2^4 = 16$,
 $2^5 = 32$, $2^{10} = 1024$. Every extra copy of the base multiplies once more.
@@ -93,18 +117,25 @@ $$
 Each step down **divides by the base**: $8 / 2 = 4$, $4 / 2 = 2$. Keep stepping down and do the same thing.
 
 $$
-2^0 = 2 / 2 = 1, \qquad 2^{-1} = 1 / 2 = 0.5, \qquad 2^{-2} = 0.5 / 2 = 0.25, \qquad 2^{-3} = 0.125
+\begin{aligned} 2^0 &= 2 / 2 = 1 \\ 2^{-1} &= 1 / 2 = 0.5 \\ 2^{-2} &= 0.5 / 2 = 0.25 \\ 2^{-3} &= 0.25 / 2 = 0.125 \end{aligned}
 $$
 
-{/* scene: 0.2-3 — powers ladder: n from 3 down to −3 on one strip of tiles, each step down divides by x (halving tiles for x = 2), making x⁰ = 1 and x⁻¹ = 1/x visible */}
+Walk the ladder with Next. Each step down keeps one of the $b$ equal groups of the rung above: for base 2 the
+tiles halve, for base 3 they are cut in three. Nothing special happens at $0$ or at the first negative rung; the
+division just continues into fractions of one tile. Change the base $b$ in the N panel and walk it again.
 
-In tiles: $2^2$ is a 2-by-2 square of 4 tiles; $2^1$ is a strip of 2; $2^0$ is **one tile**; $2^{-1}$ is **half a
+<SceneIsland caption="0.2-3 · The ladder of powers: the exponent walks from 3 down to −3, every step down divides by the base, so b⁰ is one tile and b⁻¹ a fraction of a tile." rows={rowsFor(3, locale)}>
+  <PowersScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<PowersControls scene={3} locale={locale} client:load />
+
+In tiles: $2^3$ is a row of 8 tiles; $2^2$ a row of 4; $2^1$ a strip of 2; $2^0$ is **one tile**; $2^{-1}$ is **half a
 tile**; $2^{-2}$ a quarter; $2^{-3}$ an eighth. The pattern never stops, it just moves into fractions.
 
 So the two definitions are:
 
 $$
-x^0 = 1 \quad (x \neq 0), \qquad x^{-n} = \frac{1}{x^n} \quad (x \neq 0)
+\begin{aligned} x^0 &= 1 && (x \neq 0) \\ x^{-n} &= \frac{1}{x^n} && (x \neq 0) \end{aligned}
 $$
 
 Both are exactly what the one rule demands. For $x^0$: the rule says $x^n \cdot x^0 = x^{n+0} = x^n$, so $x^0$
@@ -133,10 +164,10 @@ $$
 
 So $x^{1/2}$ is the number that, multiplied by itself, gives $x$ (the positive one, as in the previous lesson:
 $-3$ also squares to $9$, but the root sign and the power $1/2$ both mean $3$). That is the square root from the
-previous lesson:
+previous lesson, the side of a square of area $x$:
 
 $$
-x^{1/2} = \sqrt{x} = \text{the side of a square of area } x
+x^{1/2} = \sqrt{x}
 $$
 
 Check: $9^{1/2} = 3$ because $3 \cdot 3 = 9$. $2^{1/2} \approx 1.4142$, the same number as $\sqrt 2$.
@@ -145,7 +176,14 @@ The same reasoning with three copies: $x^{1/3} \cdot x^{1/3} \cdot x^{1/3} = x^1
 whose cube is $x$, the **cube root**: the edge of a cube of volume $x$. $8^{1/3} = 2$ because $2 \cdot 2 \cdot 2 = 8$,
 and $27^{1/3} = 3$.
 
-{/* scene: 0.2-4 — fractional power: scrub the area, the side is the square root (x^½); flip to 3D, scrub the volume, the edge is the cube root (x^⅓) */}
+Here the input is the area (or, with the 3D box ticked, the volume) and the side is the output. Scrub $A$ and
+watch $A^{1/2}$ follow; tick 3D, scrub $V$ and watch the edge $V^{1/3}$. The check line multiplies the copies back:
+$(A^{1/2})^2 = A$ and $(V^{1/3})^3 = V$.
+
+<SceneIsland caption="0.2-4 · Fractional powers: the side of a square of area A is A^½, the edge of a cube of volume V is V^⅓; the 3D box switches the square for the cube." rows={rowsFor(4, locale)}>
+  <PowersScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<PowersControls scene={4} locale={locale} client:load />
 
 Any fraction follows by combining the two rules. $x^{m/n}$ is "take the $n$-th root, then the $m$-th power" (or the
 other way round; for positive $x$ the result is the same):
@@ -205,7 +243,15 @@ why every renderer clamps $r$ or adds a small constant under the fraction bar.
   NumPy's `frexp` writes the same number as $0.75 \cdot 2^3$. Multiplying two floats *adds* their exponents, the one
   rule in hardware. Branch Q of this course opens the bits.
 
-{/* scene: 0.2-5 — pow curves: y = x^n on [0, 1] for a scrubbable n (gamma 2.2 and its inverse 1/2.2, specular 8/32/128); the curve bends down below the diagonal for n > 1 and up for n < 1 */}
+The curve below is $y = t^g$ on $[0, 1]$, with the presets of the list above. For $g > 1$ it sags below the
+dashed diagonal (darker), for $g < 1$ it bulges above it (brighter), and the thin curve $t^{1/g}$ is its mirror
+image: encode, then decode, and you are back on the diagonal. Try $g = 32$ and drag the point: almost everything
+below $t = 0.9$ is black ($0.9^{32} \approx 0.034$).
+
+<SceneIsland caption="0.2-5 · pow curves: y = t^g on [0, 1] for gamma (2.2 and 1/2.2) and specular exponents (8, 32); the inverse curve t^(1/g) mirrors it across the diagonal." rows={rowsFor(5, locale)}>
+  <PowersScene scene={5} locale={locale} client:only="react" />
+</SceneIsland>
+<PowersControls scene={5} locale={locale} client:load />
 
 > **Say it simpler.** $x^n$ is $n$ copies of $x$ multiplied: a length, an area, a volume. Going one exponent down
 > divides by $x$, so $x^0 = 1$ and $x^{-1} = 1/x$. Half an exponent is a root: $x^{1/2} = \sqrt x$. One rule holds it
