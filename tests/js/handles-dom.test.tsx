@@ -72,8 +72,10 @@ test('focus lights the owner and shows a ring at the projected handle; blur clea
 	// A key press is an indirect change (Ruling U): the value jumps, the drawn handle (and its ring) eases after it.
 	expect(lessonStore(lesson).getState().vals.a).toEqual([3.1, 1]);
 	expect(host.querySelector<HTMLElement>('.lab-handle-ring')!.style.left).toBe('30px');
-	await act(() => new Promise((r) => setTimeout(r, 450)));
-	expect(host.querySelector<HTMLElement>('.lab-handle-ring')!.style.left).toBe('31px');
+	// Wait for the spring to land instead of a fixed sleep: CI machines run frames slower than a dev box.
+	const ringLeft = () => host.querySelector<HTMLElement>('.lab-handle-ring')!.style.left;
+	for (let t = 0; t < 3000 && ringLeft() !== '31px'; t += 50) await act(() => new Promise((r) => setTimeout(r, 50)));
+	expect(ringLeft()).toBe('31px');
 	act(() => a.blur());
 	expect(lessonStore(lesson).getState().hot.size).toBe(0);
 	expect(host.querySelector('.lab-handle-ring')).toBeNull();
