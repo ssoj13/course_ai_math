@@ -73,8 +73,8 @@ to the roots, depth stack, glossary, auto flashcards ("variance is built on ___"
 exist, no cycles in `built-on`. Example: attention → softmax + dot product → cosine → law of cosines → Pythagoras.
 
 Implemented (Task 9, 2026-10-11):
-- `src/data/terms.json` (Part 0/1/3 terms incl. 1.7 `embedding-table`, `nearest-neighbour`, `semantic-search`, `rag`, `float`, `matrix`, `determinant`, `attention` with
-  `lessons: []`). English fields top-level, Russian under `ru` (course.json convention). `lessons[0]` = where the
+- `src/data/terms.json` (Part 0/1/3 terms incl. 1.7 `embedding-table`, `nearest-neighbour`, `semantic-search`, `rag`,
+  `softmax` (attention rests on it); forward terms `float`, `matrix`, `determinant`, `attention` with `lessons: []`). English fields top-level, Russian under `ru` (course.json convention). `lessons[0]` = where the
   term is introduced. Depth: ground | vectors | matrices | ai | machine. Edges are stored once on the term they read
   from (`X built-on Y`); `is-a` counts as a foundation edge with `built-on` (acyclic, genealogy follows both); a
   `used-in` that restates a reversed `built-on` is rejected; `equivalent-to` is stored on one side only.
