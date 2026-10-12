@@ -1,15 +1,15 @@
 /**
  * Typed accessors over `src/data/course.json`, the single source of truth for the course structure:
- * lesson/module numbers, URLs, prev/next, progress ids and every generated list derive from it.
+ * curriculum numbers (`numberCourse`), URLs, prev/next, progress ids and every generated list derive from it.
  * astro.config.mjs and remark-lesson-links.mjs read the same JSON directly (they run outside Vite's TS pipeline);
- * the rules they share with this file (locale prefixes, localized texts, `short ?? title` labels) live in
- * `course-rules.mjs`, and the numbering / `<module>/<lesson>/` URL rule is the same one-liner in each consumer.
+ * the rules they share with this file (locale prefixes, localized texts, `short ?? title` labels, curriculum
+ * numbering) live in `course-rules.mjs`, and the `<module>/<lesson>/` URL rule is the same one-liner in each consumer.
  *
  * Texts are per locale: `loc(lesson | module, locale)` returns title/summary/label; URL helpers take an optional
  * locale (default English = Starlight's root locale, no prefix; Russian lives under `/ru/`).
  */
 import data from '../data/course.json';
-import { courseText, localizedUrl, splitLocale, type CourseItem, type Locale } from './course-rules.mjs';
+import { courseText, localizedUrl, numberCourse, splitLocale, type CourseItem, type Locale } from './course-rules.mjs';
 
 export { LOCALES, asLocale, fromStarlight, type Locale } from './course-rules.mjs';
 
@@ -21,17 +21,21 @@ export interface LessonJson extends CourseItem {
 export interface ModuleJson extends CourseItem {
 	slug: string;
 	optional?: boolean;
+	/** No part number (the `start` module); see `numberCourse`. */
+	unnumbered?: boolean;
+	/** Explicit CURRICULUM.md part number when an earlier part is not built yet; see `numberCourse`. */
+	part?: number;
 	lessons: LessonJson[];
 }
 
 export interface Lesson {
 	slug: string;
 	branch?: boolean;
-	/** Global lesson number, 1..N in course order. */
-	num: number;
+	/** CURRICULUM.md id `P.k` (`1.4`); null in an unnumbered module. */
+	id: string | null;
 	moduleSlug: string;
-	/** Module number, 1..M. */
-	moduleNum: number;
+	/** CURRICULUM.md part of the module; null for an unnumbered module. */
+	part: number | null;
 	/** True for lessons of an optional module. */
 	optional: boolean;
 	/** Content id / URL path without base and locale: `<module>/<lesson>`. */
@@ -42,25 +46,27 @@ export interface Lesson {
 
 export interface Module {
 	slug: string;
-	num: number;
+	/** CURRICULUM.md part number (Ground = 0); null for an unnumbered module. */
+	part: number | null;
 	optional: boolean;
 	lessons: Lesson[];
 	/** Raw course.json entry; read texts through `loc()`. */
 	readonly json: ModuleJson;
 }
 
-let counter = 0;
-export const modules: readonly Module[] = (data.modules as ModuleJson[]).map((m, i) => ({
+const json = data.modules as ModuleJson[];
+const numbers = numberCourse(json);
+export const modules: readonly Module[] = json.map((m, i) => ({
 	slug: m.slug,
-	num: i + 1,
+	part: numbers[i].part,
 	optional: m.optional === true,
 	json: m,
-	lessons: m.lessons.map((l) => ({
+	lessons: m.lessons.map((l, k) => ({
 		slug: l.slug,
 		...(l.branch ? { branch: true } : {}),
-		num: ++counter,
+		id: numbers[i].ids[k],
 		moduleSlug: m.slug,
-		moduleNum: i + 1,
+		part: numbers[i].part,
 		optional: m.optional === true,
 		path: `${m.slug}/${l.slug}`,
 		json: l,

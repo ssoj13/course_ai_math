@@ -81,6 +81,45 @@ export function localizedUrl(base, path, locale) {
  */
 
 /**
+ * @typedef {{ unnumbered?: boolean, part?: number, lessons: readonly unknown[] }} NumberedModuleJson
+ * @typedef {{ part: number | null, ids: (string | null)[] }} ModuleNumbers
+ */
+
+/**
+ * CURRICULUM.md numbering: modules are "Part P", lessons are "P.k" (k = 1-based position in the module, side branches
+ * included). The first numbered module is Part 0 (Ground); each next one is the previous part + 1 unless it declares
+ * `part` explicitly, which is how a module keeps its curriculum number while an earlier part is not built yet
+ * (Tensors = Part 3 before Matrices = Part 2 exists). `unnumbered: true` (the `start` module) takes no number and
+ * does not shift the parts after it. Parts must strictly increase, so a stale override fails the build.
+ * @param {readonly NumberedModuleJson[]} modules course.json modules in course order
+ * @returns {ModuleNumbers[]}
+ */
+export function numberCourse(modules) {
+	let prev = -1;
+	return modules.map((m, i) => {
+		if (m.unnumbered) {
+			if (m.part !== undefined) throw new Error(`course.json module ${i}: "unnumbered" and "part" exclude each other`);
+			return { part: null, ids: m.lessons.map(() => null) };
+		}
+		const part = m.part ?? prev + 1;
+		if (!Number.isInteger(part) || part <= prev) throw new Error(`course.json module ${i}: part ${part} must be an integer above ${prev}`);
+		prev = part;
+		return { part, ids: m.lessons.map((_, k) => `${part}.${k + 1}`) };
+	});
+}
+
+/**
+ * Navigation label with the curriculum number in front (`0.3 Pythagoras`, `0. Ground`); unnumbered items keep the
+ * bare label. One rule for the sidebar, prev/next links and the course map.
+ * @param {string | number | null} num lesson id or part number
+ * @param {string} label
+ */
+export function numbered(num, label) {
+	if (num === null) return label;
+	return typeof num === 'number' ? `${num}. ${label}` : `${num} ${label}`;
+}
+
+/**
  * Localized texts of a course.json module or lesson. English = the top-level fields; other locales = the per-locale
  * object, which must exist (a missing translation is a build error, not a silent English fallback). `label` is the
  * compact navigation label: `short ?? title` (sidebar, prev/next).

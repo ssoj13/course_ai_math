@@ -1,7 +1,8 @@
 ---
 /**
- * Starlight PageTitle override: the stock <h1> plus, on lesson pages, a "Lesson N · Module M — Title"
- * eyebrow derived from course.json (frontmatter titles carry no numbers).
+ * Starlight PageTitle override: the stock <h1> plus, on lesson pages, a "Lesson P.k · Part P — Title" eyebrow
+ * derived from course.json (CURRICULUM.md numbering; frontmatter titles carry no numbers). Lessons of an
+ * unnumbered module (`start`) show only the module title.
  */
 import Default from '@astrojs/starlight/components/PageTitle.astro';
 import { lessonByPath, moduleOf, loc } from '../../lib/course';
@@ -9,12 +10,14 @@ import { lessonByPath, moduleOf, loc } from '../../lib/course';
 import { pageLocale, t } from '../../i18n/ui';
 const locale = pageLocale(Astro);
 const lesson = lessonByPath(Astro.locals.starlightRoute.id);
+// A lesson has an id exactly when its module has a part (`numberCourse`).
+const nums = lesson?.id && `${t(locale, 'course.lesson', { num: lesson.id })} · ${t(locale, 'course.part', { num: String(lesson.part) })} — `;
 ---
 
 {
 	lesson && (
 		<p class="lesson-eyebrow">
-			{t(locale, 'course.lesson', { num: lesson.num })} · {t(locale, 'course.module', { num: lesson.moduleNum })} — {loc(moduleOf(lesson.slug), locale).title}{lesson.optional && t(locale, 'course.optional')}
+			{nums}{loc(moduleOf(lesson.slug), locale).title}{lesson.optional && t(locale, 'course.optional')}
 		</p>
 	)
 }

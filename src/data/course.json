@@ -2,6 +2,7 @@
   "modules": [
     {
       "slug": "start",
+      "unnumbered": true,
       "title": "Start here",
       "summary": "What a model actually computes, the one sentence the whole course follows, and how to read it.",
       "lessons": [
@@ -198,6 +199,7 @@
     },
     {
       "slug": "tensors",
+      "part": 3,
       "title": "Tensors",
       "summary": "Numbers on grids with any number of axes: shapes, real data, memory and strides.",
       "lessons": [

@@ -1,10 +1,11 @@
 ---
 import { modules, loc, href } from '../lib/course';
+import { numbered } from '../lib/course-rules.mjs';
 import { pageLocale, t } from '../i18n/ui';
 const locale = pageLocale(Astro);
 ---
 {modules.map(m => <section>
-<h2>{m.num}. {loc(m, locale).title}</h2>
+<h2>{numbered(m.part, loc(m, locale).title)}</h2>
 <p>{loc(m, locale).summary}</p>
-<ol start={m.lessons[0].num}>{m.lessons.map(l => <li><a href={href(l.slug, undefined, locale)}>{loc(l, locale).label}</a>{l.branch && t(locale, 'course.branch')} — {loc(l, locale).summary}</li>)}</ol>
+<ul>{m.lessons.map(l => <li>{l.id && `${l.id} `}<a href={href(l.slug, undefined, locale)}>{loc(l, locale).label}</a>{l.branch && t(locale, 'course.branch')} — {loc(l, locale).summary}</li>)}</ul>
 </section>)}

@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { satteri } from '@astrojs/markdown-satteri';
 import courseLinks from './src/lib/remark-lesson-links.mjs';
 import katexMath from './src/lib/satteri-math.mjs';
-import { STARLIGHT_LOCALES, courseText } from './src/lib/course-rules.mjs';
+import { STARLIGHT_LOCALES, courseText, numberCourse, numbered } from './src/lib/course-rules.mjs';
 import { fontsource } from './src/lib/fonts.mjs';
 
 const BASE = '/math-course';
@@ -15,18 +15,19 @@ const BASE = '/math-course';
 /** @type {{ modules: import('./src/lib/course').ModuleJson[] }} */
 const course = JSON.parse(readFileSync(new URL('./src/data/course.json', import.meta.url), 'utf8'));
 
-let lessonNum = 0;
+const numbers = numberCourse(course.modules);
 /**
- * One sidebar group per module with the lessons numbered by the GLOBAL lesson number. Long titles use the lesson's
- * optional `short` label so they fit the sidebar (same rule as `Lesson.label` in course.ts); side-branch lessons get a
- * `↳` prefix. Every group stays expanded so the whole course is visible at a glance.
+ * One sidebar group per module, numbered like CURRICULUM.md (`numberCourse`: Part P, lessons P.k; the `start` module
+ * is unnumbered). Long titles use the lesson's optional `short` label so they fit the sidebar (same rule as
+ * `Lesson.label` in course.ts); side-branch lessons get a `↳` prefix. Every group stays expanded so the whole course
+ * is visible at a glance.
  */
 const moduleGroups = course.modules.map((m, i) => ({
-	label: `${i + 1}. ${m.title}${m.optional ? ' (optional)' : ''}`,
-	translations: { ru: `${i + 1}. ${courseText(m, 'ru').title}${m.optional ? ' (необязательно)' : ''}` },
-	items: m.lessons.map((l) => ({
-		label: `${l.branch ? '↳ ' : ''}${++lessonNum}. ${l.short ?? l.title}`,
-		translations: { ru: `${l.branch ? '↳ ' : ''}${lessonNum}. ${courseText(l, 'ru').label}` },
+	label: `${numbered(numbers[i].part, m.title)}${m.optional ? ' (optional)' : ''}`,
+	translations: { ru: `${numbered(numbers[i].part, courseText(m, 'ru').title)}${m.optional ? ' (необязательно)' : ''}` },
+	items: m.lessons.map((l, k) => ({
+		label: `${l.branch ? '↳ ' : ''}${numbered(numbers[i].ids[k], l.short ?? l.title)}`,
+		translations: { ru: `${l.branch ? '↳ ' : ''}${numbered(numbers[i].ids[k], courseText(l, 'ru').label)}` },
 		slug: `${m.slug}/${l.slug}`,
 	})),
 }));

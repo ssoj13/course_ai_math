@@ -4,16 +4,18 @@
  *    (index.mdx, ru/index.mdx) are resolved here with the same resolver as the link plugin, in the page's locale.
  * 2. Lesson pages get prev/next links in COURSE order (course.json). The stock links follow the sidebar,
  *    which would send the first lesson back to the roadmap and the last one on to the Reference group.
- *    Labels match the sidebar (`short` label when the lesson has one) in the page's locale; untranslated Russian
- *    pages (Starlight fallback routes, English body) still link to the Russian URLs, so the reader stays in Russian.
+ *    Labels match the sidebar (curriculum id, `short` label when the lesson has one) in the page's locale;
+ *    untranslated Russian pages (Starlight fallback routes, English body) still link to the Russian URLs, so the
+ *    reader stays in Russian.
  */
 import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
 import { adjacent, fromStarlight, href, lessonByPath, loc, type Lesson, type Locale } from './course';
+import { numbered } from './course-rules.mjs';
 import { resolveCourseLink } from './remark-lesson-links.mjs';
 
 const link = (locale: Locale, l?: Lesson) =>
 	l &&
-	({ type: 'link', label: `${l.num}. ${loc(l, locale).label}`, href: href(l.slug, undefined, locale), isCurrent: false, badge: undefined, attrs: {} } as const);
+	({ type: 'link', label: numbered(l.id, loc(l, locale).label), href: href(l.slug, undefined, locale), isCurrent: false, badge: undefined, attrs: {} } as const);
 
 export const onRequest = defineRouteMiddleware((context) => {
 	const route = context.locals.starlightRoute;
