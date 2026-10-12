@@ -20,7 +20,7 @@ import { Stroke, usePxScale, type StrokeHandle } from '../scene/view';
 import type { StatusSpec } from '../scene/StatusBar';
 import { rowsFor, type Scene } from './waves-dft.rows';
 import {
-	chain, CLOCK, coefA, coefB, derive, deriveEpi, DRAW_EXTENT, fmt2, HALF, LESSON, N, rebuildAt, resampleClosed, signalCurve,
+	chain, CLOCK, coefA, coefB, derive, deriveEpi, DRAW_EXTENT, fmt2, HALF, LESSON, MAX_STICKS, N, rebuildAt, resampleClosed, signalCurve,
 	signalId, SPEC, xpos,
 } from './waves-dft.math';
 
@@ -199,11 +199,34 @@ const CIRCLE_SEG = 40;
 const TRACE = 512;
 /** Orbits smaller than this (world units) are not drawn: a circle of a pixel or two only adds noise. */
 const MIN_ORBIT = 0.03;
-const ZERO: [number, number, number][] = [[0, 0, 0], [0, 0, 0]];
 const PEN = new CircleGeometry(1, 24);
+
+/**
+ * Fixed capacities (points) of the per-frame lines. A drei/three-stdlib fat line keeps drawing the segment count it had
+ * when the GPU first saw it: positions set later with MORE points are cut back to that count (measured: the trace stayed
+ * one segment long, a chain grown from 3 to 10 sticks showed 3). So every per-frame line is created at its full
+ * capacity and always rewritten with exactly that many points, the unused tail collapsed onto the last real point.
+ */
+const STICK_CAP = MAX_STICKS + 1;
+const CIRCLE_CAP = 2 * MAX_STICKS * CIRCLE_SEG;
+const TRACE_CAP = TRACE + 2;
+const LIVE_CAP = 1200;
+const zeros = (n: number): [number, number, number][] => Array.from({ length: n }, () => [0, 0, 0]);
+const ZERO_STICKS = zeros(STICK_CAP);
+const ZERO_CIRCLES = zeros(CIRCLE_CAP);
+const ZERO_TRACE = zeros(TRACE_CAP);
+const ZERO_LIVE = zeros(LIVE_CAP);
 
 /** Flat xyz list of 2D points. */
 const flat = (pts: readonly (readonly number[])[]): number[] => pts.flatMap((p) => [p[0], p[1], 0]);
+
+/** Flat xyz list of exactly cap points: pts, then its last point repeated (zero-length, invisible segments). */
+function padded(pts: readonly (readonly number[])[], cap: number, fallback: readonly number[] = [0, 0]): number[] {
+	const out = flat(pts.slice(0, cap));
+	const last = pts.length ? pts[Math.min(pts.length, cap) - 1] : fallback;
+	for (let i = Math.min(pts.length, cap); i < cap; i++) out.push(last[0], last[1], 0);
+	return out;
+}
 
 /**
  * The chain of sticks, their orbit circles, the pen and the trace it leaves. Nothing here re-renders per frame: the
@@ -232,27 +255,27 @@ function Chain() {
 	useFrame(() => {
 		const time = lessonStore(CLOCK).getState().vals.t as number;
 		const joints = chain(d.e, d.S, time);
-		sticks.current?.setPositions(flat(joints));
-		const ring: number[] = [];
+		sticks.current?.setPositions(padded(joints, STICK_CAP));
+		const ring: number[][] = [];
 		d.e.list.slice(0, d.S).forEach((st, j) => {
 			if (st.r < MIN_ORBIT) return;
 			const [cx, cy] = joints[j];
 			for (let i = 0; i < CIRCLE_SEG; i++) {
 				const a0 = (2 * Math.PI * i) / CIRCLE_SEG;
 				const a1 = (2 * Math.PI * (i + 1)) / CIRCLE_SEG;
-				ring.push(cx + st.r * Math.cos(a0), cy + st.r * Math.sin(a0), 0, cx + st.r * Math.cos(a1), cy + st.r * Math.sin(a1), 0);
+				ring.push([cx + st.r * Math.cos(a0), cy + st.r * Math.sin(a0)], [cx + st.r * Math.cos(a1), cy + st.r * Math.sin(a1)]);
 			}
 		});
-		circles.current?.setPositions(ring.length ? ring : flat(ZERO));
 		const end = joints[joints.length - 1];
+		circles.current?.setPositions(padded(ring, CIRCLE_CAP, end));
 		const upto = full.slice(0, Math.floor(time * TRACE) + 1);
-		trace.current?.setPositions(flat([...upto, end]));
+		trace.current?.setPositions(padded([...upto, end], TRACE_CAP));
 		pen.current?.position.set(end[0], end[1], 0);
 	});
 	return <>
-		{showCircles && <Stroke ref={circles} points={ZERO} segments color={pal.muted} width={1} halo={false} order={0.7} opacity={0.7} />}
-		{showTrace && <Stroke ref={trace} points={ZERO} color={pal.vecC} width={STYLE.core} order={1.5} />}
-		<Stroke ref={sticks} points={ZERO} color={pal.vecA} width={2} halo={false} order={2} />
+		{showCircles && <Stroke ref={circles} points={ZERO_CIRCLES} segments color={pal.muted} width={1} halo={false} order={0.7} opacity={0.7} />}
+		{showTrace && <Stroke ref={trace} points={ZERO_TRACE} color={pal.vecC} width={STYLE.core} order={1.5} />}
+		<Stroke ref={sticks} points={ZERO_STICKS} color={pal.vecA} width={2} halo={false} order={2} />
 		<group ref={pen}>
 			<mesh geometry={PEN} renderOrder={2.9}>
 				<meshBasicMaterial color={pal.light} transparent depthWrite={false} />
@@ -325,15 +348,15 @@ function DrawPad() {
 			const p = world(e.clientX, e.clientY);
 			const last = pts[pts.length - 1];
 			// Keep points at least a twentieth of a unit apart: a still finger adds nothing.
-			if (!p || Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.05) return;
+			if (!p || pts.length >= LIVE_CAP || Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.05) return;
 			pts.push(p);
-			live.current?.setPositions(flat(pts.length > 1 ? pts : [pts[0], pts[0]]));
+			live.current?.setPositions(padded(pts, LIVE_CAP));
 			invalidate();
 		}, opts);
 		const end = (e: PointerEvent) => {
 			if (e.pointerId !== id) return;
 			id = null;
-			live.current?.setPositions(flat(ZERO));
+			live.current?.setPositions(padded([], LIVE_CAP));
 			invalidate();
 			const path = resampleClosed(pts);
 			pts = [];
@@ -348,10 +371,11 @@ function DrawPad() {
 			ac.abort();
 			el.style.touchAction = '';
 			el.style.cursor = '';
-			live.current?.setPositions(flat(ZERO));
+			live.current?.setPositions(padded([], LIVE_CAP));
 		};
 	}, [reg, camera, invalidate, on]);
-	return <Stroke ref={live} points={ZERO} color={pal.hot} width={STYLE.core} halo={false} order={3} />;
+	// Mounted only in draw mode: a collapsed (empty) stroke would still paint a dot.
+	return on && <Stroke ref={live} points={ZERO_LIVE} color={pal.hot} width={STYLE.core} halo={false} order={3} />;
 }
 
 function Epicycles() {
