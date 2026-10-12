@@ -76,6 +76,12 @@ animation.**
 | Lessons 3.6 einsum + 3.7 layer (DotUnit presets, S3 light box, S4 plugs-and-cables) | `worktree-agent-a8d573ce2786a80bd` | `batch-tensors-c-report.md` | 4528 |
 | Lessons 2.3 transform-gallery + 2.4 matrix-multiplication | `worktree-agent-a8aae68300b1dfec5` | `batch-matrices-b-report.md` | 4529 |
 
+**State after the stop (20:20):** 2.1+2.2 MERGED into feat/engine/main (gates green: 873 tests, 59 pages) but with a
+KNOWN DEFECT: horizontal page scroll at 360 px on both pages (overflow 210/236 px, EN+RU; cause not found) and its
+screenshots were never looked at — fix first. 3.6+3.7: WIP `7c1d4b4` pushed as `origin/wip/einsum-layer` (3.6 code +
+core ExtentError/typed spec reasons; no pages, 3.7 not started, gates not run) — NOT merged. 2.3+2.4: not started
+(branch has only a resume note commit 840e7c9 that force-added a gitignored report; do not merge it).
+
 All three were told at ~20:15 to STOP: kill processes, WIP-commit, write a resume note. Resume each via SendMessage to
 the same agent (or a new agent pointed at the branch + its report). Merge a branch into feat/engine/main only if its
 gates are green; otherwise push the branch and finish it first. Known small TODOs: link 3.4 "No copy: stride 0" to
