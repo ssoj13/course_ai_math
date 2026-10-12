@@ -12,12 +12,17 @@ import { pageLocale } from '../i18n/ui';
 import { lessonByPath, lessonBySlug } from '../lib/course';
 import { TermMap } from '../viz/terms/TermMap';
 import { EDGES, ORDER, introducedIn, mapData } from '../viz/terms/data';
-import { foundationsIn, layerCount, mapHeight, neighborhoodIn, wrapLabel } from '../viz/terms/graph';
+import { foundationsIn, layerCount, mapHeight, neighborhoodIn, spineIn, wrapLabel } from '../viz/terms/graph';
 
 interface Props {
 	/** Lesson slug; defaults to the current route's lesson (the prop exists for non-lesson demo pages). */
 	lesson?: string;
 	hops?: 1 | 2;
+	/**
+	 * Start-here pages: the course backbone to show around the lesson's own terms (term ids). The card then draws
+	 * those terms joined to their nearest backbone foundations (`spineIn`), instead of the lesson's direct neighbours.
+	 */
+	spine?: readonly string[];
 }
 
 const locale = pageLocale(Astro);
@@ -26,10 +31,11 @@ if (!slug || !lessonBySlug(slug)) throw new Error(`<LessonMap>: not a lesson pag
 const intro = introducedIn(slug);
 const own = intro.map((t) => t.id);
 if (own.length === 0) throw new Error(`<LessonMap>: lesson "${slug}" introduces no terms in src/data/terms.json`);
-const near = neighborhoodIn(ORDER, EDGES, own, Astro.props.hops ?? 1);
+const spine = Astro.props.spine ? spineIn(ORDER, EDGES, [...new Set([...own, ...Astro.props.spine])]) : null;
+const near = spine ?? neighborhoodIn(ORDER, EDGES, own, Astro.props.hops ?? 1);
 // Machine-level terms of the lesson are drawn, but their own foundations (rounding -> floating point) are left to full
 // screen: they widen the card past a readable zoom (measured on the dot-product lesson in Russian).
-const card = foundationsIn(ORDER, EDGES, own, intro.filter((t) => t.depth !== 'machine').map((t) => t.id));
+const card = spine ?? foundationsIn(ORDER, EDGES, own, intro.filter((t) => t.depth !== 'machine').map((t) => t.id));
 const data = mapData(near.ids, near.edges, locale);
 const tall = data.nodes.some((n) => card.ids.includes(n.id) && wrapLabel(n.label).length > 1);
 ---
