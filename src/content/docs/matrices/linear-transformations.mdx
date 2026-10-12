@@ -1,0 +1,232 @@
+---
+title: "Linear transformations"
+description: "Grid lines stay straight and evenly spaced, the origin stays put; where the basis lands decides everything."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { LinearScene, LinearControls } from '../../../viz/lessons/linear-transformations';
+import { rowsFor } from '../../../viz/lessons/linear-transformations.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'lt']} />
+
+**Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Basis, span, independence and dimension](lesson:basis)
+
+In Maya, an object's transform moves every one of its vertices at once. Leave the translation at zero and keep only rotate, scale and shear: what is left is a **linear transformation**. It is the most important kind of map in this course: a whole neural-network layer is one, plus a shift. This lesson shows what "linear" means in pictures and in two equations, and why the whole map is decided by where just two arrows land.
+
+## 1. A rule that moves every arrow
+
+A **transformation** is a rule that takes an arrow and returns an arrow. We call the rule $T$; $T(\mathbf{v})$ ("T of v") is the output arrow when the input is $\mathbf{v}$. The output is also called the **image** of $\mathbf{v}$.
+
+A rule is **linear** when it respects the two things you can do with arrows ([lesson 1.2](lesson:vector-arithmetic)): adding them and scaling them. Section 4 writes this down exactly. First the picture, because the picture is what you will remember.
+
+## 2. Two arrows decide every point
+
+The standard basis has two arrows: $\mathbf{e}_1 = (1, 0)$, one step along x, and $\mathbf{e}_2 = (0, 1)$, one step along y. Every input is built from them: $\mathbf{v} = (x, y) = x\,\mathbf{e}_1 + y\,\mathbf{e}_2$ ([lesson 1.6](lesson:basis)). A linear rule keeps sums and scalings, so it must send that combination to the same combination of the images:
+
+$$
+T(x\,\mathbf{e}_1 + y\,\mathbf{e}_2) = x\,T(\mathbf{e}_1) + y\,T(\mathbf{e}_2)
+$$
+
+So once you know the two images $T(\mathbf{e}_1)$ and $T(\mathbf{e}_2)$, you know the image of every point. Example: let $T(\mathbf{e}_1) = (2, 1)$ and $T(\mathbf{e}_2) = (1, 2)$, and take $\mathbf{v} = (2, -1)$. Walk two copies of $(2, 1)$, then one copy of $(1, 2)$ backwards:
+
+$$
+T(\mathbf{v}) = 2\,(2, 1) - 1\,(1, 2) = (4, 2) + (-1, -2) = (3, 0)
+$$
+
+The same coefficients $2$ and $-1$, new arrows. That is the whole trick.
+
+Try it. Drag the tips of $T(\mathbf{e}_1)$ and $T(\mathbf{e}_2)$ (or type them in the panel). The coloured lines are the images of the grid lines, the letter F is a little mesh, and the grey arrow $\mathbf{v}$ is an input whose image $T(\mathbf{v})$ is built by the dashed walk. The panel's **morph** $t$ slides from the plain grid ($t = 0$) to the whole map ($t = 1$); every frame of that slide is a linear map too. Watch three things that never break:
+
+- grid lines stay **straight**;
+- parallel lines stay **parallel and evenly spaced**;
+- the origin **stays put**.
+
+<SceneIsland caption="LT-1 · Where the basis lands: drag T(e₁) and T(e₂); the grid, the letter F and the image of v follow." rows={rowsFor(1, locale)}>
+  <LinearScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<LinearControls scene={1} locale={locale} client:load />
+
+Two shapes are worth making on purpose. Put $T(\mathbf{e}_1)$ above the diagonal and $T(\mathbf{e}_2)$ below it, say $(1, 2)$ and $(2, 1)$: the F reads backwards, the map **mirrors** the plane, and the image of the unit square has a negative signed area. Then point both images along one line, say $(1, 1)$ and $(2, 2)$: the whole plane is **squashed** onto that line. Both are still linear. The two images do not have to form a basis.
+
+## 3. Write the two images as columns
+
+Write $T(\mathbf{e}_1)$ as the first column and $T(\mathbf{e}_2)$ as the second column of a table in square brackets. That table is a **matrix**; we call it $A$. Writing $A\mathbf{v}$, a matrix next to a vector, means "apply this matrix to this vector": $x$ copies of the first column plus $y$ copies of the second.
+
+$$
+A = \begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix},
+\qquad
+A\mathbf{v} = 2\begin{bmatrix} 2 \\ 1 \end{bmatrix} - 1\begin{bmatrix} 1 \\ 2 \end{bmatrix} = \begin{bmatrix} 3 \\ 0 \end{bmatrix}
+$$
+
+Another input: $\mathbf{w} = (1, 3)$ gives $A\mathbf{w} = 1\,(2, 1) + 3\,(1, 2) = (5, 7)$. Four numbers store the whole map. [Lesson 2.2](lesson:matrix-columns) reads the same four numbers a second way, row by row.
+
+## 4. What linear really requires
+
+A rule $T$ is linear when, for all arrows $\mathbf{v}, \mathbf{w}$ and every number $s$:
+
+$$
+T(\mathbf{v} + \mathbf{w}) = T(\mathbf{v}) + T(\mathbf{w}), \qquad T(s\,\mathbf{v}) = s\,T(\mathbf{v})
+$$
+
+In words: adding first and then transforming gives the same arrow as transforming first and then adding; scaling first or transforming first also agree. Taking $s = 0$ gives $T(\mathbf{0}) = \mathbf{0}$: **the origin cannot move**.
+
+Check with $A$ and $\mathbf{v} = (2, -1)$, $\mathbf{w} = (1, 3)$, so $\mathbf{v} + \mathbf{w} = (3, 2)$:
+
+$$
+A(\mathbf{v} + \mathbf{w}) = 3\,(2, 1) + 2\,(1, 2) = (8, 7) = (3, 0) + (5, 7) = A\mathbf{v} + A\mathbf{w}
+$$
+
+And scaling by $s = -2$: $A(-2\mathbf{v}) = A(-4, 2) = -4\,(2, 1) + 2\,(1, 2) = (-6, 0)$, which is $-2 \cdot (3, 0)$. A negative $s$ flips the arrow, and the image flips with it.
+
+Samples like these illustrate the rule; they do not prove it. The column formula of section 2 does: $T(\mathbf{v}) = x\,T(\mathbf{e}_1) + y\,T(\mathbf{e}_2)$ is built only from sums and scalings, so it keeps them for every input.
+
+## 5. Two impostors: a shift and a bend
+
+The three pictures of section 2 (straight lines, even spacing, fixed origin) come together for a linear map. Each one alone can be faked. Here are two rules that look almost right:
+
+$$
+F(\mathbf{p}) = A\mathbf{p} + \mathbf{b}, \quad \mathbf{b} = (1, -2), \qquad\qquad S(x, y) = \left(x,\; y + \tfrac{1}{4}x^2\right)
+$$
+
+$F$ applies $A$ and then **shifts** every point by the same $\mathbf{b}$. Its grid lines stay perfectly straight and evenly spaced, yet the origin moves: $F(\mathbf{0}) = (1, -2)$. The sum test fails too: $F(\mathbf{v} + \mathbf{w}) = (8, 7) + (1, -2) = (9, 5)$, while $F(\mathbf{v}) + F(\mathbf{w}) = (4, -2) + (6, 5) = (10, 3)$. The two routes miss by $(1, -2)$, exactly the shift, because the right side adds $\mathbf{b}$ twice. A rule of the form $A\mathbf{p} + \mathbf{b}$ is called **affine**; it is linear only when $\mathbf{b} = \mathbf{0}$.
+
+$S$ **bends**: it keeps x and lifts each point by a quarter of $x^2$. The origin stays put ($S(\mathbf{0}) = \mathbf{0}$), and the vertical grid lines stay straight. But the horizontal ones become parabolas, and the tests fail: $S(2\,\mathbf{e}_1) = (2, 1)$ while $2\,S(\mathbf{e}_1) = 2\,(1, 0.25) = (2, 0.5)$. With our $\mathbf{v}$ and $\mathbf{w}$: $S(\mathbf{v} + \mathbf{w}) = S(3, 2) = (3, 4.25)$, but $S(\mathbf{v}) + S(\mathbf{w}) = (2, 0) + (1, 3.25) = (3, 3.25)$, a gap of $1$.
+
+Switch between the three rules below. The coloured lines are the images of the grid; the two routes are drawn as arrows: $T(\mathbf{v})$ and $T(\mathbf{w})$ added head to tail end at the dot, and the third arrow, $T(\mathbf{v} + \mathbf{w})$, adds first and transforms after. For a linear map they always meet. The panel shows both gaps; turn on the **scaling test** in the overlays to see $T(s\mathbf{v})$ against $s\,T(\mathbf{v})$.
+
+<SceneIsland caption="LT-2 · Linear or not? The same two tests on a linear, a shifted and a bent map." rows={rowsFor(2, locale)}>
+  <LinearScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<LinearControls scene={2} locale={locale} client:load />
+
+One passing sample proves nothing. In the bent map, put $\mathbf{w}$ on the y axis, for example $\mathbf{w} = (0, 3)$: the sum test passes for that pair, because the gap is $(0, v_1 w_1 / 2)$ and $w_1 = 0$. The map is still not linear. Only the rule itself, checked for all inputs, decides.
+
+**Misconception to drop:** "straight grid lines mean linear". The shift keeps every line straight and is not linear. Linear needs the origin fixed *and* sums and scalings kept.
+
+## 6. In CG: the transform without its translation
+
+A Maya transform node holds translate, rotate, scale and shear. Rotate, scale and shear together are a linear map: their 3×3 matrix has the images of the object's local X, Y and Z axes as its three columns. Translate is the shift $\mathbf{b}$, so the full transform is affine, $A\mathbf{p} + \mathbf{b}$. This is why the 4×4 matrices of lesson 2.3 carry translation in an extra column, and why a direction (a normal, a velocity) ignores translation while a position does not: the difference of two positions, $F(\mathbf{p}) - F(\mathbf{q}) = A(\mathbf{p} - \mathbf{q})$, loses $\mathbf{b}$. One layer of a neural network has exactly the same shape: $W\mathbf{x} + \mathbf{b}$, a linear map plus a shift that the field calls the **bias**.
+
+Maya prints its matrices with the axes as rows, because it writes the vector on the left of the matrix; it is the same map in a transposed layout (lesson 2.5 explains the flip).
+
+> **Say it simpler.** A linear map moves the whole grid but keeps it a grid: straight, evenly spaced, origin in place. Two arrows, the images of $\mathbf{e}_1$ and $\mathbf{e}_2$, decide everything; written as columns, they are the matrix.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "A linear map sends e₁ to (2, 1) and e₂ to (1, 2). Where does (2, −1) go?",
+      options: [
+        "(3, 0): two copies of (2, 1) minus one copy of (1, 2)",
+        "(4, −2): multiply each component of (2, −1) by the matching component of (2, 1)",
+        "(1, 3): add the two images and subtract the input, then flip the sign of the second component",
+        "It cannot be known without a formula for the whole map"
+      ],
+      answer: 0,
+      explain: "T(x e₁ + y e₂) = x T(e₁) + y T(e₂) = 2·(2, 1) − 1·(1, 2) = (4, 2) + (−1, −2) = (3, 0). The two images decide the whole map."
+    },
+    {
+      q: "A rule keeps every grid line straight and evenly spaced but moves the origin to (1, −2). Is it linear?",
+      options: [
+        "Yes: straight, evenly spaced grid lines are exactly what linear means",
+        "Yes, as long as the grid lines also stay parallel to each other",
+        "No: a linear map keeps the origin in place; this one is affine (a linear map plus a shift)",
+        "Only if the shift (1, −2) is shorter than the grid spacing"
+      ],
+      answer: 2,
+      explain: "T(0) = 0 follows from T(s v) = s T(v) with s = 0. A shift keeps lines straight but moves the origin, so Ap + b is affine, linear only when b = 0."
+    },
+    {
+      q: "The bend S(x, y) = (x, y + x²/4) keeps the origin in place. Why is it still not linear?",
+      options: [
+        "Because it moves the origin after all, by a quarter unit",
+        "Because scaling is not kept: S(2e₁) = (2, 1), but 2·S(e₁) = (2, 0.5)",
+        "Because its vertical grid lines bend into parabolas",
+        "It is linear: a fixed origin is the definition"
+      ],
+      answer: 1,
+      explain: "A fixed origin is necessary, not enough. S doubles the input but quadruples the lift. (Its vertical lines stay straight; the horizontal ones bend.)"
+    },
+    {
+      q: "Both images of the basis point along one line, (1, 1) and (2, 2). What happens?",
+      options: [
+        "The rule is no longer linear, because the images are not a basis",
+        "Nothing special: every linear map keeps the plane as it is",
+        "The map turns the plane over, like a mirror",
+        "Every point lands on that line: the plane is squashed, but the map is still linear"
+      ],
+      answer: 3,
+      explain: "x(1, 1) + y(2, 2) = (x + 2y)(1, 1) always lies on the line through (1, 1). Sums and scalings are still kept, so the map is linear; it just loses a dimension (lesson 2.10)."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. With $A$ above, find $A(1, 3)$.
+2. Find $A(-2\mathbf{v})$ and $A(0\,\mathbf{v})$ for $\mathbf{v} = (2, -1)$.
+3. A linear map sends $\mathbf{e}_1$ to $(0, 1)$ and $\mathbf{e}_2$ to $(-1, 0)$. Where does $(3, 1)$ go? What does the map do to the plane?
+4. Does $S(\mathbf{0}) = \mathbf{0}$ prove that $S$ is linear?
+5. Is $F(\mathbf{p}) = A\mathbf{p} + (1, -2)$ linear?
+
+<details>
+<summary>Answers</summary>
+
+1. $(5, 7)$: $1\,(2, 1) + 3\,(1, 2) = (2 + 3, 1 + 6)$.
+2. $(-6, 0)$ and $(0, 0)$.
+3. $3\,(0, 1) + 1\,(-1, 0) = (-1, 3)$. It turns the plane a quarter turn counter-clockwise: $(3, 1)$ and $(-1, 3)$ are perpendicular and both have length $\sqrt{10}$.
+4. No. $S(2\mathbf{e}_1) = (2, 1)$, but $2\,S(\mathbf{e}_1) = (2, 0.5)$.
+5. No. $F(\mathbf{0}) = (1, -2)$; it is affine.
+
+</details>
+
+## Python
+
+In NumPy, `A @ v` applies the matrix `A` to the vector `v`. `A[:, 0]` is the first column (all rows, column 0): the image of $\mathbf{e}_1$.
+
+<PyCell>
+
+```python
+import numpy as np
+
+A = np.array([[2., 1.],
+              [1., 2.]])           # columns = where e1 and e2 land
+v = np.array([2., -1.])
+w = np.array([1., 3.])
+
+print(A[:, 0], A[:, 1])            # [2. 1.] [1. 2.]   the two columns
+print(A @ v)                       # [3. 0.]
+print(v[0] * A[:, 0] + v[1] * A[:, 1])   # [3. 0.]   the same, built from the columns
+
+print(A @ (v + w), A @ v + A @ w)  # [8. 7.] [8. 7.]   sums are kept
+print(A @ (0.5 * v), 0.5 * (A @ v))      # [1.5 0. ] [1.5 0. ]   scalings are kept
+
+b = np.array([1., -2.])            # a shift: affine, not linear
+F = lambda p: A @ p + b
+print(F(np.zeros(2)))              # [ 1. -2.]   the origin moved
+print(F(v + w), F(v) + F(w))       # [9. 5.] [10.  3.]   the two routes disagree
+```
+
+</PyCell>
+
+<details>
+<summary>Machine layer: a transform per vertex</summary>
+
+A 2×2 matrix applied to a vector is four multiplications and two additions; a 3×3 one is nine and six. A vertex shader runs `mat3 * normal` or `mat4 * position` once per vertex, millions of times per frame, and a GPU does it with fused multiply-add instructions (one rounding per multiply-add, [lesson 1.4](lesson:dot-product)). Storing a map as the images of the basis is what makes that possible: the whole map is a handful of numbers, the same for every vertex.
+
+</details>
+
+## What this opens
+
+Two columns move every arrow. Why can the same calculation also be read as dot products with rows, and what does that have to do with rulers in 3D? [A matrix = images of the basis vectors; M·v two ways](lesson:matrix-columns).
+
+## Term map
+
+<LessonMap />

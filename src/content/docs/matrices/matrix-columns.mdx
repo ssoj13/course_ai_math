@@ -1,0 +1,277 @@
+---
+title: "A matrix = images of the basis vectors; M·v two ways"
+description: "Columns are where the basis lands; M·v is a combination of columns and a list of row dot products; new rulers in 3D."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import DotUnit from '../../../viz/dotunit/DotUnit.astro';
+import { MatrixScene, MatrixControls } from '../../../viz/lessons/matrix-columns';
+import { rowsFor } from '../../../viz/lessons/matrix-columns.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'mc']} />
+
+**Built on:** [Linear transformations](lesson:linear-transformations) · [The dot product](lesson:dot-product) · [Basis, span, independence and dimension](lesson:basis)
+
+[Lesson 2.1](lesson:linear-transformations) wrote a linear map as a matrix: the images of the basis arrows, side by side as columns. This lesson reads the same table two ways. Down the **columns**, a matrix tells you where each basis arrow lands. Across the **rows**, it is a stack of rulers, and multiplying is reading a vector with them: one dot product per row. Both readings give the same arrow, and seeing why is most of what you need to read any matrix in a renderer or a neural network.
+
+## 1. A column is where a basis arrow lands
+
+A **column** runs down; a **row** runs across. The entry $m_{ij}$ sits in row $i$, column $j$. Take the matrix of lesson 2.1:
+
+$$
+M = \begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix}
+$$
+
+Apply it to $\mathbf{e}_1 = (1, 0)$: one copy of the first column plus zero copies of the second, so $M\mathbf{e}_1 = (2, 1)$, the first column itself. Likewise $M\mathbf{e}_2 = (1, 2)$, the second column. That is the definition, not a coincidence: **column $j$ of a matrix is the image of $\mathbf{e}_j$**. To read a matrix you have never seen, look at its columns and you see where the axes go.
+
+## 2. M·x two ways
+
+Take the input $\mathbf{x} = (2, -1)$ and call the output $\mathbf{y} = M\mathbf{x}$.
+
+**Column view.** Walk $x_1 = 2$ copies of the first column, then $x_2 = -1$ copies of the second:
+
+$$
+M\mathbf{x} = 2\,(2, 1) - 1\,(1, 2) = (4, 2) + (-1, -2) = (3, 0)
+$$
+
+**Row view.** Each output component is one row dotted with $\mathbf{x}$ ([lesson 1.4](lesson:dot-product)): row 1 is $(2, 1)$, row 2 is $(1, 2)$.
+
+$$
+y_1 = (2, 1)\cdot(2, -1) = 4 - 1 = 3, \qquad y_2 = (1, 2)\cdot(2, -1) = 2 - 2 = 0
+$$
+
+Both give $(3, 0)$, and not by luck: they add up **the same four products** $m_{ij}x_j$, grouped differently. The row view adds them across each row; the column view adds them down each column, as whole arrows. The table under the scene shows the four products: hover a product and it lights both the column piece it belongs to and the output component its row adds into.
+
+Try it. Drag the columns $\operatorname{col}_1$, $\operatorname{col}_2$ and the input $\mathbf{x}$. The dashed walk is the column view; the dashed legs of $M\mathbf{x}$ down to the axes are its two components, which the row view computes one dot product at a time.
+
+<SceneIsland caption="MC-1 · Columns are where the basis lands: Mx built from the columns, its components from the rows." rows={rowsFor(1, locale)}>
+  <MatrixScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<MatrixControls scene={1} locale={locale} client:load />
+
+The same two readings work for any size. Here a 2×3 matrix $W$ meets a 3-vector $\mathbf{x} = (1, 2, -1)$, drawn as tiles: each tile is one product. Row by row, $\mathbf{x}$ passes each row of $W$ and the tiles of one row stack into one output number; column by column, the columns of $W$ are scaled and laid head to tail. With $W = \begin{bmatrix} 3 & 1 & 2 \\ 1 & 0 & 2 \end{bmatrix}$ the rows give $3 + 2 - 2 = 3$ and $1 + 0 - 2 = -1$, and the columns give $1\,(3, 1) + 2\,(1, 0) - 1\,(2, 2) = (3, -1)$.
+
+<DotUnit kind="rows" />
+
+<DotUnit kind="columns" />
+
+## 3. Rows as rulers: reading a vector in 3D
+
+Now read the rows as rulers. Stack three arrows $\mathbf{u}_1, \mathbf{u}_2, \mathbf{u}_3$ as the rows of a matrix $R$. Multiplying $R\mathbf{v}$ takes one dot product per row, so it lists the readings of $\mathbf{v}$ on the three rulers:
+
+$$
+R = \begin{bmatrix} \mathbf{u}_1^T \\ \mathbf{u}_2^T \\ \mathbf{u}_3^T \end{bmatrix},
+\qquad
+R\mathbf{v} = (\mathbf{u}_1\cdot\mathbf{v},\; \mathbf{u}_2\cdot\mathbf{v},\; \mathbf{u}_3\cdot\mathbf{v})
+$$
+
+The superscript $T$ on a ruler only says "lay this arrow down as a row". Take three rulers that are unit length and perpendicular to each other (**orthonormal**, [lesson 1.6](lesson:basis)), and a world vector $\mathbf{v}$:
+
+$$
+\mathbf{u}_1 = (0.6, 0.8, 0), \quad \mathbf{u}_2 = (-0.8, 0.6, 0), \quad \mathbf{u}_3 = (0, 0, 1), \quad \mathbf{v} = (5, 0, 2)
+$$
+
+The three readings, row by row: $0.6 \cdot 5 + 0.8 \cdot 0 + 0 \cdot 2 = 3$, then $-0.8 \cdot 5 + 0.6 \cdot 0 + 0 \cdot 2 = -4$, then $0 \cdot 5 + 0 \cdot 0 + 1 \cdot 2 = 2$. So $R\mathbf{v} = (3, -4, 2)$. For a unit ruler a reading is a shadow ([lesson 1.5](lesson:projection)): drop a perpendicular from the tip of $\mathbf{v}$ onto the ruler, and the reading is how far along the ruler it lands. The reading $-4$ lands backwards, on the negative side of $\mathbf{u}_2$.
+
+Step through the multiplication. Steps 1 to 3 read one row each; the products table highlights the row being read. Step 4, the **transfer**, applies $R$ to the whole picture: the rulers turn onto the world axes and carry their shadows with them, so the three readings become the three components of $R\mathbf{v}$ on x, y and z. The faint arrow is the world $\mathbf{v}$, which stays where it was. Step 5 rebuilds the same $R\mathbf{v}$ the column way, $5\,\operatorname{col}_1 + 0\,\operatorname{col}_2 + 2\,\operatorname{col}_3$, each piece in the colour of its world axis. You can also scrub the transfer in the panel.
+
+<SceneIsland caption="MC-2 · New rulers: each row of R reads v as a shadow; the transfer turns the rulers onto the axes; the orthonormal flag shows what breaks." rows={rowsFor(2, locale)}>
+  <MatrixScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<MatrixControls scene={2} locale={locale} client:load />
+
+Why do the rulers land exactly on the axes? Apply $R$ to $\mathbf{u}_1$: the readings are $\mathbf{u}_1\cdot\mathbf{u}_1 = 1$, $\mathbf{u}_2\cdot\mathbf{u}_1 = 0$, $\mathbf{u}_3\cdot\mathbf{u}_1 = 0$, so $R\mathbf{u}_1 = (1, 0, 0) = \mathbf{e}_1$. Unit length gives the 1; perpendicularity gives the zeros.
+
+## 4. Columns again: Rv built from the columns of R
+
+The columns of $R$ are $\operatorname{col}_1 = (0.6, -0.8, 0)$, $\operatorname{col}_2 = (0.8, 0.6, 0)$ and $\operatorname{col}_3 = (0, 0, 1)$: the first components of the three rulers, then the second, then the third. The column view weights them by the components of $\mathbf{v}$:
+
+$$
+R\mathbf{v} = 5\,(0.6, -0.8, 0) + 0\,(0.8, 0.6, 0) + 2\,(0, 0, 1) = (3, -4, 2)
+$$
+
+The same answer as the rulers gave, from the same nine products.
+
+## 5. Moving versus describing
+
+There are two ways to think about $R\mathbf{v} = (3, -4, 2)$, and both are useful in CG.
+
+- **Moving** (an active transformation): $R$ is a map, and it carries the arrow $\mathbf{v}$ to a new arrow $(3, -4, 2)$. This is what the transfer animates.
+- **Describing** (a change of coordinates): the arrow $\mathbf{v}$ stays where it is, and $(3, -4, 2)$ are its coordinates measured with the rulers. Think of a vertex that does not move while you read it in world space and then in the object space of a rotated object.
+
+Check the second reading by rebuilding $\mathbf{v}$ from the rulers with those coordinates:
+
+$$
+3\,\mathbf{u}_1 - 4\,\mathbf{u}_2 + 2\,\mathbf{u}_3 = (1.8, 2.4, 0) + (3.2, -2.4, 0) + (0, 0, 2) = (5, 0, 2)
+$$
+
+Rebuilding uses the rulers as **columns**: put them side by side in a matrix $B$, and $\mathbf{v} = B\mathbf{c}$ with $\mathbf{c} = (3, -4, 2)$. $B$ is $R$ with rows and columns swapped, its **transpose** $R^T$. So for orthonormal rulers, $R$ reads coordinates and $R^T$ undoes the reading. That is why a rotation matrix is free to invert.
+
+## 6. Turn orthonormality off
+
+The flag **orthonormal** in the panel keeps the rulers unit length and perpendicular while you drag them. Switch it off (or press one of the buttons that load a frame), bend a ruler, and two things change.
+
+First, the **Gram matrix** under the scene stops being the identity. It lists every ruler dotted with every ruler, $g_{ij} = \mathbf{u}_i\cdot\mathbf{u}_j$, which is the matrix $G = RR^T$. Its diagonal holds the squared lengths; the other entries say how much one ruler leaks into another. Cells that differ from the identity are tinted.
+
+Second, the readings stop being coordinates. Load the **oblique** frame:
+
+$$
+\mathbf{u}_1 = (1, 0, 0), \quad \mathbf{u}_2 = (1, 1, 0), \quad \mathbf{u}_3 = (0, 0, 1), \quad \mathbf{v} = (2, 1, 3)
+$$
+
+The readings are $R\mathbf{v} = (2, 3, 3)$. The true coordinates solve $B\mathbf{c} = \mathbf{v}$: here $B\mathbf{c} = (c_1 + c_2,\; c_2,\; c_3)$, so $\mathbf{c} = (1, 1, 3)$. Check: $1\,(1, 0, 0) + 1\,(1, 1, 0) + 3\,(0, 0, 1) = (2, 1, 3)$. Treat the readings as coordinates anyway and you get the grey **ghost**:
+
+$$
+2\,\mathbf{u}_1 + 3\,\mathbf{u}_2 + 3\,\mathbf{u}_3 = (5, 3, 3)
+$$
+
+It misses $\mathbf{v}$ by $(3, 2, 0)$, a distance of $\sqrt{13} \approx 3.61$. The scene draws the true coordinates as a dashed walk along the rulers that ends exactly on $\mathbf{v}$, and the ghost with a dashed gap. The Gram matrix explains the miss:
+
+$$
+G = \begin{bmatrix} 1 & 1 & 0 \\ 1 & 2 & 0 \\ 0 & 0 & 1 \end{bmatrix},
+\qquad
+G\,\mathbf{c} = (1 + 1,\; 1 + 2,\; 3) = (2, 3, 3) = R\mathbf{v}
+$$
+
+The readings are the coordinates mixed by $G$. Only when $G$ is the identity are they the coordinates themselves.
+
+Unit length alone does not fix it. The frame **unit but oblique** keeps every ruler at length 1 but tilts $\mathbf{u}_2 = (0.6, 0.8, 0)$; with $\mathbf{v} = (2, 0.8, 3)$ the coordinates are $(1.4, 1, 3)$ but the readings are $(2, 1.84, 3)$. Perpendicular unit rulers are both needed.
+
+Three special frames are worth loading:
+
+- **Mirror**: $\mathbf{u}_2 = (0, -1, 0)$ flips one axis. The Gram matrix is the identity and $R^T$ still undoes $R$, but the frame is **left-handed** (its determinant, lesson 2.6, is $-1$). No rotation can turn it onto the right-handed world axes: the transfer squashes the picture flat halfway and comes out flipped.
+- **Duplicate rulers**: $\mathbf{u}_1 = \mathbf{u}_2 = (1, 0, 0)$. Not a basis: a target with a non-zero y, such as $(2, 1, 3)$, cannot be built at all, and $(2, 0, 3)$ can be built in infinitely many ways. The panel shows "flat" and no coordinates are invented.
+- A **zero ruler** has no direction to drop a shadow onto; the scene draws no shadow for it.
+
+Finding the true coordinates for bent rulers means solving three equations at once, "undoing a matrix": that is the job of lesson 2.9.
+
+> **Say it simpler.** The columns of a matrix say where the axes go. The rows are rulers, and multiplying reads a vector with them. Both readings give the same arrow. Readings are coordinates only when the rulers are orthonormal; then the transpose undoes the matrix.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "What is the first column of a matrix M?",
+      options: [
+        "The sum of all the entries in the first row of M",
+        "M·e₁: where the first basis arrow lands",
+        "The dot product of the first row with the input",
+        "The input vector that M leaves unchanged"
+      ],
+      answer: 1,
+      explain: "M·e₁ takes one copy of the first column and zero of the others, so it is the first column itself. Every column is the image of one basis arrow."
+    },
+    {
+      q: "M = [[2, 1], [1, 2]] and x = (2, −1). Which statement is true?",
+      options: [
+        "The row view gives (3, 0) but the column view gives (4, −2), because they group the numbers differently",
+        "The column view gives (3, 0) and the row view gives (2, −1), the input unchanged",
+        "Both views give (3, 0): they add the same four products mᵢⱼxⱼ, grouped by rows or by columns",
+        "Neither view works, because one entry of x is negative"
+      ],
+      answer: 2,
+      explain: "Rows: (2, 1)·(2, −1) = 3 and (1, 2)·(2, −1) = 0. Columns: 2·(2, 1) − 1·(1, 2) = (3, 0). The same products 4, −1, 2, −2, added in two orders."
+    },
+    {
+      q: "The rows of R are three orthonormal rulers. What undoes R, turning the readings Rv back into v?",
+      options: [
+        "Rᵀ: the rulers as columns, so v = Rᵀ(Rv)",
+        "R itself, applied a second time",
+        "Nothing simple: undoing a matrix always needs a full solve",
+        "The Gram matrix RRᵀ, which is the identity"
+      ],
+      answer: 0,
+      explain: "Rebuilding v from its coordinates uses the rulers as columns, which is the transpose Rᵀ. For orthonormal rulers RᵀR = I, so the transpose is the inverse."
+    },
+    {
+      q: "The rulers are unit length but not perpendicular. Are the readings uᵢ·v the coordinates of v?",
+      options: [
+        "Yes: unit length is all that a reading needs to be a coordinate",
+        "Yes, but only for the first ruler, because the others are measured relative to it",
+        "Only when v itself is a unit vector",
+        "No: each reading leaks in parts of the other rulers (off-diagonal Gram entries), so the ghost misses v"
+      ],
+      answer: 3,
+      explain: "With u₂ = (0.6, 0.8, 0) and v = (2, 0.8, 3) the readings are (2, 1.84, 3) but the coordinates are (1.4, 1, 3). The readings equal the coordinates only when the Gram matrix is the identity."
+    }
+  ]}
+/>
+
+## Exercises
+
+1. Compute $M\mathbf{x}$ by rows and by columns for $M = \begin{bmatrix} 2 & 1 \\ 1 & 2 \end{bmatrix}$, $\mathbf{x} = (1, 3)$.
+2. A matrix sends $\mathbf{e}_1$ to $(0, 1)$ and $\mathbf{e}_2$ to $(-1, 0)$. Write it down.
+3. For the orthonormal frame of section 3, rebuild $\mathbf{v}$ from the readings $(3, -4, 2)$.
+4. For the oblique frame, compare the coordinates, the readings and the ghost.
+5. Does unit length alone make the readings coordinates?
+6. Can duplicate rulers give unique coordinates?
+
+<details>
+<summary>Answers</summary>
+
+1. Rows: $(2, 1)\cdot(1, 3) = 5$, $(1, 2)\cdot(1, 3) = 7$. Columns: $1\,(2, 1) + 3\,(1, 2) = (5, 7)$.
+2. The images are the columns: $\begin{bmatrix} 0 & -1 \\ 1 & 0 \end{bmatrix}$, a quarter turn counter-clockwise.
+3. $3\,(0.6, 0.8, 0) - 4\,(-0.8, 0.6, 0) + 2\,(0, 0, 1) = (1.8, 2.4, 0) + (3.2, -2.4, 0) + (0, 0, 2) = (5, 0, 2)$.
+4. Coordinates $(1, 1, 3)$, readings $(2, 3, 3)$, ghost $(5, 3, 3)$; the ghost misses $\mathbf{v}$ by $(3, 2, 0)$.
+5. No. The unit but oblique frame reads $(2, 1.84, 3)$, while the coordinates are $(1.4, 1, 3)$.
+6. No. Some targets cannot be reached at all, and the reachable ones can be reached in infinitely many ways.
+
+</details>
+
+## Python
+
+`M[0]` is the first row of `M` and `M[:, 0]` its first column. `R.T` is the transpose. `np.linalg.solve(B, v)` finds the coordinates $\mathbf{c}$ with $B\mathbf{c} = \mathbf{v}$; how it does that is lesson 2.9.
+
+<PyCell>
+
+```python
+import numpy as np
+
+M = np.array([[2., 1.],
+              [1., 2.]])
+x = np.array([2., -1.])
+print(M @ x)                                  # [3. 0.]
+print(M[0] @ x, M[1] @ x)                     # 3.0 0.0   row view: one dot product per row
+print(x[0] * M[:, 0] + x[1] * M[:, 1])        # [3. 0.]   column view: a combination of columns
+
+R = np.array([[ 0.6, 0.8, 0.],                # rows = three rulers
+              [-0.8, 0.6, 0.],
+              [ 0. , 0. , 1.]])
+v = np.array([5., 0., 2.])
+print(R @ v)                                  # [ 3. -4.  2.]   one reading per ruler
+print(np.round(R @ R.T, 12) + 0.0)            # the identity: the rulers are orthonormal
+print(np.round(R.T @ (R @ v), 12) + 0.0)      # [5. 0. 2.]   the transpose undoes R (rounded: float noise)
+
+B = np.array([[1., 1., 0.],                   # oblique rulers as COLUMNS
+              [0., 1., 0.],
+              [0., 0., 1.]])
+v = np.array([2., 1., 3.])
+d = B.T @ v                                   # readings (dot products)
+c = np.round(np.linalg.solve(B, v), 12) + 0.0 # true coordinates
+print(d, c)                                   # [2. 3. 3.] [1. 1. 3.]
+print(B @ d)                                  # [5. 3. 3.]   the ghost: readings used as coordinates
+```
+
+</PyCell>
+
+<details>
+<summary>Machine layer: rows or columns, the memory decides</summary>
+
+Both views compute the same numbers, so a library picks the one that reads memory in order. NumPy stores a matrix row after row (row-major), so the row view walks each row contiguously: one dot product per output. Classic BLAS and Fortran store column after column (column-major), so their matrix-vector routine (`gemv`) adds scaled columns into the output, the column view, again reading memory in order. On a GPU each thread usually owns one output component, which is the row view, and a whole block of threads cooperates on tiles of the matrix, the subject of Part 3. In floating point the two orders can round differently in the last bits ([lesson 1.4](lesson:dot-product)); mathematically they are equal.
+
+</details>
+
+## What this opens
+
+Columns tell where the axes go, so a matrix can be designed by choosing columns. Which shapes of motion are possible: scale, rotate, shear, reflect, project, and how does translation sneak in? That is lesson 2.3, the gallery of transformations.
+
+## Term map
+
+<LessonMap />

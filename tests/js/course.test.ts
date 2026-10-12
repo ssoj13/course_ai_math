@@ -11,12 +11,14 @@ describe('course manifest', () => {
 		expect(modules.at(-1)?.slug).toBe('tensors');
 	});
 	test('CURRICULUM numbering: start is unnumbered, Ground is Part 0, explicit parts hold their number', () => {
-		expect(modules.map((m) => [m.slug, m.part])).toEqual([['start', null], ['ground', 0], ['vectors', 1], ['tensors', 3]]);
+		expect(modules.map((m) => [m.slug, m.part])).toEqual([['start', null], ['ground', 0], ['vectors', 1], ['matrices', 2], ['tensors', 3]]);
 		expect(lessons.filter((l) => l.moduleSlug === 'start').map((l) => l.id)).toEqual([null, null]);
 		expect(lessonBySlug('squares-and-plane')?.id).toBe('0.1');
 		expect(lessonBySlug('law-of-cosines')?.id).toBe('0.5');
 		expect(lessonBySlug('cosine-similarity')?.id).toBe('1.7');
 		expect(lessonBySlug('cross-product')?.id).toBe('1.8');
+		expect(lessonBySlug('linear-transformations')?.id).toBe('2.1');
+		expect(lessonBySlug('matrix-columns')?.id).toBe('2.2');
 		expect(lessonBySlug('tensor-road')?.id).toBe('3.1');
 		for (const l of lessons) expect(l.id === null).toBe(l.part === null);
 		expect(numbered('0.3', 'Pythagoras')).toBe('0.3 Pythagoras');
@@ -37,7 +39,8 @@ describe('course manifest', () => {
 		expect(adjacent('how-it-connects').next?.slug).toBe('squares-and-plane');
 		expect(adjacent('law-of-cosines').next?.slug).toBe('vector');
 		expect(adjacent('vector').prev?.slug).toBe('law-of-cosines');
-		expect(adjacent('waves-dft').next?.slug).toBe('tensor-road');
+		expect(adjacent('waves-dft').next?.slug).toBe('linear-transformations');
+		expect(adjacent('matrix-columns').next?.slug).toBe('tensor-road');
 	});
 	test('branch flag is carried through', () => {
 		expect(modules[2].lessons.find((l) => l.slug === 'cross-product')?.branch).toBe(true);

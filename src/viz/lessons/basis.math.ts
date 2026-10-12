@@ -324,7 +324,6 @@ export function moveTh(vals: Vals, raw: readonly number[], src: 'drag' | 'key'):
 // BS-4: shadows on new rulers, orthonormal or not.
 
 export const RULERS = ['r1', 'r2', 'r3'] as const;
-type RulerKey = (typeof RULERS)[number];
 
 /**
  * Orthonormal frame from three vectors taken in `order` (Gram–Schmidt): the first is normalized, each next one loses
@@ -367,33 +366,34 @@ const isFrame = (rs: readonly V[]): boolean =>
  * and the others in order u₁ → u₂ → u₃. While `ortho` is 0 the rulers are free. One rule for every write path.
  * `shown` re-orthonormalizes an eased frame each frame (only u₁, the canonical key, eases), so the drawn rulers stay
  * a frame mid-motion; an already orthonormal frame is returned untouched (no float churn).
+ * `keys`/`flag` name the three ruler keys and the flag key; lesson 2.2 reuses the same rule for its rows of R.
  */
-export function orthoLink(): LinkGroup {
+export function orthoLink(keys: readonly [string, string, string] = RULERS, flag = 'ortho'): LinkGroup {
 	return {
-		keys: [...RULERS, 'ortho'],
-		canonical: 'r1',
+		keys: [...keys, flag],
+		canonical: keys[0],
 		resolve(input, current) {
 			const val = (k: string) => (Object.hasOwn(input, k) ? input[k] : current[k]);
-			const flag = num(val('ortho'), 'ortho');
-			if (flag !== 0 && flag !== 1) throw new Error('basis: "ortho" is 0 or 1');
-			const rs = RULERS.map((k) => vec(val(k), k, 3));
-			const out: Record<string, Val> = { ortho: flag, ...Object.fromEntries(RULERS.map((k, i) => [k, rs[i]])) };
-			if (flag === 0) return out;
-			const lead = RULERS.findIndex((k) => Object.hasOwn(input, k));
+			const on = num(val(flag), flag);
+			if (on !== 0 && on !== 1) throw new Error(`basis: "${flag}" is 0 or 1`);
+			const rs = keys.map((k) => vec(val(k), k, 3));
+			const out: Record<string, Val> = { [flag]: on, ...Object.fromEntries(keys.map((k, i) => [k, rs[i]])) };
+			if (on === 0) return out;
+			const lead = keys.findIndex((k) => Object.hasOwn(input, k));
 			const first = lead < 0 ? 0 : lead;
 			const order = [first, ...[0, 1, 2].filter((i) => i !== first)];
 			// A zero leader has no direction to keep: the previous rulers stay (the write is refused, not invented).
-			const frame = gramSchmidt(rs, order) ?? gramSchmidt(RULERS.map((k) => vec(current[k], k, 3)), [0, 1, 2]);
+			const frame = gramSchmidt(rs, order) ?? gramSchmidt(keys.map((k) => vec(current[k], k, 3)), [0, 1, 2]);
 			if (!frame) throw new Error('basis: no ruler to build an orthonormal frame from');
-			RULERS.forEach((k: RulerKey, i) => (out[k] = frame[i]));
+			keys.forEach((k, i) => (out[k] = frame[i]));
 			return out;
 		},
 		shown(values: Values) {
-			if (values.ortho !== 1) return {};
-			const rs = RULERS.map((k) => values[k] as V);
+			if (values[flag] !== 1) return {};
+			const rs = keys.map((k) => values[k] as V);
 			if (isFrame(rs)) return {};
 			const frame = gramSchmidt(rs);
-			return frame ? Object.fromEntries(RULERS.map((k, i) => [k, frame[i]])) : {};
+			return frame ? Object.fromEntries(keys.map((k, i) => [k, frame[i]])) : {};
 		},
 	};
 }

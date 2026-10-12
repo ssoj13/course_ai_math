@@ -711,17 +711,81 @@
       "ru": { "label": "Число с плавающей точкой", "def": "Число с плавающей точкой хранит вещественное число как знак, степень двойки и фиксированное число значащих битов." }
     },
     {
+      "id": "linear-map",
+      "label": "Linear map",
+      "def": "A linear map keeps sums and scalings: T(v + w) = T(v) + T(w) and T(sv) = sT(v); grid lines stay straight, parallel and evenly spaced, and the origin stays put.",
+      "depth": "matrices",
+      "lessons": ["linear-transformations"],
+      "edges": [{ "type": "built-on", "to": "linear-combination" }, { "type": "built-on", "to": "basis" }],
+      "ru": { "label": "Линейное отображение", "def": "Линейное отображение сохраняет суммы и растяжения: T(v + w) = T(v) + T(w) и T(sv) = sT(v); линии сетки остаются прямыми, параллельными и равномерными, а начало координат на месте." }
+    },
+    {
+      "id": "image-of-basis",
+      "label": "Image of the basis",
+      "def": "The image of the basis is where a linear map sends e₁, e₂, …; it decides the map for every input.",
+      "depth": "matrices",
+      "lessons": ["linear-transformations"],
+      "edges": [{ "type": "built-on", "to": "linear-map" }, { "type": "built-on", "to": "coordinates-in-basis" }],
+      "ru": { "label": "Образ базиса", "def": "Образ базиса — это куда линейное отображение переводит e₁, e₂, …; он определяет отображение для любого входа." }
+    },
+    {
+      "id": "affine-map",
+      "label": "Affine map",
+      "def": "An affine map is a linear map followed by a shift, Av + b; it moves the origin, so it is linear only when b = 0.",
+      "depth": "matrices",
+      "lessons": ["linear-transformations"],
+      "edges": [{ "type": "built-on", "to": "linear-map" }],
+      "ru": { "label": "Аффинное отображение", "def": "Аффинное отображение — это линейное отображение плюс сдвиг, Av + b; оно сдвигает начало координат, поэтому линейно только при b = 0." }
+    },
+    {
       "id": "matrix",
       "label": "Matrix",
       "def": "A matrix is a grid of numbers that moves every vector at once: each output is a linear combination of its columns.",
       "depth": "matrices",
-      "lessons": [],
+      "lessons": ["linear-transformations"],
       "edges": [
+        { "type": "built-on", "to": "image-of-basis" },
         { "type": "built-on", "to": "linear-combination" },
         { "type": "built-on", "to": "dot-product" },
         { "type": "built-on", "to": "change-of-basis" }
       ],
       "ru": { "label": "Матрица", "def": "Матрица — это таблица чисел, которая двигает все векторы сразу: каждый результат — линейная комбинация её столбцов." }
+    },
+    {
+      "id": "matrix-column",
+      "label": "Matrix column",
+      "def": "A column of a matrix is where one basis vector lands: column j = M·eⱼ.",
+      "depth": "matrices",
+      "lessons": ["matrix-columns"],
+      "edges": [{ "type": "built-on", "to": "matrix" }, { "type": "built-on", "to": "image-of-basis" }],
+      "ru": { "label": "Столбец матрицы", "def": "Столбец матрицы — это куда попадает один базисный вектор: столбец j = M·eⱼ." }
+    },
+    {
+      "id": "column-view",
+      "label": "Column view",
+      "def": "The column view reads M·v as a linear combination of the columns, weighted by the components of v.",
+      "depth": "matrices",
+      "lessons": ["matrix-columns"],
+      "edges": [{ "type": "built-on", "to": "matrix-column" }, { "type": "built-on", "to": "linear-combination" }],
+      "ru": { "label": "Взгляд по столбцам", "def": "Взгляд по столбцам читает M·v как линейную комбинацию столбцов с компонентами v в роли коэффициентов." }
+    },
+    {
+      "id": "row-view",
+      "label": "Row view",
+      "def": "The row view reads each component of M·v as the dot product of one row with v.",
+      "depth": "matrices",
+      "lessons": ["matrix-columns"],
+      "edges": [{ "type": "built-on", "to": "matrix" }, { "type": "built-on", "to": "dot-product" }],
+      "ru": { "label": "Взгляд по строкам", "def": "Взгляд по строкам читает каждую компоненту M·v как скалярное произведение одной строки на v." }
+    },
+    {
+      "id": "gram-matrix",
+      "label": "Gram matrix",
+      "def": "The Gram matrix of vectors u₁, u₂, … lists every dot product uᵢ·uⱼ; it is the identity exactly for an orthonormal set.",
+      "depth": "matrices",
+      "lessons": ["matrix-columns"],
+      "edges": [{ "type": "built-on", "to": "row-view" }, { "type": "built-on", "to": "orthonormal-basis" }],
+      "ru": { "label": "Матрица Грама", "def": "Матрица Грама векторов u₁, u₂, … перечисляет все скалярные произведения uᵢ·uⱼ; она единичная ровно для ортонормированного набора." }
     },
     {
       "id": "determinant",
