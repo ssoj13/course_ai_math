@@ -1,5 +1,5 @@
 import './dom';
-import { afterEach, expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createStage, DragKeys, type StageReg } from '../../src/viz/scene/handles';
@@ -16,9 +16,21 @@ function mount(el: ReactElement): HTMLElement {
 	return host;
 }
 
+// Other DOM test files stub requestAnimationFrame with no-ops (bun runs them in one process, in an OS-dependent
+// order), so this file installs a timer-driven frame clock of its own: the eased ring needs real frames.
+const saved = { raf: globalThis.requestAnimationFrame, caf: globalThis.cancelAnimationFrame };
+beforeEach(() => {
+	saved.raf = globalThis.requestAnimationFrame;
+	saved.caf = globalThis.cancelAnimationFrame;
+	globalThis.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16) as unknown as number;
+	globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
+});
+
 afterEach(() => {
 	for (const r of roots.splice(0)) act(() => r.unmount());
 	document.body.innerHTML = '';
+	globalThis.requestAnimationFrame = saved.raf;
+	globalThis.cancelAnimationFrame = saved.caf;
 });
 
 const key = (el: Element, k: string, shiftKey = false) => {
