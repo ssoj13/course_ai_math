@@ -1,11 +1,12 @@
 ---
 title: "Скалярное произведение: вывод из теоремы косинусов"
 description: "Σ aᵢbᵢ = |a||b| cos θ и что означает его знак."
-translatedFrom: f1a66d7802265a6f6008570ca67535ddfc53d0fc
+translatedFrom: 7ea353f224f89c242168e30256a9151a80b95775
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
 import LessonMap from '../../../../components/LessonMap.astro';
+import DotUnit from '../../../../viz/dotunit/DotUnit.astro';
 import UiStrings from '../../../../components/UiStrings.astro';
 import SceneIsland from '../../../../viz/SceneIsland.astro';
 import { DotScene, DotControls } from '../../../../viz/lessons/dot-product';
@@ -19,6 +20,8 @@ export const locale = 'ru';
 **Опирается на:** [Длина, запись Σ и нормализация](lesson:length) · [Теорема косинусов](lesson:law-of-cosines) · [Расстояние и теорема Пифагора](lesson:pythagoras)
 
 Две стрелки $\mathbf{a}$ и $\mathbf{b}$ выходят из начала координат, между ними какой-то угол $\theta$. Мы уже умеем измерять $\lvert \mathbf{a} \rvert$ и $\lvert \mathbf{b} \rvert$ ([урок 1.3](lesson:length)) и расстояние между их концами, $\lvert \mathbf{a} - \mathbf{b} \rvert$ ([урок 0.3](lesson:pythagoras)). [Теорема косинусов](lesson:law-of-cosines) связывает эти три длины с углом. Сложите одно с другим — и появится новая операция, та самая, которую вычисляет каждый `dot(N, L)` в каждом шейдере. Это центральный урок первой части; не торопитесь.
+
+<DotUnit kind="unit" caption="teaser" parts={['timeline', 'formula']} />
 
 ## 1. Подготовка: один треугольник, три стороны, которые мы умеем мерить
 

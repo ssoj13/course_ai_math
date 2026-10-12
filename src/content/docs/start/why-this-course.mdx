@@ -5,6 +5,7 @@ description: "A model is mostly multiply-adds; what you will be able to do after
 
 import Quiz from '../../../components/Quiz.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import DotUnit from '../../../viz/dotunit/DotUnit.astro';
 
 **Built on:** nothing. This page is the map; the lessons are the territory.
 
@@ -44,7 +45,7 @@ Those are big numbers, but every one of them is the same small operation you can
 is about that operation: what it means, how it is stacked into matrices and tensors, how a model's numbers are chosen
 (by taking derivatives of a loss), and why the loss looks the way it does (probability and "why squares everywhere").
 
-{/* scene: INTRO-1 — the DotUnit asset playing its timeline once: a and b as arrows, b's shadow on a, |a| × shadow = 3; then the components unfold into axis-coloured legs, a's row, b's column, three tiles (one hatched), the tiles drop into a stack whose height is the same 3 (docs/design/intro-and-dotunit.md §2) */}
+<DotUnit kind="unit" caption="intro" parts={['timeline', 'formula', 'table']} />
 
 ## You already do this
 

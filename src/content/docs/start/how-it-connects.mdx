@@ -5,6 +5,7 @@ description: "The spine of the course in one animation: shadow, tiles, stack; th
 
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import DotUnit from '../../../viz/dotunit/DotUnit.astro';
 
 **Built on:** [Why this course](lesson:why-this-course)
 
@@ -38,7 +39,7 @@ face is what the number *means* (how much $b$ points along $a$); the tile face i
 (multiply, multiply, multiply, add). Lesson 1.4 derives why these agree, from the law of cosines; here you only need
 to see that they do.
 
-{/* scene: INTRO-2 — the zoom ladder (docs/design/intro-and-dotunit.md §4): rung 1 one tile 3·1; rung 2 the DotUnit face 2 with the stack beside the projection bar, both 3.00; rung 3 the 2×3 by 3×2 matmul cube with shaft (0,0) hot; rung 4 the layer cube y = xWᵀ + b; rung 5 two attention cubes beside it; click any number to dive down to its tiles, Escape to climb */}
+<DotUnit kind="ladder" />
 
 ## The ladder: the same stack, five sizes up
 
@@ -82,7 +83,7 @@ passes the row, the axis the tiles are stacked along. Everything that does not d
 output cell. In Part 3 this rule gets a name (`einsum`) and you will be able to read `"ij,jk->ik"` as "the j axis is
 the stack".
 
-{/* scene: INTRO-3 — the einsum playground (docs/design/intro-and-dotunit.md §3.5): preset buttons i,i-> / ij,j->i / ij,jk->ik / bij,bjk->bik / bhqd,bhkd->bhqk; sliders for every index extent (1..8); the layout re-forms live and the status bar names the summed axis */}
+<DotUnit kind="playground" />
 
 ## The same numbers in Python
 

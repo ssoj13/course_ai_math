@@ -1,11 +1,12 @@
 ---
 title: "Зачем этот курс: что на самом деле считает ИИ"
 description: "Модель — это в основном умножения со сложением; что вы сможете после каждой части и почему CG-разработчик уже знает половину."
-translatedFrom: fa4d23bff90ee06b437664858c0a8c187122751d
+translatedFrom: e8e4ff75f8718458b1b2960e14d4813eadc4b49d
 ---
 
 import Quiz from '../../../../components/Quiz.astro';
 import LessonMap from '../../../../components/LessonMap.astro';
+import DotUnit from '../../../../viz/dotunit/DotUnit.astro';
 
 **Опирается на:** ничего. Эта страница — карта; уроки — территория.
 
@@ -44,7 +45,7 @@ Models*, arXiv:2001.08361, январь 2020) даёт правило: прям�
 операции: что она значит, как её складывают в матрицы и тензоры, как выбирают числа модели (беря производные функции
 потерь) и почему функция потерь выглядит именно так (вероятность и «почему всюду квадраты»).
 
-{/* scene: INTRO-1 — the DotUnit asset playing its timeline once: a and b as arrows, b's shadow on a, |a| × shadow = 3; then the components unfold into axis-coloured legs, a's row, b's column, three tiles (one hatched), the tiles drop into a stack whose height is the same 3 (docs/design/intro-and-dotunit.md §2) */}
+<DotUnit kind="unit" caption="intro" parts={['timeline', 'formula', 'table']} />
 
 ## Вы уже это делаете
 
