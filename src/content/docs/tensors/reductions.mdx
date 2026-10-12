@@ -1,0 +1,274 @@
+---
+title: "Reductions: sum, mean, max along an axis"
+description: "The axis that collapses: sum, mean and max along an axis, keepdims, and why the order of a sum matters in float32."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { ReduceScene, ReduceControls } from '../../../viz/lessons/reductions';
+import { reduceRows } from '../../../viz/lessons/reductions.rows';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'rd']} />
+
+**Built on:** [Elementwise ops and broadcasting](lesson:broadcasting) · [What a tensor is](lesson:tensor-road) ·
+[Length and Σ notation](lesson:length) · [The dot product](lesson:dot-product).
+
+## Collapse one axis
+
+An elementwise operation keeps every cell. A **reduction** does the opposite: it takes a whole line of cells along one
+axis and turns it into **one number**. The line is gone; one cell is left in its place. The three reductions you will
+use most:
+
+- **sum**: add the numbers up;
+- **mean**: add them up and divide by how many there are (the average);
+- **max**: keep the largest.
+
+Take a sheet of 3 rows and 4 columns, think "3 samples, 4 features each":
+
+$$
+x = \begin{bmatrix} 2 & -1 & 4 & 3 \\ 0 & 5 & -2 & 5 \\ 1 & 3 & 2 & -4 \end{bmatrix}
+$$
+
+Summing along the columns of each row (axis 1, the second index $j$) gives one number per row:
+
+$$
+s_i = \sum_{j=0}^{3} x[i, j], \qquad s = (8, \; 8, \; 2)
+$$
+
+Read the $\Sigma$ as "add up $x[i, j]$ for $j = 0, 1, 2, 3$" (the sign from [Length](lesson:length)). Row 0:
+$2 - 1 + 4 + 3 = 8$. The axis of size 4 has **collapsed**; the shape went from $(3, 4)$ to $(3,)$.
+
+## The axis you name is the one that disappears
+
+This sentence is the whole rule, and it is worth saying slowly because it feels backwards at first. `x.sum(axis=1)`
+does not mean "the sums of axis 1". It means "**collapse axis 1**": walk along axis 1, add up, and remove that axis
+from the shape.
+
+- `x.sum(axis=1)`: axis 1 (size 4) disappears: $(3, 4) \to (3,)$, the row sums $(8, 8, 2)$.
+- `x.sum(axis=0)`: axis 0 (size 3) disappears: $(3, 4) \to (4,)$, the column sums $(3, 7, 4, 4)$.
+- `x.sum()` (NumPy writes `axis=None`): every axis disappears: $(3, 4) \to ()$, one number, $18$.
+
+Negative axes count from the end, as negative indices do: axis $-1$ is the last axis, axis $-2$ the one before it.
+For this sheet `axis=-1` is the same as `axis=1`. ML code uses `axis=-1` a lot, because "the last axis" stays the last
+axis whatever the rank: the same line works for one vector, a batch of vectors or a batch of sentences.
+
+In the card the **timeline** shows it: the input, then every line of cells along the reduced axis sliding into the
+cell at index 0 of that axis and becoming one number, then the result moving out below in its own shape. Change the
+axis, the operation and the data in the panel and under the card. Hover a result cell: the cells that went into it
+light up.
+
+<SceneIsland caption="3.5-1 · A reduction: every line of cells along the chosen axis collapses into one cell (sum, mean or max); the result takes its own shape, with or without keepdims." rows={reduceRows(locale)}>
+  <ReduceScene locale={locale} client:only="react" />
+</SceneIsland>
+<ReduceControls part="reduce" locale={locale} client:load />
+
+## mean: where statistics begins
+
+The **mean** is a sum divided by the count:
+
+$$
+\bar{x} = \frac{1}{n} \sum_{k=1}^{n} x_k
+$$
+
+For row 2 of the sheet: $(1 + 3 + 2 - 4) / 4 = 2 / 4 = 0.5$. With `axis=1` you get one mean per row,
+$(2, 2, 0.5)$; with `axis=0` one mean per feature (column). This modest operation is the seed of the whole statistics
+part of the course: the mean of a feature, how far each value lies from it (the variance), and why squares appear
+everywhere all start here.
+
+A CG example you know: **auto exposure**. A camera or a game engine measures the mean brightness of the frame and
+scales the image so that this mean lands on a comfortable grey. For the grayscale icon in the card the mean of all 64
+pixels is $139.6875$: pick the image, the mean and "all axes".
+
+## max: the brightest pixel
+
+`max` keeps the largest number of each line. Over the whole grayscale icon it answers "how bright is the brightest
+pixel?": $231$. A surprise, maybe: it is the off-white wall, not the yellow sun. A grey value weighs the channels as the
+eye does, $0.299 R + 0.587 G + 0.114 B$, and the sun $(255, 217, 51)$ has little blue, so its grey is only about $209$.
+
+Six wall pixels share the value $231$. That is a **tie**, and it is harmless for `max`: the maximum is a *value*, and it
+is $231$ whichever cell holds it. It matters only when you ask *where* the maximum is: `argmax` returns a position and,
+on a tie, picks the **first** one in row-major order, here row 5, column 1. In the sheet, row 1 holds its maximum 5
+twice (columns 1 and 3); the card flashes every tying cell, and the readout under it names the first.
+
+## keepdims: keep the axis, with size 1
+
+Sometimes you want the collapsed axis to stay, with size 1, instead of disappearing. That is `keepdims=True`: the row
+sums of the sheet then have shape $(3, 1)$ instead of $(3,)$. Same three numbers, a different shape, and the shape
+matters for the next operation.
+
+The classic use is **centering**: subtract from each row its own mean. With keepdims the means form a column $(3, 1)$,
+and [broadcasting](lesson:broadcasting) stretches that column across the 4 columns:
+
+$$
+x - \bar{x}_{\text{row}} : \quad (3, 4) - (3, 1) \to (3, 4)
+$$
+
+Without keepdims the means have shape $(3,)$, which is aligned on the right against the 4 columns and fails. Worse, for
+a **square** matrix of shape $(3, 3)$ it does *not* fail: it silently subtracts row means from columns. keepdims makes
+the intent explicit, so this bug cannot happen.
+
+## The dot product is a reduction
+
+Now [the dot product](lesson:dot-product) falls apart into two pieces you know. Multiply elementwise,
+then sum:
+
+$$
+a \cdot b = \sum_{k} a_k \, b_k = \texttt{sum}(a * b)
+$$
+
+For $a = (2, -1, 3)$ and $b = (1, 4, 2)$: the elementwise product is $(2, -4, 6)$, and its sum is $4$. The axis shared
+by $a$ and $b$ is the axis that the sum collapses: this is "the axis that disappears" from
+[the tensor lesson](lesson:tensor-road). A matrix times a vector is the same with one more axis: $W$ of shape $(2, 3)$
+times $v$ of shape $(3,)$ is `(W * v).sum(axis=1)`. Broadcasting stretches $v$ over both rows, the product has shape
+$(2, 3)$, and summing away axis 1 leaves $(2,)$: two dot products, one per row. Libraries do not literally build the
+$(2, 3)$ product (that would waste memory), but every matrix product, every einsum and every neural layer is this pair:
+an elementwise product and a sum over the shared axis.
+
+## The machine layer: the order of a sum
+
+On paper $(a + b) + c = a + (b + c)$. In floating point it is not quite so: every addition is **rounded** to the
+nearest representable number, and the rounding depends on how big the partial sum already is. A float32 number carries
+about 7 significant digits. Between $65\,536$ and $131\,072$ the float32 numbers are spaced $0.0078125$ apart, so once
+a running total is that large, each added $0.1$ has to land on that coarse grid: it actually adds
+$13 \cdot 0.0078125 = 0.1015625$, about 1.6% too much, every time. At other sizes the rounding goes up or down by other
+amounts, and over a million additions the errors pile up.
+
+The experiment below adds $n$ copies of $0.1$ stored as float32, three ways, with the course's tensor core:
+
+- **one running total, in order**: what a naive loop or a single GPU thread does;
+- **pairs of pairs**: add neighbours, then neighbouring sums, and so on up a tree. Every partial sum stays the size of
+  similar numbers, so each rounding is small. Parallel hardware reduces this way anyway: a GPU adds in a tree because
+  thousands of threads cannot share one running total. NumPy's `sum` uses a pairwise tree too;
+- **a float64 accumulator**: add in double precision and round once, at the end, to float32.
+
+<ReduceControls part="order" locale={locale} client:load />
+
+With a million numbers the running total ends at $100\,958.34$ instead of $100\,000$: almost 1% too much, and the mean
+reads $0.10096$. The tree and the wide accumulator stay at $100\,000$. The same thing happens to the mean loss over a
+large batch, a sum of a long vector, or the brightness of a big image, which is why careful code sums in a tree or in a
+wider type, and why two correct programs can print slightly different sums: they added in different orders.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "x has shape (2, 3, 4). What is the shape of x.sum(axis=1)?",
+      options: [
+        "(3,)",
+        "(2, 4)",
+        "(2, 1, 4)",
+        "(2, 3)"
+      ],
+      answer: 1,
+      explain: "The axis you name is the one that disappears: axis 1 (size 3) goes, (2, 3, 4) → (2, 4). With keepdims=True it would be (2, 1, 4)."
+    },
+    {
+      q: "For a tensor of shape (5, 7), which call collapses the same axis as x.mean(axis=1)?",
+      options: [
+        "x.mean(axis=0)",
+        "x.mean(axis=-2)",
+        "x.mean(axis=-1)",
+        "x.mean()"
+      ],
+      answer: 2,
+      explain: "With two axes, axis 1 is the last one, and -1 always means the last axis. axis=-2 is axis 0."
+    },
+    {
+      q: "You want to subtract each row's mean from x of shape (4, 4). Which line is correct?",
+      options: [
+        "x - x.mean(axis=1)",
+        "x - x.mean(axis=0)",
+        "x - x.mean()",
+        "x - x.mean(axis=1, keepdims=True)"
+      ],
+      answer: 3,
+      explain: "keepdims gives the row means the shape (4, 1), which stretches across the columns. x.mean(axis=1) has shape (4,), aligned with the columns: on a square matrix it runs without an error and subtracts the wrong numbers."
+    },
+    {
+      q: "Row (0, 5, -2, 5): what do max and argmax return?",
+      options: [
+        "max 5, argmax 1",
+        "max 5, argmax 3",
+        "max 5, argmax [1, 3]",
+        "An error: there is a tie"
+      ],
+      answer: 0,
+      explain: "The maximum is the value 5 whichever cell holds it. argmax returns one position and on a tie picks the first: index 1."
+    }
+  ]}
+/>
+
+## By hand
+
+1. For $x = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix}$ compute `x.sum(axis=0)`, `x.sum(axis=1)`, `x.mean()`
+   and `x.max(axis=0)`, with their shapes.
+2. A batch of images has shape $(16, 64, 64, 3)$. Which axes do you reduce for the mean colour of each image, and what
+   shape do you get? And for the mean colour of the whole batch?
+3. What is the shape of `x.max(axis=-1, keepdims=True)` for $x$ of shape $(2, 3, 4)$?
+4. Write $a \cdot b$ for $a = (1, 2, 3)$, $b = (4, -5, 6)$ as an elementwise product followed by a sum, and compute it.
+5. In float32, why can adding $0.1$ a million times one by one end far from $100\,000$, while a tree of pairwise sums
+   ends almost exactly there?
+
+<details>
+<summary>Answers</summary>
+
+1. $(5, 7, 9)$, shape $(3,)$; $(6, 15)$, shape $(2,)$; $21 / 6 = 3.5$, shape $()$; $(4, 5, 6)$, shape $(3,)$.
+2. Axes 1 and 2 (height and width): shape $(16, 3)$, one colour per image. For the whole batch, axes 0, 1 and 2: shape
+   $(3,)$.
+3. $(2, 3, 1)$.
+4. $a * b = (4, -10, 18)$, and its sum is $12$.
+5. The running total grows large, and float32 numbers near a large value are far apart, so each added $0.1$ is rounded
+   a lot, always in the same direction here. In a tree, each addition combines two partial sums of similar size, so
+   every rounding is tiny compared with the numbers involved.
+
+</details>
+
+## In NumPy
+
+<PyCell>
+
+```python
+import numpy as np
+
+x = np.array([[2, -1, 4, 3],
+              [0, 5, -2, 5],
+              [1, 3, 2, -4]])
+print(x.sum(axis=1), x.sum(axis=0), x.sum())   # [8 8 2] [3 7 4 4] 18
+print(x.mean(axis=1))                          # [2.  2.  0.5]
+print(x.max(axis=1), x.argmax(axis=1))         # [4 5 3] [2 1 1]
+print(x.sum(axis=-1, keepdims=True).shape)     # (3, 1)
+
+centered = x - x.mean(axis=1, keepdims=True)   # each row minus its own mean
+print(centered.mean(axis=1))                   # [0. 0. 0.]
+
+a = np.array([2, -1, 3])
+b = np.array([1, 4, 2])
+print((a * b).sum(), a @ b)                    # 4 4
+
+W = np.array([[1, 0, 2],
+              [0, 3, -1]])
+print((W * a).sum(axis=1), W @ a)              # [ 8 -6] [ 8 -6]
+
+v = np.full(1_000_000, 0.1, dtype=np.float32)
+print(np.cumsum(v)[-1])                        # 100958.34: one running total
+print(v.sum(dtype=np.float64))                 # 100000.00149011612: exact for the stored 0.1
+```
+
+</PyCell>
+
+## What this opens
+
+Elementwise operations and reductions are the two halves of almost every tensor computation. Put an elementwise
+product and a sum over a shared axis together and you have the next lesson: batched matrix products and einsum, where
+the shared index of two tensors is summed away. The mean, meanwhile, is waiting in the statistics part, where it turns
+out to be the number that minimises a sum of squares.
+
+## Term map
+
+<LessonMap />

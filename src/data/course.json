@@ -201,7 +201,9 @@
       "title": "Tensors",
       "summary": "Numbers on grids with any number of axes: shapes, real data, memory and strides.",
       "lessons": [
-        { "slug": "tensor-road", "title": "What a tensor is: the road from a number to N dimensions", "short": "What a tensor is", "summary": "Each new axis repeats the whole previous object: scalar, row, sheet, block, stacks of blocks; shape, index, address.", "ru": { "title": "Что такое тензор: дорога от числа к N измерениям", "short": "Что такое тензор", "summary": "Каждая новая ось повторяет весь предыдущий объект: число, строка, лист, блок, стопки блоков; форма, индекс, адрес." } }
+        { "slug": "tensor-road", "title": "What a tensor is: the road from a number to N dimensions", "short": "What a tensor is", "summary": "Each new axis repeats the whole previous object: scalar, row, sheet, block, stacks of blocks; shape, index, address.", "ru": { "title": "Что такое тензор: дорога от числа к N измерениям", "short": "Что такое тензор", "summary": "Каждая новая ось повторяет весь предыдущий объект: число, строка, лист, блок, стопки блоков; форма, индекс, адрес." } },
+        { "slug": "broadcasting", "title": "Elementwise ops and broadcasting", "short": "Broadcasting", "summary": "One operation on whole tensors; shapes aligned from the right, size-1 axes stretched through stride 0, mismatches refused.", "ru": { "title": "Поэлементные операции и бродкастинг", "short": "Бродкастинг", "summary": "Одна операция над целыми тензорами; формы выравниваются справа, оси размера 1 растягиваются шагом 0, несовпадения отвергаются." } },
+        { "slug": "reductions", "title": "Reductions: sum, mean, max along an axis", "short": "Reductions", "summary": "The axis that collapses: sum, mean and max along an axis, keepdims, and why the order of a sum matters in float32.", "ru": { "title": "Редукции: sum, mean, max вдоль оси", "short": "Редукции", "summary": "Ось, которая схлопывается: sum, mean и max вдоль оси, keepdims и почему порядок суммирования важен во float32." } }
       ],
       "ru": {
         "title": "Тензоры",

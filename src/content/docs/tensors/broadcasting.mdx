@@ -1,0 +1,270 @@
+---
+title: "Elementwise ops and broadcasting"
+description: "One operation on whole tensors; shapes aligned from the right, size-1 axes stretched through stride 0, mismatches refused."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { RuleScene, TintScene, BcastControls } from '../../../viz/lessons/broadcasting';
+import { ruleRows, tintRows } from '../../../viz/lessons/broadcasting.rows';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'bc']} />
+
+**Built on:** [What a tensor is](lesson:tensor-road): shape, index, the flat buffer and its strides.
+
+## One operation, every cell
+
+In a compositor you never add two images pixel by pixel by hand. You plug them into a *Plus* or *Multiply* node and
+the node does the same small operation for every pixel. Tensors work the same way. An **elementwise** operation takes
+two tensors of the same shape and applies one number operation to every pair of cells that sit at the same index:
+
+$$
+C[i, j] = A[i, j] + B[i, j]
+$$
+
+Read it as: "the cell in row $i$, column $j$ of $C$ is the sum of the cells in row $i$, column $j$ of $A$ and $B$".
+Nothing mixes between different places. For two sheets of shape $(2, 2)$:
+
+$$
+\begin{bmatrix} 1 & 2 \\ 3 & 4 \end{bmatrix} + \begin{bmatrix} 10 & 20 \\ 30 & 40 \end{bmatrix} = \begin{bmatrix} 11 & 22 \\ 33 & 44 \end{bmatrix}
+$$
+
+Subtraction, multiplication, division, `max`, a comparison: any operation on two numbers becomes an operation on two
+whole tensors this way. Multiplying cell by cell is not the matrix product of Part 2; it is the *Multiply* node, and
+NumPy writes it `A * B` (the matrix product is `A @ B`).
+
+In code there is no loop. `C = A + B` is one line whatever the shape, and the library runs the loop for you, in fast
+compiled code, often on many cores or a GPU at once. That is the first reason ML code is written with whole tensors.
+
+## When the shapes differ: broadcasting
+
+Often one operand is smaller on purpose. A layer adds the same bias row to every row of a batch. A colour grade
+multiplies every pixel by the same three numbers. Writing out a full-size copy of the small operand would waste memory,
+so the libraries agree on one rule, called **broadcasting**:
+
+1. **Write the two shapes one under the other, aligned on the right.** The last axes face each other, then the ones
+   before them, and so on.
+2. **Compare each column.** Two equal sizes are fine. A size of **1** is fine too: that axis is *stretched*, its one
+   number repeated along the whole axis. A missing size (the shorter shape has run out) counts as 1.
+3. **Anything else is an error.** Two different sizes, neither of them 1, cannot be matched, and the library refuses
+   instead of guessing.
+
+The result has, in every column, the larger of the two sizes. For the default of the scene, $A$ of shape $(3, 4)$ and
+$B$ of shape $(4,)$:
+
+```
+A      3  4
+B         4
+result 3  4
+```
+
+The last axis is $4$ against $4$: equal. On the axis before it, $B$ has nothing, so it counts as 1 and stretches to 3.
+$B$, one row of four numbers, is added to every row of $A$.
+
+The card draws $A$ and $B$ *inside the result's shape*, because that is exactly what broadcasting means: every
+operand is read as if it had the result's shape. Solid cells are numbers that really are in memory; faint cells are
+the same numbers read again. Step through the timeline: first the operands as stored, then the stretch, then the
+elementwise operation filling $C$. $A$ holds $0, 1, 2, \dots$ and $B$ holds $10, 20, 30, \dots$, so in every cell of $C$
+the tens tell you which $B$ number arrived and the ones which $A$ number. Hover a cell of $C$ and the two cells it
+combines light up.
+
+<SceneIsland caption="3.4-1 · Broadcasting: two shapes aligned from the right, size-1 axes stretched (faint = repeats, not memory), then one operation per cell." rows={ruleRows(locale)}>
+  <RuleScene locale={locale} client:only="react" />
+</SceneIsland>
+<BcastControls part="rule" locale={locale} client:load />
+
+Try the presets, then edit the ranks and sizes in the panel yourself:
+
+- **Row** $(3, 4) + (4,)$: one number per column, the same for every row (a bias added to every row).
+- **Column** $(3, 4) + (3, 1)$: one number per row, the same across the columns. The column's last axis has size 1 and
+  stretches to 4.
+- **Both stretch** $(3, 1) + (1, 4)$: a whole $3 \times 4$ table from $3 + 4$ stored numbers. With $\times$ this table is
+  the *outer product*: every number of one list times every number of the other.
+- **A number** $(3, 4) + ()$: a scalar has no axes at all, so it stretches along every axis. `A * 2` is broadcasting too.
+- **Mismatch** $(3, 4) + (3,)$: aligned on the right, $3$ faces $4$. They differ and neither is 1: an error.
+
+The last one is the classic trap. A list of 3 numbers next to 3 rows *looks* like "one number per row", but alignment
+is from the right, so it is compared with the columns. One number per row is a column, shape $(3, 1)$.
+
+## No copy: stride 0
+
+Where do the repeated numbers live? Nowhere. Remember the address formula of
+[the tensor lesson](lesson:tensor-road): a cell's address is each index times its stride, added up. A row $B$ of shape
+$(4,)$ read as shape $(3, 4)$ gets the strides $(0, 1)$:
+
+$$
+\text{address} = 0 \cdot i + 1 \cdot j = j
+$$
+
+A stride of **0** means "one step along this axis does not move in memory". Row 0, row 1 and row 2 all read the same
+four numbers. The library builds this *view* (NumPy's `np.broadcast_to`) in no time and writes nothing; the shape
+table above prints the strides of both views and how many repeats they show for zero copies.
+
+Because one stored number now appears at many indices, such a view is **read-only**: writing into one repeated cell
+would silently change all of them. NumPy refuses the write, and so does the course's tensor core.
+
+A CG picture of the same idea is a **uniform** in a shader: one value, set once, read by every pixel. Nobody copies the
+light colour into a full-screen texture so that each pixel can read its own copy.
+
+## Tint every pixel
+
+The same rule works on real data. The picture below is a $4 \times 4$ crop of the icon from
+[the tensor lesson](lesson:tensor-road) (a roof over a wall and a door), shape $(4, 4, 3)$: height, width, channel. The
+tint is three numbers, shape $(3,)$. Aligned on the right, the tint's 3 faces the channel axis; the two missing axes in
+front stretch over every pixel:
+
+```
+picture  4  4  3
+tint           3
+result   4  4  3
+```
+
+So each pixel's red is multiplied by the first tint number, its green by the second and its blue by the third. The
+card draws the three channel images one under another; the tint's three numbers fill the three channel images. Change
+the tint in the panel. The default $(1, 0.8, 0.5)$ keeps the red and dims the blue: a warm, sunset grade. The sky's
+first pixel $(92, 156, 240)$ becomes $(92, 124.8, 120)$.
+
+<SceneIsland caption="3.4-2 · Tint every pixel: a 4 × 4 RGB picture (4, 4, 3) times a tint (3,). Three stored numbers serve all 48 cells." rows={tintRows(locale)}>
+  <TintScene locale={locale} client:only="react" />
+</SceneIsland>
+<BcastControls part="tint" locale={locale} client:load />
+
+The second CG anchor is the one neural networks use all the time: **add a bias to every row**. A batch of 32 examples
+with 64 numbers each is a tensor of shape $(32, 64)$, and a layer adds its bias $b$ of shape $(64,)$ to every example:
+`Y = X + b`. That is the "row" preset with bigger numbers, and you will meet it again in the layer lesson,
+$y = xW^{\mathsf{T}} + b$.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "What is the shape of A + B for A of shape (5, 1, 3) and B of shape (4, 1)?",
+      options: [
+        "(5, 4, 3)",
+        "An error: the ranks differ",
+        "(5, 1, 3)",
+        "(4, 3)"
+      ],
+      answer: 0,
+      explain: "Align on the right: 3 vs 1 → 3; 1 vs 4 → 4; 5 vs nothing (counts as 1) → 5. Different ranks are fine; only two different sizes that are both not 1 fail."
+    },
+    {
+      q: "You want to subtract one number per row from x of shape (3, 4). Which shape must the numbers have?",
+      options: [
+        "(3,)",
+        "(4,)",
+        "(3, 1)",
+        "(1, 3)"
+      ],
+      answer: 2,
+      explain: "Alignment is from the right, so (3,) would face the columns (4) and fail. (3, 1) has the 3 on the rows axis and a 1 that stretches across the columns."
+    },
+    {
+      q: "B of shape (4,) is broadcast to (3, 4). How much extra memory does that view take?",
+      options: [
+        "8 more numbers",
+        "None: the new axis gets stride 0, so all rows read the same 4 numbers",
+        "12 numbers",
+        "It depends on the operation"
+      ],
+      answer: 1,
+      explain: "broadcast_to only writes a new shape and strides, (3, 4) with strides (0, 1). No number is copied, which is also why the view is read-only."
+    },
+    {
+      q: "Which pair does NOT broadcast?",
+      options: [
+        "(8, 8, 3) and (3,)",
+        "(2, 3) and ()",
+        "(2, 3) and (2,)",
+        "(2, 1) and (1, 3)"
+      ],
+      answer: 2,
+      explain: "(2, 3) and (2,): the 2 is aligned with the 3, they differ and neither is 1. The other pairs broadcast to (8, 8, 3), (2, 3) and (2, 3)."
+    }
+  ]}
+/>
+
+## By hand
+
+1. Write the shape of the result, or "error": $(4, 3) + (3,)$; $(4, 3) + (4,)$; $(2, 1, 5) \times (3, 1)$; $(7,) - ()$.
+2. Compute $\begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 & 6 \end{bmatrix} + \begin{bmatrix} 10 \\ 20 \end{bmatrix}$.
+3. Compute the outer table $a \times b$ for $a = (1, 2, 3)$ as a column $(3, 1)$ and $b = (1, 10)$ as a row $(1, 2)$.
+4. What strides does a scalar get when it is broadcast to shape $(2, 3)$?
+5. A picture of shape $(480, 640, 3)$ is multiplied by a tint of shape $(3,)$. How many numbers are stored in total, and
+   how many multiplications are done?
+
+<details>
+<summary>Answers</summary>
+
+1. $(4, 3)$; error ($3$ against $4$); $(2, 3, 5)$; $(7,)$.
+2. $\begin{bmatrix} 11 & 12 & 13 \\ 24 & 25 & 26 \end{bmatrix}$: the column $(2, 1)$ stretches across the 3 columns.
+3. $\begin{bmatrix} 1 & 10 \\ 2 & 20 \\ 3 & 30 \end{bmatrix}$, shape $(3, 2)$.
+4. $(0, 0)$: neither index moves the address; every cell reads the one stored number.
+5. $480 \cdot 640 \cdot 3 + 3 = 921\,603$ stored numbers, and $921\,600$ multiplications, one per cell of the result.
+
+</details>
+
+## In NumPy
+
+<PyCell>
+
+```python
+import numpy as np
+
+A = np.arange(12).reshape(3, 4)           # 0 .. 11
+b = np.array([10, 20, 30, 40])            # shape (4,)
+print(A + b)                              # b added to every row
+# [[10 21 32 43]
+#  [14 25 36 47]
+#  [18 29 40 51]]
+
+c = np.array([[100], [200], [300]])       # shape (3, 1): one number per row
+print((A + c).shape)                      # (3, 4)
+
+B = np.broadcast_to(b, (3, 4))            # a view, nothing copied
+print([s // B.itemsize for s in B.strides])   # [0, 1]
+print(B.flags['WRITEABLE'], np.shares_memory(B, b))   # False True
+
+try:
+    A + np.array([1, 2, 3])               # (3, 4) + (3,)
+except ValueError as e:
+    print('error:', e)
+# error: operands could not be broadcast together with shapes (3,4) (3,)
+
+pixel = np.array([92, 156, 240])          # one sky pixel of the icon
+tint = np.array([1.0, 0.8, 0.5])
+print(pixel * tint)                       # [ 92.  124.8 120. ]
+```
+
+</PyCell>
+
+<details>
+<summary>Machine layer: broadcasting in registers and in memory traffic</summary>
+
+The word "broadcast" comes from the hardware. A CPU with SIMD registers (8 floats in one AVX register) has an
+instruction that copies one number into every lane of a register (`vbroadcastss` on x86, `dup` on ARM). An
+elementwise `X + b` loop then loads 8 numbers of `X`, adds the register that holds 8 copies of one bias number, and
+stores 8 results. On a GPU the same happens per thread: every thread reads the same uniform or the same small
+vector, and the cache serves it to all of them.
+
+What broadcasting saves is mostly **memory traffic**. Adding a $(4096, 4096)$ tensor and a $(4096,)$ row reads 16.8
+million numbers from one operand and only 4096 from the other. A materialised copy of the row would double the bytes
+read, and on modern hardware moving bytes costs more time and energy than the additions themselves.
+
+</details>
+
+## What this opens
+
+Elementwise operations combine tensors cell by cell and never change the number of axes. The next lesson does the
+opposite: a **reduction** collapses an axis, turning a whole row into one number (a sum, a mean, a maximum). Together
+they rebuild the dot product: multiply elementwise, then sum.
+
+## Term map
+
+<LessonMap />
