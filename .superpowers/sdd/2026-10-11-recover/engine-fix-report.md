@@ -3,7 +3,8 @@
 ## Resume note
 - Done: merge feat/engine (2cd33b9); commits 60b8680 (Stroke growth), abd77d8 (shared formatter), ee61e9a (empty Stroke placeholder NaN fix).
   Gates after ee61e9a: bun test 729 pass / 0 fail; check 0/0/0. Build + renderer size measured on abd77d8 (45 pages, 0 warnings, renderer 269,302 gz).
-- Next: rebuild after ee61e9a, final browser pass (scratchpad verify.ts, port 4521, fresh Chrome profile), screenshots of 1.9 WD-4 and 0.4 cards.
+- Done after ee61e9a: build 45 pages / 0 warnings, renderer chunk (ViewportCard) 269,348 gz / 1,005,876 raw (<= 300,000); largest other NPanel 86,989; elk worker 432,138 (lazy, <= 600,000). Browser pass done (below).
+- Next: nothing pending in this task.
 - Uncommitted: nothing (this report and evidence folder only).
 
 ## Bug 1: Stroke kept its first segment count
@@ -44,6 +45,18 @@ Test: `tests/js/fmt.test.ts` (ulp-perturbed boundary values print identically; p
 Behaviour note: exact negative halves (-0.125 at 2 dp) now round away from zero like toFixed (old showVal used
 Math.round toward +inf). NumTable's `toPrecision(8)` default already snaps and was left as is.
 
+## Browser pass (one, headless Chrome/SwiftShader over CDP, production dist, port 4521)
+Evidence: `engine-fix-evidence/` (verify.ts, serve.ts, run.log, report.json, PNGs).
+- All 44 lesson/dev/start pages EN + RU (plus root): no exceptions, no React hydration error (#418), no console error
+  besides the known favicon.svg 404 and THREE.Clock deprecation warning.
+- 1.9 WD-4 epicycles: sticks S = 1, 11, 21, 63 (N-panel PageUp/PageDown) at t = 0.25 / 0.6 / 0.98: the trace grows
+  with time and closes the full heart at S = 63; chain and orbit circles drawn for every S.
+- 0.4 unit-circle: all 4 cards, cos/sin graph traces drawn up to the current angle.
+- First run found a NaN bounding sphere: the one-point placeholder for an empty segments Stroke (orbit circles) gave
+  LineSegmentsGeometry half an instance; fixed in ee61e9a (placeholder pair, emptied on mount).
+- `astro preview` exited with code 255 twice under headless Chrome load (cause not investigated; unrelated to this
+  change); the pass used a minimal Bun static server for dist (serve.ts).
+
 ## Open items
-- Browser pass result: see below.
+- astro preview (bun) exit 255 under load: unknown cause, worth a separate look.
 - Residual risk by construction: two engine results straddling a grid point 1e-(d+6) (probability ~1e-8 per value).

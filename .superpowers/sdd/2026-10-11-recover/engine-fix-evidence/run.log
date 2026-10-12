@@ -1,0 +1,160 @@
+index Math for AI | Math for AI | cards=0 canvas=0
+course/roadmap Course roadmap | Math for AI | cards=0 canvas=0
+dev/engine Engine test page | Math for AI | cards=12 canvas=1
+dev/linked Linked engine controls | Math for AI | cards=2 canvas=1
+dev/math Math test page | Math for AI | cards=0 canvas=0
+glossary Glossary | Math for AI | cards=0 canvas=0
+ground/law-of-cosines The law of cosines | Math for AI | cards=6 canvas=1
+ground/powers Powers: whole, zero, negative and fractional | Math for AI | cards=5 canvas=1
+ground/pythagoras Distance and Pythagoras | Math for AI | cards=4 canvas=1
+ground/squares-and-plane Squares, roots and the plane | Math for AI | cards=4 canvas=1
+ground/unit-circle Angles, radians and the unit circle | Math for AI | cards=4 canvas=1
+start/how-it-connects How it all connects: one dot product, scaled up | Math for AI | cards=2 canvas=1
+start/why-this-course Why this course: what AI actually computes | Math for AI | cards=1 canvas=1
+vectors/basis Basis, span, independence and dimension | Math for AI | cards=4 canvas=1
+vectors/cosine-similarity Cosine similarity and embeddings | Math for AI | cards=3 canvas=4
+vectors/cross-product The cross product (side branch) | Math for AI | cards=3 canvas=1
+vectors/dot-product The dot product, derived from the law of cosines | Math for AI | cards=5 canvas=1
+vectors/length Length, Σ notation and normalization | Math for AI | cards=5 canvas=1
+vectors/projection Projection: shadows on an axis | Math for AI | cards=4 canvas=1
+vectors/vector A vector: an arrow and a list of numbers | Math for AI | cards=6 canvas=1
+vectors/vector-arithmetic Adding, scaling and linear combinations | Math for AI | cards=5 canvas=1
+vectors/waves-dft Waves as vectors: the DFT is a list of dot products | Math for AI | cards=4 canvas=1
+ru/ Math for AI | Математика для ИИ | cards=0 canvas=0
+ru/course/roadmap Course roadmap | Математика для ИИ | cards=0 canvas=0
+ru/dev/engine Engine test page | Математика для ИИ | cards=12 canvas=1
+ru/dev/linked Связанные элементы урока | Математика для ИИ | cards=2 canvas=1
+ru/dev/math Math test page | Математика для ИИ | cards=0 canvas=0
+ru/glossary Словарь | Математика для ИИ | cards=0 canvas=0
+ru/ground/law-of-cosines Теорема косинусов | Математика для ИИ | cards=6 canvas=1
+ru/ground/powers Степени: целые, нулевая, отрицательные и дробные | Математика для ИИ | cards=5 canvas=1
+ru/ground/pythagoras Расстояние и Пифагор | Математика для ИИ | cards=4 canvas=1
+ru/ground/squares-and-plane Квадраты, корни и плоскость | Математика для ИИ | cards=4 canvas=1
+ru/ground/unit-circle Углы, радианы и единичная окружность | Математика для ИИ | cards=4 canvas=1
+ru/start/how-it-connects Как всё связано: одно скалярное произведение, увеличенное в масштабе | Математика для ИИ | cards=2 canvas=1
+ru/start/why-this-course Зачем этот курс: что на самом деле считает ИИ | Математика для ИИ | cards=1 canvas=1
+ru/vectors/basis Базис, линейная оболочка, независимость и размерность | Математика для ИИ | cards=4 canvas=1
+ru/vectors/cosine-similarity Косинусное сходство и эмбеддинги | Математика для ИИ | cards=3 canvas=4
+ru/vectors/cross-product Векторное произведение (ответвление) | Математика для ИИ | cards=3 canvas=1
+ru/vectors/dot-product Скалярное произведение: вывод из теоремы косинусов | Математика для ИИ | cards=5 canvas=1
+ru/vectors/length Длина, запись через Σ и нормализация | Математика для ИИ | cards=5 canvas=1
+ru/vectors/projection Проекция: тени на оси | Математика для ИИ | cards=4 canvas=1
+ru/vectors/vector Вектор: стрелка и список чисел | Математика для ИИ | cards=6 canvas=1
+ru/vectors/vector-arithmetic Сложение, умножение на число и линейные комбинации | Математика для ИИ | cards=5 canvas=1
+ru/vectors/waves-dft Волны как векторы: ДПФ — это список скалярных произведений | Математика для ИИ | cards=4 canvas=1
+vectors/waves-dft Waves as vectors: the DFT is a list of dot products | Math for AI | cards=4 canvas=1
+waves cards 4
+S low 1
+S 11
+S 21
+S 63
+ground/unit-circle Angles, radians and the unit circle | Math for AI | cards=4 canvas=1
+pages 45 with messages 36
+dev/engine 
+  Engine test page | Math for AI | cards=12 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+dev/linked 
+  Linked engine controls | Math for AI | cards=2 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ground/law-of-cosines 
+  The law of cosines | Math for AI | cards=6 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ground/powers 
+  Powers: whole, zero, negative and fractional | Math for AI | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ground/pythagoras 
+  Distance and Pythagoras | Math for AI | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ground/squares-and-plane 
+  Squares, roots and the plane | Math for AI | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ground/unit-circle 
+  Angles, radians and the unit circle | Math for AI | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+start/how-it-connects 
+  How it all connects: one dot product, scaled up | Math for AI | cards=2 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+start/why-this-course 
+  Why this course: what AI actually computes | Math for AI | cards=1 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/basis 
+  Basis, span, independence and dimension | Math for AI | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/cosine-similarity 
+  Cosine similarity and embeddings | Math for AI | cards=3 canvas=4
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/cross-product 
+  The cross product (side branch) | Math for AI | cards=3 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/dot-product 
+  The dot product, derived from the law of cosines | Math for AI | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/length 
+  Length, Σ notation and normalization | Math for AI | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/projection 
+  Projection: shadows on an axis | Math for AI | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/vector 
+  A vector: an arrow and a list of numbers | Math for AI | cards=6 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/vector-arithmetic 
+  Adding, scaling and linear combinations | Math for AI | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+vectors/waves-dft 
+  Waves as vectors: the DFT is a list of dot products | Math for AI | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/dev/engine 
+  Engine test page | Математика для ИИ | cards=12 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/dev/linked 
+  Связанные элементы урока | Математика для ИИ | cards=2 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/ground/law-of-cosines 
+  Теорема косинусов | Математика для ИИ | cards=6 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/ground/powers 
+  Степени: целые, нулевая, отрицательные и дробные | Математика для ИИ | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/ground/pythagoras 
+  Расстояние и Пифагор | Математика для ИИ | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/ground/squares-and-plane 
+  Квадраты, корни и плоскость | Математика для ИИ | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/ground/unit-circle 
+  Углы, радианы и единичная окружность | Математика для ИИ | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/start/how-it-connects 
+  Как всё связано: одно скалярное произведение, увеличенное в масштабе | Математика для ИИ | cards=2 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/start/why-this-course 
+  Зачем этот курс: что на самом деле считает ИИ | Математика для ИИ | cards=1 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/basis 
+  Базис, линейная оболочка, независимость и размерность | Математика для ИИ | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/cosine-similarity 
+  Косинусное сходство и эмбеддинги | Математика для ИИ | cards=3 canvas=4
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/cross-product 
+  Векторное произведение (ответвление) | Математика для ИИ | cards=3 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/dot-product 
+  Скалярное произведение: вывод из теоремы косинусов | Математика для ИИ | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/length 
+  Длина, запись через Σ и нормализация | Математика для ИИ | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/projection 
+  Проекция: тени на оси | Математика для ИИ | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/vector 
+  Вектор: стрелка и список чисел | Математика для ИИ | cards=6 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/vector-arithmetic 
+  Сложение, умножение на число и линейные комбинации | Математика для ИИ | cards=5 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ru/vectors/waves-dft 
+  Волны как векторы: ДПФ — это список скалярных произведений | Математика для ИИ | cards=4 canvas=1
+  WARNING THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
