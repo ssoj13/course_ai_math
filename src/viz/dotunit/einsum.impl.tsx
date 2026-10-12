@@ -22,9 +22,9 @@ import { Show, useOverlay, useStage } from '../scene/handles';
 import type { Hint, StatusSpec } from '../scene/StatusBar';
 import { Boxes } from './Boxes';
 import { cellTop, dotCap, dotFrame, dotGeom, dotIds, Frame, passCap, passFrame, passIds, passMs, type DotGeom } from './choreo';
-import { diveVectors, ladderData, LADDER, MATVEC, mvData, PLAY, playData, presetOf } from './einsum.store';
+import { diveVectors, ladderData, LADDER, MATVEC, mvData, playData, playLesson, presetOf } from './einsum.store';
 import { mvRows, playRows } from './einsum.rows';
-import { columnView, dotData, fmt, fmtShort, ids, type SceneData } from './model';
+import { columnView, dotData, fmt, fmtShort, ids, type PresetId, type SceneData } from './model';
 import { Tag, useClock } from './scene';
 
 const FRONT = [0, 0, 1] as const;
@@ -193,18 +193,18 @@ function pickHints(locale: Locale): Readonly<Record<string, Hint>> {
 // ---------------------------------------------------------------------------------------------------------------
 // Playground.
 
-function Playground() {
-	const locale = useLocale(), v = useVals(PLAY), b = playData(v);
+function Playground({ lesson }: { lesson: string }) {
+	const locale = useLocale(), v = useVals(lesson), b = playData(v);
 	const dive = (v.dive as number) === 1, sel = Math.round(v.sel as number);
 	const id = presetOf(v);
-	if (!b.ok) return <Label lesson={PLAY} id="err" at={[0, 0, 0]} role="hot">{t(locale, 'du.tooLarge')}</Label>;
+	if (!b.ok) return <Label lesson={lesson} id="err" at={[0, 0, 0]} role="hot">{t(locale, 'du.tooLarge')}</Label>;
 	const c = Math.min(b.d.L.cells.n - 1, Math.max(0, sel));
 	if (dive) {
 		const { a, b: bb } = diveVectors(b.d, c);
-		return <DotStatic lesson={PLAY} a={a} b={bb} step={9} frameKey={'dive:' + JSON.stringify(b.d.L.plan.dims) + c} />;
+		return <DotStatic lesson={lesson} a={a} b={bb} step={9} frameKey={'dive:' + JSON.stringify(b.d.L.plan.dims) + c} />;
 	}
-	return <EinsumView lesson={PLAY} d={b.d} timeline="pass" focus={c} frameKey={id + JSON.stringify(b.d.L.plan.dims)}
-		onCell={(cell) => lessonStore(PLAY).getState().setMany({ sel: cell, dive: 1 })} />;
+	return <EinsumView lesson={lesson} d={b.d} timeline="pass" focus={c} frameKey={id + JSON.stringify(b.d.L.plan.dims)}
+		onCell={(cell) => lessonStore(lesson).getState().setMany({ sel: cell, dive: 1 })} />;
 }
 
 function playStatus(locale: Locale): StatusSpec {
@@ -220,16 +220,17 @@ function playStatus(locale: Locale): StatusSpec {
 	};
 }
 
-export function PlaygroundCard({ card = 'INTRO-3' }: { card?: string }) {
-	const locale = useLocale();
+/** `preset` = the starting preset (`playLesson`: its own store when it is not the default). */
+export function PlaygroundCard({ card = 'INTRO-3', preset }: { card?: string; preset?: PresetId }) {
+	const locale = useLocale(), lesson = playLesson(preset);
 	const status = useMemo(() => playStatus(locale), [locale]);
 	// The camera's distance range scales with `extent`: a 64-wide heatmap needs a far camera, a dot product a near one.
-	const b = playData(useVals(PLAY));
+	const b = playData(useVals(lesson));
 	const extent = b.ok ? Math.max(5, 0.5 * Math.hypot(b.d.L.hi[0] - b.d.L.lo[0], b.d.L.hi[1] - b.d.L.lo[1], b.d.L.hi[2] - b.d.L.lo[2])) : 5;
-	return <ViewportCard lesson={PLAY} id={card} name={card + ' · ' + t(locale, 'du.namePlay')} mode="3d" extent={extent}
+	return <ViewportCard lesson={lesson} id={card} name={card + ' · ' + t(locale, 'du.namePlay')} mode="3d" extent={extent}
 		rows={playRows(locale)} status={status} overlays={overlays(locale)}>
-		<Floor lesson={PLAY} extent={8} />
-		<Playground />
+		<Floor lesson={lesson} extent={8} />
+		<Playground lesson={lesson} />
 	</ViewportCard>;
 }
 

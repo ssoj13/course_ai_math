@@ -13,10 +13,9 @@ import { idxId } from './layout';
 import { lazyIsland } from '../island';
 import { Timeline } from '../Timeline';
 import { FieldCell, type Row } from '../scene/NPanel';
-import { EXT, extKey, LAD_INIT, LADDER, letters, MATVEC, mvData, MV_INIT, PLAY, PLAY_IDS, PLAY_INIT, playData, presetOf } from './einsum.store';
+import { EXT, extKey, LAD_INIT, LADDER, letters, MATVEC, mvData, MV_INIT, PLAY_IDS, playData, playLesson, presetOf } from './einsum.store';
 import { columnView, fmtShort, PRESETS, type PresetId } from './model';
 
-lessonStore(PLAY, PLAY_INIT);
 lessonStore(MATVEC, MV_INIT);
 lessonStore(LADDER, LAD_INIT);
 
@@ -51,38 +50,38 @@ function useEscape(scope: string, act: () => void) {
 	}, [scope, act]);
 }
 
-function PresetButtons() {
-	const locale = useLocale(), v = useVals(PLAY), cur = presetOf(v);
+function PresetButtons({ lesson }: { lesson: string }) {
+	const locale = useLocale(), v = useVals(lesson), cur = presetOf(v);
 	return <div role="radiogroup" aria-label={t(locale, 'du.presets')} className="lab-du-presets" style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
 		{PLAY_IDS.map((id, i) => (
 			<button key={id} type="button" role="radio" aria-checked={cur === id} style={{ font: 'inherit', padding: '.2rem .6rem', fontWeight: cur === id ? 700 : 400 }}
-				onClick={() => lessonStore(PLAY).getState().setMany({ preset: i, sel: 0, dive: 0 })}>
+				onClick={() => lessonStore(lesson).getState().setMany({ preset: i, sel: 0, dive: 0 })}>
 				<code>{PRESETS[id].op}</code> {t(locale, PRESET_KEYS[id])}
 			</button>
 		))}
 	</div>;
 }
 
-function Extents() {
-	const locale = useLocale(), id = presetOf(useVals(PLAY));
+function Extents({ lesson }: { lesson: string }) {
+	const locale = useLocale(), id = presetOf(useVals(lesson));
 	const rows = useMemo<Row[]>(() => letters(id).map((l) => ({ id: 'ext_' + l, label: l, kind: 'num', key: extKey(id, l), spec: { ...EXT }, fmt: (x) => String(Math.round(x)), tip: { text: t(locale, 'du.extTip', { l }) } })), [id, locale]);
 	return <div className="not-content" aria-label={t(locale, 'du.extents')} style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
-		{rows.map((r) => <FieldCell key={r.key} lesson={PLAY} row={r} size="sm" />)}
+		{rows.map((r) => <FieldCell key={r.key} lesson={lesson} row={r} size="sm" />)}
 	</div>;
 }
 
-function DiveBar() {
-	const locale = useLocale(), v = useVals(PLAY), b = playData(v), dive = (v.dive as number) === 1;
-	const st = lessonStore(PLAY).getState();
+function DiveBar({ lesson }: { lesson: string }) {
+	const locale = useLocale(), v = useVals(lesson), b = playData(v), dive = (v.dive as number) === 1;
+	const st = lessonStore(lesson).getState();
 	const back = () => st.set('dive', 0);
-	useEscape(PLAY, back);
+	useEscape(lesson, back);
 	if (!b.ok) return <p>{t(locale, 'du.tooLarge')}</p>;
 	const c = Math.min(b.d.L.cells.n - 1, Math.max(0, Math.round(v.sel as number)));
 	const rank = b.d.L.plan.kept.length;
 	const cell = '(' + Array.from(b.d.L.cells.idx.subarray(c * rank, c * rank + rank)).join(', ') + ')';
 	const sel: Row = { id: 'sel', label: t(locale, 'du.selCell'), kind: 'num', key: 'sel', spec: { min: 0, max: Math.max(1, b.d.L.cells.n - 1), step: 1 }, fmt: (x) => String(Math.round(x)), tip: { text: t(locale, 'du.selTip') } };
 	return <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.6rem', alignItems: 'center' }}>
-		{!dive && b.d.L.cells.n > 1 && <FieldCell lesson={PLAY} row={sel} size="sm" />}
+		{!dive && b.d.L.cells.n > 1 && <FieldCell lesson={lesson} row={sel} size="sm" />}
 		{dive
 			? <button type="button" onClick={back}>{t(locale, 'du.backUp')}</button>
 			: <button type="button" onClick={() => st.set('dive', 1)}>{t(locale, 'du.diveBtn', { cell: rank ? cell : '()' })}</button>}
@@ -97,13 +96,13 @@ function DiveBar() {
  * while nothing moves. At most MEM_MAX cells per operand are listed.
  */
 const MEM_MAX = 48;
-function MemoryStrip() {
-	const locale = useLocale(), v = useVals(PLAY), b = playData(v), hot = useStore(lessonStore(PLAY), (st) => st.hot);
+function MemoryStrip({ lesson }: { lesson: string }) {
+	const locale = useLocale(), v = useVals(lesson), b = playData(v), hot = useStore(lessonStore(lesson), (st) => st.hot);
 	if (!b.ok) return null;
 	const d = b.d, wide = d.wide, tA = v.tA === 1;
 	return <div className="lab-du-mem" aria-label={t(locale, 'du.memory')}>
 		<label style={{ display: 'inline-flex', gap: '.4rem', alignItems: 'center' }}>
-			<input type="checkbox" checked={tA} onChange={(e) => lessonStore(PLAY).getState().set('tA', e.currentTarget.checked ? 1 : 0)} />
+			<input type="checkbox" checked={tA} onChange={(e) => lessonStore(lesson).getState().set('tA', e.currentTarget.checked ? 1 : 0)} />
 			{t(locale, 'du.transpose')}
 		</label>
 		{([0, 1] as const).map((o) => {
@@ -124,7 +123,7 @@ function MemoryStrip() {
 						const idx = base.strides.map((st) => { const q = Math.floor(r / st); r -= q * st; return q; });
 						const id = (o === 0 ? 'a' : 'b') + idxId(idx, 0, idx.length, wide);
 						return <span key={k} data-t={id} tabIndex={0} className={hot.has(id) ? 'is-hot' : undefined}
-							onPointerEnter={() => hotOn(PLAY, id)} onPointerLeave={() => hotOff(PLAY, id)} onFocus={() => hotOn(PLAY, id)} onBlur={() => hotOff(PLAY, id)}
+							onPointerEnter={() => hotOn(lesson, id)} onPointerLeave={() => hotOff(lesson, id)} onFocus={() => hotOn(lesson, id)} onBlur={() => hotOff(lesson, id)}
 							style={{ display: 'inline-grid', minWidth: '2.2em', textAlign: 'center', fontFamily: 'var(--lab-font-mono)', fontSize: '.75rem', border: '1px solid var(--sl-color-gray-5)', padding: '1px 2px', background: hot.has(id) ? 'var(--viz-hot-bg)' : undefined }}>
 							<span>{fmtShort(base.data[k])}</span>
 							<span style={{ opacity: 0.6 }}>{order.get(k)}</span>
@@ -137,14 +136,14 @@ function MemoryStrip() {
 	</div>;
 }
 
-function Play() {
-	const locale = useLocale();
-	return <section className="not-content" data-du-scope={PLAY}>
-		<PresetButtons />
-		<Extents />
-		<Timeline lesson={PLAY} id="pass" steps={PASS_KEYS.map((k, i) => ({ id: String(i), text: t(locale, k) }))} />
-		<DiveBar />
-		<MemoryStrip />
+function Play({ preset }: { preset?: PresetId }) {
+	const locale = useLocale(), lesson = playLesson(preset);
+	return <section className="not-content" data-du-scope={lesson}>
+		<PresetButtons lesson={lesson} />
+		<Extents lesson={lesson} />
+		<Timeline lesson={lesson} id="pass" steps={PASS_KEYS.map((k, i) => ({ id: String(i), text: t(locale, k) }))} />
+		<DiveBar lesson={lesson} />
+		<MemoryStrip lesson={lesson} />
 	</section>;
 }
 
@@ -182,8 +181,9 @@ function Ladder() {
 }
 
 export type EinsumKind = 'playground' | 'rows' | 'columns' | 'ladder';
-function Controls({ kind }: { kind: EinsumKind; locale?: Locale }) {
-	if (kind === 'playground') return <Play />;
+/** `preset` = the playground's starting preset (other kinds ignore it). */
+function Controls({ kind, preset }: { kind: EinsumKind; preset?: PresetId; locale?: Locale }) {
+	if (kind === 'playground') return <Play preset={preset} />;
 	if (kind === 'ladder') return <Ladder />;
 	return <Matvec view={kind} />;
 }

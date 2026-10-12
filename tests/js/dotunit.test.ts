@@ -3,6 +3,8 @@ import { describe, expect, test } from 'bun:test';
 import { mulberry32, planEinsum, ShapeError, tensor } from '../../src/core';
 import { assignAxes, FACE, GROUP_GAP, layoutEinsum, lodOf, PITCH, type Place } from '../../src/viz/dotunit/layout';
 import { columnView, dotData, operands, PRESETS, sceneData, type PresetId } from '../../src/viz/dotunit/model';
+import { playLesson, PLAY_IDS } from '../../src/viz/dotunit/einsum.store';
+import { lessonStore } from '../../src/viz/store';
 import { DOT_BAR, dotCap, dotCurrent, dotFrame, dotGeom, dotTops, Frame, passCap, passFrame } from '../../src/viz/dotunit/choreo';
 
 const plan = (id: PresetId) => planEinsum(PRESETS[id].op, PRESETS[id].shapes);
@@ -300,5 +302,16 @@ describe('machine layer (spec §1.3) and LOD furniture (§1.4)', () => {
 		passFrame(d3, 1, 1, 0, f3);
 		expect(f3.c[3 * plane + 2]).toBeGreaterThan(z0);
 		expect(f3.alpha[plane]).toBe(1);
+	});
+});
+
+describe('playground starting preset (DotUnit.astro `preset`)', () => {
+	test('each starting preset owns a store that opens on it; the default keeps the plain id', () => {
+		expect(playLesson()).toBe('einsum');
+		expect(playLesson('matmul')).toBe('einsum');
+		expect(lessonStore('einsum').getState().vals.preset).toBe(PLAY_IDS.indexOf('matmul'));
+		expect(playLesson('batched')).toBe('einsum-batched');
+		expect(lessonStore('einsum-batched').getState().vals.preset).toBe(PLAY_IDS.indexOf('batched'));
+		expect(() => playLesson('nope' as PresetId)).toThrow(/unknown preset/);
 	});
 });

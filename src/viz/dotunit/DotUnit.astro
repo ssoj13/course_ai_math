@@ -4,7 +4,7 @@
  * caption and the N-panel rows (the same array the card renders, for the phone chip reservation), ships the client
  * dictionary slices and mounts the scene island plus its DOM controls. Pages use `<DotUnit kind="..." />`:
  * `unit` (the DotUnit; `parts` picks its controls), `playground` (INTRO-3), `ladder` (INTRO-2), `rows` / `columns`
- * (matrix x vector, two views of one store).
+ * (matrix x vector, two views of one store). A playground opens on its preset (default the matmul cube).
  */
 import { pageLocale, t } from '../../i18n/ui';
 import UiStrings from '../../components/UiStrings.astro';
@@ -13,22 +13,25 @@ import { DotUnitScene, DotUnitControls, type UnitPart } from './dotunit';
 import { unitRows } from './dotunit.rows';
 import { ColumnScene, EinsumControls, LadderScene, MatvecScene, PlaygroundScene } from './einsum';
 import { mvRows, playRows } from './einsum.rows';
+import type { PresetId } from './model';
 
 interface Props {
 	kind: 'unit' | 'playground' | 'ladder' | 'rows' | 'columns';
 	/** Caption variant of the unit card: the intro's "whole course in ten seconds", the 1.4 teaser, or the plain card. */
 	caption?: 'intro' | 'teaser' | 'plain';
 	parts?: readonly UnitPart[];
+	/** Starting preset of the `playground` (`einsum.store` `playLesson`). */
+	preset?: PresetId;
 }
 const locale = pageLocale(Astro);
-const { kind, caption = 'plain', parts } = Astro.props;
+const { kind, caption = 'plain', parts, preset } = Astro.props;
 const captions = { intro: t(locale, 'du.capIntro'), teaser: t(locale, 'du.capTeaser'), plain: t(locale, 'du.capUnit') };
 ---
 <UiStrings ns={['viewport', 'gizmo', 'status', 'linked', 'challenge', 'du']} />
 {kind === 'unit' && <SceneIsland caption={captions[caption]} rows={unitRows(locale)}><DotUnitScene locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'unit' && <DotUnitControls locale={locale} parts={parts} client:load />}
-{kind === 'playground' && <SceneIsland caption={t(locale, 'du.capPlay')} rows={playRows(locale)}><PlaygroundScene locale={locale} client:only="react" /></SceneIsland>}
+{kind === 'playground' && <SceneIsland caption={t(locale, 'du.capPlay')} rows={playRows(locale)}><PlaygroundScene locale={locale} preset={preset} client:only="react" /></SceneIsland>}
 {kind === 'ladder' && <SceneIsland caption={t(locale, 'du.capLadder')}><LadderScene locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'rows' && <SceneIsland caption={t(locale, 'du.capRows')} rows={mvRows(locale)}><MatvecScene locale={locale} client:only="react" /></SceneIsland>}
 {kind === 'columns' && <SceneIsland caption={t(locale, 'du.capCols')} rows={mvRows(locale)}><ColumnScene locale={locale} client:only="react" /></SceneIsland>}
-{kind !== 'unit' && <EinsumControls locale={locale} kind={kind} client:load />}
+{kind !== 'unit' && <EinsumControls locale={locale} kind={kind} preset={preset} client:load />}

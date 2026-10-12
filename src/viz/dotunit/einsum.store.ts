@@ -5,7 +5,7 @@
  * shared by the scene, the N-panel rows and the DOM controls (one `sceneData` = one set of floats).
  */
 import { add, CoreError, einsum, explain, planEinsum, tensor, type Plan, type Tensor } from '../../core';
-import type { LessonState, Val } from '../store';
+import { lessonStore, type LessonState, type Val } from '../store';
 import { A_DEF, B_DEF, LAYER_BIAS, operands, PRESETS, sceneData, type PresetId, type SceneData } from './model';
 
 type Vals = LessonState['vals'];
@@ -30,6 +30,23 @@ export const PLAY_INIT: Record<string, Val> = {
 	tA: 0,
 	...Object.fromEntries(PLAY_IDS.flatMap((id) => letters(id).map((l) => [extKey(id, l), PRESETS[id].shapes[l]]))),
 };
+
+/** Preset a playground opens on when the page names none (the matmul cube). */
+export const PLAY_DEFAULT: PresetId = 'matmul';
+
+/**
+ * Store of a playground that opens on `preset` (`<DotUnit kind="playground" preset="batched" />`). Each starting preset
+ * has its own store, created with that preset in its initial values, so the server render, the hydrated controls and
+ * the scene agree from the first frame and two playgrounds on one page never share a selection. The default keeps the
+ * plain `einsum` id. `-` (not `:`) joins the id: size-mode and Escape scopes match `<lesson>:` prefixes.
+ */
+export function playLesson(preset: PresetId = PLAY_DEFAULT): string {
+	const i = PLAY_IDS.indexOf(preset);
+	if (i < 0) throw new Error(`einsum playground: unknown preset "${preset}" (known: ${PLAY_IDS.join(', ')})`);
+	const id = preset === PLAY_DEFAULT ? PLAY : `${PLAY}-${preset}`;
+	lessonStore(id, { ...PLAY_INIT, preset: i });
+	return id;
+}
 
 export const presetOf = (v: Vals): PresetId => PLAY_IDS[Math.max(0, Math.min(PLAY_IDS.length - 1, Math.round(v.preset as number)))];
 

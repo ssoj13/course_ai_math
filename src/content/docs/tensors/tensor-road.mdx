@@ -176,13 +176,13 @@ dot products, one per row. Step through it (the timeline passes the vector along
 
 <DotUnit kind="rows" />
 
-The same rule works for any number of axes. In the playground below press `bij,bjk->bik` (a batch of matrix
+The same rule works for any number of axes. The playground below opens on `bij,bjk->bik` (a batch of matrix
 products): $(2, 2, 3)$ times $(2, 3, 2)$ gives $(2, 2, 2)$. The letter $j$ is in both inputs and not in the output: it
 is the axis that disappears, and every output cell is one dot product along it. The batch axis $b$ is in the output,
 so it never mixes: cube 0 and cube 1 are computed separately, side by side. In [Basis](lesson:basis) the coordinates
 of a vector were dot products with the axes; here the same dot products are simply laid out on more axes.
 
-<DotUnit kind="playground" />
+<DotUnit kind="playground" preset="batched" />
 
 ## Check yourself
 
