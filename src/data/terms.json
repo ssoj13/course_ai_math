@@ -699,11 +699,65 @@
     {
       "id": "tensor",
       "label": "Tensor",
-      "def": "A tensor is an n-dimensional grid of numbers stored as one flat buffer with strides; its products are stacks of matrix products.",
+      "def": "A tensor is a grid of numbers with any number of axes, described by its shape and stored as one flat buffer read through strides.",
       "depth": "matrices",
-      "lessons": [],
-      "edges": [{ "type": "built-on", "to": "matrix" }],
-      "ru": { "label": "Тензор", "def": "Тензор — это n-мерная таблица чисел, хранящаяся как один плоский буфер с шагами; его произведения — стопки произведений матриц." }
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "vector" }, { "type": "built-on", "to": "matrix" }, { "type": "built-on", "to": "shape" }],
+      "ru": { "label": "Тензор", "def": "Тензор — это сетка чисел с любым числом осей; её описывает форма, а хранится она одним плоским буфером, который читают через шаги." }
+    },
+    {
+      "id": "tensor-axis",
+      "label": "Axis",
+      "def": "An axis of a tensor is one of its index positions: moving along it changes that index and keeps all the others.",
+      "depth": "matrices",
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "vector" }],
+      "ru": { "label": "Ось", "def": "Ось тензора — это одна из позиций его индекса: движение вдоль неё меняет этот индекс и сохраняет все остальные." }
+    },
+    {
+      "id": "shape",
+      "label": "Shape",
+      "def": "The shape of a tensor lists the size of every axis, outermost first; their product is the number of elements.",
+      "depth": "matrices",
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "tensor-axis" }],
+      "ru": { "label": "Форма", "def": "Форма тензора перечисляет размеры всех осей, начиная с внешней; их произведение — число элементов." }
+    },
+    {
+      "id": "tensor-rank",
+      "label": "Rank (order)",
+      "def": "The rank of a tensor (order, ndim) is its number of axes: 0 for a number, 1 for a vector, 2 for a matrix; not the matrix rank of linear algebra.",
+      "depth": "matrices",
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "shape" }],
+      "ru": { "label": "Ранг (порядок)", "def": "Ранг тензора (порядок, ndim) — это число его осей: 0 у числа, 1 у вектора, 2 у матрицы; это не ранг матрицы из линейной алгебры." }
+    },
+    {
+      "id": "stride",
+      "label": "Stride",
+      "def": "A stride is how many buffer elements one step along an axis skips; the address of a cell is the sum of index times stride.",
+      "depth": "machine",
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "shape" }],
+      "ru": { "label": "Шаг (stride)", "def": "Шаг — это сколько элементов буфера пропускает один шаг вдоль оси; адрес ячейки — сумма индексов, умноженных на шаги." }
+    },
+    {
+      "id": "contiguous",
+      "label": "Contiguous",
+      "def": "A tensor is contiguous when a row-major walk over its cells reads its buffer in order, without jumps.",
+      "depth": "machine",
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "stride" }],
+      "ru": { "label": "Непрерывный", "def": "Тензор непрерывный, когда обход его ячеек по строкам читает буфер подряд, без прыжков." }
+    },
+    {
+      "id": "batch",
+      "label": "Batch",
+      "def": "A batch is a new first axis that stacks independent examples, so one operation processes all of them at once.",
+      "depth": "ai",
+      "lessons": ["tensor-road"],
+      "edges": [{ "type": "built-on", "to": "tensor" }],
+      "ru": { "label": "Пакет (batch)", "def": "Пакет — это новая первая ось, которая складывает независимые примеры в стопку, чтобы одна операция обработала их все сразу." }
     },
     {
       "id": "gradient",

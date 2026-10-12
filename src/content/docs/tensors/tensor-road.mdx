@@ -1,0 +1,310 @@
+---
+title: "What a tensor is: the road from a number to N dimensions"
+description: "Each new axis repeats the whole previous object: scalar, row, sheet, block, stacks of blocks; shape, index, address."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { RoadScene, RoadControls } from '../../../viz/lessons/tensor-road';
+import { roadRows } from '../../../viz/lessons/tensor-road.rows';
+import DotUnit from '../../../viz/dotunit/DotUnit.astro';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'tr']} />
+
+**Built on:** [A vector: an arrow and a list of numbers](lesson:vector) · [Cosine similarity and embeddings](lesson:cosine-similarity).
+A matrix appears here only as "a sheet of numbers"; nothing about multiplying matrices is needed yet.
+
+## A tensor is numbers on a grid
+
+You already know three tensors without calling them that. A single float, like the roughness of a material, is one
+number. A vector, like a position $(1.0, 2.0, 0.5)$, is a row of numbers. A texture is a sheet of pixels, and every
+pixel carries three numbers: red, green and blue.
+
+A **tensor** is the general version of all three: numbers laid out on a grid that has some number of **axes**
+(directions you can step along). Three words describe any tensor:
+
+- **Axis**: one direction of the grid. Stepping along an axis changes one index and keeps the others.
+- **Rank** (also called *order*, NumPy calls it `ndim`): how many axes there are. A number has rank 0, a row rank 1,
+  a sheet rank 2, a block rank 3.
+- **Shape**: the size of every axis, written as a tuple, outermost axis first. A sheet of 3 rows and 4 columns has shape
+  $(3, 4)$.
+
+One warning about the word "rank". In linear algebra (Part 2) the *rank of a matrix* means something else: how many
+independent columns it has. Here, and in every ML library, the rank of a tensor only counts its axes. A $3 \times 4$
+matrix is a tensor of rank 2, whatever its numbers are.
+
+## The road: each new axis repeats the whole previous object
+
+Here is the one rule that builds every tensor. **To add an axis, take the whole object you have and repeat it.**
+
+- Rank 0: one number. Shape $()$: nothing to list.
+- Rank 1: repeat the number 4 times in a row. Shape $(4,)$.
+- Rank 2: repeat the whole row 3 times, one under another: a sheet. Shape $(3, 4)$.
+- Rank 3: repeat the whole sheet 2 times, one behind another: a block. Shape $(2, 3, 4)$.
+- Rank 4: repeat the whole block 2 times: a row of blocks. Shape $(2, 2, 3, 4)$.
+
+Notice where the new number goes: at the **front** of the shape. The newest axis is the outermost one, because it
+counts copies of everything that was there before. Read a shape left to right and you read it from the biggest
+pieces down to single numbers: $(2, 3, 4)$ is "2 sheets, each of 3 rows, each of 4 numbers".
+
+Drag the **rank** in the panel (or type it, or use the arrow keys on the field). Watch the copies slide out of the old
+tensor along the new direction. Change the sizes too: every size row is the number of copies along that axis.
+
+<SceneIsland caption="3.1-1 · The tensor road: each new axis repeats the whole previous object. Rank 0 to 6, editable sizes, real data of each rank." rows={roadRows(locale)}>
+  <RoadScene locale={locale} client:only="react" />
+</SceneIsland>
+<RoadControls part="road" locale={locale} client:load />
+
+### How many numbers?
+
+Count the cells of a block of shape $(2, 3, 4)$: 2 sheets of 3 rows of 4 numbers.
+
+$$
+2 \cdot 3 \cdot 4 = 24
+$$
+
+The number of elements is always the **product of the sizes**. A row of blocks $(2, 2, 3, 4)$ holds
+$2 \cdot 2 \cdot 3 \cdot 4 = 48$ numbers. This grows fast: six axes of size 4 already hold $4^6 = 4096$ numbers, and a
+real batch of 32 RGB images of $224 \times 224$ pixels holds $32 \cdot 224 \cdot 224 \cdot 3 = 4\,816\,896$.
+
+And rank 0? A shape with no sizes multiplies nothing, and a product of nothing is 1 (the same agreement as $x^0 = 1$
+in [Powers](lesson:powers)). One number: exactly right.
+
+### What about the fourth dimension?
+
+There is no fourth direction on a screen, and you do not need one. Look at rank 4 in the scene: it is a row of
+3D blocks with a gap between them. Rank 5 lays those rows one under another; rank 6 stacks those sheets of blocks
+one behind another. Each level of nesting gets a bigger gap, so the hierarchy reads at a glance.
+
+This is not a trick of drawing. It is exactly what a 4D tensor *is* in a program: a list of 3D blocks. In Houdini terms,
+a rank-4 tensor is a packed primitive whose pieces are rank-3 blocks: you can always unpack one level at a time.
+
+## An index finds one number
+
+To read one number from a tensor you give one index per axis, in shape order. In the block $(2, 3, 4)$ the cell
+`x[1, 2, 3]` is: sheet 1, row 2, column 3 (counting from 0, as every programming language does).
+
+Click any cell in the scene, or set the index fields under the card. The selected cell is outlined in orange and its
+index and value appear on it. A rank-$r$ tensor needs exactly $r$ indices, no more, no less; a number needs none.
+
+## Real data are tensors
+
+Turn on **real data** in the panel. Each rank now shows a tensor you have met in a pipeline:
+
+| rank | example | shape | axes |
+|---|---|---|---|
+| 0 | a loss value | $()$ | none |
+| 1 | one pixel | $(3,)$ | C: channel |
+| 1 | a word embedding (lesson 1.7) | $(300,)$ | D: feature |
+| 2 | a grayscale image | $(8, 8)$ | H: row, W: column |
+| 2 | a vertex buffer | $(4, 3)$ | N: vertex, xyz |
+| 3 | an RGB image or a texture | $(8, 8, 3)$ | H, W, C |
+| 3 | a sentence of embeddings | $(1, 6, 300)$ | B: sentence, T: token, D |
+| 3 | animation curves | $(4, 2, 3)$ | F: frame, J: joint, xyz rotation |
+| 4 | a batch of images | $(3, 8, 8, 3)$ | B, H, W, C |
+| 5 | a batch of video clips | $(2, 3, 8, 8, 3)$ | B, T: frame, H, W, C |
+
+The images are one small 8 × 8 icon, so you can follow the same pixel everywhere: the grayscale image is the icon in
+grey, the batch is the icon, its mirror and its dusk version side by side, the clips are a camera pan over it. The
+sentence is "the cat sat on the mat" with the real GloVe numbers of lesson 1.7 (the card draws the first 8 of the 300
+numbers of each token, so its drawn shape is $(1, 6, 8)$; notice that tokens 0 and 4, both "the", are identical rows).
+
+The CG examples are worth a second look:
+
+- **A texture is an $H \times W \times C$ tensor.** `texture(uv)` turns a 2D coordinate into the row and column
+  index; the channel index picks R, G, B or A.
+- **A vertex buffer is $N \times 3$.** The point array of every mesh: one row per point, one column per coordinate.
+- **Animation curves are frames × joints × channels.** A Graph Editor full of rotation curves is one rank-3 tensor;
+  baking a whole character just makes the frame axis longer.
+
+Machine learning adds one more habit: the **batch** axis. A network does not look at one image; it takes a stack of
+them along a new first axis $B$ and processes them all with the same operation. Images go in as
+$B \times H \times W \times C$ (or $B \times C \times H \times W$ in some libraries: the same numbers, another axis
+order), and text goes in as $B \times T \times D$: sentences, tokens, embedding numbers.
+
+## The same tensor in memory: one strip and strides
+
+Memory has no axes. RAM and VRAM are one long row of numbers, each with an **address**. So every tensor, whatever its
+shape, is stored as one flat strip, and the shape is just a way to read it.
+
+The usual order (row-major, "C order") writes the last axis fastest: column 0, 1, 2, 3 of row 0, then row 1, and so
+on. In the block $(2, 3, 4)$:
+
+- one step along the last axis (a column) moves 1 address;
+- one step along the middle axis (a row) skips a whole row of 4: 4 addresses;
+- one step along the first axis (a sheet) skips a whole sheet of $3 \cdot 4 = 12$ addresses.
+
+These three numbers, $(12, 4, 1)$, are the **strides**: how far one step along each axis jumps in memory. Each stride
+is the product of the sizes after its axis. The address of a cell is then each index times its stride, added up:
+
+$$
+a = 12\, i + 4\, j + 1\, k
+$$
+
+For `x[1, 1, 1]`: $a = 12 + 4 + 1 = 17$. For `x[1, 2, 3]`: $a = 12 + 8 + 3 = 23$, the last of the 24 cells. On the
+abstract road each cell stores its own address (NumPy's `arange(24).reshape(2, 3, 4)`), so the number on a cell and
+its place in the strip are the same.
+
+Below, the strip of the tensor from the card above, linked to it: hover a strip cell and the same cell lights up in
+the scene, click one to select it.
+
+<RoadControls part="memory" locale={locale} client:load />
+
+Now tick **transposed view**. `x.T` reverses the order of the axes: shape $(4, 3, 2)$. Nothing in memory moves. The
+strides are simply reversed too, $(1, 4, 12)$, and the same address formula still lands on the same cell: index
+$(1, 1, 1)$ is $1 + 4 + 12 = 17$ again. What changes is the **walk**: reading the transposed tensor in its own row-major
+order visits addresses 0, 12, 4, 16, 8, 20, 1, … The bottom numbers of the strip show that order. A tensor whose walk
+reads its strip left to right without jumps is called **contiguous**; the transpose is not.
+
+This is a CG habit too: a transform matrix stored row-major or column-major is the same 16 floats read with other
+strides, and the classic "my matrix is transposed" bug is exactly this picture.
+
+## The axis that disappears: where dot products live
+
+In [the dot product](lesson:dot-product) two rows of numbers met, multiplied position by position and added up to one
+number. In tensor language: two tensors of shape $(3,)$ share the axis of size 3, and that axis **disappears** in the
+result, which has shape $()$.
+
+That is the whole secret of matrix and tensor products. A matrix of shape $(2, 3)$ times a vector of shape $(3,)$
+gives a vector of shape $(2,)$: the shared axis of size 3 is summed away and the other axis survives, so there are two
+dot products, one per row. Step through it (the timeline passes the vector along each row of the matrix):
+
+<DotUnit kind="rows" />
+
+The same rule works for any number of axes. In the playground below press `bij,bjk->bik` (a batch of matrix
+products): $(2, 2, 3)$ times $(2, 3, 2)$ gives $(2, 2, 2)$. The letter $j$ is in both inputs and not in the output: it
+is the axis that disappears, and every output cell is one dot product along it. The batch axis $b$ is in the output,
+so it never mixes: cube 0 and cube 1 are computed separately, side by side. In [Basis](lesson:basis) the coordinates
+of a vector were dot products with the axes; here the same dot products are simply laid out on more axes.
+
+<DotUnit kind="playground" />
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "A batch of 16 RGB images of 64 × 64 pixels, channels last. What is its shape?",
+      options: [
+        "(64, 64, 3, 16)",
+        "(16, 64, 64, 3)",
+        "(16, 3)",
+        "(16, 4096, 3, 64)"
+      ],
+      answer: 1,
+      explain: "The batch is the new outermost axis, so it comes first: B × H × W × C = (16, 64, 64, 3). It holds 16 · 64 · 64 · 3 = 196 608 numbers."
+    },
+    {
+      q: "What is the rank of a 3 × 3 rotation matrix, as a tensor?",
+      options: [
+        "3, because it has 3 independent columns",
+        "9, because it holds 9 numbers",
+        "2, because it has two axes: rows and columns",
+        "1, because it is one transform"
+      ],
+      answer: 2,
+      explain: "Tensor rank counts axes. A matrix has two (rows, columns), so rank 2. \"3 independent columns\" is the matrix rank of linear algebra, a different idea."
+    },
+    {
+      q: "A tensor of shape (2, 3, 4) is stored row-major. Which address holds x[1, 0, 2]?",
+      options: [
+        "14",
+        "6",
+        "9",
+        "24"
+      ],
+      answer: 0,
+      explain: "The strides are (12, 4, 1), so the address is 1·12 + 0·4 + 2·1 = 14."
+    },
+    {
+      q: "What does x.T change for a tensor x of shape (2, 3, 4)?",
+      options: [
+        "It copies the 24 numbers into a new order",
+        "Nothing at all: it is the same tensor",
+        "It sorts the numbers",
+        "Only the shape and strides: (4, 3, 2) and (1, 4, 12), over the same memory"
+      ],
+      answer: 3,
+      explain: "A transpose is a view: the same buffer, with the axes (and their strides) reversed. Only the walk order changes, which is why the result is not contiguous."
+    }
+  ]}
+/>
+
+## By hand
+
+1. How many numbers are in a tensor of shape $(4, 2, 5)$? And of shape $()$?
+2. Write the shape of a batch of 8 sentences, 12 tokens each, 768 numbers per token.
+3. For shape $(3, 4)$, write the strides and the address of `x[2, 1]`.
+4. For shape $(2, 3, 4)$, which index lives at address 13?
+5. A matrix of shape $(5, 3)$ times a vector of shape $(3,)$: what is the result's shape, and which axis disappears?
+
+<details>
+<summary>Answers</summary>
+
+1. $4 \cdot 2 \cdot 5 = 40$. Shape $()$ holds one number (the empty product is 1).
+2. $(8, 12, 768)$: B × T × D, the batch first.
+3. Strides $(4, 1)$; address $2 \cdot 4 + 1 \cdot 1 = 9$.
+4. $13 = 1 \cdot 12 + 0 \cdot 4 + 1$: the index $(1, 0, 1)$.
+5. $(5,)$: the axis of size 3 is shared, summed away and disappears; five dot products, one per row.
+
+</details>
+
+## In NumPy
+
+<PyCell>
+
+```python
+import numpy as np
+
+x = np.arange(24, dtype=np.int64).reshape(2, 3, 4)
+print(x.shape, x.ndim, x.size)                 # (2, 3, 4) 3 24
+print(x.strides)                               # (96, 32, 8) bytes: 8 bytes per int64
+print([s // x.itemsize for s in x.strides])    # [12, 4, 1] elements
+print(x[1, 1, 1], 1*12 + 1*4 + 1*1)            # 17 17
+
+t = x.T                                        # a view: same memory, axes reversed
+print(t.shape, [s // t.itemsize for s in t.strides])   # (4, 3, 2) [1, 4, 12]
+print(np.shares_memory(x, t), t.flags['C_CONTIGUOUS'])  # True False
+print(t.ravel()[:8])                           # [ 0 12  4 16  8 20  1 13]
+
+img = np.zeros((8, 8, 3), dtype=np.uint8)      # H x W x C, like a texture
+batch = np.stack([img, img, img])              # a new first axis: B x H x W x C
+print(batch.shape, batch.size)                 # (3, 8, 8, 3) 576
+
+W = np.ones((2, 3))
+v = np.ones(3)
+print((W @ v).shape)                           # (2,): the axis of size 3 disappeared
+```
+
+</PyCell>
+
+<details>
+<summary>Machine layer: why strides and contiguity matter for speed</summary>
+
+NumPy and PyTorch keep a tensor as a pointer to a buffer plus the shape and the strides (in bytes in NumPy, in
+elements in PyTorch). Slicing, transposing and adding a batch axis of size 1 only write new shape and stride numbers;
+no data is copied, which is why they cost nothing even for gigabytes.
+
+The price is paid later. CPUs load memory in 64-byte cache lines and GPUs load it in wide coalesced transactions, so a
+loop that walks a contiguous tensor reads every byte it fetches, while a walk with large strides fetches a whole line to
+use one number. That is why libraries copy a tensor into a contiguous layout (`np.ascontiguousarray`,
+`tensor.contiguous()`) before heavy work, and why the choice between $B \times H \times W \times C$ and
+$B \times C \times H \times W$ is a performance decision, not a mathematical one.
+
+</details>
+
+## What this opens
+
+Now you can read any shape and find any number in memory. The next lessons of this part put tensors to work: real
+data as tensors in more detail, the memory model with reshape and views, operations on whole tensors at once
+(elementwise and broadcasting), collapsing an axis (sum, mean, max), and finally batched matrix products and einsum,
+the general form of "the axis that disappears", which is what one layer of a neural network computes.
+
+## Term map
+
+<LessonMap />
