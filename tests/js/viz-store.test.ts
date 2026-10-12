@@ -26,7 +26,8 @@ test('set, hot and step', () => {
 });
 
 test('setStep clamps negative to 0', () => {
-	const s = lessonStore('vector');
+	// A test-only id: lesson ids are global singletons, and 'vector' is a real lesson that registers links on first init.
+	const s = lessonStore('test-vector');
 	s.getState().setStep('t', -3);
 	expect(s.getState().step.t).toBe(0);
 });
