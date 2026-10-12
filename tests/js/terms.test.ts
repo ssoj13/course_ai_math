@@ -41,6 +41,13 @@ describe('shipped graph', () => {
 		for (const id of s.ids) expect(s.edges.some((e) => e.from === id || e.to === id)).toBe(true);
 		expect(() => spineIn(ORDER, EDGES, ['no-such-term'])).toThrow();
 	});
+	test('lesson 1.7 introduces its AI terms, and attention rests on softmax', () => {
+		const own = introducedIn('cosine-similarity').map((t) => t.id);
+		for (const id of ['embedding', 'embedding-table', 'nearest-neighbour', 'semantic-search', 'rag', 'softmax']) expect(own).toContain(id);
+		const a = ancestry(g, 'attention');
+		for (const id of ['softmax', 'power', 'embedding', 'dot-product']) expect(a).toContain(id);
+		expect(ancestry(g, 'rag')).toEqual(expect.arrayContaining(['semantic-search', 'nearest-neighbour', 'cosine-similarity', 'model']));
+	});
 	test('storyboard §3 seed ids exist', () => {
 		for (const id of ['square', 'sqrt', 'coordinate', 'point', 'distance', 'pythagoras', 'angle', 'radian', 'unit-circle', 'cosine', 'sine', 'law-of-cosines']) {
 			expect(termById(id).depth).toBe('ground');

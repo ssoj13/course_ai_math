@@ -558,6 +558,51 @@
       "ru": { "label": "Эмбеддинг", "def": "Эмбеддинг — это вектор, который представляет слово, картинку или токен так, чтобы похожие вещи смотрели в одну сторону." }
     },
     {
+      "id": "embedding-table",
+      "label": "Embedding table",
+      "def": "An embedding table is a grid of numbers with one row per token id; looking a token up copies its row, its embedding.",
+      "depth": "ai",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "embedding" }],
+      "ru": { "label": "Таблица эмбеддингов", "def": "Таблица эмбеддингов — это сетка чисел с одной строкой на каждый номер токена; поиск токена копирует его строку, то есть его эмбеддинг." }
+    },
+    {
+      "id": "nearest-neighbour",
+      "label": "Nearest-neighbour search",
+      "def": "Nearest-neighbour search ranks stored vectors by their similarity to a query vector and returns the closest ones.",
+      "depth": "vectors",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "cosine-similarity" }],
+      "ru": { "label": "Поиск ближайших соседей", "def": "Поиск ближайших соседей упорядочивает сохранённые векторы по сходству с вектором запроса и возвращает самые близкие." }
+    },
+    {
+      "id": "semantic-search",
+      "label": "Semantic search",
+      "def": "Semantic search embeds the question and every passage, then returns the nearest passages: matching meaning, not words.",
+      "depth": "ai",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "nearest-neighbour" }, { "type": "built-on", "to": "embedding" }],
+      "ru": { "label": "Семантический поиск", "def": "Семантический поиск превращает вопрос и каждый фрагмент текста в эмбеддинги и возвращает ближайшие фрагменты: совпадает смысл, а не слова." }
+    },
+    {
+      "id": "rag",
+      "label": "RAG (retrieval-augmented generation)",
+      "def": "RAG is semantic search plus a language model: the top passages are pasted into the prompt, and the model answers from them.",
+      "depth": "ai",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "semantic-search" }, { "type": "built-on", "to": "model" }],
+      "ru": { "label": "RAG (генерация с поиском)", "def": "RAG — это семантический поиск плюс языковая модель: лучшие найденные фрагменты вставляются в запрос, и модель отвечает по ним." }
+    },
+    {
+      "id": "softmax",
+      "label": "Softmax",
+      "def": "Softmax turns a row of scores into weights between 0 and 1 that sum to 1: e to the power of each score, divided by the total.",
+      "depth": "ai",
+      "lessons": ["cosine-similarity"],
+      "edges": [{ "type": "built-on", "to": "power" }],
+      "ru": { "label": "Softmax", "def": "Softmax превращает строку оценок в веса от 0 до 1 с суммой 1: e в степени каждой оценки, делённое на сумму всех таких степеней." }
+    },
+    {
       "id": "cross-product",
       "label": "Cross product",
       "def": "The cross product of two 3D vectors is the perpendicular arrow whose length is the area they span.",
@@ -693,7 +738,7 @@
       "def": "Attention weighs tokens by the dot products of their query and key embeddings, then mixes their values.",
       "depth": "ai",
       "lessons": [],
-      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "embedding" }, { "type": "built-on", "to": "tensor" }],
+      "edges": [{ "type": "built-on", "to": "dot-product" }, { "type": "built-on", "to": "embedding" }, { "type": "built-on", "to": "softmax" }, { "type": "built-on", "to": "tensor" }],
       "ru": { "label": "Внимание (attention)", "def": "Внимание взвешивает токены скалярными произведениями эмбеддингов запросов и ключей, а затем смешивает их значения." }
     },
     {
