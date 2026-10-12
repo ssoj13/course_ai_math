@@ -20,7 +20,7 @@ export const locale = 'en';
 ## What does pow() actually do?
 
 You have written `pow(c, 2.2)` for gamma, `pow(max(0.0, dot(R, V)), 32.0)` for a highlight, `1.0 / (r * r)` for
-a light that fades with distance, and `1.0 / sqrt(d)` in an attention kernel (where $d$ is the length of each
+a light that fades with distance, and `1.0 / sqrt(d)` in an attention kernel (where $d$ is the number of entries in each
 query and key vector, for example 64). Four pieces of code, one operation:
 a number raised to a power. The previous lesson showed that $x^2$ is an *area*. This lesson keeps that picture and
 asks what the other exponents mean. What is $x^3$? What is $x^0$? What can $x^{-2}$ possibly mean, and why is
@@ -233,7 +233,7 @@ why every renderer clamps $r$ or adds a small constant under the fraction bar.
 - **Inverse-square falloff.** The light arriving at a surface from a point light goes as $r^{-2} = 1/r^2$: twice
   the distance, a quarter of the light; four times the distance, a sixteenth. Negative exponent, repeated division.
 - **Attention.** The scores (dot products of queries and keys, $QK^\top$) are divided by $\sqrt d$, where $d$ is the
-  length of each query and key vector. Code writes that as `d ** -0.5`: $d^{-1/2}$, a negative *and* fractional
+  number of entries in each query and key vector. Code writes that as `d ** -0.5`: $d^{-1/2}$, a negative *and* fractional
   exponent in one. Where the $\sqrt d$ comes from is lesson 10.2.
 - **Learning-rate decay.** `lr * gamma ** step` with $\gamma = 0.5$ gives $0.1, 0.05, 0.025, \ldots$: each step is
   one more copy of $0.5$, one rung down the ladder. (A different gamma: PyTorch's name for the decay factor, nothing

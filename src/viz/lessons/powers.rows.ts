@@ -5,7 +5,7 @@ import { derive, fmt2, fmt4, fmtG, fmtAmt, fmtInt, fmtVal, fmtX, RUNGS, rungId, 
 /**
  * N-panel rows of the five 0.2 scenes (storyboard §7.7-§7.11). Three-free: the MDX page passes the same rows to the
  * SceneIsland skeleton (chip reservation) and the ViewportCard. Row ids are term ids shared with the formulas and the
- * scene objects; word labels come from the `pw` dictionary, math labels (x², A^½) are the same in every language.
+ * scene objects; word labels come from the `pw` dictionary, math labels (x², A^(1/2)) are the same in every language.
  */
 export type Scene = 1 | 2 | 3 | 4 | 5;
 
@@ -60,11 +60,11 @@ export function rowsFor(scene: Scene, locale: Locale): readonly Row[] {
 		return [
 			{ id: 'd3', label: '3D', kind: 'bool', key: 'd3', tip: { text: t(locale, 'pw.tipD3') } },
 			{ id: 'A', label: 'A', kind: 'num', key: 'A', spec: SPEC.A, snap: SNAP_A, fmt: fmtAmt, visible: (v) => !is3(v), tip: { text: t(locale, 'pw.tipA4') } },
-			{ ...ro('sqrtA', 'A^½', side, fmt4, t(locale, 'pw.tipSqrtA')), visible: (v) => !is3(v) },
-			{ ...ro('check2', '(A^½)²', side, fmtAmt, t(locale, 'pw.tipCheck2')), visible: (v) => !is3(v) },
+			{ ...ro('sqrtA', 'A^(1/2)', side, fmt4, t(locale, 'pw.tipSqrtA')), visible: (v) => !is3(v) },
+			{ ...ro('check2', '(A^(1/2))²', side, fmtAmt, t(locale, 'pw.tipCheck2')), visible: (v) => !is3(v) },
 			{ id: 'V', label: 'V', kind: 'num', key: 'V', spec: SPEC.V, snap: SNAP_V, fmt: fmtAmt, visible: is3, tip: { text: t(locale, 'pw.tipV') } },
-			{ ...ro('cbrtV', 'V^⅓', edge, fmt4, t(locale, 'pw.tipCbrtV')), visible: is3 },
-			{ ...ro('check3', '(V^⅓)³', edge, fmtAmt, t(locale, 'pw.tipCheck3')), visible: is3 },
+			{ ...ro('cbrtV', 'V^(1/3)', edge, fmt4, t(locale, 'pw.tipCbrtV')), visible: is3 },
+			{ ...ro('check3', '(V^(1/3))³', edge, fmtAmt, t(locale, 'pw.tipCheck3')), visible: is3 },
 		];
 	}
 	const values = t(locale, 'pw.groupValues');
