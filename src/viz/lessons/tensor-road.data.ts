@@ -59,14 +59,27 @@ export const pan = (img: readonly (readonly (readonly number[])[])[], t: number)
 /** The sentence of lesson 1.7's attention preview, token by token. */
 export const SENTENCE = ['the', 'cat', 'sat', 'on', 'the', 'mat'] as const;
 
+/** The second sentence of lesson 3.2's text batch (same length, so the two stack into B x T without padding). */
+export const SENTENCE2 = ['the', 'man', 'sat', 'on', 'the', 'train'] as const;
+export type Word = (typeof SENTENCE)[number] | (typeof SENTENCE2)[number];
+
 /** First 8 numbers of each GloVe vector (rounded to 3 decimals in the source file). */
-export const GLOVE8: Readonly<Record<(typeof SENTENCE)[number], readonly number[]>> = {
+export const GLOVE8: Readonly<Record<Word, readonly number[]>> = {
 	the: [0.047, 0.213, -0.007, -0.459, -0.036, 0.236, -0.288, 0.215],
 	cat: [-0.294, 0.332, -0.047, -0.122, 0.072, -0.234, -0.062, -0.004],
 	sat: [-0.6, 0.04, 0.566, -0.662, -0.128, -0.117, 0.263, -0.822],
 	on: [0.127, 0.211, -0.19, 0.177, -0.118, 0.243, -0.347, -0.323],
 	mat: [0.155, -0.486, -0.181, -0.903, -0.114, -0.761, -0.358, -0.141],
+	man: [-0.298, -0.133, -0.145, -0.228, -0.027, 0.11, -0.039, -0.009],
+	train: [-0.037, -0.067, 0.151, 0.207, -0.55, -0.345, 0.283, 0.27],
 };
+/**
+ * Row of each word in the GloVe table (the file's `row`): the token id a word-level tokenizer gives it. Row 0 is padding;
+ * row i is the i-th most frequent word, so "the" is 1 and "on" is 14.
+ */
+export const GLOVE_ROW: Readonly<Record<Word, number>> = { the: 1, on: 14, man: 301, train: 1471, sat: 3224, cat: 5451, mat: 14949 };
+/** Rows of the full GloVe 6B table (400 000 words + the padding row). */
+export const GLOVE_ROWS = 400001;
 /** Width of a full GloVe vector (the drawn tensors are its first 8). */
 export const GLOVE_DIMS = 300;
 

@@ -38,6 +38,8 @@ describe('course manifest', () => {
 		expect(adjacent('law-of-cosines').next?.slug).toBe('vector');
 		expect(adjacent('vector').prev?.slug).toBe('law-of-cosines');
 		expect(adjacent('waves-dft').next?.slug).toBe('tensor-road');
+		expect(adjacent('tensor-road').next?.slug).toBe('data-as-tensors');
+		expect(adjacent('tensor-memory').prev?.slug).toBe('data-as-tensors');
 	});
 	test('branch flag is carried through', () => {
 		expect(modules[2].lessons.find((l) => l.slug === 'cross-product')?.branch).toBe(true);

@@ -469,6 +469,14 @@ only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over
   values use `--lab-np-ink` (page text on `.lab-field-cell`, >= 4.5:1 both themes; dark strip removed).
   `<DotUnit kind="playground" preset="batched" />` opens the playground on a preset (`playLesson`: one store per
   starting preset, default id `einsum`).
+- [x] 3.2 data-as-tensors (image H×W×C planes + channels-last/first strip, token ids → GloVe rows B×T×D, audio
+  frames by reshape, mesh V/F with V[F], shape reader) and 3.3 tensor-memory (view chain over arange(24): .T, ::2,
+  ::-1, index, crop, contiguous copy, reshape refusals 'size'|'contig' classified via the core, C/F order; toy LRU
+  cache walk). Shared tensor pieces: `tensor-cells.ts` (Dir/layout/grow/flatDirs/paintCell/stripWindow/unravel; 3.1
+  re-exports), `MemStrip.tsx` (strip + `Tuple`), `tensor-cells.impl.tsx` (`Cells`: static Boxes + re-frame),
+  `tensor-cells.css` (`.ts-*`). Id convention: a cell's hot id = its buffer address ('a'+p), so strip ↔ scene link
+  without extra wiring. Flat cards are 2D stages (Boxes work there). Report: `batch-tensors-a-report.md`.
+  Open: reshape in the core is stricter than NumPy/PyTorch (refuses every non-contiguous view; prose says so).
 - [ ] Build INTRO-1..3 and the DotUnit (`src/viz/dotunit/`: `layoutEinsum`, LOD, Tiles) per that spec, on `Plan`.
 
 ## Changelog

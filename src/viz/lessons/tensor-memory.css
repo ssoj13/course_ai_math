@@ -1,0 +1,70 @@
+/* Lesson 3.3 page-side controls (the dark boxes and the strips are shared: tensor-cells.css). */
+.mem-controls {
+	display: grid;
+	gap: 0.6rem;
+	margin-block: 0.75rem 1.5rem;
+}
+.mem-note {
+	margin: 0;
+	font-size: 0.9rem;
+}
+.mem-picks {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.35rem;
+}
+.mem-pick-label {
+	min-width: 4.5rem;
+	font-size: 0.85rem;
+}
+.mem-picks button {
+	font: inherit;
+	font-size: 0.8rem;
+	padding: 0.15rem 0.5rem;
+	border: 1px solid var(--sl-color-gray-4);
+	border-radius: 0.3rem;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+.mem-picks button code {
+	background: none;
+	padding: 0;
+}
+.mem-picks button[aria-checked='true'] {
+	font-weight: 700;
+	border-color: var(--viz-hot);
+}
+.mem-code {
+	white-space: pre-wrap;
+}
+/* Starlight styles content tables; these sit in `not-content`, so they set their own compact look. */
+.mem-table {
+	border-collapse: collapse;
+	font-family: var(--lab-font-mono);
+	font-size: 0.8rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	border-radius: 0.35rem;
+	max-width: 100%;
+	display: block;
+	overflow-x: auto;
+}
+.mem-table th,
+.mem-table td {
+	padding: 0.15rem 0.5rem;
+	text-align: start;
+	border-bottom: 1px solid var(--viz-grid);
+	white-space: nowrap;
+}
+.mem-table thead th {
+	color: var(--viz-muted);
+	font-weight: 400;
+}
+.mem-refused {
+	margin: 0;
+	padding: 0.45rem 0.75rem;
+	border-left: 3px solid var(--viz-hot);
+	font-size: 0.9rem;
+}

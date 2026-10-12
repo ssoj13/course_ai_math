@@ -857,6 +857,87 @@
       "lessons": [],
       "edges": [{ "type": "built-on", "to": "vector" }, { "type": "built-on", "to": "parameter" }],
       "ru": { "label": "Градиент", "def": "Градиент — это вектор того, как быстро меняется ошибка по каждому параметру: направление, против которого шагает обучение." }
+    },
+    {
+      "id": "token-id",
+      "label": "Token id",
+      "def": "A token id is the integer a tokenizer gives a piece of text: the row number of that token in the embedding table.",
+      "depth": "ai",
+      "lessons": ["data-as-tensors"],
+      "edges": [{ "type": "built-on", "to": "embedding" }],
+      "ru": { "label": "Номер токена (token id)", "def": "Номер токена — это целое число, которое токенизатор даёт куску текста: номер строки этого токена в таблице эмбеддингов." }
+    },
+    {
+      "id": "gather",
+      "label": "Lookup (gather)",
+      "def": "A lookup (gather) builds a tensor by picking rows of a data tensor with an index tensor: embeddings E[ids], triangle corners V[F].",
+      "depth": "matrices",
+      "lessons": ["data-as-tensors"],
+      "edges": [{ "type": "built-on", "to": "tensor" }, { "type": "built-on", "to": "shape" }],
+      "ru": { "label": "Поиск по номерам (gather)", "def": "Поиск по номерам (gather) строит тензор, выбирая строки тензора данных тензором номеров: эмбеддинги E[ids], углы треугольников V[F]." }
+    },
+    {
+      "id": "channels-last",
+      "label": "Channels last / first",
+      "def": "Channels last (H × W × C) stores the channels of a pixel side by side; channels first (C × H × W) stores whole channel planes one after another.",
+      "depth": "machine",
+      "lessons": ["data-as-tensors"],
+      "edges": [{ "type": "built-on", "to": "stride" }, { "type": "built-on", "to": "tensor-axis" }],
+      "ru": { "label": "Каналы последними / первыми", "def": "Каналы последними (H × W × C) хранят каналы пикселя рядом; каналы первыми (C × H × W) хранят целые плоскости каналов одну за другой." }
+    },
+    {
+      "id": "offset",
+      "label": "Offset",
+      "def": "The offset of a tensor is the buffer address of its first cell; the address of any cell is the offset plus the sum of index times stride.",
+      "depth": "machine",
+      "lessons": ["tensor-memory"],
+      "edges": [{ "type": "built-on", "to": "stride" }],
+      "ru": { "label": "Смещение (offset)", "def": "Смещение тензора — это адрес его первой ячейки в буфере; адрес любой ячейки — смещение плюс сумма индексов, умноженных на шаги." }
+    },
+    {
+      "id": "view",
+      "label": "View",
+      "def": "A view is a tensor that shares another tensor's buffer and differs only in shape, strides and offset: making it copies nothing.",
+      "depth": "machine",
+      "lessons": ["tensor-memory"],
+      "edges": [{ "type": "built-on", "to": "stride" }, { "type": "built-on", "to": "offset" }],
+      "ru": { "label": "Представление (view)", "def": "Представление — это тензор, который делит буфер с другим тензором и отличается только формой, шагами и смещением: его создание ничего не копирует." }
+    },
+    {
+      "id": "slice",
+      "label": "Slice",
+      "def": "A slice x[start:stop:step] is a view that keeps every step-th index of an axis: the offset moves to start and the stride is multiplied by step.",
+      "depth": "machine",
+      "lessons": ["tensor-memory"],
+      "edges": [{ "type": "is-a", "to": "view" }],
+      "ru": { "label": "Срез (slice)", "def": "Срез x[start:stop:step] — это представление, которое оставляет каждый step-й индекс оси: смещение переходит на start, а шаг умножается на step." }
+    },
+    {
+      "id": "transpose",
+      "label": "Transpose",
+      "def": "Transposing reverses or permutes the axes of a tensor; as a view it swaps the strides and moves no data.",
+      "depth": "machine",
+      "lessons": ["tensor-memory"],
+      "edges": [{ "type": "is-a", "to": "view" }],
+      "ru": { "label": "Транспонирование", "def": "Транспонирование переворачивает или переставляет оси тензора; как представление оно меняет местами шаги и не двигает данные." }
+    },
+    {
+      "id": "reshape",
+      "label": "Reshape",
+      "def": "Reshape reads the same numbers in the same row-major order with a new shape; for contiguous data it is a view with new strides, otherwise it needs a copy.",
+      "depth": "machine",
+      "lessons": ["tensor-memory"],
+      "edges": [{ "type": "built-on", "to": "contiguous" }, { "type": "built-on", "to": "view" }],
+      "ru": { "label": "Reshape (смена формы)", "def": "Reshape читает те же числа в том же порядке по строкам с новой формой; для непрерывных данных это представление с новыми шагами, иначе нужна копия." }
+    },
+    {
+      "id": "row-major",
+      "label": "Row-major / column-major",
+      "def": "Row-major (C) order stores the last index fastest, column-major (Fortran) order the first; the transpose of one layout is the other.",
+      "depth": "machine",
+      "lessons": ["tensor-memory"],
+      "edges": [{ "type": "built-on", "to": "stride" }],
+      "ru": { "label": "По строкам / по столбцам", "def": "Порядок по строкам (C) быстрее всего меняет последний индекс, порядок по столбцам (Fortran) — первый; транспонирование одной раскладки даёт другую." }
     }
   ]
 }

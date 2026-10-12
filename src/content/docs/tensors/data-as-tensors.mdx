@@ -1,0 +1,293 @@
+---
+title: "Data as tensors: images, text, sound and meshes"
+description: "Real data as tensors: an image H × W × C with its channel planes, a batch, text as token ids looked up into B × T × D, sound cut into frames, a mesh as vertex and index buffers."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { ImageScene, TextScene, AudioScene, MeshScene, DataControls } from '../../../viz/lessons/data-as-tensors';
+import { imageRows, textRows, audioRows, meshRows } from '../../../viz/lessons/data-as-tensors.rows';
+import PyCell from '../../../components/PyCell.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'dat']} />
+
+**Built on:** [What a tensor is](lesson:tensor-road) · [Cosine similarity and embeddings](lesson:cosine-similarity).
+
+In [the tensor road](lesson:tensor-road) each rank had one example. Here we open those examples up. For each kind of
+data we ask the same three questions: **what are the axes**, **what is one number**, and **in which order do the
+numbers lie in memory**. The answers are always a shape, a data type and a set of strides.
+
+## An image is H × W × C
+
+A picture of 8 × 8 pixels with red, green and blue in every pixel is a tensor of shape $(8, 8, 3)$:
+
+- axis 0, **H** (height): the pixel row, 0 at the top;
+- axis 1, **W** (width): the pixel column, 0 on the left;
+- axis 2, **C** (channel): 0 = red, 1 = green, 2 = blue.
+
+One number is one **byte**, an integer from 0 to 255 (`uint8`), exactly what a PNG decoder hands you and what an
+`RGB8` texture stores. So `x[0, 6, 1] = 217` reads: row 0, column 6, the green byte of that pixel.
+
+In the card below the three channels stand as three planes, red in front. Drag **peel** to push them apart or press
+them into one block. A bright cell is a large byte, a dark one a small byte: the sun is bright in red and green and
+dark in blue, which is exactly why it looks yellow.
+
+<SceneIsland caption="3.2-1 · An image as H × W × C: three colour planes, one byte per cell, and the same bytes in memory." rows={imageRows(locale)}>
+  <ImageScene locale={locale} client:only="react" />
+</SceneIsland>
+<DataControls part="image" locale={locale} client:load />
+
+### Channels last or channels first
+
+The planes are how we *think* about the channels. Memory is one strip, and there are two common orders:
+
+- **Channels last**, $H \times W \times C$: the three bytes of a pixel are neighbours, R G B R G B … The strides are
+  $(24, 3, 1)$: one row is $8 \cdot 3 = 24$ bytes. Image files, textures, OpenCV and TensorFlow use it.
+- **Channels first**, $C \times H \times W$: the whole red plane, then the whole green plane, then the blue one. The
+  strides are $(64, 8, 1)$: one plane is $8 \cdot 8 = 64$ bytes. PyTorch models expect it.
+
+Tick **channels first** in the panel. The picture does not change at all: the selected byte is the same byte, with
+the same value. Only its **address** changes, and the strip under the card shows why. For the green byte of
+pixel (0, 6):
+
+$$
+a_{HWC} = 24 \cdot 0 + 3 \cdot 6 + 1 = 19
+$$
+
+$$
+a_{CHW} = 64 \cdot 1 + 8 \cdot 0 + 6 = 70
+$$
+
+Same picture, same 192 numbers, two orders. Converting one into the other is a transpose of the axes plus one copy
+into the new order: that is lesson [3.3](lesson:tensor-memory).
+
+### A batch adds an axis in front
+
+A network takes many images at once. Stack $B$ of them along a new first axis and you get $B \times H \times W \times C$.
+A training batch of 32 photos of $224 \times 224$ pixels has shape $(32, 224, 224, 3)$ and holds
+$32 \cdot 224 \cdot 224 \cdot 3 = 4\,816\,896$ bytes. The batch axis never mixes the images: every operation runs on
+each image separately, side by side.
+
+## Text: token ids, then rows of a table
+
+Text is not numbers yet. A **tokenizer** cuts it into tokens and replaces each token with its **id**, an integer: the
+row number of that token in a big table. The GloVe table of lesson [1.7](lesson:cosine-similarity) has 400 001 rows
+(one per word, plus a padding row 0) and 300 numbers per row. Frequent words have small ids: "the" is row 1, "on" is
+row 14, "cat" is row 5451.
+
+Two sentences of 6 tokens give a tensor of ids with shape $(B, T) = (2, 6)$:
+
+| b | tokens | ids |
+|---|---|---|
+| 0 | the cat sat on the mat | 1, 5451, 3224, 14, 1, 14949 |
+| 1 | the man sat on the train | 1, 301, 3224, 14, 1, 1471 |
+
+The **embedding lookup** replaces every id with its row of the table. Each id becomes a vector of $D$ numbers, so the
+shape grows one axis: $(2, 6)$ becomes $(B, T, D) = (2, 6, 300)$. In NumPy this is one line, `X = E[ids]`; in PyTorch it
+is the `nn.Embedding` layer.
+
+Raise **lookups** in the card. Each step reads one id (outlined), the dashed line points at the table row it names,
+and that row is copied into the next row of $X$. The card draws the first 8 of the 300 numbers (a square's size is the
+size of the number, hatched = negative), so its $X$ is $(2, 6, 8)$.
+
+<SceneIsland caption="3.2-2 · Text as tensors: token ids (2, 6) pick rows of the embedding table, giving X of shape (2, 6, 8)." rows={textRows(locale)}>
+  <TextScene locale={locale} client:only="react" />
+</SceneIsland>
+<DataControls part="text" locale={locale} client:load />
+
+Notice that "the" appears four times and is the same row every time, and "sat" and "on" are shared by both
+sentences. The ids tensor is tiny (12 integers); the embeddings are the big part: $2 \cdot 6 \cdot 300 = 3600$
+numbers here, and a language model's batch of 8 sequences of 2048 tokens with 4096 numbers each holds 67 million.
+
+## Sound: samples, then frames
+
+A microphone measures air pressure many times per second. Each measurement is a **sample**, one float. At 8000
+samples per second, 48 samples last 6 ms. The card records a pure tone, the A above middle C (440 Hz):
+
+$$
+x_n = 0.8 \sin\left(2\pi \cdot 440 \cdot \frac{n}{8000}\right)
+$$
+
+Here $n = 0, 1, \dots, 47$. For example $x_1 = 0.8 \sin(0.3456) \approx 0.271$. On its own the recording is a tensor of shape $(48,)$. Speech and
+music models first cut it into short **frames** of equal length: with 12 samples per frame, the shape becomes $(4, 12)$,
+four frames of 12 samples.
+
+Change the **frame length** in the card. The bars rearrange into rows, but the strip under the card never changes:
+the 48 samples stay where they are, and the new shape only says where one row ends and the next begins. That is a
+**reshape**: the strides become $(12, 1)$ and sample 17 is `x[1, 5]`, because $12 \cdot 1 + 5 = 17$.
+
+<SceneIsland caption="3.2-3 · Sound as tensors: 48 samples of a 440 Hz tone, cut into frames by a reshape of the same buffer." rows={audioRows(locale)}>
+  <AudioScene locale={locale} client:only="react" />
+</SceneIsland>
+<DataControls part="audio" locale={locale} client:load />
+
+Real audio pipelines let frames overlap (a frame of 400 samples every 160 samples, for example). Overlapping frames are
+still a view of the same buffer, just with a row stride smaller than the frame length; you will see why that is
+possible in [the next lesson](lesson:tensor-memory).
+
+## A mesh: two buffers
+
+You know this one from every DCC. A mesh is two tensors:
+
+- the **vertex buffer** $V$, shape $(N, 3)$, `float32`: one row per point, x, y, z;
+- the **index buffer** $F$, shape $(F, 3)$, `int32`: one row per triangle, three vertex numbers.
+
+The square pyramid in the card has $V$ of shape $(5, 3)$ and $F$ of shape $(6, 3)$: four side triangles and two for
+the base. A triangle stores no coordinates at all; it stores three row numbers of $V$. To get its corners you look the
+rows up: `V[F[f]]`, shape $(3, 3)$. For all triangles at once, `V[F]` has shape $(6, 3, 3)$.
+
+That is the embedding lookup again. An **index tensor** (token ids, triangle corners) picks rows of a **data tensor**
+(the embedding table, the vertex buffer). The GPU does the same thing when it draws an indexed mesh.
+
+<SceneIsland caption="3.2-4 · A mesh as tensors: vertex buffer V (5, 3), index buffer F (6, 3), and the lookup V[F[f]]." rows={meshRows(locale)}>
+  <MeshScene locale={locale} client:only="react" />
+</SceneIsland>
+<DataControls part="mesh" locale={locale} client:load />
+
+## Reading shapes
+
+Every tensor you meet in a pipeline can be read the same way: name each axis, multiply the sizes to count the numbers,
+multiply by the bytes per number to get the memory. Pick a real tensor below and read it.
+
+<DataControls part="reader" locale={locale} client:load />
+
+Two habits make shapes easy to read:
+
+1. **The batch comes first**, the "smallest piece" (a channel, a feature, a coordinate) usually last.
+2. **The last axis is contiguous** in the usual row-major order: its stride is 1, and each axis before it strides over
+   everything after it.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "An RGB texture of 512 × 256 pixels (width 512, height 256), channels last, one byte per channel. What is its shape?",
+      options: [
+        "(512, 256, 3)",
+        "(3, 256, 512)",
+        "(256, 512, 3)",
+        "(256, 512)"
+      ],
+      answer: 2,
+      explain: "H × W × C: the height (rows) comes first, then the width (columns), then the channel. 256 · 512 · 3 = 393 216 bytes."
+    },
+    {
+      q: "ids has shape (4, 10) and the embedding table has 50 000 rows of 768 numbers. What is the shape of E[ids]?",
+      options: [
+        "(4, 10)",
+        "(4, 10, 768)",
+        "(50000, 768)",
+        "(4, 768)"
+      ],
+      answer: 1,
+      explain: "Every id becomes one row of 768 numbers: the ids keep their shape (4, 10) and gain a last axis of 768."
+    },
+    {
+      q: "In the channels-first image of shape (3, 8, 8), what is the address of x[2, 0, 0]?",
+      options: [
+        "2",
+        "16",
+        "64",
+        "128"
+      ],
+      answer: 3,
+      explain: "The strides are (64, 8, 1), so the address is 2 · 64 + 0 · 8 + 0 · 1 = 128: the first byte of the blue plane."
+    },
+    {
+      q: "48 samples are reshaped into frames of 12. Which statement is true?",
+      options: [
+        "The samples are copied into four new arrays",
+        "The samples stay in place; only the shape (4, 12) and the strides (12, 1) are new",
+        "The last frame is padded with zeros",
+        "Sample 17 moves to address 5"
+      ],
+      answer: 1,
+      explain: "A reshape of contiguous data is a view: the same buffer read with another shape. Sample 17 stays at address 17 and is now x[1, 5]."
+    }
+  ]}
+/>
+
+## By hand
+
+1. A batch of 16 RGB images of $32 \times 32$ pixels, channels last, `uint8`. Shape? How many bytes?
+2. The same batch channels first, `float32`. Shape? How many bytes?
+3. In the channels-last icon $(8, 8, 3)$, which byte lives at address 100?
+4. A mesh has 1000 triangles. What are the shapes of $F$ and of `V[F]`?
+5. A recording of 16 000 samples is cut into frames of 400 samples without overlap. Shape?
+
+<details>
+<summary>Answers</summary>
+
+1. $(16, 32, 32, 3)$; $16 \cdot 32 \cdot 32 \cdot 3 = 49\,152$ bytes.
+2. $(16, 3, 32, 32)$; the same 49 152 numbers, 4 bytes each: $196\,608$ bytes.
+3. $100 = 24 \cdot 4 + 3 \cdot 1 + 1$: `x[4, 1, 1]`, the green byte of the pixel in row 4, column 1.
+4. $F$ is $(1000, 3)$; `V[F]` is $(1000, 3, 3)$: three corners of three coordinates for every triangle.
+5. $16\,000 / 400 = 40$ frames: shape $(40, 400)$.
+
+</details>
+
+## In NumPy
+
+<PyCell>
+
+```python
+import numpy as np
+
+img = np.zeros((8, 8, 3), dtype=np.uint8)           # H x W x C, channels last
+img[0, 6] = (255, 217, 51)                           # the sun pixel
+print(img.shape, img.strides)                        # (8, 8, 3) (24, 3, 1)
+
+chw = np.ascontiguousarray(img.transpose(2, 0, 1))   # C x H x W, channels first
+print(chw.shape, chw.strides)                        # (3, 8, 8) (64, 8, 1)
+print(img[0, 6, 1], chw[1, 0, 6])                    # 217 217: same byte, other address
+
+batch = np.stack([img, img[:, ::-1], img // 2])      # B x H x W x C
+print(batch.shape, batch.nbytes)                     # (3, 8, 8, 3) 576
+
+E = np.arange(15000 * 8, dtype=np.float32).reshape(15000, 8)  # a stand-in table: row i = 8i .. 8i+7
+ids = np.array([[1, 5451, 3224, 14, 1, 14949],
+                [1, 301, 3224, 14, 1, 1471]])        # B x T token ids
+X = E[ids]                                           # the lookup (a gather)
+print(ids.shape, X.shape)                            # (2, 6) (2, 6, 8)
+print(X[0, 1, 0], np.array_equal(X[0, 0], X[1, 4]))  # 43608.0 True
+
+t = np.arange(48) / 8000                             # 48 sample times at 8 kHz
+x = (0.8 * np.sin(2 * np.pi * 440 * t)).astype(np.float32)
+frames = x.reshape(-1, 12)                           # 4 frames of 12 samples
+print(frames.shape, np.shares_memory(frames, x))     # (4, 12) True
+
+V = np.array([[-1, 0, -1], [1, 0, -1], [1, 0, 1], [-1, 0, 1], [0, 1.5, 0]], dtype=np.float32)
+F = np.array([[1, 0, 4], [2, 1, 4], [3, 2, 4], [0, 3, 4], [0, 1, 2], [0, 2, 3]], dtype=np.int32)
+print(V.shape, F.shape, V[F].shape)                  # (5, 3) (6, 3) (6, 3, 3)
+print(V[F[4]].tolist())                              # [[-1.0, 0.0, -1.0], [1.0, 0.0, -1.0], [1.0, 0.0, 1.0]]
+```
+
+</PyCell>
+
+<details>
+<summary>Machine layer: why the channel order is a performance choice</summary>
+
+Both orders hold the same bytes, so the choice is about which numbers a computation reads together. A pixel shader
+reads all channels of one pixel at once: channels last keeps them in one memory access. A convolution in a network
+mixes the same channel over a neighbourhood of pixels: channels first keeps each plane in one long run. GPU libraries
+pick whichever their fastest kernels want, and frameworks convert between the two with a transpose plus a copy.
+
+The index buffer is the same trade on the GPU: storing each shared corner once in $V$ and naming it from $F$ saves
+memory, and lets the GPU reuse an already shaded corner (its post-transform vertex cache) instead of running the vertex
+shader again for every triangle that touches it.
+
+</details>
+
+## What this opens
+
+Every kind of data is now a shape, a dtype and strides. The next lesson goes under the hood: one flat buffer, strides
+and offset, and which operations (reshape, transpose, slicing) only rewrite those numbers and which ones copy.
+
+## Term map
+
+<LessonMap />

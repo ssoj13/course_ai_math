@@ -16,6 +16,7 @@
  * - `tr` 0/1: the memory strip reads the tensor through its transposed view (`.T`: reversed axes, reversed strides).
  */
 import { cStrides, offsets, sizeOf, transpose, Tensor, isContiguous } from '../../core';
+import { D, dirRole, type Dir, type Look } from './tensor-cells';
 import type { LessonLinks, LinkGroup } from '../links';
 import { finite } from '../links';
 import type { SceneRole } from '../palette';
@@ -54,13 +55,9 @@ export const INITIAL: Record<string, Val> = {
 type Vals = LessonState['vals'];
 
 // ---------------------------------------------------------------------------------------------------------------
-// Directions and layout.
+// Directions and layout (shared with 3.2 and 3.3: tensor-cells.ts).
 
-/** Where an axis is drawn: world axis 0 = x (right), 1 = y (down the screen), 2 = z (into the screen); level 1 = blocks. */
-export interface Dir {
-	axis: 0 | 1 | 2;
-	level: 0 | 1;
-}
+export { BLOCK_GAP, dirRole, fmtShape, grow, layout, SHEET_GAP, type Dir, type Layout, type Look } from './tensor-cells';
 
 /** Directions of the abstract road: growth level k goes to world axis k mod 3, one nesting level up from k = 3. */
 export function roadDirs(rank: number): Dir[] {
@@ -70,77 +67,9 @@ export function roadDirs(rank: number): Dir[] {
 	});
 }
 
-/**
- * Colour of an axis (HUD numbers, rulers, N-panel): Blender's x, y, z colours for cell axes along that world axis, the
- * vector roles for block axes. The abstract road's growth levels 0..5 thus read red, green, blue, then vecA, vecB, vecC.
- */
-export const dirRole = (d: Dir): SceneRole => (d.level === 0 ? (['axisX', 'axisY', 'axisZ'] as const) : (['vecA', 'vecB', 'vecC'] as const))[d.axis];
-
-/** Gap between blocks (one empty cell), so a nesting level reads at a glance. */
-export const BLOCK_GAP = 1;
-/**
- * Gap between blocks that are one cell thick along their axis (the clips of the video stand one behind another as flat
- * sheets): one empty cell would hide the back sheet behind the front one, three let it show from the home view.
- */
-export const SHEET_GAP = 3;
-
-export interface Layout {
-	/** Cell centres in C order (index i = memory offset of the contiguous tensor), world units, cell pitch 1. */
-	pos: Float32Array;
-	/** Pitch of each shape axis along its world axis (1 for cells, block size + gap for blocks). */
-	pitch: number[];
-	/** Largest coordinate per world axis (cells sit at 0..max, signed by the world direction). */
-	max: [number, number, number];
-}
-
-/** World sign per axis: x grows right, rows grow DOWN (row 0 on top), layers grow AWAY from the viewer. */
-const SIGN = [1, -1, -1] as const;
-
-/**
- * Nested layout of every cell. Cell 0 sits at the origin and the figure grows away from it, so the copy with index 0
- * along a new axis stays exactly where the previous, smaller tensor was (the extrusion slides the other copies out).
- */
-export function layout(shape: readonly number[], dirs: readonly Dir[]): Layout {
-	if (shape.length !== dirs.length) throw new Error('tensor-road: one direction per axis');
-	const cellSpan: [number, number, number] = [1, 1, 1];
-	for (let a = 0; a < shape.length; a++) if (dirs[a].level === 0) cellSpan[dirs[a].axis] = shape[a];
-	const pitch = dirs.map((d) => (d.level === 0 ? 1 : cellSpan[d.axis] + (cellSpan[d.axis] === 1 ? SHEET_GAP : BLOCK_GAP)));
-	const n = sizeOf(shape);
-	const pos = new Float32Array(3 * n);
-	const max: [number, number, number] = [0, 0, 0];
-	for (let a = 0; a < shape.length; a++) max[dirs[a].axis] += (shape[a] - 1) * pitch[a];
-	const st = cStrides(shape);
-	for (let i = 0; i < n; i++) {
-		let r = i;
-		for (let a = 0; a < shape.length; a++) {
-			const j = Math.floor(r / st[a]);
-			r -= j * st[a];
-			pos[3 * i + dirs[a].axis] += SIGN[dirs[a].axis] * j * pitch[a];
-		}
-	}
-	return { pos, pitch, max };
-}
-
-/**
- * Extrusion of axis 0 (the newest axis): at progress u the copy with index j along it sits at u of the way from the
- * index-0 copy to its place, and fades in with u. Writes the centre into `out` and returns the alpha.
- */
-export function grow(L: Layout, shape: readonly number[], i: number, u: number, out: number[]): number {
-	if (shape.length === 0 || u >= 1) {
-		out[0] = L.pos[3 * i]; out[1] = L.pos[3 * i + 1]; out[2] = L.pos[3 * i + 2];
-		return 1;
-	}
-	const s0 = sizeOf(shape) / shape[0];
-	const j = Math.floor(i / s0), base = i - j * s0;
-	for (let w = 0; w < 3; w++) out[w] = L.pos[3 * base + w] + (L.pos[3 * i + w] - L.pos[3 * base + w]) * u;
-	return j === 0 ? 1 : u;
-}
-
 // ---------------------------------------------------------------------------------------------------------------
 // Real data.
 
-/** How the cells of an example are drawn: abstract cells, grey levels, colour channels, or signed numbers (Hinton). */
-export type Look = 'cells' | 'gray' | 'rgb' | 'signed';
 export type ExampleId = 'loss' | 'pixel' | 'word' | 'gray' | 'verts' | 'rgb' | 'text' | 'anim' | 'batch' | 'video';
 
 export interface Example {
@@ -162,7 +91,6 @@ export interface Example {
 	dec: number;
 }
 
-const D = (axis: 0 | 1 | 2, level: 0 | 1 = 0): Dir => ({ axis, level });
 const flatten = (v: unknown): number[] => (Array.isArray(v) ? v.flatMap(flatten) : [v as number]);
 /**
  * Images: rows down (y), columns right (x), and the channel axis lays the red, green and blue images SIDE BY SIDE (x,
@@ -350,8 +278,6 @@ export function memView(m: Pick<Model, 'shape' | 'idx' | 'size'>, tr: boolean): 
 // ---------------------------------------------------------------------------------------------------------------
 // Formatting and challenges.
 
-/** Shape as NumPy prints it: "()" for a scalar, "(4,)" for one axis, "(2, 3, 4)" otherwise. */
-export const fmtShape = (s: readonly number[]): string => (s.length === 1 ? `(${s[0]},)` : `(${s.join(', ')})`);
 export const fmtInt = (x: number): string => String(Math.round(x));
 /** A value as its example prints it (uint8 integers, two or three decimals for floats); the road prints integers. */
 export const fmtVal = (m: Pick<Model, 'ex'>, x: number): string => (m.ex ? (Math.abs(x) < 5e-10 ? 0 : x).toFixed(m.ex.dec) : fmtInt(x));

@@ -25,9 +25,6 @@
 	color: inherit;
 	padding: 0;
 }
-.tr-tuple {
-	white-space: nowrap;
-}
 .tr-note {
 	margin: 0;
 	font-size: 0.9rem;
@@ -76,44 +73,4 @@
 	font-family: var(--lab-font-mono);
 	font-size: 0.9rem;
 	overflow-wrap: anywhere;
-}
-.tr-strip {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 2px;
-	padding: 0.4rem;
-	border-radius: 0.35rem;
-	background: var(--viz-chrome);
-	color: var(--viz-ink);
-}
-.tr-cell {
-	display: inline-grid;
-	min-width: 2.6em;
-	padding: 1px 2px;
-	border: 1px solid var(--viz-grid);
-	background: var(--viz-field);
-	color: var(--viz-ink);
-	font-family: var(--lab-font-mono);
-	font-size: 0.72rem;
-	line-height: 1.25;
-	text-align: center;
-	cursor: pointer;
-}
-.tr-cell.is-hot {
-	background: var(--viz-hot-bg);
-}
-.tr-cell.is-sel {
-	outline: 2px solid var(--viz-hot);
-	outline-offset: -2px;
-}
-.tr-addr,
-.tr-step {
-	color: var(--viz-muted);
-	font-size: 0.65rem;
-}
-.tr-more {
-	align-self: center;
-	padding: 0 0.4rem;
-	color: var(--viz-muted);
-	font-size: 0.75rem;
 }
