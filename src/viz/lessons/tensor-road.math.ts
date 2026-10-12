@@ -78,6 +78,11 @@ export const dirRole = (d: Dir): SceneRole => (d.level === 0 ? (['axisX', 'axisY
 
 /** Gap between blocks (one empty cell), so a nesting level reads at a glance. */
 export const BLOCK_GAP = 1;
+/**
+ * Gap between blocks that are one cell thick along their axis (the clips of the video stand one behind another as flat
+ * sheets): one empty cell would hide the back sheet behind the front one, three let it show from the home view.
+ */
+export const SHEET_GAP = 3;
 
 export interface Layout {
 	/** Cell centres in C order (index i = memory offset of the contiguous tensor), world units, cell pitch 1. */
@@ -99,7 +104,7 @@ export function layout(shape: readonly number[], dirs: readonly Dir[]): Layout {
 	if (shape.length !== dirs.length) throw new Error('tensor-road: one direction per axis');
 	const cellSpan: [number, number, number] = [1, 1, 1];
 	for (let a = 0; a < shape.length; a++) if (dirs[a].level === 0) cellSpan[dirs[a].axis] = shape[a];
-	const pitch = dirs.map((d) => (d.level === 0 ? 1 : cellSpan[d.axis] + BLOCK_GAP));
+	const pitch = dirs.map((d) => (d.level === 0 ? 1 : cellSpan[d.axis] + (cellSpan[d.axis] === 1 ? SHEET_GAP : BLOCK_GAP)));
 	const n = sizeOf(shape);
 	const pos = new Float32Array(3 * n);
 	const max: [number, number, number] = [0, 0, 0];
@@ -159,7 +164,11 @@ export interface Example {
 
 const D = (axis: 0 | 1 | 2, level: 0 | 1 = 0): Dir => ({ axis, level });
 const flatten = (v: unknown): number[] => (Array.isArray(v) ? v.flatMap(flatten) : [v as number]);
-const IMG = { names: ['H', 'W', 'C'], dirs: [D(1), D(0), D(2)] };
+/**
+ * Images: rows down (y), columns right (x), and the channel axis lays the red, green and blue images SIDE BY SIDE (x,
+ * one nesting level up), so the three channels of every pixel are visible at once instead of hiding behind each other.
+ */
+const IMG = { names: ['H', 'W', 'C'], dirs: [D(1), D(0), D(0, 1)] };
 
 function example(id: ExampleId, shape: number[], names: string[], dirs: Dir[], look: Look, values: unknown, extra: Partial<Example> = {}): Example {
 	const data = Float64Array.from(flatten(values));
@@ -184,9 +193,9 @@ export const EXAMPLES: readonly (readonly Example[])[] = [
 		example('text', [1, 6, 8], ['B', 'T', 'D'], [D(2), D(1), D(0)], 'signed', [SENTENCE.map((w) => GLOVE8[w])], { of: [1, 6, GLOVE_DIMS], dec: 3 }),
 		example('anim', [4, 2, 3], ['F', 'J', 'xyz'], [D(2), D(1), D(0)], 'signed', ANIM),
 	],
-	[example('batch', [3, 8, 8, 3], ['B', ...IMG.names], [D(0, 1), ...IMG.dirs], 'rgb', [ICON, mirror(ICON), dusk(ICON)], { channel: 3 })],
+	[example('batch', [3, 8, 8, 3], ['B', ...IMG.names], [D(1, 1), ...IMG.dirs], 'rgb', [ICON, mirror(ICON), dusk(ICON)], { channel: 3 })],
 	[
-		example('video', [2, 3, 8, 8, 3], ['B', 'T', ...IMG.names], [D(1, 1), D(0, 1), ...IMG.dirs], 'rgb',
+		example('video', [2, 3, 8, 8, 3], ['B', 'T', ...IMG.names], [D(2, 1), D(1, 1), ...IMG.dirs], 'rgb',
 			[[0, 1, 2].map((t) => pan(ICON, t)), [0, 1, 2].map((t) => pan(dusk(ICON), t))], { channel: 4 }),
 	],
 	[],

@@ -83,7 +83,9 @@ function IndexFields({ m }: { m: Model }) {
 	})), [m.shape, m.names, m.rank, locale]);
 	if (!rows.length) return null;
 	return <div className="tr-index" role="group" aria-label={t(locale, 'tr.indexLabel')}>
+		<span aria-hidden="true">x[</span>
 		{rows.map((r) => <FieldCell key={r.id + r.key} lesson={LESSON} row={r} size="sm" />)}
+		<span aria-hidden="true">]</span>
 	</div>;
 }
 

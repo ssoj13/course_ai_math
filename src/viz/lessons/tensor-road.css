@@ -54,12 +54,21 @@
 .tr-index {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 0.4rem;
+	padding: 0.4rem 0.6rem;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
 }
 .tr-check {
 	display: inline-flex;
 	gap: 0.5rem;
-	align-items: center;
+	align-items: flex-start;
+}
+.tr-check input {
+	margin-top: 0.35em;
 }
 .tr-formula {
 	margin: 0;

@@ -439,6 +439,11 @@ only through a scene that imports it. Tests: `tests/js/tensor-core.test.ts` over
   is specified in `docs/design/intro-and-dotunit.md`. Trap: terms.json enforces course order on `built-on`/`is-a`
   edges, so terms introduced in `start` must be roots (later terms may point at them, not the reverse).
 - [x] Tensor core `src/core` (einsum plan/explain, fp32/pairwise, NumPy fixtures).
+- [x] 3.1 tensor road (`tensors/tensor-road`, module `tensors` after `vectors`; Part 2 "Matrices" goes BEFORE it when
+  built). Cells reuse DotUnit `Boxes`/`Frame` (one instanced draw, cap 4096); layout/model/examples pure in
+  `tensor-road.math.ts`; image channels lie side by side (C = x block axis). Report:
+  `.superpowers/sdd/2026-10-11-recover/tensor-road-report.md`. Open: 3.2-3.7 not built; FieldCell labels are
+  low-contrast on the light page theme (lesson wraps them in a dark strip; engine fix pending).
 - [ ] Build INTRO-1..3 and the DotUnit (`src/viz/dotunit/`: `layoutEinsum`, LOD, Tiles) per that spec, on `Plan`.
 
 ## Changelog

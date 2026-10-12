@@ -31,10 +31,26 @@ const CAP = SPEC.size.max ** 6;
 const STEP_MS = 450;
 /** Edge of a cell box (pitch 1): the gap between neighbours keeps every cell readable. */
 const CELL = 0.8;
-/** Value labels on every cell up to this many cells; beyond, only the selected cell is labelled. */
+/** Value labels on every cell of a row or sheet up to this many cells. */
 const LABEL_ALL = 24;
-/** Home view direction: front, a little from the right and above, so the front sheet (layer 0) reads like an image. */
+/**
+ * The selected cell's `x[i, j] = v` tag is drawn on tensors up to this size; on images and big roads it would cover the
+ * cells, so there the orange outline, the readout under the card and the status line carry it.
+ */
+const SEL_TAG = 64;
+/** Home view direction: front, from the right and above, so all three faces of a block show. */
 const HOME: readonly [number, number, number] = [0.55, 0.45, 1.5];
+/** Images are read from almost straight in front, like a picture on the wall. */
+const HOME_IMAGE: readonly [number, number, number] = [0.2, 0.25, 1.6];
+const HOME_DEEP: readonly [number, number, number] = [0.7, 1.1, 1.2];
+/**
+ * World margin around the cells for the home view: the axis rulers and their labels hang outside the figure. Labels
+ * keep their pixel size while a big figure is drawn smaller, so the margin grows with the figure.
+ */
+const padOf = (m: Model) => {
+	const [mx, my, mz] = layoutOf(m.shape, m).max;
+	return 0.9 + 0.1 * Math.max(mx, my, mz);
+};
 
 const cellId = (i: number) => 'c' + i;
 const CHANNEL: readonly BoxRole[] = ['axisX', 'axisY', 'axisZ'];
@@ -71,7 +87,8 @@ function writeCells(f: Frame, m: Model, s: number, sel: boolean): void {
 		} else {
 			const h = CELL / 2;
 			f.box(i, c[0] - h, c[0] + h, c[1] - h, c[1] + h, c[2] - h, c[2] + h);
-			if (look === 'cells') f.look(i, 'vecC', false, a, 0, false);
+			// Neutral cells: the colours belong to the axes (rulers, shape readout).
+			if (look === 'cells') f.look(i, 'ink', false, a, 0, false);
 			else {
 				// A byte as brightness over the dark viewport: 0 = background, 255 = the full role colour.
 				const k = m.ex!.channel;
@@ -94,7 +111,7 @@ function Cells({ m, locale }: { m: Model; locale: Locale }) {
 		return f;
 	}, []);
 	// What the frame shows: the drawn rank (fractional while extruding) and the key of the data it was drawn from.
-	const anim = useRef({ s: m.rank, key: '', dirty: true, refit: true, settled: false });
+	const anim = useRef({ s: m.rank, key: '', dirty: true, refit: true });
 	// Same key = the same road at another rank (that change extrudes); any other change is a cut.
 	const shapeKey = m.ex ? 'ex:' + m.ex.id : 'road:' + m.sizes.join();
 	const cur = useRef(m);
@@ -133,8 +150,14 @@ function Cells({ m, locale }: { m: Model; locale: Locale }) {
 			return moving || st.refit ? 'moving' : 'moved';
 		}
 		if (st.refit) {
+			// The Stage binds its navigation a few frames after mount: keep the request until it can be served.
+			if (!reg.nav) return 'moving';
 			st.refit = false;
-			reg.nav?.frame(HOME);
+			// A flat picture (no axis into the screen) is framed from the front; anything with depth from three-quarter.
+			// Sheets one behind another (the video's clips) are seen from higher up, so the back sheet shows above the front.
+			const image = mm.ex?.look === 'gray' || mm.ex?.look === 'rgb';
+			const deep = mm.dirs.some((d) => d.axis === 2);
+			reg.nav.frame(image ? (deep ? HOME_DEEP : HOME_IMAGE) : HOME);
 			return 'moved';
 		}
 		return 'still';
@@ -145,7 +168,7 @@ function Cells({ m, locale }: { m: Model; locale: Locale }) {
 		if (i < now.size) s.setMany(selectPatch(now, i));
 	};
 	return <>
-		<Boxes lesson={LESSON} frame={frame} update={update} onPick={pick} pad={0.4} />
+		<Boxes lesson={LESSON} frame={frame} update={update} onPick={pick} pad={padOf(m)} />
 		<CellTags m={m} frame={frame} locale={locale} />
 	</>;
 }
@@ -155,13 +178,16 @@ function CellTags({ m, frame, locale }: { m: Model; frame: Frame; locale: Locale
 	const labels = useOverlay('labels');
 	if (!labels) return null;
 	const at = (i: number) => (): number[] | null => (i < frame.n && frame.alpha[i] > 0.5 ? [frame.c[3 * i], frame.c[3 * i + 1], frame.c[3 * i + 2]] : null);
-	const all = m.size <= LABEL_ALL && m.size > 1;
+	// Every value is printed on a row or a sheet; inside a block the back layers' numbers would show through the gaps.
+	const all = m.size <= LABEL_ALL && m.size > 1 && m.rank <= 2;
+	// The selected tag sits on the top face of its cell, clear of the cell's own number.
+	const top = (i: number) => (): number[] | null => (i < frame.n && frame.alpha[i] > 0.5 ? [frame.c[3 * i], frame.c[3 * i + 1] + frame.s[3 * i + 1] / 2, frame.c[3 * i + 2]] : null);
 	const sel = 'x' + (m.rank ? '[' + m.idx.join(', ') + ']' : '') + ' = ' + fmtVal(m, m.value);
 	return <>
 		{all && Array.from({ length: m.size }, (_, i) => i !== m.offset && (
 			<Tag key={i} lesson={LESSON} hot={cellId(i)} small dense role="ink" text={fmtVal(m, m.data[i])} at={at(i)} />
 		))}
-		<Tag key="sel" lesson={LESSON} hot={cellId(m.offset)} role="hot" text={sel} offset={[0, -20]} at={at(m.offset)} />
+		{m.size <= SEL_TAG && <Tag key="sel" lesson={LESSON} hot={cellId(m.offset)} role="hot" text={sel} offset={[0, -18]} at={top(m.offset)} />}
 		{m.rank === 0 && <Tag key="scalar" lesson={LESSON} role="muted" small text={t(locale, 'tr.exLoss')} offset={[0, 22]} at={at(0)} />}
 	</>;
 }
@@ -171,32 +197,43 @@ function Rulers({ m, locale }: { m: Model; locale: Locale }) {
 	const show = useOverlay('rulers');
 	if (!show || m.rank === 0) return null;
 	const L = layoutOf(m.shape, m);
-	const [mx, my, mz] = L.max;
-	const centre: V = [mx / 2, -my / 2, -mz / 2];
+	const [mx, my] = L.max;
 	return <>
 		{m.shape.map((n, a) => {
 			const d = m.dirs[a];
 			// Span of the axis: cell centres 0..(n-1)·pitch, plus the width of the last block for a block axis.
 			const span = (n - 1) * L.pitch[a] + (d.level === 1 ? L.pitch[a] - 2 : 0);
-			const off = d.level === 0 ? 0.75 : 1.5;
+			const off = 0.75;
 			const lo = -0.4, hi = span + 0.4;
+			// Cell axes are measured on the bottom-left-front edges (x below, y on the left, z from the front-left-bottom
+			// corner backwards: a small tripod), block axes on the opposite sides (x above, y on the right), so the two
+			// rulers of one world axis and their labels never sit on top of each other.
+			const top = d.level === 1;
 			let p: V, q: V;
 			if (d.axis === 0) {
-				p = [lo, -my - 0.5 - off, 0.5];
-				q = [hi, -my - 0.5 - off, 0.5];
+				const y = top ? 0.5 + off : -my - 0.5 - off;
+				p = [lo, y, 0.5];
+				q = [hi, y, 0.5];
 			} else if (d.axis === 1) {
-				p = [-0.5 - off, -lo, 0.5];
-				q = [-0.5 - off, -hi, 0.5];
+				const x = top ? mx + 0.5 + off : -0.5 - off;
+				p = [x, -lo, 0.5];
+				q = [x, -hi, 0.5];
 			} else {
-				p = [mx + 0.5 + off, -my - 0.5, -lo];
-				q = [mx + 0.5 + off, -my - 0.5, -hi];
+				const x = top ? -0.5 - 2 * off : -0.5 - off;
+				p = [x, -my - 0.5 - off, -lo];
+				q = [x, -my - 0.5 - off, -hi];
 			}
 			const id = 'ax' + a;
 			const text = m.names ? t(locale, 'tr.axisNamed', { name: m.names[a], n }) : t(locale, 'tr.axisRoad', { a, n });
-			const mid: V = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+			// Labels sit where nothing else is: off the middle of an x ruler (below / above), above the top end of a y ruler
+			// (a label beside a tall figure would leave a phone-width stage), left of the front end of a z ruler (its far end
+			// projects onto the figure).
+			const at: V = d.axis === 0 ? [(p[0] + q[0]) / 2, p[1], p[2]] : p;
+			// `away` is a point just on the figure's side of the anchor: the label's near edge stops `gap` px beyond it.
+			const toward: V = d.axis === 0 ? [at[0], at[1] + (top ? -0.05 : 0.05), at[2]] : d.axis === 1 ? [at[0], at[1] - 0.05, at[2]] : [at[0] + 0.05, at[1], at[2]];
 			return <group key={a}>
 				<Segment lesson={LESSON} id={id} a={p} b={q} role={m.role[a]} />
-				<Label lesson={LESSON} id={id} at={mid} role={m.role[a]} away={centre} gap={6}>{text}</Label>
+				<Label lesson={LESSON} id={id} at={at} role={m.role[a]} away={toward} gap={6}>{text}</Label>
 			</group>;
 		})}
 	</>;
