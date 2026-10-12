@@ -36,7 +36,7 @@ export function rowsFor(scene: Scene, locale: Locale): readonly Row[] {
 			{ id: 'u2', label: 'u₂', kind: 'vec', key: 'u2', dims: 2, spec: RANGE2, snap: 0.5, tip: { text: t(locale, 'bas.tipU2') } },
 			{ id: 'v', label: 'v', kind: 'vec', key: 'v', dims: 2, spec: RANGE2, snap: 0.5, tip: { text: t(locale, 'bas.tipV') } },
 			ro('area', t(locale, 'bas.rowArea'), (v) => derive1(v).area, { group: t(locale, 'bas.groupSpan'), tip: { text: t(locale, 'bas.tipArea'), tex: String.raw`u_{1x}u_{2y}-u_{1y}u_{2x}` } }),
-			ro('dim', t(locale, 'bas.rowDim'), (v) => derive1(v).dim, { fmt: dimText(locale), chars: 13, tip: { text: t(locale, 'bas.tipDim') } }),
+			ro('dim', t(locale, 'bas.rowDim'), (v) => derive1(v).dim, { fmt: dimText(locale), chars: 16, tip: { text: t(locale, 'bas.tipDim') } }),
 			ro('c1', 'c₁', (v) => derive1(v).c1, { group: coords, tip: { text: t(locale, 'bas.tipC1') } }),
 			ro('c2', 'c₂', (v) => derive1(v).c2, { tip: { text: t(locale, 'bas.tipC2') } }),
 		];
@@ -47,7 +47,7 @@ export function rowsFor(scene: Scene, locale: Locale): readonly Row[] {
 				id, label: ['a', 'b', 'c'][i], kind: 'vec', key: id, dims: 3, spec: RANGE3, snap: 0.5, tip: { text: t(locale, 'bas.tipW') },
 			})),
 			ro('vol', t(locale, 'bas.rowVolume'), (v) => derive2(v).vol, { group: t(locale, 'bas.groupSpan'), tip: { text: t(locale, 'bas.tipVolume'), tex: String.raw`\mathbf{a}\cdot(\mathbf{b}\times\mathbf{c})` } }),
-			ro('dim3', t(locale, 'bas.rowDim'), (v) => derive2(v).dim, { fmt: dimText(locale), chars: 13, tip: { text: t(locale, 'bas.tipDim') } }),
+			ro('dim3', t(locale, 'bas.rowDim'), (v) => derive2(v).dim, { fmt: dimText(locale), chars: 16, tip: { text: t(locale, 'bas.tipDim') } }),
 		];
 	}
 	if (scene === 3) {
