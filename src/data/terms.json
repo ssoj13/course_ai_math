@@ -1,6 +1,33 @@
 {
   "terms": [
     {
+      "id": "model",
+      "label": "Model",
+      "def": "A model is a function from numbers to numbers whose inner numbers were tuned on data; inside, it is mostly multiply-adds.",
+      "depth": "ai",
+      "lessons": ["why-this-course"],
+      "edges": [],
+      "ru": { "label": "Модель", "def": "Модель — это функция из чисел в числа, внутренние числа которой подобраны по данным; внутри это в основном умножения со сложением." }
+    },
+    {
+      "id": "parameter",
+      "label": "Parameter (weight)",
+      "def": "A parameter is one of the numbers inside a model that training adjusts; a 7B model has seven billion of them.",
+      "depth": "ai",
+      "lessons": ["why-this-course"],
+      "edges": [{ "type": "built-on", "to": "model" }],
+      "ru": { "label": "Параметр (вес)", "def": "Параметр — одно из чисел внутри модели, которое подстраивает обучение; в модели 7B таких чисел семь миллиардов." }
+    },
+    {
+      "id": "multiply-add",
+      "label": "Multiply-add",
+      "def": "A multiply-add is one multiplication followed by one addition into a running sum: the single step every dot product, matrix product and layer is made of.",
+      "depth": "machine",
+      "lessons": ["how-it-connects"],
+      "edges": [],
+      "ru": { "label": "Умножение со сложением", "def": "Умножение со сложением — одно умножение и одно прибавление к накопленной сумме: единственный шаг, из которого состоят скалярное произведение, произведение матриц и слой сети." }
+    },
+    {
       "id": "number",
       "label": "Number",
       "def": "A number is a reading on a ruler: one position on the number line.",

@@ -1,6 +1,39 @@
 {
   "modules": [
     {
+      "slug": "start",
+      "title": "Start here",
+      "summary": "What a model actually computes, the one sentence the whole course follows, and how to read it.",
+      "lessons": [
+        {
+          "slug": "why-this-course",
+          "title": "Why this course: what AI actually computes",
+          "short": "Why this course",
+          "summary": "A model is mostly multiply-adds; what you will be able to do after each part, and why a CG developer already knows half of it.",
+          "ru": {
+            "title": "Зачем этот курс: что на самом деле считает ИИ",
+            "short": "Зачем этот курс",
+            "summary": "Модель — это в основном умножения со сложением; что вы сможете после каждой части и почему CG-разработчик уже знает половину."
+          }
+        },
+        {
+          "slug": "how-it-connects",
+          "title": "How it all connects: one dot product, scaled up",
+          "short": "How it all connects",
+          "summary": "The spine of the course in one animation: shadow, tiles, stack; then rows, cubes and stacks of cubes.",
+          "ru": {
+            "title": "Как всё связано: одно скалярное произведение, увеличенное в масштабе",
+            "short": "Как всё связано",
+            "summary": "Стержень курса в одной анимации: тень, плитки, стопка; затем строки, кубы и стопки кубов."
+          }
+        }
+      ],
+      "ru": {
+        "title": "С чего начать",
+        "summary": "Что на самом деле считает модель, одно предложение, за которым идёт весь курс, и как его читать."
+      }
+    },
+    {
       "slug": "ground",
       "title": "Ground: distance and angle",
       "summary": "Squares, Pythagoras, the unit circle and the law of cosines — everything the dot product is built from.",

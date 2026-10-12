@@ -6,6 +6,14 @@ description: "Head-to-tail addition, scaling, blend shapes as linear combination
 import Quiz from '../../../components/Quiz.astro';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { ArithmeticScene, ArithmeticControls } from '../../../viz/lessons/vector-arithmetic';
+import { rowsFor } from '../../../viz/lessons/vector-arithmetic.rows';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'va']} />
 
 **Built on:** [A vector: an arrow and a list of numbers](lesson:vector)
 
@@ -27,7 +35,13 @@ $$
 
 Walk 1 right and 2 up, then 3 right and 1 down; you end at $(4, 1)$. Draw both orders, "a then b" and "b then a", and you get the two halves of a parallelogram; the sum is its diagonal. The order does not matter: $\mathbf{a} + \mathbf{b} = \mathbf{b} + \mathbf{a}$.
 
-{/* scene: 1.2-1 — drag a and b; the sum is drawn as "walk a then b" and as the parallelogram diagonal; the table shows each aₓ + bₓ pair */}
+Drag the tips of $\mathbf{a}$ and $\mathbf{b}$. The two extra copies are the two walks, "a then b" and "b then a";
+they meet at the same corner, the tip of the sum. Hover a number of the sum in the table and the pair it adds lights up.
+
+<SceneIsland caption="VA-1 · Head to tail: walk a then b, or b then a; both end at the tip of a + b, the diagonal of the parallelogram." rows={rowsFor(1, locale)}>
+  <ArithmeticScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<ArithmeticControls scene={1} locale={locale} client:load />
 
 **Misconception to drop:** "the length of $\mathbf{a} + \mathbf{b}$ is the length of $\mathbf{a}$ plus the length of $\mathbf{b}$". Only when the arrows point the same way. $(3, 0)$ and $(0, 4)$ have lengths 3 and 4; their sum $(3, 4)$ has length 5, not 7. Walking east and then north is shorter than the sum of the two legs; that is Pythagoras again.
 
@@ -43,7 +57,13 @@ Example. $3 \cdot (2, -1) = (6, -3)$: three times as long, same direction. $0.5 
 
 A negative scalar turns the arrow around: $-1 \cdot (2, -1) = (-2, 1)$ points the opposite way. Scaling never tilts an arrow. The only thing a negative sign can do to the direction is flip it.
 
-{/* scene: 1.2-2 — scrub s in s·a; the arrow stretches, a negative s flips it, the components scale in the table */}
+Scrub $s$ in the formula (drag the number sideways) or in the panel. The arrow slides along one dashed line: it
+stretches, shrinks, passes through the zero vector at $s = 0$ and comes out the other side for negative $s$.
+
+<SceneIsland caption="VA-2 · Scaling: s·a stays on the line of a; negative s turns it around, s = 0 gives the zero vector." rows={rowsFor(2, locale)}>
+  <ArithmeticScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<ArithmeticControls scene={2} locale={locale} client:load />
 
 **Misconception to drop:** "scaling can change the direction". It can only keep it or reverse it.
 
@@ -75,37 +95,68 @@ $$
 
 Now scrub $s$ and $t$ freely and watch where the tip of $s\,\mathbf{a} + t\,\mathbf{b}$ lands. Stamp every point you reach. With two arrows that do not lie on one line, the stamps fill the whole plane: every point is some $s\,\mathbf{a} + t\,\mathbf{b}$. That filled region has a name, **span**, which [lesson 1.6](lesson:basis) gives it.
 
-{/* scene: 1.2-3 — two scrubs s, t for s·a + t·b; a "paint" toggle stamps every reached point so the plane fills (span preview) */}
+Below, $s\,\mathbf{a}$ is walked first and $t\,\mathbf{b}$ from its tip; the tip of the sum is $\mathbf{r}$. Scrub $s$
+and $t$, then switch on **Paint** in the panel and scrub again: every tip you reach leaves a dot. Within the scrub range
+the dots spread over a parallelogram, and larger $s$ and $t$ keep growing it in every direction. Then put $\mathbf{a}$ and
+$\mathbf{b}$ on one line and paint once more.
+
+<SceneIsland caption="VA-3 · The linear combination s·a + t·b: scrub the two coefficients; Paint stamps every tip you reach." rows={rowsFor(3, locale)}>
+  <ArithmeticScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<ArithmeticControls scene={3} locale={locale} client:load />
 
 A special case you already use every day. Take the two axis arrows $(1, 0)$ and $(0, 1)$. Which $s$ and $t$ give $(3, 4)$?
 
 $$
-s \cdot (1, 0) + t \cdot (0, 1) = (s, t) = (3, 4) \quad\Rightarrow\quad s = 3,\; t = 4
+\begin{aligned}
+&s \cdot (1, 0) + t \cdot (0, 1) = (s, t) = (3, 4) \\
+&\Rightarrow\quad s = 3,\; t = 4
+\end{aligned}
 $$
 
 The components of a vector are exactly its coefficients along the axis arrows. We will see this again as "coordinates are shadows" in [lesson 1.5](lesson:projection).
 
 Coefficients can be any numbers: negative, zero, fractional. There is no rule that they must be non-negative or add up to 1 (both rules together, non-negative *and* adding up to 1, give a *convex* combination, a different thing).
 
-{/* scene: 1.2-4 — 3D version with three vectors and three scrubs */}
+In 3D a third arrow is needed to leave a plane. Below, $\mathbf{a}$ and $\mathbf{b}$ lie on the floor and
+$\mathbf{c}$ points up; the result is $\mathbf{r} = s\,\mathbf{a} + t\,\mathbf{b} + u\,\mathbf{c}$, walked head to
+tail. With $u = 0$ the walk never leaves the floor plane of $\mathbf{a}$ and $\mathbf{b}$.
+
+<SceneIsland caption="VA-4 · Three arrows in 3D: s·a + t·b stays on their plane, u·c lifts the result off it." rows={rowsFor(4, locale)}>
+  <ArithmeticScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<ArithmeticControls scene={4} locale={locale} client:load />
 
 ## 5. Blend shapes are linear combinations
 
 A blend shape target is stored as a **delta**: for each vertex, the vector from the base position to the target position. The deformer computes
 
 $$
-P' = P_{\text{base}} + w_1\,\boldsymbol{\Delta}_1 + w_2\,\boldsymbol{\Delta}_2 + \cdots
+P' = P_0 + w_1\,\boldsymbol{\Delta}_1 + w_2\,\boldsymbol{\Delta}_2 + \cdots
 $$
 
-which is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P = (1.0, 0.5)$, smile delta $\boldsymbol{\Delta}_1 = (0.2, 0.3)$, jaw delta $\boldsymbol{\Delta}_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
+where $P_0$ is the base position of the vertex. That is a linear combination of the delta vectors, added to the base point. One vertex, two targets, real numbers: base $P_0 = (1.0, 0.5)$, smile delta $\boldsymbol{\Delta}_1 = (0.2, 0.3)$, jaw delta $\boldsymbol{\Delta}_2 = (0.0, -0.4)$, weights $w_1 = 0.5$, $w_2 = 0.25$:
 
 $$
-P' = (1.0, 0.5) + 0.5\,(0.2, 0.3) + 0.25\,(0.0, -0.4) = (1.0 + 0.1 + 0.0,\; 0.5 + 0.15 - 0.1) = (1.1, 0.55)
+\begin{aligned}
+P' &= (1.0, 0.5) \\
+&\quad + 0.5\,(0.2, 0.3) + 0.25\,(0.0, -0.4) \\
+&= (1.0 + 0.1 + 0.0,\; 0.5 + 0.15 - 0.1) \\
+&= (1.1, 0.55)
+\end{aligned}
 $$
 
 Every vertex of the face does this with its own deltas and the same weights. The sliders you drag in the Shape Editor are the $w_i$.
 
-{/* scene: 1.2-5 — a 2D "face" of 6 points: two delta targets (smile, jaw), two weight sliders; every point moves by its own linear combination */}
+Here is a face whose mouth has six vertices. Each vertex has its own smile delta and jaw delta; the two weights are
+shared. Scrub $w_1$ and $w_2$: every vertex moves by its own $w_1\boldsymbol{\Delta}_1 + w_2\boldsymbol{\Delta}_2$ (the
+two short colored segments), and the formula follows the right corner, the vertex of the example above. Try a negative
+weight too.
+
+<SceneIsland caption="VA-5 · Blend shapes: six mouth vertices, two targets stored as deltas, two shared weights." rows={rowsFor(5, locale)}>
+  <ArithmeticScene scene={5} locale={locale} client:only="react" />
+</SceneIsland>
+<ArithmeticControls scene={5} locale={locale} client:load />
 
 The physics line is the same shape: `v += g * dt` is $\mathbf{v}' = \mathbf{v} + dt \, \mathbf{g}$. With $\mathbf{v} = (2, 0)$, $\mathbf{g} = (0, -9.8)$ and $dt = 0.1$: $\mathbf{v}' = (2, 0) + (0, -0.98) = (2, -0.98)$.
 

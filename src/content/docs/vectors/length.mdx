@@ -4,8 +4,16 @@ description: "Pythagoras over all components; unit vectors."
 ---
 
 import Quiz from '../../../components/Quiz.astro';
+import UiStrings from '../../../components/UiStrings.astro';
+import SceneIsland from '../../../viz/SceneIsland.astro';
+import { LengthScene, LengthControls } from '../../../viz/lessons/length';
+import { rowsFor } from '../../../viz/lessons/length.rows';
 import PyCell from '../../../components/PyCell.astro';
 import LessonMap from '../../../components/LessonMap.astro';
+
+export const locale = 'en';
+
+<UiStrings ns={['viewport', 'gizmo', 'status', 'challenge', 'linked', 'ln']} />
 
 **Built on:** [Adding, scaling and linear combinations](lesson:vector-arithmetic) · [Distance and Pythagoras](lesson:pythagoras)
 
@@ -21,7 +29,13 @@ $$
 
 Draw a square on each leg: a 3-by-3 square of area 9 and a 4-by-4 square of area 16. Their areas add to 25, the square on the hypotenuse. The squared length $\lvert \mathbf{v} \rvert^2 = 25$ is a sum of areas; the length itself is the root.
 
-{/* scene: 1.3-1 — Pythagoras tiles on each component; a timeline unfolds |v|² = Σ vᵢ² one component at a time as the running sum grows */}
+Step through it below. Each step adds the square of one component; the table keeps the running sum, and the last step
+takes the root. Drag the tip of $\mathbf{v}$ at any step: every square, every sum and the length follow.
+
+<SceneIsland caption="LN-1 · The squared length is the sum of the squares on the legs: one component per step." rows={rowsFor(1, locale)}>
+  <LengthScene scene={1} locale={locale} client:only="react" />
+</SceneIsland>
+<LengthControls scene={1} locale={locale} client:load />
 
 In 3D we did Pythagoras twice in lesson 0.3 (floor diagonal first, then up), and the result was one formula with three squares. For $\mathbf{v} = (1, 1, 1)$:
 
@@ -30,6 +44,17 @@ $$
 $$
 
 Note that $\sqrt{3}$ is not 3. The length of $(1, 1)$ is $\sqrt{2} \approx 1.414$, not 2.
+
+The same walk in 3D, with y pointing up as in Maya: along x and then along z on the floor, then up along y. The two
+floor legs make a right triangle on the floor
+whose long side is the dashed diagonal; that diagonal and the third leg make a second right triangle. Two uses of
+Pythagoras, three squares, one sum. Orbit the view (drag empty space) to see that each square stands in the plane of
+its own triangle.
+
+<SceneIsland caption="LN-1-3D · Three legs, three squares: the 3D length is Pythagoras twice." rows={rowsFor(2, locale)}>
+  <LengthScene scene={2} locale={locale} client:only="react" />
+</SceneIsland>
+<LengthControls scene={2} locale={locale} client:load />
 
 ## 2. Σ notation: "add these up"
 
@@ -67,12 +92,22 @@ For $\mathbf{v} = (3, 4)$ this is $n = 2$: $\sqrt{9 + 16} = 5$. For $(1, 1, 1)$ 
 Here is an 8-component vector, $\mathbf{v} = (2, 1, 2, 0, 4, 0, 1, 2)$. There is no picture of it. Compute anyway:
 
 $$
-\sum v_i^2 = 4 + 1 + 4 + 0 + 16 + 0 + 1 + 4 = 30, \qquad \lvert \mathbf{v} \rvert = \sqrt{30} \approx 5.48
+\begin{aligned}
+\sum v_i^2 &= 4 + 1 + 4 + 0 + 16 + 0 + 1 + 4 \\
+&= 30 \\
+\lvert \mathbf{v} \rvert &= \sqrt{30} \approx 5.48
+\end{aligned}
 $$
 
 That is the whole method. A 4096-dimensional embedding has a length in exactly this sense: square each component, add, take the root.
 
-{/* scene: 1.3-3 — n-D: an 8-component bar chart; drag bars, the length readout updates: no picture needed, the same formula */}
+Below, the eight components are bars. Drag any bar up or down: its square and the sum in the table change, and so does
+the length. There is no arrow to draw, and none is needed.
+
+<SceneIsland caption="LN-3 · An eight-component vector as bars: the length is the root of the sum of the eight squares." rows={rowsFor(5, locale)}>
+  <LengthScene scene={5} locale={locale} client:only="react" />
+</SceneIsland>
+<LengthControls scene={5} locale={locale} client:load />
 
 Two facts that follow from the squares:
 
@@ -103,11 +138,25 @@ Check exactly: $(1/\sqrt 2)^2 + (1/\sqrt 2)^2 = 1/2 + 1/2 = 1$ (with the rounded
 
 Example 3. $\mathbf{v} = (3, 4)$: $\hat{\mathbf{v}} = (0.6, 0.8)$, and $0.36 + 0.64 = 1$.
 
-{/* scene: 1.3-2 — scrub a blend from v to v/|v|; the tip lands on the unit circle (2D) or unit sphere (3D); the divisor |v| in the formula is highlighted */}
+Try it. Drag $\mathbf{v}$ anywhere, then move **blend** in the panel from 0 to 1: the arrow shrinks or grows along its
+own line and its tip lands on the unit circle, always at the same point $\hat{\mathbf{v}}$. The divisor
+$\lvert \mathbf{v} \rvert$ is the one number that does the work; hover it in the formula to see which length it is.
+
+<SceneIsland caption="LN-2 · Normalization: v divided by its length lands on the unit circle, pointing the same way." rows={rowsFor(3, locale)}>
+  <LengthScene scene={3} locale={locale} client:only="react" />
+</SceneIsland>
+<LengthControls scene={3} locale={locale} client:load />
+
+In 3D the unit circle becomes the unit sphere: every unit vector has its tip on it, whatever its direction.
+
+<SceneIsland caption="LN-2-3D · In 3D the normalized tip lands on the unit sphere." rows={rowsFor(4, locale)}>
+  <LengthScene scene={4} locale={locale} client:only="react" />
+</SceneIsland>
+<LengthControls scene={4} locale={locale} client:load />
 
 **Misconception to drop:** "normalizing changes the direction". It only changes the length. The arrow $(0.6, 0.8)$ points exactly where $(3, 4)$ points.
 
-**The one input that fails.** The zero vector $(0, 0, 0)$ has length 0. Dividing by 0 gives `NaN` (or infinity), and there is no direction to keep anyway: the zero arrow does not point anywhere. This is the black patch in your shader: a degenerate triangle produced a zero-length normal, `normalize` divided by zero, and every pixel lit with that normal became `NaN`. Every robust `normalize` checks for a tiny length first.
+**The one input that fails.** Drag $\mathbf{v}$ in the 2D scene above onto the origin. The zero vector $(0, 0, 0)$ has length 0. Dividing by 0 gives `NaN` (or infinity), and there is no direction to keep anyway: the zero arrow does not point anywhere. This is the black patch in your shader: a degenerate triangle produced a zero-length normal, `normalize` divided by zero, and every pixel lit with that normal became `NaN`. Every robust `normalize` checks for a tiny length first.
 
 **Length versus length squared.** Comparing two lengths does not need the root: $\lvert \mathbf{a} \rvert < \lvert \mathbf{b} \rvert$ exactly when $\lvert \mathbf{a} \rvert^2 < \lvert \mathbf{b} \rvert^2$, because squaring keeps the order of non-negative numbers. CG code therefore compares `length2(v) < r*r` and skips the square root (lesson 0.G named this; here is where it pays).
 
@@ -219,6 +268,12 @@ def safe_normalize(v, eps=1e-12):
     n = np.linalg.norm(v)
     return v / n if n > eps else np.zeros_like(v)
 print(safe_normalize(z))                 # [0. 0. 0.]
+
+# fp16 tops out at 65504: one hundred squares of 30 (sum 90000) overflow
+h = np.full(100, 30, dtype=np.float16)
+with np.errstate(over='ignore'):
+    print((h * h).sum(dtype=np.float16))  # inf
+print(np.sqrt((h.astype(np.float32) ** 2).sum()))   # 300.0  (accumulated in fp32)
 ```
 
 </PyCell>

@@ -1,0 +1,192 @@
+---
+title: "Why this course: what AI actually computes"
+description: "A model is mostly multiply-adds; what you will be able to do after each part, and why a CG developer already knows half of it."
+---
+
+import Quiz from '../../../components/Quiz.astro';
+import LessonMap from '../../../components/LessonMap.astro';
+
+**Built on:** nothing. This page is the map; the lessons are the territory.
+
+You write shaders, rigs and pipelines for a living. You have shipped code that nobody else on the team understood.
+And still, a page of machine-learning math can make you feel slow. That feeling is not about ability: the notation
+was designed for people who already know what it means. This course removes the notation first and keeps the pictures.
+
+## What a model actually does
+
+Strip away the vocabulary and a neural network is a function from numbers to numbers. Text goes in as a list of
+numbers (one row per token), an image as a grid of numbers (one per pixel per channel), and a list of numbers comes
+out: which token is likely next, which pixel colour, which class. Between the two ends sits a chain of very simple
+steps, repeated an enormous number of times.
+
+The step is this: take two lists of numbers, multiply matching entries, add the products up.
+
+$$
+a \cdot b = a_1 b_1 + a_2 b_2 + a_3 b_3
+$$
+
+That is the dot product. One multiplication followed by one addition into a running sum is called a *multiply-add*,
+and it is the only arithmetic a model does in bulk. A **layer** of a network is thousands of dot products of the same
+input with different lists of numbers (the layer's *weights*). **Attention** is dot products between the rows that
+represent tokens, asking "how much does this word look like that one". An **embedding** is just the list of numbers a
+token is turned into so that dot products can be taken at all.
+
+How many? The 2020 scaling-laws paper from OpenAI (Kaplan et al., *Scaling Laws for Neural Language Models*,
+arXiv:2001.08361, January 2020) gives the rule of thumb: a forward pass costs about $2N$ floating-point operations
+per token, where $N$ is the number of parameters outside the embedding tables, and the factor 2 is exactly "one
+multiply and one add". So, per parameter, per token: one multiply-add. GPT-2 small (2019) has 124 million parameters,
+about 85 million of them outside the embeddings, so producing **one token** takes roughly 85 million multiply-adds,
+plus the attention over the context. A 300-token answer is about 25 billion of them. Llama 3 8B (Meta, April 2024)
+does about 8 billion multiply-adds per token; the figure scales with the parameter count, which is why the count is
+the number everyone quotes.
+
+Those are big numbers, but every one of them is the same small operation you can draw on a napkin. The whole course
+is about that operation: what it means, how it is stacked into matrices and tensors, how a model's numbers are chosen
+(by taking derivatives of a loss), and why the loss looks the way it does (probability and "why squares everywhere").
+
+{/* scene: INTRO-1 — the DotUnit asset playing its timeline once: a and b as arrows, b's shadow on a, |a| × shadow = 3; then the components unfold into axis-coloured legs, a's row, b's column, three tiles (one hatched), the tiles drop into a stack whose height is the same 3 (docs/design/intro-and-dotunit.md §2) */}
+
+## You already do this
+
+If you have written a lighting shader, you have computed dot products thousands of times: `max(0.0, dot(N, L))`
+is the brightness of a surface, and it is the dot product of the normal with the light direction. The course's
+first real lesson on the dot product derives it from the law of cosines and shows exactly why that number is a cosine.
+
+Other things you know, which the course reuses on purpose:
+
+| what you do in CG | what it is in this course |
+|---|---|
+| `dot(N, L)` in a shader | the dot product (Part 1); cosine similarity between embeddings is the same formula |
+| a 4x4 transform matrix, `xform` nodes, parent spaces | a matrix as "where the basis vectors land" (Part 2); a layer of a network is a matrix applied to every token |
+| normals, tangents, the cross product | orthogonality, bases, projections (Parts 1 and 2) |
+| blend shapes: `base + w1 * delta1 + w2 * delta2` | a linear combination (lesson 1.2); the output of a layer is a linear combination of its weight columns |
+| a Graph Editor curve and its tangent handles | a function and its derivative (Part 4); gradient descent follows the tangent downhill |
+| an image as H x W x C, a point cloud as N x 3 | tensors, shapes and strides (Part 3) |
+| half-float textures, 8-bit normals, the banding they cause | floating-point formats and quantization (Branch Q), which decide whether a model fits your GPU |
+
+None of this is a metaphor. The dot product in the shader and the dot product in attention are the same function,
+with longer lists.
+
+## The spine of the course in one sentence
+
+Measure distance (Pythagoras) → measure angle (the law of cosines) → arrows as lists of numbers (vectors) →
+compare two arrows (the dot product) → move all arrows at once (matrices) → stack many arrows (tensors) → a layer
+$y = xW^{\mathsf{T}} + b$ → how wrong the layer is (a loss) → how to change $W$ (derivatives, the gradient) → why this
+loss (probability, statistics, "why squares") → train a machine (regression, then a small network) → attention and a
+transformer block, built only from parts you already own.
+
+Every lesson answers the question the previous lesson left open, and ends with the next question. The next page,
+[How it all connects](lesson:how-it-connects), shows the same sentence as one animation.
+
+## The parts, and what you will be able to do
+
+**Part 0, Ground.** Squares as areas, roots, powers, distance, angles, the unit circle, the law of cosines.
+*You will be able to* read $\sqrt{x^2 + y^2}$ and $x^{-1/2}$ as pictures, and see where $\cos\theta$ comes from.
+
+**Part 1, Vectors.** Arrows and lists of numbers, length, the dot product, projection, bases, cosine similarity and
+embeddings, the DFT as a list of dot products. *You will be able to* explain `dot(N, L)` to a junior, read an
+embedding-search result as an angle, and know why a normalized vector has length one.
+
+**Part 2, Matrices.** Transformations, columns as images of the basis, four views of matrix multiplication,
+determinants, systems of equations, inverses, eigenvectors. *You will be able to* read `y = x @ W.T + b` as "every
+token times every weight column", and know what a 4x4 matrix does without multiplying it out.
+
+**Part 3, Tensors.** Shapes, axes, batches, images and text as tensors, strides over flat memory, broadcasting,
+reductions, einsum. *You will be able to* read a shape like `(B, T, D)` and an error like "cannot broadcast
+(8, 3) with (4,)" and know what to fix.
+
+**Parts 4 to 6, Change and accumulation.** Derivatives as tangent zoom, the chain rule, gradients, Jacobians,
+gradient descent, the backpropagation graph, integrals and densities. *You will be able to* follow what
+`loss.backward()` computes, and why a learning rate that is too large explodes.
+
+**Parts 7 and 8, Probability and statistics.** Distributions, expectation, variance, the Gaussian, why the mean
+minimizes squared error, covariance as a dot product, "why squares everywhere". *You will be able to* read a loss
+function and say what assumption about the noise it encodes.
+
+**Parts 9 and 10, Learning machines and attention.** Linear and logistic regression, a small network trained by hand,
+embeddings, one attention head, a transformer block, LoRA. *You will be able to* read the diagram of a transformer
+and point at the dot products.
+
+**Advanced track and Branch Q.** SVD and PCA, rotations and RoPE, matrix calculus, optimizers, information theory,
+normalization, floating point and quantization (FP16, FP8, NVFP4), flows. *You will be able to* choose a number format
+for a model and know what you give up.
+
+## Where it is used
+
+- **Large language models**: embeddings, attention and feed-forward layers are all matrix products of the kind above;
+  "KV cache", "quantization" and "LoRA" are each one lesson of this course applied to one of those products.
+- **Image and video models**: convolutions are dot products of a small filter with every patch; diffusion models are
+  gradient steps on a density (Parts 4, 7 and the advanced track).
+- **Recommendation and search**: a query embedding dotted with every document embedding; nearest neighbours are the
+  largest cosines (lesson 1.7).
+- **Game and VFX ML tools**: denoisers, upscalers, pose estimation, motion matching, neural materials: tensors in,
+  tensors out, the same layers, usually quantized to run on the GPU next to your renderer.
+- **Running a model at all**: whether a model fits in your VRAM is a question about parameter count times bytes per
+  number, which is Branch Q.
+
+## Why learn it, rather than only use it
+
+- To **read a paper** past the abstract: the equations become the same three or four pictures in different fonts.
+- To **debug a model**: a shape error, a NaN, a loss that stalls: each is one of the lessons here failing in practice.
+- To **choose formats and sizes**: FP16 versus FP8, rank of a LoRA, batch size: decisions that need the picture, not
+  a rule of thumb.
+- To **stop being afraid of formulas**. A formula is a compressed picture; the course shows the picture first, every
+  time, with live numbers you can drag.
+
+## How to use the course
+
+- **Scenes** are live viewports in the style of a 3D app: drag the round handles, scrub numbers in the formula, type
+  in the panel on the right (press N to toggle it), orbit 3D views by dragging empty space, Ctrl+wheel to zoom. The
+  numbers in the scene, the formula, the table and the code line are the same numbers: hover one and the others light up.
+- **Timelines** are animations you scrub, not videos: step forward and back, drag the slider, and the scene keeps
+  every value you set.
+- **Python cells** run in your browser (click Run; the first click loads the runtime) and open in Colab. The numbers
+  they print are the numbers in the scene.
+- **Maps**: every lesson ends with its local term map; the glossary and the roadmap are generated from the same graph.
+  "Built on" at the top of each lesson tells you what to read first if something is unclear.
+- **Mark a lesson done** at the bottom; progress is kept in your browser.
+
+## Honest expectations
+
+The lessons are short and the pictures are gentle, but the ideas still take time. Plan on roughly an hour per lesson
+with the scenes, more for the ones marked as capstones. Nothing is skipped and nothing is hand-waved: when a lesson says
+"this equals that", there is a scene where you can check it with your own numbers. If a lesson feels fast, drop one
+level down its "Built on" links; that is what they are for.
+
+## Check yourself
+
+<Quiz
+  questions={[
+    {
+      q: "What is the single operation a neural network performs in bulk?",
+      options: [
+        "Multiply matching numbers and add the products up (a dot product, made of multiply-adds)",
+        "Compare strings character by character",
+        "Take square roots of every input",
+        "Sort the inputs"
+      ],
+      answer: 0,
+      explain: "Layers, attention and embeddings are all built from dot products: multiply matching entries, add them up. Everything else in the model is bookkeeping around those sums."
+    },
+    {
+      q: "Roughly how many multiply-adds does one token cost in a model with N parameters (outside the embeddings)?",
+      options: [
+        "About N: one multiply-add per parameter per token",
+        "About log N",
+        "About N squared",
+        "It does not depend on N"
+      ],
+      answer: 0,
+      explain: "Kaplan et al. (2020) estimate about 2N floating-point operations per token for a forward pass, and a multiply-add is two operations, so about N multiply-adds, plus the attention over the context."
+    }
+  ]}
+/>
+
+## What this opens
+
+The next page draws the sentence above as one animation: one tile, one dot product, one matrix cell, one layer,
+one transformer block, and a way to zoom from any number back down to its tiles.
+
+## Term map
+
+<LessonMap />
