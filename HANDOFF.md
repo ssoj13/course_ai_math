@@ -1,6 +1,6 @@
 # HANDOFF — math_en ("Math for AI" interactive textbook)
 
-Updated 2026-10-11 ~18:00 by controller session math-en (Claude). Read this, then [AGENTS.md](AGENTS.md) (working
+Updated 2026-10-11 ~19:50 by controller session math-en (Claude). Read this, then [AGENTS.md](AGENTS.md) (working
 notebook: contracts, traps, TODO), [task.md](task.md) (the user's own words, Russian), the recover plan/ledger
 `.superpowers/sdd/2026-10-11-recover/plan.md` (gitignored, on disk only, append-only log of everything below), and
 [docs/superpowers/plans/2026-10-11-course-completion.md](docs/superpowers/plans/2026-10-11-course-completion.md)
@@ -9,22 +9,26 @@ notebook: contracts, traps, TODO), [task.md](task.md) (the user's own words, Rus
 ## 0. Status in one screen
 
 - Repo `C:\projects\projects.rust.cg\cgprojs\math_en`, GitHub `ssoj13/math-course` (public). Branch `feat/engine`
-  HEAD `2cd33b9` (pushed). Live site https://ssoj13.github.io/math-course/ = `main` = `72f7de8` (older: 3 lessons + 0.G +
-  Pyodide). Everything since is pushed to `feat/engine` but NOT published yet (user chose: build a batch, review once,
-  then publish).
-- Gates on `2cd33b9`: `bun test tests/js` 717 pass / 0 fail; `bun run check` 0/0/0; `bun run build` 45 pages, 0 warnings;
-  renderer chunk ~272 kB gzip (limit 300,000).
-- Local preview: worktree `scratchpad/preview` detached at `2cd33b9`, served on http://localhost:4480/math-course/
-  (restart: `bun run preview -- --port 4480` in that worktree, detached). `scratchpad/mainwt` = `main` worktree used to
-  publish (`git merge --ff-only feat/engine && git push origin main`, then watch the Pages run with `gh run`).
+  HEAD `4605172`; `main` = `4605172` (pushed; Pages deploy of 569726d verified green, 4605172 pushed after).
+  Live: https://ssoj13.github.io/math-course/ (RU: /math-course/ru/).
+- Gates on `4605172`: `bun test tests/js` 771 pass / 0 fail (also green in 8 random orders); `bun run check` 0/0/0;
+  `bun run build` 47 pages, 0 warnings; renderer chunk ~268 kB gzip (limit 300,000); largest other 87 kB (limit 100,000);
+  lazy elk 432 kB (limit 600,000).
+- Publish: worktree `scratchpad/mainwt` (= main): `git merge --ff-only feat/engine && git push origin main`, then
+  `gh run watch` the "Deploy to GitHub Pages" run (test+build+deploy jobs). Local preview: worktree `scratchpad/preview`
+  (detach at a commit, `bun run build`, `bun run preview -- --port 4480` detached). Other sessions' Chrome cleanup can
+  kill our preview/Chrome ("scratchpad" in the command line) — restart when it dies with exit 255.
 
 ### Lessons with interactive scenes, EN + RU, merged on feat/engine
 Start here (why-this-course, how-it-connects — with DotUnit INTRO scenes), 0.G squares-and-plane (+3D tile card),
 0.2 powers, 0.3 pythagoras, 0.4 unit-circle, 0.5 law-of-cosines, 1.1 vector, 1.2 vector-arithmetic, 1.3 length,
 1.4 dot-product (+DotUnit teaser), 1.5 projection, 1.6 basis (orthonormal checkbox scene), 1.7 cosine-similarity +
 embeddings in AI (real GloVe/arctic data, RAG, analogies, 1-head attention preview), 1.8 cross-product,
-1.9 waves-dft (NEW: DFT as dot products + epicycles). Accepted by independent review: LC, DP, 0.G only; the rest is
-under the consolidated batch review (see §3).
+1.9 waves-dft (NEW: DFT as dot products + epicycles), **3.1 tensor-road** (rank slider 0→6 in 3D, real data per
+rank, memory strip + strides, transpose, DotUnit "axis that disappears"; einsum playground opens on bij,bjk->bik).
+All Part 0/1 lessons passed the consolidated batch review + one fix round (`batch-review.md`, `fixround-report.md`).
+3.1 not independently reviewed yet. Numbering: "Start here" unnumbered; titles/sidebar show CURRICULUM ids (0.2, 1.5,
+Part 0/1/3); tensors has explicit `"part": 3` in course.json (matrices will be part 2).
 
 ### Services / engine
 - Engine (6d Blender look, store/links, drag, N-panel, Timeline, Formula, NumTable/NumGrid, size modes ×2/full,
@@ -66,24 +70,28 @@ animation.**
 
 ## 3. In flight right now (agents; resume via SendMessage if they died)
 
-| Work | Worktree / branch | Report | State |
+| Work | Branch (worktree under .claude/worktrees/) | Report (inside its worktree) | Port |
 |---|---|---|---|
-| Consolidated batch review of all lessons + live-fix wave + term maps (Fable) | own scratch `scratchpad/batch-review-wt` | `.superpowers/sdd/2026-10-11-recover/batch-review.md`, shots `batch-review-shots/` | ~80 % done (up to 1.8; 1.9 next) |
-| DotUnit polish: cube readability, Arrow opacity, fp32/pairwise readout, memory strip, LOD-2/3 visuals, code-line follow, challenges, browser checks | `worktree-agent-afd8236f6bd0608dc` | its worktree `.superpowers/sdd/2026-10-11-recover/dotunit-report.md` | running |
-| Engine fix: `Stroke` keeps first-draw segment count (growing lines truncated); SSR vs browser trig formatting → React #418; remove 1.9 workaround; audit growing-line scenes | `worktree-agent-a964c4141e1a85cb3` | its worktree `engine-fix-report.md` | running |
+| Lessons 3.2 data-as-tensors + 3.3 tensor-memory | `worktree-agent-abd81b77f93655c11` | `.superpowers/sdd/2026-10-11-recover/batch-tensors-a-report.md` | 4524 |
+| Lessons 3.4 broadcasting + 3.5 reductions | `worktree-agent-a7aabda00755c2cc3` | `batch-tensors-b-report.md` | 4525 |
+| Lessons 2.1 linear-transformations + 2.2 matrix-columns (NEW module matrices, part 2, between vectors and tensors; incl. the 3D basis-projection scene with orthonormal checkbox) | `worktree-agent-a0ddbb0cc8e811414` | `batch-matrices-a-report.md` | 4527 |
+
+Done today and merged (for reference): engine fix (Stroke `writeLine` in fatLine.ts, shared `src/viz/fmt.ts`), DotUnit
+polish (Arrow opacity, fp32/pairwise, memory strip, LOD visuals, challenges), batch fix round (framing `<Room>`, label
+placement, RU «вы»), engine-small (unnumbered Start, DotUnit `preset`, field contrast, `tests/js/frames.ts`).
 
 ## 4. Next steps, in order
 
-1. Collect the three results above; merge DotUnit polish + engine fix (gates one at a time).
-2. One fix round for the batch-review must-fix list (≤3 agents, by lesson groups), quick re-check, then **publish**
-   (`main` ff + push, watch Pages, check live URLs EN/RU).
-3. Small engine task: "Start here" module unnumbered so Ground stays Part 0 (manifest field); add 1.7 terms
-   (embedding table, nearest neighbour, semantic search/RAG, softmax) to `terms.json`; review the tensor core.
-4. **Priority line:** Part 3 tensor lessons on the core + DotUnit (3.1 tensor road rank 0→N with real data and
-   memory strides, 3.2–3.5 views/broadcast/reductions, 3.6 einsum/contraction, 3.7 layer), then Part 2 matrices
-   (2.1–2.11 incl. determinants, systems of equations, inverse, eigen), using the DotUnit presets.
-5. Then Parts 4–10, advanced A1–A10, branch Q1–Q12 per the completion map; notebooks/Colab (Task 10), size report +
-   quiz-lint (Task 11), covers.
+1. Collect the three agents above; merge one at a time (`git merge --no-edit <branch>`; resolve ui.ts / course.json /
+   terms.json / untranslated.json by keeping both sides; restamp RU; gates one at a time); publish.
+2. Then 3.6 einsum/contraction + 3.7 layer y = xWᵀ + b (DotUnit presets), 2.3 gallery + 2.4 matmul (4 views incl. the
+   cube) + 2.5 transpose, 2.6–2.8 (determinant, computing det, **systems of equations**), 2.9–2.11 (inverse, rank,
+   eigen). ≤3 agents.
+3. Independent review batch for 3.1–3.x and 2.x (one Fable reviewer, one preview, sequential screenshots), one fix
+   round, publish.
+4. Then Parts 4–10, advanced A1–A10 (A4 = complex DFT/FFT), branch Q1–Q12 per the completion map; notebooks/Colab
+   (Task 10), size report + quiz-lint (Task 11, `scripts/size-report.ts` does not exist yet), tensor core review,
+   covers.
 
 ## 5. Known open issues
 
