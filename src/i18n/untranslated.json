@@ -3,6 +3,5 @@
   "dev/engine",
   "dev/math",
   "index",
-  "vectors/basis",
   "vectors/cross-product"
 ]
