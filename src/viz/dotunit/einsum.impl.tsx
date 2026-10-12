@@ -59,7 +59,7 @@ function useRefit(dir: readonly [number, number, number]) {
 // ---------------------------------------------------------------------------------------------------------------
 // The generic renderer.
 
-interface ViewProps {
+export interface ViewProps {
 	lesson: string;
 	d: SceneData;
 	/** Timeline driving the pass (operands, one shaft, all shafts, stacks, result); without it the result is shown. */
@@ -94,7 +94,7 @@ function PassTags({ lesson, d, show, cellText, offset = [0, 0, 0] }: { lesson: s
 
 const FIXED = { step: 4, t: 1 };
 
-function EinsumView({ lesson, d, timeline, focus, onCell, cellText, offset, front = false, frameKey }: ViewProps) {
+export function EinsumView({ lesson, d, timeline, focus, onCell, cellText, offset, front = false, frameKey }: ViewProps) {
 	const frame = useMemo(() => {
 		const f = new Frame(passCap(d));
 		passIds(d, { elem: (o, e) => ids.elem(d, o, e), cell: (c) => ids.cell(d, c), tile: (c, k) => ids.tile(d, c, k) }, f);
@@ -135,7 +135,7 @@ function EinsumView({ lesson, d, timeline, focus, onCell, cellText, offset, fron
 }
 
 /** A dot product drawn as the DotUnit's face 2 at a fixed step (the dive target, ladder rungs 1 and 2). */
-function DotStatic({ lesson, a, b, step, onTile, frameKey }: { lesson: string; a: readonly number[]; b: readonly number[]; step: number; onTile?(i: number): void; frameKey: string }) {
+export function DotStatic({ lesson, a, b, step, onTile, frameKey }: { lesson: string; a: readonly number[]; b: readonly number[]; step: number; onTile?(i: number): void; frameKey: string }) {
 	const g: DotGeom = useMemo(() => dotGeom(dotData(a, b)), [a, b]);
 	const n = a.length;
 	const frame = useMemo(() => {
@@ -173,19 +173,19 @@ function DotStatic({ lesson, a, b, step, onTile, frameKey }: { lesson: string; a
 	</>;
 }
 
-function Floor({ lesson, extent }: { lesson: string; extent: number }) {
+export function Floor({ lesson, extent }: { lesson: string; extent: number }) {
 	const axes = useOverlay('axes');
 	return <Show ov="grid"><Grid lesson={lesson} extent={extent} step={1} axes={axes} /></Show>;
 }
 
-const overlays = (locale: Locale) => [
+export const overlays = (locale: Locale) => [
 	{ id: 'grid', label: t(locale, 'du.ovGrid'), on: true },
 	{ id: 'axes', label: t(locale, 'du.ovAxes'), on: false },
 	{ id: 'labels', label: t(locale, 'du.ovLabels'), on: true },
 ];
 
 /** Hints for any tile / cell id (they are generated from the spec, so the lookup is by prefix). */
-function pickHints(locale: Locale): Readonly<Record<string, Hint>> {
+export function pickHints(locale: Locale): Readonly<Record<string, Hint>> {
 	const dive: Hint = { mouse: t(locale, 'du.hintDive'), touch: t(locale, 'du.hintDiveTouch') };
 	return new Proxy({} as Record<string, Hint>, { get: (_, id) => (typeof id === 'string' && /^[pc]\d/.test(id) ? dive : undefined) });
 }

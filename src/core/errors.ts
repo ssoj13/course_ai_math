@@ -13,6 +13,22 @@ export class CoreError extends Error {
 	}
 }
 
+/**
+ * Which einsum grammar rule a `SpecError` broke: a machine-readable reason, so a UI can explain the error in the
+ * reader's language (the message text is English and for developers only).
+ */
+export type SpecReason =
+	| 'noArrow' // no "->" (implicit output is not supported)
+	| 'arrows' // more than one "->"
+	| 'ellipsis' // "..." is not supported
+	| 'outComma' // "," in the output
+	| 'space' // whitespace
+	| 'char' // anything but a-z, "," and "->"
+	| 'arity' // a fixed operand count was asked for and not met
+	| 'repeatIn' // a letter twice inside one operand (a trace / diagonal)
+	| 'repeatOut' // a letter twice in the output
+	| 'unknownOut'; // an output letter no operand has
+
 /** Bad einsum grammar. `token` is the offending text and `pos` its character offset in the op string. */
 export class SpecError extends CoreError {
 	constructor(
@@ -20,6 +36,7 @@ export class SpecError extends CoreError {
 		readonly op: string,
 		readonly token: string,
 		readonly pos: number,
+		readonly reason: SpecReason,
 	) {
 		super('spec', `${msg} at ${pos} ("${token}") in "${op}"`);
 	}
@@ -29,6 +46,21 @@ export class SpecError extends CoreError {
 export class ShapeError extends CoreError {
 	constructor(msg: string) {
 		super('shape', msg);
+	}
+}
+
+/**
+ * One einsum letter bound to two different extents (the "cable" between two axes of different lengths): a contraction
+ * or a shared batch axis needs the same length on both sides. Carries the letter and both extents for a UI.
+ */
+export class ExtentError extends ShapeError {
+	constructor(
+		msg: string,
+		readonly letter: string,
+		readonly first: number,
+		readonly second: number,
+	) {
+		super(msg);
 	}
 }
 

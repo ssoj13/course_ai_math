@@ -1,0 +1,115 @@
+/*
+ * Lesson 3.6 / 3.7 page-side controls on top of tensor-road.css and tensor-ops.css. Letters and cables use the scene's
+ * role colours, which are tuned for the always-dark viewport, so the op reading and the socket diagram sit on the
+ * viewport chrome in both site themes (like the 3.4 shape table).
+ */
+.es-op {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.9rem;
+}
+.es-op input {
+	flex: 1 1 12rem;
+	min-width: 0;
+	padding: 0.3rem 0.5rem;
+	border: 1px solid var(--sl-color-gray-4);
+	border-radius: 0.3rem;
+	background: var(--viz-chrome);
+	color: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 1rem;
+}
+.es-op input[aria-invalid='true'] {
+	border-color: var(--viz-hot);
+}
+.es-ext,
+.es-dive {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem 0.6rem;
+}
+.es-read p {
+	margin: 0;
+}
+.es-read p + p {
+	margin-top: 0.2rem;
+	color: var(--viz-muted);
+	font-family: var(--sl-font, inherit);
+	font-size: 0.85rem;
+}
+.es-line {
+	font-size: 1.05rem;
+	font-weight: 700;
+	background: none;
+	padding: 0;
+}
+.es-line span[tabindex] {
+	cursor: default;
+	border-radius: 2px;
+}
+.es-line span.is-hot {
+	background: var(--viz-hot-bg);
+}
+.es-sum {
+	color: var(--viz-ink);
+	white-space: nowrap;
+}
+.es-caret {
+	margin: 0.3rem 0 0;
+	line-height: 1.1;
+}
+.es-caret code {
+	white-space: pre;
+	color: var(--viz-hot);
+	background: none;
+}
+.es-s4 {
+	display: grid;
+	gap: 0.4rem;
+}
+.es-s4 svg {
+	display: block;
+	width: 100%;
+	max-width: 36rem;
+	height: auto;
+	border-radius: 0.35rem;
+	background: var(--viz-chrome);
+}
+.es-block {
+	fill: var(--viz-field);
+	stroke-width: 1.5;
+}
+.es-block-l {
+	font-family: var(--lab-font-mono);
+	font-size: 12px;
+}
+.es-sock {
+	fill: var(--viz-chrome);
+}
+.es-mark {
+	fill: var(--viz-chrome);
+	stroke-width: 2;
+}
+.es-sock-l {
+	fill: var(--viz-ink);
+	font-family: var(--lab-font-mono);
+	font-size: 12px;
+	pointer-events: none;
+}
+.es-sock-n {
+	fill: var(--viz-muted);
+	font-family: var(--lab-font-mono);
+	font-size: 11px;
+	pointer-events: none;
+}
+.es-hit {
+	cursor: pointer;
+	outline: none;
+}
+.es-hit:focus-visible circle {
+	stroke: var(--viz-hot) !important;
+	stroke-width: 3 !important;
+}

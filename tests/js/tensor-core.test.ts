@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import fx from '../fixtures/tensor/core.json';
 import {
-	add, arange, broadcastShapes, broadcastTo, contiguous, CoreError, div, dot, DtypeError, einsum, expandDims, explain,
+	add, arange, broadcastShapes, broadcastTo, contiguous, CoreError, div, dot, DtypeError, einsum, expandDims, explain, ExtentError,
 	flat, FP32, IndexError, isContiguous, matmul, max, mean, mul, mulberry32, parseEinsum, planEinsum, products, rand,
 	reshape, ShapeError, slice, SpecError, squeeze, sub, sum, sumSteps, Tensor, tensor, toNested, transpose, zeros,
 	type Order, type SliceSpec,
@@ -194,10 +194,21 @@ describe('einsum', () => {
 		expect(e('ii->i')).toMatchObject({ token: 'i', pos: 1, code: 'spec' });
 		expect(e('ij,jk->iz')).toMatchObject({ token: 'z', pos: 8 });
 		expect(e('...i->i')).toMatchObject({ token: '.', pos: 0 });
-		expect(e('ij,jk')).toMatchObject({ token: '', pos: 5 });
+		expect(e('ij,jk')).toMatchObject({ token: '', pos: 5, reason: 'noArrow' });
+		expect(e('ij,jk->iz')).toMatchObject({ reason: 'unknownOut' });
+		expect(e('ii->i')).toMatchObject({ reason: 'repeatIn' });
+		expect(e('ij->ii')).toMatchObject({ reason: 'repeatOut' });
+		expect(e('i j->i')).toMatchObject({ reason: 'space' });
+		expect(e('i->,i')).toMatchObject({ reason: 'outComma' });
+		expect(e('i->i->i')).toMatchObject({ reason: 'arrows' });
+		expect(e('...i->i')).toMatchObject({ reason: 'ellipsis' });
+		expect(e('I->I')).toMatchObject({ reason: 'char' });
 		expect(() => parseEinsum('i,j,k->ijk', 2)).toThrow(SpecError);
 		expect(() => planEinsum('ij,jk->ik', { i: 2, j: 3 })).toThrow(ShapeError);
 		expect(() => planEinsum('ij,jk->ik', { i: 2, j: 3, k: 1, z: 4 })).toThrow(ShapeError);
+		// A contraction between axes of different lengths: an ExtentError (a ShapeError) naming the letter and both lengths.
+		expect(() => planEinsum('ij,jk->ik', [[2, 3], [4, 2]])).toThrow(ExtentError);
+		try { planEinsum('ij,jk->ik', [[2, 3], [4, 2]]); } catch (x) { expect(x).toMatchObject({ letter: 'j', first: 3, second: 4, code: 'shape' }); }
 	});
 	test('the plan: kept and summed letters for the five DotUnit presets', () => {
 		const p = planEinsum('bhqd,bhkd->bhqk', { b: 2, h: 3, q: 4, k: 5, d: 6 });

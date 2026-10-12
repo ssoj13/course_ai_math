@@ -14,7 +14,7 @@
  * the same floats by construction.
  */
 import { accumulate, arith, order, promote, sumSteps, type AccOpts, type Merge } from './dtype';
-import { IndexError, ShapeError, SpecError } from './errors';
+import { ExtentError, IndexError, ShapeError, SpecError, type SpecReason } from './errors';
 import { broadcastShapes, broadcastTo, expandDims, offsets, sizeOf, squeeze, zeros, type Shape, type Tensor } from './tensor';
 
 export interface Parsed {
@@ -42,34 +42,35 @@ export interface Plan extends Parsed {
 
 /** Parses an op string. `arity` (e.g. 2 for the DotUnit scenes) additionally fixes the operand count. */
 export function parseEinsum(op: string, arity?: number): Parsed {
-	const bad = (msg: string, pos: number, token = op[pos] ?? ''): never => {
-		throw new SpecError(msg, op, token, pos);
+	const bad = (reason: SpecReason, msg: string, pos: number, token = op[pos] ?? ''): never => {
+		throw new SpecError(msg, op, token, pos, reason);
 	};
 	const arrow = op.indexOf('->');
-	if (arrow < 0) bad('missing "->" (implicit output is not supported)', op.length, '');
-	if (op.indexOf('->', arrow + 1) >= 0) bad('more than one "->"', op.indexOf('->', arrow + 1), '->');
+	if (arrow < 0) bad('noArrow', 'missing "->" (implicit output is not supported)', op.length, '');
+	if (op.indexOf('->', arrow + 1) >= 0) bad('arrows', 'more than one "->"', op.indexOf('->', arrow + 1), '->');
 	for (let i = 0; i < op.length; i++) {
 		if (i === arrow || i === arrow + 1) continue;
 		const c = op[i];
 		if (c >= 'a' && c <= 'z') continue;
 		if (c === ',' && i < arrow) continue;
-		if (c === '.') bad('ellipsis is not supported', i);
-		if (c === ',') bad('"," in the output', i);
-		bad(c.trim() === '' ? 'whitespace is not allowed' : 'invalid character (letters a-z only)', i);
+		if (c === '.') bad('ellipsis', 'ellipsis is not supported', i);
+		if (c === ',') bad('outComma', '"," in the output', i);
+		if (c.trim() === '') bad('space', 'whitespace is not allowed', i);
+		bad('char', 'invalid character (letters a-z only)', i);
 	}
 	const lhs = op.slice(0, arrow);
 	const output = op.slice(arrow + 2);
 	const inputs = lhs.split(',');
-	if (arity !== undefined && inputs.length !== arity) bad(`expected ${arity} operands, got ${inputs.length}`, 0, lhs);
+	if (arity !== undefined && inputs.length !== arity) bad('arity', `expected ${arity} operands, got ${inputs.length}`, 0, lhs);
 	let at = 0;
 	for (const term of inputs) {
 		for (let i = 0; i < term.length; i++)
-			if (term.indexOf(term[i]) !== i) bad('index repeated inside one operand (traces are not supported)', at + i);
+			if (term.indexOf(term[i]) !== i) bad('repeatIn', 'index repeated inside one operand (traces are not supported)', at + i);
 		at += term.length + 1;
 	}
 	for (let i = 0; i < output.length; i++) {
-		if (output.indexOf(output[i]) !== i) bad('index repeated in the output', arrow + 2 + i);
-		if (!lhs.includes(output[i])) bad('output index does not occur in any operand', arrow + 2 + i);
+		if (output.indexOf(output[i]) !== i) bad('repeatOut', 'index repeated in the output', arrow + 2 + i);
+		if (!lhs.includes(output[i])) bad('unknownOut', 'output index does not occur in any operand', arrow + 2 + i);
 	}
 	const summed: string[] = [];
 	for (const c of lhs) if (c !== ',' && !output.includes(c) && !summed.includes(c)) summed.push(c);
@@ -87,7 +88,7 @@ export function planEinsum(spec: string | Parsed, shapes: readonly Shape[] | Rea
 	const ext = (l: string, n: number, where: string): void => {
 		if (!Number.isInteger(n) || n < 0) throw new ShapeError(`bad extent ${n} for index "${l}" ${where}`);
 		if (l in dims && dims[l] !== n)
-			throw new ShapeError(`index "${l}" has extent ${dims[l]} and ${n} ${where} in "${p.op}"`);
+			throw new ExtentError(`index "${l}" has extent ${dims[l]} and ${n} ${where} in "${p.op}"`, l, dims[l], n);
 		dims[l] = n;
 	};
 	if (Array.isArray(shapes)) {
