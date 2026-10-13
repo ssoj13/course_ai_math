@@ -1,0 +1,40 @@
+[package]
+name = "nodes-view"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+description = "Wgpu-first graph viewport renderer"
+license = "MIT"
+
+[dependencies]
+bytemuck = { workspace = true }
+glam = { workspace = true }
+log = { workspace = true }
+wgpu-text = { workspace = true }
+nodes-core = { path = "../nodes-core" }
+thiserror = { workspace = true }
+wgpu = { workspace = true }
+wgpu-pick = { workspace = true }
+wgpu-tube = { workspace = true }
+wgpu-node = { workspace = true }
+ui-theme = { workspace = true }
+cam-controls = { path = "../cam-controls" }
+cam-viewport = { path = "../cam-viewport" }
+
+[dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
+pollster = { workspace = true }
+uuid = { workspace = true }
+winit = { workspace = true }
+
+[[bench]]
+name = "pick_index"
+harness = false
+
+[[example]]
+name = "winit_minimal"
+path = "examples/winit_minimal.rs"
+
+[[example]]
+name = "winit_interactive"
+path = "examples/winit_interactive.rs"

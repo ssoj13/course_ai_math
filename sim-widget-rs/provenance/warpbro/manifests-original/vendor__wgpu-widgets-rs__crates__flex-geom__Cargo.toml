@@ -1,0 +1,12 @@
+[package]
+name = "flex-geom"
+version = "0.1.0"
+edition = "2024"
+description = "Pure 2D flex/grid layout arithmetic (Qt-style measure/arrange) — no GPU deps."
+
+# Only `glam` — this crate exists specifically so consumers that must stay
+# free of wgpu (e.g. nodes-core in the nodes-rs workspace) can still use the
+# same row/column flex-layout math as wgpu-widgets-core, which re-exports
+# these types instead of redefining them.
+[dependencies]
+glam = { workspace = true }

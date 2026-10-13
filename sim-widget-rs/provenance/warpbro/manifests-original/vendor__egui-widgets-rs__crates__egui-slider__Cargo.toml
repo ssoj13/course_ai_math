@@ -1,0 +1,30 @@
+# egui-slider — a slim, restyled slider (thin rail + flat handle) over egui::Slider.
+#
+# egui 0.34's built-in Slider is already fairly styleable (per-instance
+# handle_shape / trailing_fill, and spacing.slider_rail_height). This crate is a
+# thin builder that packages the "elegant" look — a thin rail + a flat rectangular
+# position handle + a trailing fill + an optional numeric DragValue box — as one
+# reusable widget, so hosts don't re-derive the styling scope at every call site.
+# It REUSES egui::Slider's interaction/keyboard/accessibility; it does not repaint
+# a slider from scratch. Generic over `emath::Numeric`, no app types.
+[package]
+name = "egui-slider"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A slim restyled slider (thin rail + flat handle + optional value box) for egui"
+
+[lib]
+path = "src/egui_slider.rs"
+
+[dependencies]
+egui = { workspace = true }
+# The set's one reset gesture (`reset::requested` / `ctrl_click`), shared with the attr grid.
+egui-widgets-config = { path = "../egui-widgets-config" }
+
+[dev-dependencies]
+# AccessKit-tree tests: a slider must be findable by role and label like `egui::Slider`.
+egui_kittest = "0.36"

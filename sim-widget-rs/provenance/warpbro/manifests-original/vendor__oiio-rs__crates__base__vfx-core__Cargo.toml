@@ -1,0 +1,38 @@
+[package]
+name = "vfx-core"
+description = "Core types for VFX image and color processing: Image, Pixel, ColorSpace"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+keywords = ["vfx", "image", "color", "aces", "openexr"]
+categories = ["graphics", "multimedia::images"]
+
+[features]
+default = ["rayon"]
+# rayon's global pool as the default `runner::Runner` (applications, the CLI). Off for an OpenFX
+# plug-in, which must not start threads of its own: it passes the host's MultiThread suite.
+rayon = ["dep:rayon"]
+# `clap` is for CLIs (ValueEnum on FilterKind); libraries should not pay for it.
+# Derive `clap::ValueEnum` on the CLI-facing enums (currently `Filter`), so a
+# binary can take them as typed arguments and get validation, `--help` value lists
+# and suggestions for free instead of hand-rolling a parser per command. Off by
+# default: libraries (render-rs, usd-rs, playa, ...) have no use for it; a CLI turns
+# it on (vfx-warp's `cli` feature forwards it). Enforced by vfx-tests
+# `no_library_enables_cli_dependencies_by_default`.
+clap = ["dep:clap"]
+
+[dependencies]
+half = { workspace = true }
+thiserror = { workspace = true }
+rayon = { workspace = true, optional = true }
+# Inherited as-is from the workspace (which already selects `derive`); a member
+# cannot narrow `default-features` on an inherited dependency.
+clap = { workspace = true, optional = true }
+
+[dev-dependencies]
+approx = { workspace = true }
+
+[lints]
+workspace = true

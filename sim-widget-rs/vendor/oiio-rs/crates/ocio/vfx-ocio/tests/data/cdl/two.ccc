@@ -1,0 +1,8 @@
+<ColorCorrectionCollection>
+<ColorCorrection id="a">
+ <SOPNode><Slope>2 2 2</Slope><Offset>0 0 0</Offset><Power>1 1 1</Power></SOPNode>
+</ColorCorrection>
+<ColorCorrection id="b">
+ <SOPNode><Slope>0.5 0.5 0.5</Slope><Offset>0.1 0.1 0.1</Offset><Power>1 1 1</Power></SOPNode>
+</ColorCorrection>
+</ColorCorrectionCollection>

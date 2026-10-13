@@ -1,0 +1,81 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "nodes-view"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Wgpu-first graph viewport renderer"
+license = "MIT"
+
+[dependencies.bytemuck]
+version = "1"
+features = ["derive"]
+
+[dependencies.glam]
+version = "0.33.2"
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.wgpu-text]
+package = "wgpu-text"
+path = "../../../wgpu-widgets-rs/crates/wgpu-text"
+
+[dependencies.nodes-core]
+path = "../nodes-core"
+
+[dependencies.thiserror]
+version = "2"
+
+[dependencies.wgpu]
+version = "30"
+default-features = false
+features = ["vulkan", "gles", "metal", "std", "wgsl"]
+
+[dependencies.wgpu-pick]
+package = "wgpu-pick"
+path = "../../../wgpu-widgets-rs/crates/wgpu-pick"
+
+[dependencies.wgpu-tube]
+package = "wgpu-tube"
+path = "../../../wgpu-widgets-rs/crates/wgpu-tube"
+
+[dependencies.wgpu-node]
+package = "wgpu-node"
+path = "../../../wgpu-widgets-rs/crates/wgpu-node"
+
+[dependencies.ui-theme]
+package = "ui-theme"
+path = "../../../wgpu-widgets-rs/crates/ui-theme"
+
+[dependencies.cam-controls]
+path = "../cam-controls"
+
+[dependencies.cam-viewport]
+path = "../cam-viewport"
+
+[dev-dependencies.criterion]
+version = "0.8"
+features = ["html_reports"]
+
+[dev-dependencies.pollster]
+version = "1.0"
+
+[dev-dependencies.uuid]
+version = "1"
+features = ["v4", "v5", "serde"]
+
+[dev-dependencies.winit]
+version = "0.30"
+
+[[bench]]
+name = "pick_index"
+harness = false
+
+[[example]]
+name = "winit_minimal"
+path = "examples/winit_minimal.rs"
+
+[[example]]
+name = "winit_interactive"
+path = "examples/winit_interactive.rs"

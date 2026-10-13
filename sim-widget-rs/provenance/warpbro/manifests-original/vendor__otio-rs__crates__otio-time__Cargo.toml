@@ -1,0 +1,26 @@
+# otio-time — OpenTimelineIO `opentime` value types in pure Rust.
+#
+# Self-contained: RationalTime / TimeRange / TimeTransform plus SMPTE timecode
+# (incl. drop-frame) and time-string parsing. No deps beyond `thiserror`. Usable
+# on its own (e.g. by timeline widgets) without the rest of otio-rs.
+[package]
+name = "otio-time"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "OpenTimelineIO opentime value types (RationalTime, TimeRange, TimeTransform) in pure Rust"
+
+[lib]
+name = "otio_time"
+path = "src/otio_time.rs"
+
+[features]
+# Serde derives on the value types. OFF by default so the crate stays dependency-light for
+# consumers that only compute with time; hosts that PERSIST it (playa stores layer timing in
+# project JSON) turn it on.
+serde = ["dep:serde"]
+
+[dependencies]
+thiserror.workspace = true
+serde = { version = "1", features = ["derive"], optional = true }

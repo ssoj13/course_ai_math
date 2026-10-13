@@ -1,0 +1,33 @@
+# egui-nodes-view — a thin egui-widgets-rs surface over nodes-rs's GPU node graph.
+#
+# `nodes-egui` already ships the COMPLETE egui widget: `GraphViewportState::ui`
+# does camera (MMB pan / RMB zoom / Alt orbit), marquee + click selection, node
+# drag/resize, wiring, delete, and the wgpu render -> egui::Image present. This
+# crate RE-EXPORTS that widget under the egui-widgets-rs `egui-*` naming and adds
+# a ready-made `SubnetHost` so a caller can drop a GPU node panel over a plain
+# `nodes_core::Subnet` without hand-writing the `GraphViewportHost` trait.
+#
+# This is now the ONLY node graph in cglibs. The egui-snarl-based `egui-node-graph`
+# that used to sit beside it as a CPU alternative is deleted: one node-graph engine,
+# and it is ours.
+[package]
+name = "egui-nodes-view"
+description = "Thin egui surface over nodes-rs's GPU node graph — re-exports nodes-egui + a ready SubnetHost"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/egui_nodes_view.rs"
+
+[dependencies]
+egui = { workspace = true }
+# The GPU node-graph engine + its ready egui bridge, from the sibling nodes-rs
+# repo. Consumed by ssh git-ref (like egui-ramp's `curves`) so a downstream
+# consumer of egui-widgets-rs resolves them too; nodes-egui pulls
+# nodes-view/wgpu/wgpu-text transitively (heavy — this is a GPU widget).
+nodes-egui = { git = "ssh://git@github.com/ssoj13/nodes-rs.git", branch = "main", package = "nodes-egui" }
+nodes-core = { git = "ssh://git@github.com/ssoj13/nodes-rs.git", branch = "main", package = "nodes-core" }

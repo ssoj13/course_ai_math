@@ -1,0 +1,33 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-dock-layout"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "Named egui_dock layouts: typed save/restore toolbar plus JSON persistence without the NaN-rect trap"
+
+[lib]
+path = "src/egui_dock_layout.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.egui_dock]
+version = "0.21"
+features = ["serde"]
+
+[dependencies.egui-layout-manager]
+path = "../egui-layout-manager"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1"
+
+[dependencies.thiserror]
+version = "2"

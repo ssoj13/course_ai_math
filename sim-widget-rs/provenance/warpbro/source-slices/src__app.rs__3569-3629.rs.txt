@@ -1,0 +1,61 @@
+    fn fixed_status_bar(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+            ui.label(RichText::new(&self.gpu_name).weak());
+            ui.label(if self.scene.camera.free_flight {
+                "Free flight · `"
+            } else {
+                "Horizon · `"
+            });
+            ui.separator();
+            if let Some(t) = self.current() {
+                ui.label(format!("{}×{}", t.width, t.height));
+                ui.separator();
+                if self.showing_preview {
+                    ui.label(RichText::new("preview").color(WARNING));
+                } else {
+                    ui.label(format!("{} / {} spp", t.samples, self.target_spp));
+                    ui.add(
+                        egui::ProgressBar::new(t.samples as f32 / self.target_spp as f32)
+                            .desired_width(120.0),
+                    );
+                }
+                ui.separator();
+                ui.label(format!("{:.1} Msamples/s", t.msamples_per_s()));
+                ui.separator();
+                ui.label(format!("{} spp/batch", self.spp_per_frame));
+                if t.denoised_samples > 0 {
+                    ui.separator();
+                    ui.label(format!(
+                        "OIDN {} spp · {:.1} ms",
+                        t.denoised_samples, t.denoise_ms
+                    ));
+                }
+                if let Some(error) = &t.denoise_error {
+                    ui.separator();
+                    ui.label(RichText::new("OIDN failed").color(WARNING))
+                        .on_hover_text(error);
+                }
+            }
+            ui.separator();
+            ui.label(format!("UI {:.0} fps", 1000.0 / self.frame_ms.max(0.1)));
+            if let Some(t) = self.current()
+                && t.unresolved > 0.0
+            {
+                ui.separator();
+                march_limit_label(ui, t.unresolved);
+            }
+            if !self.status.is_empty() {
+                ui.separator();
+                ui.label(RichText::new(&self.status).weak())
+                    .on_hover_text(&self.status);
+            }
+        });
+    }
+
+    /// A viewport click (Blender / Maya): the extras' wire under the cursor first (cameras,
+    /// lights, masks, groups, Bounds cubes), then a Bounds display's cube the cursor's ray
+    /// enters, else the fractal under it through one GPU ray of the shown frame
+    /// (`Command::Pick`, answered in [`Self::picked`]). Shift adds or removes; Ctrl focuses the
+    /// camera at the fractal under the cursor instead (depth of field); a click on nothing
+    /// clears the selection. Only what the viewport may select is picked.

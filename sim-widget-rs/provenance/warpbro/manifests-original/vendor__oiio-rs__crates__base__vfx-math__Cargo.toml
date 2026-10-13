@@ -1,0 +1,15 @@
+[package]
+name = "vfx-math"
+description = "Math utilities for VFX: matrices, interpolation, color math"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vfx-core = { workspace = true }
+glam = { workspace = true }
+wide = { workspace = true }
+
+[lints]
+workspace = true

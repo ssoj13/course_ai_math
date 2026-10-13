@@ -1,0 +1,32 @@
+# egui-encode-dialog — a generic, data-driven "export / encode settings" modal for egui.
+#
+# A staged modal (format → codec → options → frame range → output path → Start/Cancel)
+# driven entirely by a caller-supplied schema. The widget knows NOTHING about
+# concrete codecs (h264/ProRes/EXR/…), ffmpeg, file dialogs, or any host engine:
+# the caller describes its formats/codecs/options as data, the widget renders the
+# right editors and hands back the chosen values. (Gathered from playa's encode
+# dialog, decoupled from playa_engine/playa_io/ffmpeg and from rfd.)
+#
+[package]
+name = "egui-encode-dialog"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic, data-driven export/encode settings modal for egui (format → codec → options)"
+
+[lib]
+path = "src/egui_encode_dialog.rs"
+
+[dependencies]
+egui = { workspace = true }
+# THE path field, so an output path looks like every other path in the set. It reports the Browse
+# click and nothing more - opening a picker stays the host's job, exactly as before.
+egui-file-field = { path = "../egui-file-field" }
+egui-slider = { path = "../egui-slider" } # slim slider for the numeric editors
+# Shared design tokens + named icon constants (icons::CLOSE) for the
+# "codec not available" affordance. Host still registers the phosphor font.
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }

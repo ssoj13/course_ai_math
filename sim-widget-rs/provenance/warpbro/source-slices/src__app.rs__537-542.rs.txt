@@ -1,0 +1,6 @@
+fn f_row(label: &str, v: f32, range: std::ops::RangeInclusive<f32>, default: f32) -> AttrField {
+    AttrField::new(label, AttrValue::Float(v))
+        .with_ui_options(vec![range.start().to_string(), range.end().to_string()])
+        .with_default(AttrValue::Float(default))
+}
+/// A checkbox Settings row.

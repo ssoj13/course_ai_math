@@ -1,0 +1,69 @@
+    fn output_transform_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        ocio: &crate::ocio::Ocio,
+        current: &crate::ocio::Sel,
+        kind: crate::ocio::OutputKind,
+    ) {
+        let hdr = kind != crate::ocio::OutputKind::Sdr;
+        let resolved = self.settings.output.resolve_transform(ocio, current);
+        ui.label("Output transform").on_hover_text(
+            "The OCIO display / view this file is rendered through from ACEScg, independent of the viewport. Automatic: the scene's own view when it fits the format, else the config's first fitting display (PQ / HLG by name) and, for HDR, the view whose measured peak is nearest the HDR peak.",
+        );
+        ui.vertical(|ui| {
+            match &resolved {
+                Ok(Some((display, view))) => ui.label(format!("{display} · {view}")),
+                Ok(None) => ui.label("Built-in display (OCIO off)"),
+                Err(error) => ui.colored_label(egui::Color32::LIGHT_RED, error),
+            };
+            ui.horizontal(|ui| {
+                let owned = |v: Vec<&str>| v.into_iter().map(str::to_owned).collect::<Vec<_>>();
+                let displays = owned(
+                    ocio.displays(hdr)
+                        .into_iter()
+                        .filter(|d| ocio.display_is(d, kind))
+                        .collect(),
+                );
+                let before = self.settings.output.output_display.clone();
+                crate::ocio::combo(
+                    ui,
+                    "export.output_display",
+                    &mut self.settings.output.output_display,
+                    &displays,
+                    "auto",
+                );
+                if self.settings.output.output_display != before {
+                    self.settings.output.output_view.clear();
+                }
+                let display = if self.settings.output.output_display.is_empty() {
+                    resolved
+                        .as_ref()
+                        .ok()
+                        .and_then(Option::as_ref)
+                        .map(|(d, _)| d.clone())
+                        .unwrap_or_default()
+                } else {
+                    self.settings.output.output_display.clone()
+                };
+                let views = owned(
+                    ocio.views(&display, hdr)
+                        .into_iter()
+                        .filter(|v| ocio.view_is(&display, v, kind))
+                        .collect(),
+                );
+                ui.add_enabled_ui(!self.settings.output.output_display.is_empty(), |ui| {
+                    crate::ocio::combo(
+                        ui,
+                        "export.output_view",
+                        &mut self.settings.output.output_view,
+                        &views,
+                        "first",
+                    );
+                });
+            });
+        });
+        ui.end_row();
+    }
+}
+
+/// Autonomous coordinator: GUI ticks are never required to render or publish the next frame.

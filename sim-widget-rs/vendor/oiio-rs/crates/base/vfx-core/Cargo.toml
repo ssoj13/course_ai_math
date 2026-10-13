@@ -1,0 +1,37 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "vfx-core"
+description = "Core types for VFX image and color processing: Image, Pixel, ColorSpace"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ssoj13/oiio-rs"
+rust-version = "1.96"
+keywords = ["vfx", "image", "color", "aces", "openexr"]
+categories = ["graphics", "multimedia::images"]
+
+[features]
+default = ["rayon"]
+rayon = ["dep:rayon"]
+clap = ["dep:clap"]
+
+[dependencies.half]
+version = "2.7"
+
+[dependencies.thiserror]
+version = "2.0"
+
+[dependencies.rayon]
+version = "1.12"
+optional = true
+
+[dependencies.clap]
+version = "4.6"
+features = ["derive", "cargo"]
+optional = true
+
+[dev-dependencies.approx]
+version = "0.5"
+
+[lints.rust]
+unsafe_code = "deny"

@@ -1,0 +1,37 @@
+# egui-preset — a generic named-preset bar for egui.
+#
+# "Save / recall / delete named bundles of state", typed over a payload `T` that
+# the host chooses (a parameter struct, a look, a set of attribute rows, …). The
+# widget owns only the named slots, the current selection and the Save-As name
+# buffer; the host performs the capture and the apply, because the widget must
+# not know any application type.
+#
+# Recall is Maya-style *weighted*: a preset can be applied at 100 / 75 / 50 / 25 %,
+# so it reads as a nudge toward a look rather than an all-or-nothing switch. The
+# blend itself belongs to the host (it knows which of its fields are continuous
+# and which are discrete) — `egui-attr-grid` ships a ready one for `AttrValue`.
+#
+# Gathered from gitnexus-rs (`crates/egui-widgets/src/preset.rs`), where it drove
+# the graph style decks, and decoupled from that app's settings type.
+[package]
+name = "egui-preset"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic named-preset bar for egui — save/recall/delete typed state bundles with Maya-style weighted recall"
+
+[lib]
+path = "src/egui_preset.rs"
+
+[dependencies]
+egui = { workspace = true }
+# Shared icon vocabulary for the Save/Delete glyphs (host registers the phosphor
+# font) — the workspace icon convention.
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = "1"

@@ -1,0 +1,22 @@
+# egui-help-overlay — a translucent keyboard-shortcut / help overlay for egui.
+#
+# Renders titled sections of `[key | description]` rows into a translucent card,
+# laid out across N columns — the classic "press F1 for the cheat-sheet" overlay.
+# Generic: the caller supplies the sections (the widget owns no hard-coded
+# bindings). (Gathered from playa, with its app-specific key tables dropped.)
+[package]
+name = "egui-help-overlay"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Translucent, multi-column keyboard-shortcut / help overlay for egui"
+
+[lib]
+path = "src/egui_help_overlay.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

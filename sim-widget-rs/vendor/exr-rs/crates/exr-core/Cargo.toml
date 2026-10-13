@@ -1,0 +1,52 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+name = "exr-core"
+description = "Pure-Rust 1:1 port of OpenEXR (IlmImf): container, attributes, codecs, image API"
+keywords = ["exr", "openexr", "vfx", "hdr", "image"]
+categories = ["multimedia::images", "encoding", "parser-implementations"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/exr-rs"
+rust-version = "1.96"
+
+[dependencies.imath-rs]
+path = "../imath-rs"
+
+[dependencies.deflate-rs]
+path = "../deflate-rs"
+
+[dependencies.jph-rs]
+path = "../../../jph-rs"
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.murmur3]
+path = "../../../murmur3"
+
+[dependencies.rayon]
+version = "1"
+
+[dependencies.smallvec]
+version = "1"
+
+[dependencies.codec-simd]
+path = "../../../codec-simd-rs"
+
+[dev-dependencies.criterion]
+version = "0.8"
+default-features = false
+features = ["cargo_bench_support"]
+
+[features]
+test-data = []
+
+[[bench]]
+name = "codecs"
+harness = false
+
+[[bench]]
+name = "parallel"
+harness = false

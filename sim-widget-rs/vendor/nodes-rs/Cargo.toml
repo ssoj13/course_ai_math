@@ -1,0 +1,4 @@
+# Copy-only workspace; unrelated donor members and native app are not installed.
+[workspace]
+resolver = "3"
+members = ["crates/cam-controls", "crates/cam-viewport", "crates/nodes-core", "crates/nodes-view", "crates/nodes-egui"]

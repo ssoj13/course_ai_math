@@ -1,0 +1,27 @@
+# egui-track-timeline — a generic, multi-track NLE-style timeline widget for egui.
+#
+# Stacked tracks/clips drawn as bars over a time axis, with a draggable playhead,
+# adaptive frame grid, zoom + horizontal pan, and the four classic edit gestures
+# (move, trim-in, trim-out, slide). It carries NO application types: the caller
+# builds a flat `TimelineModel` each frame and applies the returned `TimelineAction`s
+# to its own model. Gathered from `playa`'s After-Effects-style timeline and fully
+# decoupled from the playa engine (no `Layer`/`Comp`/`Project`/`Uuid` dependencies).
+#
+[package]
+name = "egui-track-timeline"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A generic multi-track NLE-style timeline widget for egui (move/trim/slide, zoom, pan, playhead)"
+
+[lib]
+path = "src/egui_track_timeline.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+egui-pattern = { path = "../egui-pattern" }
+serde = { workspace = true }

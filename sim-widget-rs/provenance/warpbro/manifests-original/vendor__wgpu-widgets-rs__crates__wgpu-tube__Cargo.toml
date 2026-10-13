@@ -1,0 +1,19 @@
+[package]
+name = "wgpu-tube"
+version = "0.1.0"
+edition = "2024"
+description = "Procedural instanced cubic-bezier tube renderer for wgpu via GPU vertex pulling"
+license = "MIT"
+
+[lib]
+path = "src/tube.rs"
+
+[dependencies]
+wgpu = { workspace = true }
+glam = { workspace = true }
+bytemuck = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+pollster = { workspace = true }
+png = "0.18"

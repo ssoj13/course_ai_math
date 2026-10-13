@@ -1,0 +1,19 @@
+pub struct Sel {
+    /// OCIO is the display transform of the colour image (else the built-in one).
+    pub on: bool,
+    /// A config file or an `ocio://` URI; empty = `$OCIO`, else `ocio://default`.
+    pub config: String,
+    /// Display; empty = the first one offered.
+    pub display: String,
+    /// View; empty = the display's first one offered.
+    pub view: String,
+    /// Look applied instead of the view's own looks; empty = the view's looks.
+    pub look: String,
+    /// This config's name for the tracer's working space (linear AP1 / ACEScg); empty = found
+    /// automatically ([`Ocio::working_space`]). Not `input`: scenes saved while the input was a
+    /// free choice stored "Linear Rec.709", which would now shift every colour.
+    pub working_input: String,
+}
+
+/// The config `sel_config` stands for: itself, else `$OCIO` (the standard OCIO
+/// variable), else OCIO's default built-in (the ACES 2.0 CG config).

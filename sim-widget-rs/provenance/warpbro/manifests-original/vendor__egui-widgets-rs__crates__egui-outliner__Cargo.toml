@@ -1,0 +1,30 @@
+# egui-outliner — a generic collapsible hierarchy / outliner panel for egui.
+#
+# A scrollable, recursively-collapsing tree view with selection (single / ctrl /
+# shift-range), an ancestor-of-selected dimmed highlight, a caller-defined
+# right-click context menu, double-click-to-activate, a depth guard against
+# pathological scene graphs, and an optional colour legend. The widget owns NO
+# tree state: the caller passes a flat `OutlinerModel` (a `Vec<TreeNode>` of
+# roots + a selection list) and gets back a `Vec<OutlinerAction>` to apply.
+#
+# Gathered from vfx-view's USD prim-tree panel (`prim_tree.rs`) and FULLY
+# decoupled from USD/pxr: node ids are plain `u64` (callers hash/truncate their
+# own UUID/path), labels + type labels are caller strings, and the USD-specific
+# glue (variant-set combos, draw-mode, Imageable visibility, payload load/unload,
+# model paths) is dropped — the host supplies its own menu via `context_items`.
+[package]
+name = "egui-outliner"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic collapsible hierarchy/outliner panel for egui, with selection, ancestor highlight and caller-defined context menu — no app types"
+
+[lib]
+path = "src/egui_outliner.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

@@ -1,0 +1,71 @@
+//! Per-control file-dialog preferences, independent of documents and undo.
+//! Stable keys let unrelated controls retain separate directories and filters.
+//! Observation only clones changed values; persistence uses the existing I/O worker.
+use egui_file_dialog::{DialogState, FileDialog};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
+
+pub const SCENE_OPEN: &str = "scene.open";
+pub const SCENE_SAVE: &str = "scene.save";
+pub const ENVIRONMENT: &str = "environment.path";
+pub const OCIO: &str = "colour.config";
+pub const TAKE_EXPORT: &str = "take.export";
+pub const TAKE_IMPORT: &str = "take.import";
+
+#[derive(Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+
+pub struct History {
+    pub directories: HashMap<String, PathBuf>,
+    /// Missing key uses the control's default; explicit None means All files.
+    pub filters: HashMap<String, Option<String>>,
+}
+
+impl History {
+    pub fn prepare(
+        &self,
+        mut dialog: FileDialog,
+        key: &str,
+        fallback: Option<&Path>,
+        default_filter: &str,
+    ) -> FileDialog {
+        dialog = dialog.id(egui::Id::new(key));
+        if let Some(directory) = self
+            .directories
+            .get(key)
+            .map(PathBuf::as_path)
+            .or(fallback)
+            .filter(|p| !p.as_os_str().is_empty())
+        {
+            dialog = dialog.initial_directory(directory.to_path_buf());
+        }
+        let filter = self
+            .filters
+            .get(key)
+            .map(|f| f.as_deref())
+            .unwrap_or(Some(default_filter));
+        dialog.config_mut().default_file_filter = filter.map(str::to_owned);
+        dialog
+    }
+
+    /// Retain navigation and filter changes even when the user cancels.
+    /// Closed dialogs must not overwrite a control's history.
+    pub fn observe(&mut self, key: &str, dialog: &FileDialog) {
+        if matches!(dialog.state(), DialogState::Closed) {
+            return;
+        }
+        if let Some(directory) = dialog.directory()
+            && self.directories.get(key).map(PathBuf::as_path) != Some(directory)
+        {
+            self.directories
+                .insert(key.to_owned(), directory.to_path_buf());
+        }
+        let filter = dialog.selected_file_filter().map(|f| f.name.as_str());
+        if self.filters.get(key).map(|f| f.as_deref()) != Some(filter) {
+            self.filters
+                .insert(key.to_owned(), filter.map(str::to_owned));
+        }
+    }
+}
+

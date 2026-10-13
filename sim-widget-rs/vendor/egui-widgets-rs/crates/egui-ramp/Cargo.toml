@@ -1,0 +1,29 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-ramp"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "A reusable generic egui ramp editor — value-remap curve + colour gradient (Houdini ramp / Nuke LUT / Maya remapValue)"
+
+[lib]
+path = "src/egui_ramp.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.curves]
+path = "../../../curves-rs"
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"
+
+[dependencies.egui-colorpicker]
+path = "../egui-colorpicker"
+
+[dev-dependencies.egui_kittest]
+version = "0.36"
+features = ["wgpu", "snapshot"]

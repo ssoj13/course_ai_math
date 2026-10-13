@@ -1,0 +1,37 @@
+# egui-viewport-overlays — generic 3-D viewport overlays painted with egui.
+#
+# Axis indicator, world-AABB / camera-frustum wireframes, ground grid, camera
+# letterbox mask + reticles. Pure egui painter primitives over a caller-supplied
+# view / projection matrix. The widget owns NO scene and NO GPU — it only paints
+# on top of an already-rendered viewport rect.
+#
+# (Gathered from vfx-rs `vfx-view/src/panels/overlays.rs`, which was coupled to
+# `usd_gf::{Matrix4d, Vec3d}`. Those USD math types were replaced by a tiny
+# in-crate row-major `Mat4` / `Vec3` so the crate stays hermetic — see CLAUDE.md.
+# The projection math (USD/Imath row-vector `clip = point * VP`) is preserved
+# verbatim, so axis/bbox/grid/oracle placement is bit-identical to vfx-view.)
+
+[package]
+name = "egui-viewport-overlays"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic 3-D viewport overlays for egui: axes, bbox/frustum wireframes, ground grid, camera mask + reticles"
+
+[lib]
+path = "src/egui_viewport_overlays.rs"
+
+[dependencies]
+# `serde` feature is not needed on egui here; OverlayState is plain bools + f64,
+# so a derive on our own type is enough for layout persistence.
+egui = { workspace = true }
+# Shared X/Y/Z axis-colour convention (the axis indicator's line + label colours
+# come from the one workspace source instead of local hardcoded constants).
+egui-widgets-config = { path = "../egui-widgets-config" }
+# NDC -> screen: the gizmo's viewport transform, so overlays and gizmo share one formula.
+egui-gizmo = { path = "../egui-gizmo" }
+glam = { workspace = true }
+serde = { workspace = true }

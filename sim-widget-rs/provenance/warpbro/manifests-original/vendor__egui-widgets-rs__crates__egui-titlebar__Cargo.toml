@@ -1,0 +1,21 @@
+# egui-titlebar — full-width collapsible section chrome.
+#
+# A painted title bar (open/closed icon + label + colour tint) and an optional
+# CollapsingSection wrapper that shows/hides a body. Hermetic — no app types.
+# Colour coding is caller-supplied (tint colour + mix amount).
+[package]
+name = "egui-titlebar"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Full-width tinted title bar + collapsing section for egui"
+
+[lib]
+path = "src/egui_titlebar.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

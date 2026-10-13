@@ -1,0 +1,24 @@
+# egui-statusbar — a reusable sectioned, resizable status bar for egui.
+#
+# N sections separated by draggable vertical splitters (drag to resize,
+# double-click to reset); the last section flexes to fill the remainder. Each
+# section's content is a caller closure drawn into a clipped child UI. Per-section
+# widths persist via a small serde layout struct. Generic — no app types — so it is
+# reused by exr-view and any other egui app (mirrors DCC status bars: Maya/Houdini).
+[package]
+authors.workspace = true
+name = "egui-statusbar"
+description = "A reusable sectioned, splitter-resizable egui status bar"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/egui_statusbar.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }

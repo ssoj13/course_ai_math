@@ -1,0 +1,289 @@
+# Changelog
+
+## 2026-10-10
+
+- `GpuLimits::tiling_reason_rows(width, height, row_bytes)`: the fit of a buffer whose rows are PADDED (a Byte RGB
+  row of 4093 px is 12280 bytes, not a whole number of 4-byte pixels); `tiling_reason` is the same question for a
+  whole-pixel row. The caller owns what `row_bytes` is (ofx-host-wgpu `FrameFormat::row_bytes`).
+- `AdapterKey` (`vram.rs`): the identity `VramWatch` keys its cache by - the wgpu adapter handle, so two identical
+  cards are told apart and a cache hit allocates nothing (no `get_info`, no `format!` per call).
+  `VramWatch::budget_with` takes it instead of a text key; `budget(ctx)` is source-compatible.
+- `AdapterKey` is instance-safe: the adapter handle AND the driver's physical identity (LUID from DX12 or Vulkan
+  `VkPhysicalDeviceIDProperties`, else the device UUID), computed once in `AdapterKey::of`. Adapters of two
+  `wgpu::Instance`s that share a wgpu id are told apart; backends reporting no identity (Metal, GL) compare the handle
+  only (documented).
+- Windows: the DXGI adapter of a budget query is matched by LUID, not by name, so two identical cards no longer get the
+  first card's budget; no LUID means unreported.
+- Linux: `VK_EXT_memory_budget` support and Vulkan >= 1.1 are checked before the budget struct is chained.
+- Linux/Android/FreeBSD: the budget is the live `VK_EXT_memory_budget` figure of the largest device-local heap (what
+  other processes use is subtracted), as DXGI's Budget on Windows; it was the static sum of all device-local heaps.
+  No extension: `None` (unreported), never the static size.
+- `VramWatch` is bound to its device: the cache is keyed by the adapter (vendor, device id, name) and an adapter
+  asked about after another is read again, never answered from the first one's cache. A recovery after a failed
+  reading is logged once and re-arms the failure log. Doc: the query must not call the watch (deadlock). Tests use
+  `Duration::ZERO` / `Duration::MAX` instead of sleeping.
+- `VramWatch` (`vram.rs`): a rate-limited reading of the OS VRAM budget (`vram_budget_from_context`) for a consumer
+  whose pool quota follows it (`ResourcePool::set_budget`). The reading is cached for the watch's interval; a failed
+  one is cached the same way (retried after the interval, never remembered as a permanent zero) and logged once.
+  `const fn new`, so a process-wide static works; `budget_with(query)` drives the rate limit in tests. First
+  consumer: ofx-runtime's GPU renderer.
+
+## 2026-10-09
+
+- `ResourcePool` byte budget is adjustable at run time: `set_budget(bytes)` (a lower budget evicts the least
+  recently returned idle resources at once, removed under the pool lock and dropped after it; 0 keeps nothing;
+  raising resurrects nothing) and `budget()`. `put` reads the budget under the lock, so a concurrent lowering is
+  never undone. Consumers whose quota follows a live figure (ofx-finish: the OS VRAM budget) use the one pool
+  instead of their own idle lists. Tests: lowering evicts the oldest, 0 disables, raising resurrects nothing.
+- Strict rustdoc (`RUSTDOCFLAGS=-D warnings`, default and all features) is clean: module-doc links resolve at
+  the crate root, so links to non-reexported, private or feature-gated items became paths or code spans, and
+  the `pipeline_cache` / `wait` function-or-module links are disambiguated.
+
+## 2026-10-08
+
+- Validated ResourcePool eviction outside its metadata lock and bounded rechecks.
+- Fixed the RAM-budget smoke to use one snapshot for formula assertions; a separate
+  OS-query smoke no longer races changes in available RAM during parallel builds.
+- Final gates: 49 release library tests passed (15 separately ignored), explicit
+  WGPU workspace reuse/dirty-clear/completion test passed, strict all-target/
+  all-feature Clippy passed. These are local Windows receipts.
+
+
+All notable changes to `gpu-info-rs` are documented here.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); the crate is not
+published to crates.io, so consumers pin it by git ref rather than by version.
+
+## [Unreleased]
+
+### Pool retirement and dependency source update (2026-10-07, unverified)
+
+- Destroy evicted ResourcePool resources outside the metadata mutex. Retain bounded
+  retries and recheck capacity before promotion; add an unexecuted destructor-lock
+  probe. Buffer completion/unmap/scope requirements remain unchanged.
+- Refresh compatible dependencies to wgpu 30.0.1 and current Git heads.
+  This follow-up remains uncommitted/unpushed; b1780cd is the published pool checkpoint.
+  No build/test/hardware receipt is added. The operator deferred intermediate gates.
+
+
+### Shared compute buffers (2026-10-07, source checkpoint)
+
+- Add `ResourcePool::with_limits` with a byte and entry ceiling, fallible metadata
+  retention and overflow-safe return accounting. The existing byte-only constructor
+  preserves its behavior. New pure tests cover zero-sized entry growth and u64 limits.
+- Add `COMPUTE_BUFFERS`: one 512-MiB/256-entry idle buffer pool for the canonical
+  `compute_device()`, separate from application/shared-device resources and active
+  job admission. `BufferWorkspace` gates reuse on explicit completed-job recycling;
+  incomplete jobs drop their handles. Foreign devices retain unpooled allocations.
+- Provide exact logical buffers, explicit encoder clears, full-overwrite destinations
+  and typed upload/overwrite without intermediate byte vectors. MAP_WRITE is refused;
+  readback views must be dropped and unmapped, and enclosing device error scopes must
+  succeed before recycling. Add an ignored hardware dirty-buffer/clear/recycle oracle.
+- Source review and standalone formatting only. No builds/tests or GPU acceptance ran
+  for this checkpoint under the operator's stop-build instruction.
+
+### Documentation (2026-10-07)
+
+- Clarify the native Vulkan consumer predicate, the opaque `VulkanShared` API on other
+  native targets and ordinary Metal device creation on macOS. Consumers must guard raw
+  handle/HAL access at compile time; runtime `None` checks are insufficient.
+- Record the source boundary: GPU-info fix `35a81c9` (2026-10-06), downstream FFmpeg
+  bridge fix `5f0e71c`, and Playa consumer `a03156b`. This refresh adds no source change,
+  compile/test receipt or macOS link/hardware acceptance.
+
+### Fixed
+- Native backend selection now matches wgpu 30: Vulkan device sharing and `ash` compile only on
+  Windows, Linux, Android, and FreeBSD; macOS and other native targets retain the portable
+  `SharedGpu::vulkan` API as `None` and use their ordinary backend (Metal on macOS). This fixes
+  macOS builds without requiring MoltenVK or changing the Windows/Linux Vulkan fast path.
+- macOS display profile discovery now uses the public
+  `ColorSyncProfileCreateWithDisplayID`/`ColorSyncProfileGetURL` API and the correct `CFIndex`
+  ABI, replacing a nonexistent `ColorSyncProfileCopyURLForDisplay` symbol that failed at link time.
+- Unix executable startup: module pinning now recognizes the running executable and returns
+  success without `dlopen`. glibc rejects opening PIE executables, which made `shared_device()`
+  and `compute_device()` return `None` before GPU negotiation. Shared libraries still use
+  `RTLD_NOLOAD | RTLD_NODELETE`. The existing idempotent-pinning regression test now passes on Linux.
+
+### Added
+- `budget`: THE RAM / VRAM budget formulas, moved from exv-tile and scancache so the cluster's 7 ad-hoc formulas can
+  delegate. `Policy::{Installed, Available, Min}` (default `Min`), pure `ram_budget_from`, OS `ram_budget` /
+  `ram_budget_or` (explicit override wins), typed `BudgetError` instead of invented defaults; `vram_share`,
+  `vram_budget_from`, `vram_budget`, `live_headroom`, `plan_vram` / `VramPlan` / `VramError` + `POOL_*` (exv-tile
+  numbers pinned by tests). Additive: no existing API changed.
+- `external` (Windows): `SharedBuffer` - one allocation as a `wgpu::Buffer` on two devices of the same GPU through
+  Vulkan `OPAQUE_WIN32` memory (export / unsafe import with the exporter's size and memory type, dedicated;
+  `acquire` / `release` for `VK_QUEUE_FAMILY_EXTERNAL`; `device_uuid`). Hardware test: a pattern written on the
+  compute device reads back on the shared device and the other way, clean under the Khronos validation layer.
+- `pool::Gate` (`enter` / `enter_owned`): bounds the jobs taking from one pool to what its budget holds.
+- `GpuImage::from_pool` / `return_to` / `write_rgba_f32` / `texture_key`: pooled images.
+- `pool`: `ResourcePool<R: Pooled>` (bounded, per device; `const fn new`), `BufferKey` / `TextureKey`,
+  `take_buffer` / `take_texture`: reuse frame-sized GPU resources instead of allocating and freeing them per frame
+  (`vkFreeMemory` stalls measured up to 668 ms).
+
+- **Labelled submissions and their stats**: `submit(queue, label, commands)`; `submit_stats()` gives, per label, the
+  count, how many are in flight, and the summed / longest time from `submit` to observed completion (queueing
+  included); a submission slower than `SLOW_SUBMISSION` (50 ms) is logged at debug level. What names the work that
+  holds a device's queue, without timestamp queries. Hardware test (red when the time is not recorded).
+- **`compute_device()`: a process-wide device of its own for GPU work read back to host memory** (the OpenFX
+  effects' CPU-site compute). A device has one queue: a long dispatch on the device the UI presents on holds every
+  UI frame behind it (400 ms median), while on another device of the same adapter the OS time-slices the two at
+  workgroup boundaries (12 ms median for 16384 groups of ~450 ms of work; 110 ms for 4096 groups, 465 ms for 1024 -
+  so work on it must keep each workgroup short). Same negotiation as `shared_device` without video extensions;
+  devices are created one at a time (`DEVICE_CREATION`). Hardware test: small work on the shared device waits
+  < 50 ms beside 16384-group dispatches on the compute device (red, 403 ms, when both are one device).
+
+### Changed
+
+- **`submit` + `wait`: no blocking or timed `Device::poll` anywhere.** `gpu_info::submit(queue, commands) ->
+  Submission` registers the submission's `on_submitted_work_done` callback; `wait` / `wait_idle` / `map_read` poll
+  with `PollType::Poll` and sleep on a condvar (`POLL_PERIOD` 1 ms). The sliced timed wait of the previous change
+  still panicked wgpu-core 30 (`device/resource.rs:948`: `Queue::submit` runs `maintain(Poll)` inline and can
+  retire the awaited submission between another waiter's fence read and queue check; seen with Playa's own
+  readback index). `ReadbackError` -> `WaitError`; `WAIT_SLICE` -> `POLL_PERIOD`; `map_read(device, slice)`.
+  `clippy.toml` disallows `wgpu::Device::poll` and `wgpu::Queue::submit` outside `wait.rs`. Hardware tests: a
+  waiter holds no release behind the GPU (red with a blocking poll), `wait` ends only after the work (red when it
+  returns early).
+- **`map_read(device, &submission, slice)` takes the copy's submission**: no wait ever asks for "the last
+  submission" (`PollType::Wait { submission_index: None }`). wgpu-core 30 advances
+  `last_successful_submission_index` before it tracks the submission, so a sliced wait for it that timed out
+  beside a concurrent `submit` found the queue empty below its index and panicked (`device/resource.rs:948`, seen in
+  Playa's fractal render). An index `submit` returned is always tracked.
+- **Every GPU wait is sliced: `gpu_info::wait(device, &submission)` and `map_read`** (module
+  `readback` renamed `wait`). wgpu-core 30 `Device::maintain` holds the device's snatch lock across
+  its fence wait, and `Surface::present` / `Buffer::destroy` take it for writing: one thread's
+  `wait_indefinitely` froze a UI's `present` for as long as the GPU worked (Playa: 1.8 s). The waits
+  now poll in slices of `WAIT_SLICE` (1 ms), so a present waits one slice at most; a submission index
+  is waited for, never "the last submission" (`wait_idle(device, queue)` waits for everything
+  submitted so far, for tests and teardown). Hardware test
+  `wait::tests::a_waiter_does_not_hold_a_present_behind_the_gpu` (red with an unsliced wait).
+
+### Added
+
+- **The shared device enables `VK_KHR_external_semaphore_win32` where the adapter has it** (Windows,
+  `shared_vk::INTEROP_EXT`, recorded in `VulkanShared::device_extensions`): images shared with OpenGL (ofx-rs
+  `ofx-host-wgpu`, the OpenFX OpenGL render site) are handed over with exported semaphores, which no `wgpu::Features`
+  bit asks for; without it every application on the shared device was refused that site. The hardware test asserts
+  it is enabled exactly when available. `cbe65c7` (2026-09-28).
+- **`readback::{map_read, block_on, ReadbackError}`: the one blocking buffer-readback wait.**
+  `map_read(device, slice)` requests a read map, polls with `wait_indefinitely`, and waits for the
+  callback on a mutex and condition variable (never a channel or `thread::park`, which reach
+  `std::thread::current()` and on glibc pin a plug-in image to the host thread). A callback wgpu drops
+  uncalled is `ReadbackError::Dropped`, not a hang. `GpuImage::read_rgba_f32` uses it (its error
+  variants are unchanged); ofx-rs `ofx::gpu_wgpu` and `ofx-fractal` replace their own copies with it.
+  Tests: `readback::tests::dropped_callback_reports_dropped`, and the ignored GPU
+  `map_read_returns_written_bytes`.
+
+### Changed
+
+- **`shared_device()` honours wgpu's instance-level environment variables.** Its instance now comes
+  from `shared_instance_descriptor()` = `InstanceDescriptor::new_without_display_handle_from_env()`,
+  so `WGPU_BACKEND` (e.g. `dx12`, `vulkan`) selects the shared device's backend for the whole process,
+  and the `InstanceFlags` and backend-option variables (`WGPU_VALIDATION`, `WGPU_DX12_COMPILER`, ...)
+  apply. With none set the descriptor equals the previous one. The adapter request stays
+  high-performance, non-fallback (`WGPU_POWER_PREF` / `WGPU_ADAPTER_NAME` are not read). Needed to
+  run one consumer's GPU parity checks on DX12 as well as Vulkan. Regression:
+  `tests/backend_env.rs` (ignored: needs a GPU) runs its own binary as children with
+  `WGPU_BACKEND=dx12` and `=vulkan` and requires that backend (a backend without an adapter is
+  reported SKIPPED); before the change the DX12 child got Vulkan. A unit test checks that without
+  the variable the backend set is unchanged.
+
+### Fixed
+
+- **`shared_device()` pins the module that contains it before negotiating.** The shared device is
+  process-lifetime state: a `static` that is never dropped, plus the threads wgpu runs for it. Linked
+  into a dynamically loaded module (an OpenFX plug-in) that the host later unloaded, that state
+  outlived its code. An OpenFX host crashed with `0xC0000005` at
+  `<Unloaded_ofx_example_fractal.dll>+0xb9ef01` = `std::thread::Thread::park+0x71` on the thread
+  "wgpu-hal WGL Instance Thread", which parks inside wgpu code for its instance's lifetime and
+  returned into the unmapped image when it woke. Every reload also negotiated a new device in a new
+  copy of the `static`: measured +230 MB private memory and +57 handles per load/unload cycle, and
+  an OFX loaded-test process reached 20 GB and 4,409 handles. Now `GetModuleHandleExW(FROM_ADDRESS |
+  PIN)` on Windows, and `dladdr` + `dlopen(RTLD_NOW | RTLD_NOLOAD | RTLD_NODELETE)` on Unix, keep the
+  image mapped; later loads reuse it, so the negotiation stays ONE per process. A module that cannot
+  be pinned gets no device (`None`, error logged with the reason). In an executable the pin is a
+  no-op.
+- Regression: `tests/unload_regression.rs` (ignored: needs a GPU, Windows) builds the
+  `unload_probe_dll` cdylib fixture and the `unload_probe` example, which loads, negotiates and
+  unloads the fixture 6 times. It requires the image to stay mapped, exactly one live thread starting
+  inside it per cycle, and flat private memory and handles. Before the fix: the image unmapped every
+  cycle, threads accumulated, and +1,190 MB / +386 handles over 6 cycles. After: 304 MB / 435 handles
+  in every cycle.
+
+### Known issues
+
+See `TODO.md`: the GL backend's WGL thread (a separate decision), and two pre-existing gates
+(macOS `cargo check` of `shared_vk`, strict rustdoc links), both present at `8035f5a` before this
+change.
+
+### Added
+
+- **`VulkanShared` hands over QUEUES, not families.** `main_queue`, `decode_queue` and the new
+  `compute_queue` are `(family, index)` pairs, because the index is what decides whose queue a
+  handle is: `vkQueueSubmit` is externally synchronised, so a consumer that guessed index `0`
+  could get the one wgpu is already submitting to from another thread. `compute_queue()` and
+  `decode_queue()` fetch the `VkQueue` for their pair.
+- **A compute queue is reserved for the decoder's in-place read.** The video-decode family cannot
+  dispatch compute and the renderer's queue is not ours, so a consumer that wants to read a
+  decoded picture where it lies needs a third queue. Preference: a compute family of its own,
+  then a second queue in wgpu's family (wgpu keeps index 0, so index 1 is free, and the count is
+  raised by replacing that entry's priority slice — one create-info per family is a hard rule,
+  `VUID-VkDeviceCreateInfo-queueFamilyIndex-02802`), then none, said out loud. On an RTX 3080 Ti:
+  wgpu `(0,0)`, decode `(3,0)`, compute `(2,0)`.
+- **`device_api_version` beside `instance_api_version`, and `usable_api_version()` — the lower of
+  the two.** That is the number a consumer must gate on.
+
+### Fixed
+
+- **The published API version was the loader's, not the device's.** wgpu fills
+  `instance_api_version` from `vkEnumerateInstanceVersion` and then pins the application version
+  to 1.3 whenever the loader is 1.1 or better. What decides whether a device entry point exists
+  is the physical device's `apiVersion` — and ash fills an unloadable slot with a stub that
+  PANICS at the first call, inside whichever library made it. A 1.3 loader in front of a 1.2
+  driver would have passed every check and then panicked mid-decode.
+- **`synchronization2` was reported as `true` unconditionally**, because this crate chains the
+  feature struct on. A driver may ignore a chain entry it does not recognise and still create the
+  device, so below 1.3 without `VK_KHR_synchronization2` the flag claimed a feature nothing had
+  enabled — and every `2`-form barrier a decoder records against such a device is undefined
+  behaviour. The struct is now chained only where the feature can exist, the extension is
+  requested when it is the extension that provides it, and the flag is read back from the device.
+- **wgpu's own queue family was inferred** from the first queue create-info through an
+  `AtomicU32`. `Device::queue_family_index()` and `queue_index()` are public in wgpu-hal 30; they
+  are read directly now, and the family wgpu hard-codes is verified rather than assumed — if it
+  ever changes, sharing stops instead of quietly handing over the renderer's queue.
+- **A video-decode family that IS wgpu's family was shared silently.** It is refused now: that is
+  two unsynchronised submitters wearing one handle, and nothing downstream could detect it.
+- **The `synchronization2` feature struct was `Box::leak`ed** once per call. wgpu-hal's callback
+  signature (`CreateDeviceCallback<'this>`, `'this: 'pnext`) lets a local outlive
+  `vkCreateDevice`, so it is a local now.
+- `limits.rs` no longer converts `max_storage_buffer_binding_size` to `u64`; it is already `u64`
+  in wgpu 30.
+
+- **`gpu_info::stats` — live GPU counters cheap enough to poll from a UI frame loop.**
+  `stats::query()` returns [`GpuStats`] with device utilisation, GPU-resident memory, total
+  addressable memory and a `unified` flag.
+  - **macOS**: IOKit `IOAccelerator` → `PerformanceStatistics` (`Device Utilization %`,
+    `In use system memory`) plus `sysctlbyname("hw.memsize")`. Unprivileged — the same source
+    Activity Monitor graphs. Measured **33 µs per call** on an Apple M4 Pro.
+  - **Linux**: DRM sysfs (`gpu_busy_percent`, `mem_info_vram_used`, `mem_info_vram_total`)
+    for `amdgpu` / `i915` / `xe`.
+  - **Module contract: no process spawns, ever.** Anything that cannot be answered by a
+    syscall or a sysfs read is reported as `None` instead of falling back to a spawn, so a
+    caller can poll at 1-10 Hz without hitching its UI thread.
+  - Requires no new dependencies and no wgpu: the IOKit and CoreFoundation entry points are
+    declared locally, and all `unsafe` is confined to `stats/apple.rs` behind RAII wrappers.
+
+### Changed
+
+- `os.rs`: collapsed a nested `if` so `cargo clippy --all-targets -- -D warnings` passes
+  again. No behaviour change.
+
+### Notes for consumers
+
+- Pick the right module: **`stats`** for monitors and per-frame polling, **`os`** for one-shot
+  capability probes. `os::query()` shells out to `system_profiler` / `nvidia-smi` and costs
+  roughly a second per call on macOS — correct for a start-up probe, wrong for a graph.
+- NVIDIA utilisation is deliberately absent from `stats`: those counters live behind NVML,
+  and `nvidia-smi` would violate the no-spawn contract. NVML can be added behind a feature
+  without changing the public shape of [`GpuStats`].
+
+[`GpuStats`]: https://docs.rs/gpu-info-rs/latest/gpu_info/stats/struct.GpuStats.html

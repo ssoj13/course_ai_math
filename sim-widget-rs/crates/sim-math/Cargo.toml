@@ -1,0 +1,14 @@
+[package]
+name = "sim-math"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace = true
+sim-model.workspace = true
+libm = "0.2"

@@ -1,0 +1,21 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "cam-controls"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Host-agnostic camera rigs: orbit, fit, inertia, transitions, fly/spaceflight (RH Y-up, glam). Copied from gitnexus-rs cam-controls."
+
+[dependencies.cam-viewport]
+path = "../cam-viewport"
+
+[dependencies.glam]
+version = "0.33.2"
+features = ["serde"]
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dev-dependencies]
+approx = "0.5"

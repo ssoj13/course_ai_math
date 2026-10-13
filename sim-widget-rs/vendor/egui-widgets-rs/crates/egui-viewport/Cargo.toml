@@ -1,0 +1,24 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-viewport"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "Generic 2-D image viewport for egui: pan / zoom / fit / home, pixel readout, channel isolation, scrub reporting"
+
+[lib]
+path = "src/egui_viewport.rs"
+
+[dependencies.egui]
+version = "0.36"
+features = ["serde"]
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]

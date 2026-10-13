@@ -1,0 +1,28 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "wgpu-node"
+version = "0.1.0"
+edition = "2024"
+description = "Procedural instanced 3D node-card renderer for wgpu (rounded/beveled box + title/footer bars), themed by ui-theme."
+license = "MIT"
+
+[lib]
+path = "src/node.rs"
+
+[dependencies.wgpu]
+version = "30"
+default-features = false
+features = ["vulkan", "gles", "metal", "std", "wgsl"]
+
+[dependencies.glam]
+version = "0.33.2"
+
+[dependencies.bytemuck]
+version = "1"
+features = ["derive"]
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.ui-theme]
+path = "../ui-theme"

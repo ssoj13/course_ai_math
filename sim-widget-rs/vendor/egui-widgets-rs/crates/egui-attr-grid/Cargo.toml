@@ -1,0 +1,48 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-attr-grid"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "egui [label | value] attribute editor grid with typed editors, resizable splitter, and mixed-value support"
+
+[lib]
+path = "src/egui_attr_grid.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"
+
+[dependencies.egui-slider]
+path = "../egui-slider"
+
+[dependencies.egui-colorpicker]
+path = "../egui-colorpicker"
+
+[dependencies.egui-splitter-table]
+path = "../egui-splitter-table"
+
+[dependencies.egui-preset]
+path = "../egui-preset"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.egui-file-field]
+path = "../egui-file-field"
+
+[dependencies.egui-font-picker]
+path = "../egui-font-picker"
+
+[dev-dependencies]
+serde_json = "1"
+
+[dev-dependencies.egui_kittest]
+version = "0.36"
+features = ["wgpu", "snapshot"]

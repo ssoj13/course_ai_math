@@ -1,0 +1,21 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "vfx-icc"
+description = "ICC color profile support for VFX pipelines"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.96"
+
+[dependencies.lcms-rs]
+path = "../../../../lcms-rs"
+
+[dependencies.bytemuck]
+version = "1.25"
+features = ["derive"]
+
+[dependencies.thiserror]
+version = "2.0"
+
+[lints.rust]
+unsafe_code = "deny"

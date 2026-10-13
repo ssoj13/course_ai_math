@@ -1,0 +1,28 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-gizmo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "WIP: a production-grade hybrid 2D/3D transform gizmo for egui"
+license = "BSD-3-Clause AND (MIT OR Apache-2.0)"
+
+[lib]
+path = "src/egui_gizmo.rs"
+
+[dependencies]
+enumset = "1.1"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.glam]
+version = "0.33"
+
+[dev-dependencies.eframe]
+version = "0.36"
+default-features = false
+features = ["wgpu", "default_fonts"]
+
+[dev-dependencies.egui-colorpicker]
+path = "../egui-colorpicker"

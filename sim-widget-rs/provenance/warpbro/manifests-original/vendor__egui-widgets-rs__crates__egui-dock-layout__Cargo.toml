@@ -1,0 +1,37 @@
+# egui-dock-layout — named layouts for `egui_dock`, persisted safely.
+#
+# Two halves that every docking app ends up writing by hand:
+#
+# 1. PERSISTENCE. `serde_json::to_string(&dock_state)` looks like the whole job and hides a
+#    trap: `DockState` carries the layout rects it computed on the last frame, and a node that
+#    has never been drawn carries NaN ones. `serde_json` writes NaN as `null` and then refuses
+#    to read it back as `f32`, so a layout captured before its window was first drawn is
+#    PERMANENTLY unloadable. Hosts apply layouts with `if let Ok(..)`, so the failure is silent
+#    and the user just sees their arrangement reset. This crate strips the rects (they are
+#    recomputed on the next frame anyway) so a blob always loads.
+#
+# 2. THE WIDGET. The named-layout toolbar is not reimplemented here: it composes
+#    `egui-layout-manager`, which owns that UX and stays deliberately dock-agnostic. This crate
+#    only adds the typed skin over it, so a host hands over a `DockState` and gets a `DockState`
+#    back instead of hand-rolling the serialization that step 1 is about.
+[package]
+name = "egui-dock-layout"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Named egui_dock layouts: typed save/restore toolbar plus JSON persistence without the NaN-rect trap"
+
+[lib]
+path = "src/egui_dock_layout.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui_dock = { workspace = true }
+# The toolbar UX (combo + save/delete/rename) lives there; this crate is its typed wrapper.
+egui-layout-manager = { path = "../egui-layout-manager" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,22 @@
+# egui-spinner — a tiny custom-painted "busy" throbber.
+#
+# An indeterminate rotating-arc spinner, the busy complement to the determinate
+# egui-progressbar sibling. egui ships its own `egui::Spinner`, but this crate
+# gives a sized/coloured convenience with defaults consistent with the rest of
+# this widget set (weak-text colour, interact-size default). Generic — no app
+# types. See CLAUDE.md for the egui::Spinner wrap-vs-reimplement rationale.
+[package]
+name = "egui-spinner"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A tiny indeterminate rotating-arc spinner (busy throbber) for egui"
+
+[lib]
+path = "src/egui_spinner.rs"
+
+[dependencies]
+egui = { workspace = true }

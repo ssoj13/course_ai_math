@@ -1,0 +1,27 @@
+[package]
+name = "nodes-core"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+description = "Headless computational node graph (Subnet, cook, RustBox)"
+license = "MIT"
+
+[dependencies]
+log = { workspace = true }
+box-rs = { workspace = true }
+rhai = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
+
+graph-layout = { workspace = true }
+flex-geom = { workspace = true }
+ui-theme = { workspace = true }
+
+# Pure-Rust image codecs for the LoadImage / SaveImage builtins (no FFI). Explicit codec set keeps
+# it lean (no rayon / default extras).
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "bmp", "gif", "tiff", "webp"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }

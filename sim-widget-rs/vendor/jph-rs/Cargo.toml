@@ -1,0 +1,42 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "jph-rs"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Pure Rust one-to-one port of OpenJPH for HTJ2K/JPH codestream processing"
+license = "BSD-3-Clause"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+repository = "https://github.com/ssoj13/jph-rs"
+homepage = "https://github.com/ssoj13/jph-rs"
+keywords = ["htj2k", "jpeg2000", "openjph", "j2k", "codec"]
+categories = ["multimedia::images", "compression"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ojph"
+path = "src/bin/ojph.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "ojph_bench"
+path = "src/bin/ojph_bench.rs"
+required-features = ["cli"]
+
+[[test]]
+name = "planar_roundtrip"
+path = "tests/planar_roundtrip.rs"
+
+[features]
+default = []
+cli = ["dep:image"]
+debug-extract = []
+unsafe-force-simd = []
+
+[dependencies.image]
+version = "0.25"
+optional = true
+default-features = false
+features = ["rayon", "avif", "bmp", "dds", "ff", "gif", "hdr", "ico", "jpeg", "png", "pnm", "qoi", "tga", "tiff", "webp"]

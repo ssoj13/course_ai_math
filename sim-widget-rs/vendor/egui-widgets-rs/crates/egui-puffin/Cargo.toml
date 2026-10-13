@@ -1,0 +1,56 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-puffin"
+version = "0.30.0"
+authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+categories = ["development-tools::profiling", "game-development", "gui"]
+description = "Show puffin profiler flamegraph in-game using egui (vendored, patched for egui 0.34)"
+edition = "2024"
+homepage = "https://github.com/EmbarkStudios/puffin"
+keywords = ["profiler", "gamedev", "gui"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ssoj13/puffin-egui-rs"
+rust-version = "1.95"
+publish = false
+
+[dependencies]
+log = "0.4"
+log-once = "0.4"
+natord = "1.0.9"
+parking_lot = "0.12"
+vec1 = "1"
+web-time = "1.1"
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"
+
+[dependencies.egui]
+version = "0.36"
+default-features = false
+
+[dependencies.egui_extras]
+version = "0.36"
+default-features = false
+features = ["serde"]
+
+[dependencies.indexmap]
+version = "2"
+features = ["serde"]
+
+[dependencies.puffin]
+version = "0.20.0"
+features = ["packing"]
+
+[dependencies.serde]
+version = "1"
+features = ["derive", "rc"]
+optional = true
+
+[dependencies.time]
+version = "0.3"
+default-features = false
+features = ["formatting", "macros"]
+
+[features]
+default = []
+serde = ["dep:serde", "egui/serde", "indexmap/serde"]

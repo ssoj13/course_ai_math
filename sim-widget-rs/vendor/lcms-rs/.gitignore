@@ -1,0 +1,9 @@
+/target
+.omc/
+.bughunt
+# golden-vector C harness build artifacts (source gen.c + build.bat are tracked; the
+# committed golden.txt under tests/fixtures/ is the regenerated oracle output)
+tools/gen-vectors/*.exe
+tools/gen-vectors/*.obj
+tools/gen-vectors/*.pdb
+tools/gen-vectors/*.ilk

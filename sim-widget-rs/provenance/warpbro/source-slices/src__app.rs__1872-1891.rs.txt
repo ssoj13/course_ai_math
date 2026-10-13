@@ -1,0 +1,20 @@
+    fn assign_menu(ui: &mut egui::Ui, selected: bool, fractals: bool) -> Option<AssignTo> {
+        let mut picked = None;
+        if ui
+            .add_enabled(selected, egui::Button::new("Assign to selected"))
+            .clicked()
+        {
+            picked = Some(AssignTo::Selected);
+        }
+        if ui
+            .add_enabled(fractals, egui::Button::new("Assign to all fractals"))
+            .clicked()
+        {
+            picked = Some(AssignTo::AllFractals);
+        }
+        if picked.is_some() {
+            ui.close();
+        }
+        picked
+    }
+

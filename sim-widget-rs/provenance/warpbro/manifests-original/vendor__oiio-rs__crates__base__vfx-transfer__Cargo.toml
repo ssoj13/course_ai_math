@@ -1,0 +1,23 @@
+[package]
+name = "vfx-transfer"
+description = "Transfer functions (OETF/EOTF) for VFX color pipelines"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vfx-core = { workspace = true }
+
+[dev-dependencies]
+# Cross-crate drift guard (tests/heif_transfer_parity.rs): heif-rs ships a `heif-transfer`
+# crate whose pq/hlg/bt2020/srgb/rec709/gamma modules are a byte-for-byte copy of ours, kept
+# in sync only by a comment on both sides (see AGENTS.md "Trap: heif-transfer is a verbatim
+# copy"). Depending on it live lets the parity test compare the two implementations directly so
+# it can never go stale. It is zero-dep and already in the tree transitively via `heif-color`
+# (pinned rev), so this adds no new build weight and cannot form a cycle (heif-transfer does not
+# depend on vfx-transfer). Same git source/branch as `heif` in the workspace root Cargo.toml.
+heif-transfer = { git = "ssh://git@github.com/ssoj13/heif-rs.git", branch = "main" }
+
+[lints]
+workspace = true

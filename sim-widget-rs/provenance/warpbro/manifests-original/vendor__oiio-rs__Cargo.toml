@@ -1,0 +1,165 @@
+# oiio-rs — the imaging stack as one cohesive repo: the OpenImageIO core image model
+# (vfx-core/vfx-math), the OpenColorIO port (vfx-ocio + color crates), the GPU compute
+# extensions (vfx-compute/gpu-mem) and image ops + stmap/warp tools. These crates are
+# bidirectionally coupled (oiio uses ocio for color config/CDL; ocio uses the image core
+# and GPU compute), so they live together rather than as separate cyclic repos. Consumed
+# elsewhere (usd-rs, the vfx-rs app) per-crate via git-ref.
+[workspace]
+resolver = "3"
+members = [
+    "crates/base/vfx-core",
+    "crates/base/vfx-math",
+    "crates/ocio/vfx-ocio",
+    "crates/ocio/vfx-lut",
+    "crates/base/vfx-transfer",
+    "crates/base/vfx-primaries",
+    "crates/ocio/vfx-color",
+    "crates/ocio/vfx-icc",
+    "crates/oiio/vfx-io",
+    "crates/oiio/vfx-ops",
+    "crates/oiio/vfx-oiio",
+    "crates/oiio/vfx-compute",
+    "crates/stool/vfx-stmap",
+    "crates/stool/vfx-warp",
+    "crates/stool/vfx-stool",
+    "crates/apps/vfx-cli",
+    "crates/tests/vfx-tests",
+    "crates/tests/vfx-bench",
+    "xtask",
+]
+# The Python bindings build with maturin as their own workspace (a pyo3 `extension-module`
+# cdylib does not link into `cargo test --workspace`); see crates/py/vfx-rs-py/README.md.
+exclude = ["crates/py/vfx-rs-py"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ssoj13/oiio-rs"
+rust-version = "1.96"
+
+[workspace.lints.rust]
+# Unsafe code is refused everywhere; the crates that need it (FFI, memory maps, SIMD) allow it at
+# the crate root with the reason (ROADMAP E6).
+unsafe_code = "deny"
+
+[workspace.dependencies]
+# Internal cluster crates (path)
+# vfx-core without its default `rayon` (as vfx-io / vfx-compute below): each member names it when it
+# runs vfx-core's parallel work (vfx-compute's `rayon`, vfx-stmap's `parallel`), so a plug-in build
+# that takes neither links no rayon.
+vfx-core = { path = "crates/base/vfx-core", default-features = false }
+vfx-math = { path = "crates/base/vfx-math" }
+vfx-ocio = { path = "crates/ocio/vfx-ocio" }
+# Without its default `rayon` (the `_par` LUT helpers on rayon's pool): see vfx-core above.
+vfx-lut = { path = "crates/ocio/vfx-lut", default-features = false }
+vfx-transfer = { path = "crates/base/vfx-transfer" }
+vfx-primaries = { path = "crates/base/vfx-primaries" }
+vfx-color = { path = "crates/ocio/vfx-color" }
+vfx-icc = { path = "crates/ocio/vfx-icc" }
+# Internal edges take vfx-io and vfx-compute WITHOUT their default features; each member names
+# the features it uses, so a library dependency does not drag OCIO, HEIF encoders or wgpu along.
+vfx-io = { path = "crates/oiio/vfx-io", default-features = false }
+vfx-ops = { path = "crates/oiio/vfx-ops" }
+vfx-oiio = { path = "crates/oiio/vfx-oiio" }
+vfx-compute = { path = "crates/oiio/vfx-compute", default-features = false }
+# Git dependencies are pinned by `rev` (ROADMAP E11), except gpu-info-rs and jph-rs: exr-core and
+# jph-wgpu-rs depend on them by `branch = "main"`, and cargo unifies only identical source specs,
+# so a `rev` here would build a SECOND copy of each (two "shared" wgpu devices). Cargo.lock pins
+# their commit; bumping them is `cargo update -p gpu-info-rs -p jph-rs`.
+gpu-mem = { package = "gpu-info-rs", git = "ssh://git@github.com/ssoj13/gpu-info-rs.git", branch = "main", default-features = false }
+vfx-stmap = { path = "crates/stool/vfx-stmap" }
+vfx-warp = { path = "crates/stool/vfx-warp" }
+vfx-stool = { path = "crates/stool/vfx-stool" }
+
+# EXR (read/write + boundary math) — GIT dependency (branch main)
+imath-rs = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+exr-core = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+
+# HEIF/HEIC + AVIF via the pure-Rust heif-rs backend (branch main) — replaces the C-FFI
+# `libheif-rs` (HEIC) and the `image`-crate `avif` sub-feature (AVIF write). The `heif`
+# facade owns the container + codec registry; `heif-color` supplies the YCbCr->RGB(A)8
+# conversion vfx-io's decode path needs; `heif-image` supplies the `Plane` type the AVIF
+# encode path builds for the alpha auxiliary. features: `hevc` (HEIC decode, pure rust_h265
+# Main/Main10), `avif` (AV1 decode), `avif-encode` (AV1 encode via rav1e), `hevc-encode`
+# (HEIC/HEVC still-image *encode* via the pure-Rust `kvz-rs` Kvazaar port). default-features
+# off so no nasm/asm toolchain is pulled; every codec here is pure Rust (no `*-sys`). See
+# crates/oiio/vfx-io/src/heif.rs.
+heif = { git = "ssh://git@github.com/ssoj13/heif-rs.git", branch = "main", default-features = false, features = ["hevc", "avif", "avif-encode", "hevc-encode"] }
+heif-color = { git = "ssh://git@github.com/ssoj13/heif-rs.git", branch = "main" }
+heif-image = { git = "ssh://git@github.com/ssoj13/heif-rs.git", branch = "main" }
+# `heif-core` names the item property types (`boxes::Property`, `ColourInfo`) the `heif` facade
+# does not re-export; vfx-io reads an item's ICC (`colr prof`/`rICC`) through them.
+heif-core = { git = "ssh://git@github.com/ssoj13/heif-rs.git", branch = "main" }
+
+# JPEG 2000 via the pure-Rust `jpg-rs` backend (branch main) — replaces `jpeg2k 0.10`,
+# which linked `openjpeg-sys` (C FFI to OpenJPEG) and so needed a system library. `jpg-rs`
+# is a byte-exact 1:1 port of that same OpenJPEG decoder, `#![forbid(unsafe_code)]`, with
+# no feature flags and `thiserror` as its only dependency — so the `jp2` feature stops
+# being the last C-system-library codec in vfx-io. See crates/oiio/vfx-io/src/jp2.rs.
+jpg-rs = { git = "ssh://git@github.com/ssoj13/jpg-rs.git", branch = "main" }
+
+# HTJ2K (High-Throughput JPEG 2000, Part 15) via the pure-Rust OpenJPH port `jph-rs` (branch
+# main). Already present in the tree transitively via exr-core (which uses it for its HT256 EXR
+# block); declared here so vfx-io's `jph` feature resolves the SAME rev and cargo unifies both to
+# a single compiled copy — no new crate builds. See crates/oiio/vfx-io/src/jph.rs.
+jph-rs = { git = "ssh://git@github.com/ssoj13/jph-rs.git", branch = "main" }
+
+# Pure-Rust GPU HTJ2K (JPEG 2000 Part 15) codec — the wgpu-compute sibling of `jph-rs`, validated
+# bit-exact against it. Powers vfx-io's opt-in `jph-gpu` feature (transparent GPU accelerator for
+# the `.jph` codec). Adopts the shared device via `gpu_info::shared_device()` so it reuses the
+# cluster's single wgpu adapter (no duplicate device, one `gpu-info-rs`). See crates/oiio/vfx-io/src/jph_gpu.rs.
+jph-wgpu-rs = { git = "ssh://git@github.com/ssoj13/jph-wgpu-rs.git", branch = "main" }
+
+# Video READ backend — the pure-Rust `av-player` player facade from ffmpeg-rs. Powers vfx-io's
+# opt-in `video` feature (frame = subimage). CRITICAL: depend on `av-player` ALONE and NEVER on
+# ffmpeg-rs's `ffmpeg-cli` / `av-graph` / `av-ffargs` crates — those enable `av-decode/export`,
+# which (via cargo's per-graph feature unification) would pull `av-image-io` -> the GIT copy of
+# `vfx-io` back into the graph, recreating the dependency cycle and a path-vs-git vfx-io
+# duplication. `av-player`'s `av-decode` dep is `default-features = false`, so on its own it stays
+# hub-free and the `vfx-io -> av-player` edge is clean and one-directional.
+av-player = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+# Video WRITE backend — the vfx-io-free `av-encoder` facade from ffmpeg-rs (the symmetric inverse of
+# `av-player`: raw rgba16 frames -> encode + mux). Same CRITICAL rule as av-player: it is a vfx-io-free
+# leaf, so depending on it does NOT re-drag the git `vfx-io`. `av-util-pixfmt` names the encoder input
+# pixel format (`AVPixelFormat`); it is a vfx-io-free leaf already in the tree via av-player.
+av-encoder = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-util-pixfmt = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+
+# GPU / image
+wgpu = "30"
+bytemuck = { version = "1.25", features = ["derive"] }
+image = "0.25"
+
+# Math & SIMD
+glam = "0.33"
+half = "2.7"
+wide = "1.7"
+rustfft = "6.4"
+indexmap = "2.14"
+
+# Serialization / parallelism
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1"
+rayon = "1.12"
+crossbeam-channel = "0.5"
+
+# CLI / misc
+clap = { version = "4.6", features = ["derive", "cargo"] }
+anyhow = "1.0"
+glob = "0.3"
+regex = "1.13"
+quick-xml = "0.42"
+# ICC colour management via the pure-Rust `lcms-rs` port (branch main) — replaces `lcms2 6.1`,
+# which bound Little CMS 2 through C FFI (`lcms2-sys`) and so needed a system library plus an
+# `unsafe` boundary in every call. `lcms-rs` is a 1:1 port of the same engine (ICC v2 + v4,
+# 0 `unsafe`, 0 FFI) validated byte-identically against real lcms2 2.19 over 1029 golden
+# vectors, so the numeric reference values pinned by vfx-icc's tests are unchanged. See
+# crates/ocio/vfx-icc/.
+lcms-rs = { git = "ssh://git@github.com/ssoj13/lcms-rs.git", branch = "main" }
+thiserror = "2.0"
+
+# Testing
+approx = "0.5"
+tempfile = "3.27"
+criterion = "0.8"

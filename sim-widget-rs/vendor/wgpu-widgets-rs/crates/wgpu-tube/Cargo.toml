@@ -1,0 +1,31 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "wgpu-tube"
+version = "0.1.0"
+edition = "2024"
+description = "Procedural instanced cubic-bezier tube renderer for wgpu via GPU vertex pulling"
+license = "MIT"
+
+[lib]
+path = "src/tube.rs"
+
+[dependencies.wgpu]
+version = "30"
+default-features = false
+features = ["vulkan", "gles", "metal", "std", "wgsl"]
+
+[dependencies.glam]
+version = "0.33.2"
+
+[dependencies.bytemuck]
+version = "1"
+features = ["derive"]
+
+[dependencies.log]
+version = "0.4"
+
+[dev-dependencies]
+png = "0.18"
+
+[dev-dependencies.pollster]
+version = "1.0"

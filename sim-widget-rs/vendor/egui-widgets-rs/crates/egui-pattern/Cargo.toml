@@ -1,0 +1,19 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-pattern"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "Procedural pattern fills for egui: seamless generated tiles drawn as one textured quad"
+
+[lib]
+path = "src/egui_pattern.rs"
+
+[dependencies]
+log = "0.4"
+
+[dependencies.egui]
+version = "0.36"

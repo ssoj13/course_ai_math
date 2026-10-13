@@ -1,0 +1,106 @@
+[package]
+name = "gpu-info-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Portable GPU info: wgpu capability reporting (limits/features/formats) + DXGI VRAM budget, plus OS-level VRAM/RAM query (no GPU context). One-stop GPU info crate with a diagnostic CLI."
+license = "MIT OR Apache-2.0"
+
+[lib]
+name = "gpu_info"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gpu-info"
+path = "src/bin/wgpu-info.rs"
+required-features = ["cli"]
+
+# Unload regression (tests/unload_regression.rs): a cdylib fixture that negotiates the shared
+# device, and the probe that loads and unloads it and counts what each cycle leaves behind.
+[[example]]
+name = "unload_probe_dll"
+crate-type = ["cdylib"]
+required-features = ["wgpu"]
+
+[[example]]
+name = "unload_probe"
+
+[features]
+default = ["cli", "wgpu"]
+
+# The wgpu-dependent half: capability reporting, the shared device, GpuImage, and the
+# adapter VRAM budget. Split out so a CPU-only consumer can take `gpu_info::os` — an OS-level
+# VRAM/RAM query that needs no GPU context and no wgpu — WITHOUT pulling wgpu into its build.
+#
+# Requested by a consumer note in oiio-rs (`vfx-compute/src/backend/vram.rs`, TODO(gpu-info-rs)):
+# that module had to gate itself on its own `wgpu` feature purely because this crate pulled wgpu
+# unconditionally, and `vfx-warp` paid the same tax for one `gpu_mem::os::sys_mem()` call.
+#
+# ON BY DEFAULT, so every existing consumer is unaffected.
+# CLI binary deps. The library itself never needs clap.
+cli = ["dep:clap", "wgpu"] # the CLI reports wgpu capabilities, so it implies the wgpu half
+wgpu = ["dep:wgpu", "dep:pollster"]
+
+[dependencies]
+# OS-level VRAM/RAM (no GPU context) - re-exported as `wgpu_info::gpu_mem`.
+# Pinned to match the workspace wgpu in gitnexus-rs / vfx-rs (avoids a second wgpu+naga copy).
+# `serde` lets us serialize wgpu's own Limits/AdapterInfo straight into the report.
+wgpu = { version = "30", features = ["serde"], optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# wgpu adapter enumeration / device creation are async; we block on them so the
+# public query API stays synchronous and ergonomic for non-async callers.
+pollster = { version = "0.4", optional = true } # drives wgpu's async adapter/device requests
+clap = { version = "4", features = ["derive"], optional = true }
+log = "0.4"
+# GpuImage host<->GPU boundary: Rgba16Float stores half-floats, so the f32 host API converts via
+# `half::f16`; `bytemuck` reinterprets the packed halves as bytes for `write_texture` / readback.
+half = { version = "2", features = ["bytemuck"] }
+bytemuck = "1"
+thiserror = "2"
+
+# ---------------------------------------------------------------------------
+# Live-VRAM platform backends (see `src/vram.rs`). Each is declared ONLY under
+# its own target so a non-Windows crate never pulls the `windows` crate, etc.
+# ---------------------------------------------------------------------------
+
+# Windows: DXGI used/budget query (the VERIFIED path). Backend-agnostic.
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = [
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Foundation",
+    # `GlobalMemoryStatusEx` for `sys_mem()` — a microsecond syscall, NOT a `wmic` process spawn.
+    "Win32_System_SystemInformation",
+    # PDH `GPU Engine` counters for live GPU utilisation (`stats::windows`) — the vendor-neutral
+    # source Task Manager reads, so no `nvidia-smi` spawn.
+    "Win32_System_Performance",
+    # `LoadLibrary`/`GetProcAddress` for the optional NVML enrichment (`stats::nvml`), which
+    # is resolved at run time so a machine with no NVIDIA driver still starts.
+    "Win32_System_LibraryLoader",
+    # `displays`: EnumDisplayDevicesW / CreateDCW / DeleteDC, and GetICMProfileW.
+    "Win32_Graphics_Gdi",
+    "Win32_UI_ColorSystem",
+] }
+
+# Vulkan, exactly where wgpu 30 enables its native Vulkan HAL by default. TWO consumers now:
+#   - `vram.rs`  : VK_EXT_memory_budget via `Adapter::as_hal` (Linux/Android/FreeBSD).
+#   - `shared_vk`: the ONE device that serves wgpu compute AND hardware video decode, plus the raw
+#                  handles a decoder (ffmpeg-rs `av-hwaccel-vulkan`) runs on.
+# Apple uses Metal by default. Do not force `vulkan-portability`/MoltenVK there: the portable
+# `shared_vk` API reports `None` and the ordinary Metal device path remains native.
+# Pinned to 0.38, the version wgpu-hal 30 itself uses, so the handles we hand out are the SAME
+# types a consumer built against wgpu-hal sees - a mismatch here would not be a type error at the
+# boundary, it would be two incompatible `ash::Device`s in one process.
+[target.'cfg(any(windows, target_os = "linux", target_os = "android", target_os = "freebsd"))'.dependencies]
+ash = { version = "0.38", default-features = false, features = ["std", "loaded"] }
+
+# Unix: `dladdr` + `dlopen(RTLD_NOLOAD | RTLD_NODELETE)` pin the module that owns the shared
+# device (`src/pin.rs`), so an unloaded plug-in cannot leave the device's threads running unmapped
+# code. Windows pins through the `windows` crate's LibraryLoader above.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+# macOS: Metal MTLDevice via wgpu Device::as_hal (objc2, same types as wgpu-hal 30).
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.4"
+objc2-metal = { version = "0.3.2", features = ["MTLDevice"] }

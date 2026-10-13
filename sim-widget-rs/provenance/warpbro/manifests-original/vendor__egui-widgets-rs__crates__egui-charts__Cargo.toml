@@ -1,0 +1,33 @@
+# egui-charts — a reusable, generic charting widget for egui.
+#
+# Stacked panes over one shared time axis, each with its own value scale: the
+# arrangement a trading terminal uses (price + volume + MACD + RSI…), and the
+# one every "plot a few series against each other" case degenerates to. Carries
+# NO application types — candles, lines, histograms and levels are plain data
+# the caller owns.
+#
+# Built around LEVEL OF DETAIL from the start, not as a later optimisation.
+# OHLC aggregation is associative (high=max, low=min, open=first, close=last),
+# so an exact mip pyramid of a series can be built and the work per frame is
+# bounded by the pane's pixel width instead of by the dataset size. A year of
+# 5-second bars is 6.3M of them; the widget must not die when someone tries.
+# See CLAUDE.md for the numbers and the reasoning.
+
+[package]
+name = "egui-charts"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A reusable generic egui charting widget — stacked panes, candles/lines/histograms, LoD for large series"
+
+[lib]
+path = "src/egui_charts.rs"
+
+[dependencies]
+egui = { workspace = true }
+# Shared widget metrics (stroke widths, paddings) so this resolves its strokes
+# from the same token source as every other widget here, not from literals.
+egui-widgets-config = { path = "../egui-widgets-config" }

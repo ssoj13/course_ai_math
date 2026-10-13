@@ -1,0 +1,22 @@
+[package]
+name = "codec-simd"
+version = "0.3.35"
+edition = "2024"
+rust-version = "1.89"
+description = "Cross-arch SIMD primitives and DSP kernels for software video codecs (VP9 / AV1 / H.264 / H.265 / HTJ2K). Tier-dispatched across x86_64 (SSE2/SSE4.1/AVX2/AVX-512), AArch64 (NEON) and WebAssembly (simd128). Safe public API; unsafe stays internal."
+license = "BSD-3-Clause"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+repository = "https://github.com/ssoj13/codec-simd-rs"
+homepage = "https://github.com/ssoj13/codec-simd-rs"
+keywords = ["codec", "simd", "dsp", "video", "primitives"]
+categories = ["multimedia::video", "compression"]
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = []
+mc        = []
+transform = []
+lpf       = []
+dwt       = []

@@ -1,0 +1,48 @@
+# egui-gizmo — WIP, production-grade hybrid 2D/3D transform gizmo for egui.
+#
+# P0: a FORK-VENDOR of the upstream `transform-gizmo` 0.9 core (see NOTICE), with
+# all math internalised to `glam` f64 and a clean glam-f32 public facade.
+#
+# A substantial, heavily-reworked implementation (~5k LOC): full T/R/S plus shear,
+# corner-pin, bbox and arcball sub-gizmos, a configurable 19-mode set, pivots,
+# orientations, visuals and a drag HUD. Design goal + roadmap live in this crate's
+# CLAUDE.md. The upstream `transform-gizmo` / `transform-gizmo-egui` 0.9 sources are
+# vendored under `_ref/gizmo/` as the reference base.
+#
+# P4: this crate is now a MEMBER of the parent `egui-widgets-rs` workspace (egui is
+# inherited from the workspace pin). The vendored `_ref/` crates are kept out of the
+# build via the PARENT workspace's `exclude` (a member crate cannot declare its own
+# `[workspace]`).
+
+[package]
+name = "egui-gizmo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "WIP: a production-grade hybrid 2D/3D transform gizmo for egui"
+# Our facade + adaptations are BSD-3-Clause; the vendored `transform-gizmo` core
+# remains MIT OR Apache-2.0 (see NOTICE).
+license = "BSD-3-Clause AND (MIT OR Apache-2.0)"
+
+[lib]
+path = "src/egui_gizmo.rs"
+
+[dependencies]
+# The ONLY two runtime facade dependencies, per the FORK decision. `egui` is the
+# single workspace-pinned version (0.34) shared by every widget crate.
+egui = { workspace = true }
+glam = { workspace = true } # mint OFF (see workspace dep) — math internalised to glam f64.
+
+# Internal-only (not exposed in the public API). `enum_dispatch` was dropped in P1
+# (the `SubGizmo` handle set is now an open `Box<dyn SubGizmoControl>`); `enumset`
+# still backs the 19-variant `GizmoMode` set behind the public `GizmoFeatures`.
+enumset = "1.1"
+
+[dev-dependencies]
+# For the runnable on-screen proof in `examples/cube.rs`.
+# Folded onto the workspace pin - a literal version here would drag a second egui in.
+eframe = { workspace = true }
+# The example's GizmoVisuals control panel edits colours through the shared
+# picker instead of egui's bare `color_edit_button_srgba` — dev-only, so this
+# does NOT touch the lib's "only two runtime facade dependencies" contract above.
+egui-colorpicker = { path = "../egui-colorpicker" }

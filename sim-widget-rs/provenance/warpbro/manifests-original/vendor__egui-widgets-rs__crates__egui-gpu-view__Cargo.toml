@@ -1,0 +1,25 @@
+# egui-gpu-view — show an offscreen wgpu texture in egui (no CPU readback).
+#
+# `GpuTexture` registers/updates a `wgpu::TextureView` as an egui `TextureId` via
+# egui-wgpu, so a GPU-rendered viewport (a 3-D scene, a node graph, a video frame)
+# is drawn directly with `painter.image()` — zero CPU round-trip. Plus generic
+# pointer helpers mapping an egui `Response` into viewport-local coordinates.
+# (Unifies two near-identical bridges: mermaid-rs `GraphGpuBridge` and gitnexus-rs
+# `EguiViewportPresenter`; the pointer helpers were decoupled from app types.)
+[package]
+name = "egui-gpu-view"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Display an offscreen wgpu texture in egui (no CPU readback) + viewport pointer helpers"
+
+[lib]
+path = "src/egui_gpu_view.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+wgpu = { workspace = true }

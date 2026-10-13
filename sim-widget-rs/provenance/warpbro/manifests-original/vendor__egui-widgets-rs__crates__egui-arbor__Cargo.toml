@@ -1,0 +1,34 @@
+# egui-arbor — Blender-style hierarchical tree/outliner for egui.
+#
+# Vendored from kyjohnso/egui-arbor 0.2.1 (MIT OR Apache-2.0) and pinned to
+# this workspace's egui 0.36. Separate from `egui-outliner` (our AE/USD-style
+# column tree): this crate keeps arbor's trait-based API (`OutlinerNode` /
+# `OutlinerActions`) and drag-drop / action-icon model. Do not merge them.
+#
+# The widget borrows the caller's tree for one frame; persistent view-state
+# lives in egui memory via `OutlinerState`. Optional `serde` persists that
+# state. No app types, no rfd, no Bevy — the upstream Bevy example is not
+# carried over (it would pull a second egui pin).
+[package]
+name = "egui-arbor"
+authors = ["kyjohnso", "Alex Khalyavin <joss13@gmail.com>"]
+version.workspace = true
+edition.workspace = true
+# Original crate license. Do not inherit the workspace BSD-3: we did not relicense.
+license = "MIT OR Apache-2.0"
+repository.workspace = true
+rust-version.workspace = true
+description = "Blender-style hierarchical tree/outliner for egui (trait-based nodes, drag-drop, action icons)"
+
+[lib]
+path = "src/egui_arbor.rs"
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dependencies]
+# The one icon source (egui-phosphor constants behind named `icons`), never raw glyphs.
+egui-widgets-config = { path = "../egui-widgets-config" }
+egui = { workspace = true }
+serde = { workspace = true, optional = true }

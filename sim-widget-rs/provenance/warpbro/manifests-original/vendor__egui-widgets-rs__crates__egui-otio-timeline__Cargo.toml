@@ -1,0 +1,31 @@
+# egui-otio-timeline — a thin egui-widgets-rs surface over the otio-rs OTIO
+# timeline widget.
+#
+# `otio-timeline` (in the sibling otio-rs repo) already IS the complete egui NLE
+# timeline widget over `otio-edit` (Move/Slide/Trim/Razor tools, undo/redo). This
+# crate RE-EXPORTS it (plus the `otio-edit` editor) under the egui-widgets-rs
+# `egui-*` naming, so a host consumes one crate from this library instead of
+# reaching into otio-rs directly — mirrors how `egui-nodes-view` re-exports
+# nodes-rs. The widget is egui-only (NO wgpu); its `widget` feature is enabled
+# here so we get the real widget rather than the empty default.
+[package]
+name = "egui-otio-timeline"
+description = "Thin egui surface over otio-rs's OTIO timeline widget — re-exports otio-timeline + otio-edit"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/egui_otio_timeline.rs"
+
+[dependencies]
+egui = { workspace = true }
+# The OTIO timeline widget + its edit engine, from the sibling otio-rs repo, by
+# ssh git-ref (like egui-nodes-view / egui-ramp). `otio-timeline` gates its whole
+# widget behind `widget` (egui is heavy + optional there) — enable it so this
+# re-export carries the real widget. otio-edit is re-exported for the `Editor`/ops.
+otio-timeline = { git = "ssh://git@github.com/ssoj13/otio-rs.git", branch = "main", features = ["widget"] }
+otio-edit = { git = "ssh://git@github.com/ssoj13/otio-rs.git", branch = "main" }

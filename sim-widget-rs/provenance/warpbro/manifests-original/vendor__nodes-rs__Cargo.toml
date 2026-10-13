@@ -1,0 +1,99 @@
+# nodes-rs — headless computational node graph + wgpu viewport + reference editor.
+#
+# Extracted from mermaid-rs. Members:
+#   graph-layout       zero-dep abstract layout engine
+#   graph-layout-gpu   wgpu force-directed layout
+#   nodes-core         headless graph model (box-rs values, rhai)
+#   nodes-view         wgpu-first viewport renderer
+#   nodes-interact     winit-facing interaction (marquee/wire/drag)
+#   nodes-egui         egui bridge (native texture)
+#   nodes-editor       reference node editor (bin)
+#
+# Foundation deps are git-refs to sibling private repos (box-rs, wgpu-widgets-rs).
+# Consumers cherry-pick a member crate, e.g.:
+#   nodes-core = { git = "ssh://git@github.com/ssoj13/nodes-rs.git", package = "nodes-core" }
+[workspace]
+resolver = "2"
+members = ["crates/cam-viewport", "crates/cam-controls", "crates/graph-layout-gpu", "crates/nodes-core", "crates/nodes-view", "crates/nodes-interact", "crates/nodes-egui", "crates/nodes-keymap", "crates/nodes-chrome", "crates/egui-raw-input", "crates/nodes-editor"]
+default-members = ["crates/nodes-editor"]
+
+# Shared package metadata (members opt in with `rust-version.workspace = true`).
+# MSRV = 1.95: raised from 1.88 by egui 0.36, which declares it. Edition 2024 needs >= 1.85
+# and the stabilized `let`-chains this code uses landed in 1.88, so the floor is now egui's.
+[workspace.package]
+rust-version = "1.95"
+
+# egui / wgpu ABI contract for git-ref consumers: the WHOLE dependency graph shares ONE
+# egui + wgpu version. Match these when you pin nodes-* alongside your own egui app:
+#   egui / egui-wgpu / eframe = 0.36.x   (single 0.36 series across the tree)
+#   wgpu = 30.x                          (single major)
+# Caret ranges below unify within those series; a consumer on a different egui/wgpu major
+# will fail to unify (by design — they cannot share the native texture / render pass).
+[workspace.dependencies]
+wgpu = { version = "30", default-features = false, features = ["vulkan", "gles", "metal", "std", "wgsl"] }
+eframe = { version = "0.36", default-features = false }
+egui = "0.36"
+egui-wgpu = "0.36"
+glam = "0.33.2"
+bytemuck = { version = "1", features = ["derive"] }
+thiserror = "2"
+log = "0.4"
+env_logger = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rfd = "0.17"
+pollster = "1.0"
+winit = "0.30"
+uuid = { version = "1", features = ["v4", "v5", "serde"] }
+rhai = "1"
+slotmap = "1"
+# Extracted foundation repos (git-refs).
+box-rs = { git = "ssh://git@github.com/ssoj13/box-rs.git", branch = "main", package = "box-rs" }
+# Generic zero-dep layout engine, extracted to its own repo (was ./graph-layout).
+graph-layout = { git = "ssh://git@github.com/ssoj13/graph-layout-rs.git", branch = "main", package = "graph-layout" }
+wgpu-text = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-text" }
+wgpu-widgets = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-widgets" }
+# Pure flex/grid layout arithmetic (zero GPU deps, only `glam`) — lets nodes-core
+# share the exact same row-layout math as wgpu-widgets without violating its
+# "no wgpu, ever" rule.
+flex-geom = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "flex-geom" }
+# App-wide color/style SSOT (pure: glam+serde, no GPU) — one Theme consumed by nodes-core
+# (category colors), nodes-view (node/pin/grid/wire tokens), nodes-editor (HUD + master theme),
+# and re-exported by wgpu-widgets-core. Leaf crate like flex-geom, so nodes-core can use it.
+ui-theme = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "ui-theme" }
+# Node-graph / app-specific widgets (minimap, view-mode cycler, graph-plane placement).
+# Split out of the generic `wgpu-widgets` catalog on the wgpu-widgets-rs reorg; nodes-editor
+# is its intended consumer (the catalog stays free of node-editor semantics).
+wgpu-widgets-graph = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-widgets-graph" }
+wgpu-pick = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-pick" }
+# Portable GPU capability reporting (limits/features/formats + VRAM). Used to log the
+# adapter/driver/capabilities at editor startup (pairs with the -v/--log CLI). Lib = `gpu_info`.
+#
+# `wgpu` explicitly, `cli` deliberately not: gpu-info-rs now gates its whole
+# adapter API (`query`, `adapter_summary`, `supported_sample_counts`) behind the
+# `wgpu` feature, which is in its defaults. Turning defaults off without naming
+# `wgpu` back therefore removes exactly the functions nodes-editor calls — and
+# does it as a "cannot find function" rather than a version conflict.
+gpu-info = { git = "ssh://git@github.com/ssoj13/gpu-info-rs.git", branch = "main", package = "gpu-info-rs", default-features = false, features = ["wgpu"] }
+wgpu-tube = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-tube" }
+# Procedural instanced 3D node-card renderer (THE single node mesh, themed by ui-theme):
+# nodes-view's Mesh3D backend draws every node through it.
+wgpu-node = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-node" }
+# Schema-driven Preferences panel (native wgpu-widgets; values in a box-rs RustBox by path).
+# nodes-editor drives it for the app-wide Settings/Preferences UI.
+wgpu-prefs = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-prefs" }
+# Maya-style gradient colour picker (HS square + V slider + RGB/HSV/hex editors, self-contained
+# render). nodes-editor floats it above the Preferences panel to edit a `Widget::Color` swatch.
+wgpu-colorpicker = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", branch = "main", package = "wgpu-colorpicker" }
+
+[profile.release]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+# NO `[patch.crates-io]`, deliberately. The block that used to sit here existed only because
+# wgpu 30 had no released egui - 0.35.0 still pinned wgpu 29, and only emilk/egui `main` had
+# moved. egui 0.36 is the first RELEASE on wgpu 30, which is the exit condition named in
+# colmap-rs/docs/egui-wgpu-bump.md, so every egui crate now comes from crates.io. Do not put it
+# back: a git egui is a different package from the registry one at the same version, and that
+# is precisely how the lock splits.

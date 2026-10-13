@@ -1,0 +1,34 @@
+# egui-image-clip — persistent multi-slot image clipboard for egui apps.
+#
+# AE-style Shift+F5 / F5 workflow: the host captures full-res pixels into a
+# numbered on-disk store (`ClipStore`); the optional egui picker shows thumbs
+# and yields a `PathBuf` on pick. No app types — host supplies root dir + pixels.
+[package]
+name = "egui-image-clip"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Persistent multi-slot image clipboard (store + egui tile picker) for egui apps"
+
+[lib]
+path = "src/egui_image_clip.rs"
+
+[features]
+default = ["egui", "jpeg-png", "exr"]
+# Tile picker UI. Off for headless / non-egui hosts that only need ClipStore.
+egui = ["dep:egui", "jpeg-png"]
+jpeg-png = ["dep:image"]
+exr = ["dep:exr-core", "dep:imath-rs", "dep:half"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+image = { workspace = true, optional = true }
+exr-core = { workspace = true, optional = true }
+imath-rs = { workspace = true, optional = true }
+half = { workspace = true, optional = true }
+egui = { workspace = true, optional = true }

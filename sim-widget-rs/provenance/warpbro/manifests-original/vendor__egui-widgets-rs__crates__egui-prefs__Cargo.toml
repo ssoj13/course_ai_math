@@ -1,0 +1,26 @@
+# egui-prefs — a pluggable preferences registry + tree-view modal for egui.
+#
+# A generic Preferences window: a left-hand category tree with search, a content
+# pane driven by per-category render closures, and Apply / OK / Cancel buttons
+# over a working copy of the settings. Generic over the settings type
+# `S: Clone + PartialEq` — each host module owns its panel; the window aggregates.
+# (Gathered from playa's `playa-prefs`; ported egui 0.33 -> 0.34.)
+[package]
+name = "egui-prefs"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Pluggable preferences registry + tree-view modal window for egui apps"
+
+[dependencies]
+egui = { workspace = true }
+# Shared visual SSOT: the two-pane sidebar/section primitives (accent-bar rows, section headers,
+# category header + font sizes) come from egui-prefs2 so this crate's modal + dock stay pixel-in-
+# sync with the egui-prefs2 panel instead of carrying a drifting copy.
+egui-prefs2 = { path = "../egui-prefs2" }
+# Shared design tokens + named icon constants (icons::SEARCH / icons::CLOSE) for
+# the search bar. Host still registers the phosphor font (egui_phosphor::add_to_fonts).
+egui-widgets-config = { path = "../egui-widgets-config" }

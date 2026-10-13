@@ -1,0 +1,38 @@
+[package]
+name = "egui-phosphor"
+description = "Phosphor icons for egui"
+version = "0.14.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/amPerl/egui-phosphor"
+
+[dependencies]
+# FORK NOTE (ssoj13): this fork exists ONLY because upstream has no release for egui 0.36 - its
+# newest, 0.13.0, still requires `egui = "0.35"`, and its `main` does too. That single requirement
+# was the last thing pinning all of cglibs to egui 0.35.
+#
+# It now takes egui from CRATES.IO, not from git, and that is the point. egui 0.36 is the first
+# RELEASE on wgpu 30 (0.35 was wgpu 29), which is the exit condition named in
+# colmap-rs/docs/egui-wgpu-bump.md: with a released wgpu-30 egui, the whole `[patch.crates-io]`
+# bridge goes away and every repo takes plain crates.io egui. A `git` egui here would re-split the
+# lock against that (cargo treats a git source and a registry source as different packages even at
+# the same version) - which is exactly the failure the patch block existed to prevent.
+#
+# Version tracks upstream's convention of one minor per egui minor: 0.13 = egui 0.35, so 0.14 =
+# egui 0.36. Retire this fork the moment upstream publishes for 0.36.
+egui = { version = "0.36", default-features = false }
+
+[features]
+default = ["regular"]
+thin = []
+light = []
+regular = []
+bold = []
+fill = []
+
+[dev-dependencies]
+eframe = "0.36"
+
+[[example]]
+name = "multiple_variants"
+required-features = ["thin", "light", "regular", "bold", "fill"]

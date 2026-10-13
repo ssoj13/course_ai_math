@@ -1,0 +1,25 @@
+# egui-toast — a transient notification stack ("toasts").
+#
+# Ephemeral, auto-expiring pop-up notifications anchored top-right, the transient
+# complement to the persistent egui-logbuffer panel. Caller owns the stack; `show`
+# paints the live toasts, stamps their first-show time, fades + auto-removes
+# expired ones, and supports click-to-dismiss. Generic — no app types, egui-only.
+[package]
+name = "egui-toast"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Transient auto-expiring toast notifications for egui (top-right stack)"
+
+[lib]
+path = "src/egui_toast.rs"
+
+[dependencies]
+egui = { workspace = true }
+# Shared design tokens: the icons module supplies the per-level status glyphs
+# (info/success/warning/error). Host registers the phosphor font
+# (egui_phosphor::add_to_fonts) — shared icon convention across egui-widgets-rs.
+egui-widgets-config = { path = "../egui-widgets-config" }

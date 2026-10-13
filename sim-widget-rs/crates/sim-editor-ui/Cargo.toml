@@ -1,0 +1,27 @@
+[package]
+name = "sim-editor-ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+[dev-dependencies]
+sim-math.workspace = true
+sim-render = { path = "../sim-render" }
+
+[dependencies]
+sim-model.workspace = true
+sim-runtime.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+egui = { version = "0.36.2", features = ["serde"] }
+egui_dock = { version = "0.21", features = ["serde"] }
+egui-attr-grid = { path = "../../vendor/egui-widgets-rs/crates/egui-attr-grid" }
+egui-outliner = { path = "../../vendor/egui-widgets-rs/crates/egui-outliner" }
+egui-track-timeline = { path = "../../vendor/egui-widgets-rs/crates/egui-track-timeline" }
+egui-slider = { path = "../../vendor/egui-widgets-rs/crates/egui-slider" }
+egui-prefs2 = { path = "../../vendor/egui-widgets-rs/crates/egui-prefs2" }
+egui-layout-manager = { path = "../../vendor/egui-widgets-rs/crates/egui-layout-manager" }
+egui-dock-layout = { path = "../../vendor/egui-widgets-rs/crates/egui-dock-layout" }
+egui-statusbar = { path = "../../vendor/egui-widgets-rs/crates/egui-statusbar" }
+egui-viewport-toolbar = { path = "../../vendor/egui-widgets-rs/crates/egui-viewport-toolbar" }
+egui-widgets-config = { path = "../../vendor/egui-widgets-rs/crates/egui-widgets-config" }

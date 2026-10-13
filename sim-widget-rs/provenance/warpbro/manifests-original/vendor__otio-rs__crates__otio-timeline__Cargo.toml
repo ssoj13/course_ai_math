@@ -1,0 +1,49 @@
+# otio-timeline — an egui timeline widget over otio-edit.
+#
+# A normal member of the otio-rs workspace, BUT its heavy UI deps (egui + the
+# model crates, and eframe for the example) are OPTIONAL behind the `widget` /
+# `demo` features. With the default (no features) the crate is EMPTY and pulls
+# nothing, so the otio-rs core/workspace build stays pure-model — egui is only
+# compiled when a UI host turns `widget` on (egui-widgets-rs's egui-otio-timeline
+# does). Build the demo: cd crates/otio-timeline && cargo run --example demo --features demo
+[package]
+name = "otio-timeline"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "egui NLE timeline widget over otio-edit (OpenTimelineIO in Rust)"
+
+[lib]
+name = "otio_timeline"
+path = "src/otio_timeline.rs"
+
+[dependencies]
+# The widget + its egui/model deps are OPTIONAL behind `widget`: feature off (the
+# default) => empty crate, zero deps pulled. A UI host enables `widget`.
+otio-edit = { path = "../otio-edit", optional = true }
+otio-core = { path = "../otio-core", optional = true }
+otio-time = { path = "../otio-time", optional = true }
+otio-schema = { path = "../otio-schema", optional = true }
+otio-algo = { path = "../otio-algo", optional = true }
+egui = { version = "0.36", optional = true }
+# Phosphor icon font: glyph constants for the toolbar icons + the custom-drawn edit
+# cursors (Edit = move-arrows / ↔, Blade = scissors). The HOST registers the font once
+# (egui_phosphor::add_to_fonts); referencing the &str glyph consts needs only the dep.
+# From OUR FORK: upstream has no egui-0.36 release (0.13.0 and its main both still
+# require egui ^0.35), and this one dependency was enough to hold a second egui in
+# every consumer's lock. Retire the fork when upstream publishes for 0.36.
+egui-widgets-config = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main", optional = true }
+# eframe backs the runnable `demo` example only; behind `demo` (which implies
+# `widget`), so no eframe/glow/winit tree is pulled by a normal build.
+eframe = { version = "0.36", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"], optional = true }
+
+[features]
+# The egui timeline widget itself + its model deps (egui is heavy — opt in).
+widget = ["dep:egui", "dep:egui-widgets-config", "dep:otio-edit", "dep:otio-core", "dep:otio-time", "dep:otio-schema", "dep:otio-algo"]
+# The runnable eframe demo example (implies `widget`).
+demo = ["widget", "dep:eframe"]
+
+[[example]]
+name = "demo"
+required-features = ["demo"]

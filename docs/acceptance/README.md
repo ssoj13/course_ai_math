@@ -21,3 +21,10 @@ development machine.
 
 Note: the 6d palette and stroke values in [6d.md](6d.md) are superseded by the 6h recipe in [6h.md](6h.md); the 6h look
 itself is being reworked by HOLO-V2 (2026-10-11, see [HANDOFF.md](../../HANDOFF.md)).
+
+## sim-widget-rs
+
+[sim-widget-rs acceptance archive](sim-widget-rs/README.md) records accepted implementation tasks.
+Task 01 foundation and Task 02 runtime were accepted on 2026-10-12 after correction rounds 1/5 and 2/5;
+full-system acceptance remains open. The bounded Task 04 atomic override/session V2 prerequisite
+was separately accepted after correction round 1/5; full renderer/input remain open.

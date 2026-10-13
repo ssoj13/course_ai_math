@@ -1,0 +1,29 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "otio-core"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "OpenTimelineIO core object model (schema-node arena) with lossless .otio JSON round-trip"
+
+[lib]
+name = "otio_core"
+path = "src/otio_core.rs"
+
+[dependencies]
+slotmap = "1"
+
+[dependencies.otio-time]
+path = "../otio-time"
+
+[dependencies.box-rs]
+package = "box-rs"
+path = "../../../box-rs"
+
+[dependencies.serde_json]
+version = "1"
+features = ["preserve_order"]
+
+[dependencies.thiserror]
+version = "2"

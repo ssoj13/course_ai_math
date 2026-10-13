@@ -1,0 +1,80 @@
+[package]
+name = "vfx-ocio"
+description = "OpenColorIO-compatible color management for VFX"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+# No GPU by default: the standard build must never pull wgpu.
+default = []
+# GPU colour-processing runtime (src/gpu/runtime.rs): executes the emitted WGSL on the cluster's
+# shared wgpu device. wgpu is reached through gpu-mem's `pub use wgpu`, so the graph keeps the
+# cluster's SINGLE wgpu version. No pollster: the runtime is fully synchronous (blocking device
+# poll), and the shared device is negotiated once by gpu-info-rs.
+# `gpu-mem/wgpu` explicit: the workspace takes gpu-mem with `default-features = false`, and
+# gpu-info-rs now keeps its wgpu half (shared_device, GpuImage, the wgpu re-export) behind a
+# feature so CPU-only consumers stay graphics-free.
+gpu = ["gpu-mem/wgpu", "dep:bytemuck"]
+# CPU oracle parallelism (PLAN9.md O9): apply_rgb/apply_rgba parallelise their per-op pixel loop
+# across threads with rayon. Optional (not in `default`) so a single-threaded or WASM consumer
+# pays nothing for it - same pattern as vfx-ops/vfx-io/vfx-stmap's `parallel = ["dep:rayon"]`.
+parallel = ["dep:rayon"]
+
+[dependencies]
+vfx-core = { workspace = true }
+vfx-math = { workspace = true }
+vfx-lut = { workspace = true }
+vfx-transfer = { workspace = true }
+vfx-icc = { workspace = true }
+half = { workspace = true }
+# GPU runtime (optional, `gpu` feature). `gpu-info-rs` (package gpu-mem) owns the cluster's single
+# wgpu (`pub use wgpu`) and the one shared device (`shared_device()`); depending on it here — rather
+# than on wgpu directly — keeps this crate on that single negotiated device and single wgpu version.
+# OS queries: the displays' ICC profiles (`SystemMonitors`); the wgpu half only with `gpu`.
+gpu-mem = { workspace = true }
+# Zero-copy [f32;4] pixel <-> byte-buffer reinterpretation for `apply_gpu`'s upload/readback
+# (PLAN9.md C6) - replaces manual per-component `to_le_bytes`/`from_le_bytes` assembly.
+bytemuck = { workspace = true, optional = true }
+rayon = { workspace = true, optional = true }
+
+thiserror = { workspace = true }
+glam = { workspace = true }
+glob = { workspace = true }
+regex = { workspace = true }
+saphyr = "0.1.0"
+xxhash-rust = { version = "0.8.19", features = ["xxh3"] }
+zip = "8.6.0"
+# The default logging sink (`logging.rs`).
+tracing = "0.1"
+# Staging files (IoProxy LUTs, OCIOZ extraction) with unique, atomically created names.
+tempfile = { workspace = true }
+
+[dev-dependencies]
+# f32 buffers as bytes for `apply_packed`/`apply_planar` tests.
+bytemuck = { workspace = true }
+tempfile = { workspace = true }
+# Reads the PyOpenColorIO reference tables under tests/data.
+serde_json = { workspace = true }
+naga = { version = "30", features = ["wgsl-in"] }
+# ACES2 GPU-emission live verification (tests/aces2_gpu_emission.rs): compile the emitted WGSL as a
+# real compute shader and compare device output to the CPU oracle. No adapter: `vfx_core::test_support::gpu_unavailable` (a failure under VFX_REQUIRE_GPU=1).
+wgpu = { workspace = true }
+pollster = "1.0"
+# For the shared-device adoption in the live-wgpu tests (aces2_gpu_emission.rs adopts
+# `gpu_mem::shared_device()` instead of negotiating its own adapter; gpu_runtime_parity.rs asserts
+# the runtime reuses it). Integration-test crates cannot see optional normal deps, so it is a
+# dev-dependency too.
+#
+# `features = ["wgpu"]` is LOAD-BEARING and not a duplicate of the `gpu` feature above. The
+# workspace takes gpu-mem with `default-features = false`, and `shared_device` lives behind
+# gpu-info-rs's own `wgpu` feature - so the inherited dev-dependency did not have it, and
+# `cargo test -p vfx-ocio` failed to COMPILE with "cannot find function `shared_device`".
+# These test targets call it unconditionally (they have no `#[cfg(feature = "gpu")]`), so the
+# feature has to be asked for here rather than left to whoever else happens to enable it.
+# It costs nothing: `wgpu` is already an unconditional dev-dependency two lines up.
+gpu-mem = { workspace = true, features = ["wgpu"] }
+
+[lints]
+workspace = true

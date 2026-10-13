@@ -1,0 +1,47 @@
+# egui-prefs2 — the vfx-view "Settings" panel look as a reusable, host-agnostic crate.
+#
+# A two-pane Settings/Preferences panel that drops into any egui container (a dock tab or a
+# window): a left icon+label category sidebar (accent bar on the selected row) and a right,
+# scrollable content pane with a category header, sectioned body, and a right-aligned
+# "Reset to Defaults" footer. The look, spacing, and font sizes are copied verbatim from
+# vfx-view's Settings window so every app that adopts it matches pixel-for-pixel.
+#
+# Two APIs, one look:
+#  - v0.1 closure-driven: the host supplies the category list + a body renderer.
+#  - v0.2 data-driven (`schema` module): a serde `PrefsSchema` (categories -> sections -> typed
+#    fields) drives the render, reading/writing values in a `box-rs` `RustBox` by path. Schema in,
+#    filled box-rs values out; the schema is RON/JSON-loadable and a `Custom` field is the escape
+#    hatch for bespoke widgets. The persistable [`PrefsPanelState`] keeps selection + fonts.
+[package]
+name = "egui-prefs2"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Two-pane Settings panel for egui (vfx-view look): icon category sidebar + sectioned content + Reset footer. Persistable."
+
+[lib]
+name = "egui_prefs2"
+path = "src/egui_prefs2.rs"
+
+[dependencies]
+egui = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+# Data-driven layer value store: box-rs is the nested value container (typed path get/set +
+# Color/Vec3, serde). Standalone repo (serde-only), consumed by git-ref; the egui-widgets-rs
+# workspace root [patch]es it to the local sibling checkout for co-development.
+box-rs = { git = "ssh://git@github.com/ssoj13/box-rs.git", branch = "main", package = "box-rs" }
+# Every schema field (slider, vector, colour, combo...) is drawn by the attribute editor of
+# egui-attr-grid, so a Preferences row IS an Attribute Editor row: one look, one behaviour.
+egui-attr-grid = { path = "../egui-attr-grid" }
+# The shared splitter handle (drag behaviour, hit size, cursor and paint) and the suite's
+# metrics, so the panel's dividers behave exactly like every other splitter in the family
+# rather than growing a second implementation here.
+egui-widgets-config = { path = "../egui-widgets-config" }
+
+[dev-dependencies]
+# AccessKit-tree tests: schema rows must be the attribute editor's controls.
+# `wgpu` + `snapshot` only for the `--ignored` screenshot tests (WIDGET_SHOTS=dir).
+egui_kittest = { version = "0.36", features = ["wgpu", "snapshot"] }

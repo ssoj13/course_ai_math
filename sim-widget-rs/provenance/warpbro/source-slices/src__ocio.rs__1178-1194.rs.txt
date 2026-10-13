@@ -1,0 +1,17 @@
+pub(crate) fn combo(ui: &mut egui::Ui, id: &str, cur: &mut String, items: &[String], empty: &str) {
+    let text = if cur.is_empty() {
+        format!("{empty} (default)")
+    } else {
+        cur.clone()
+    };
+    egui::ComboBox::from_id_salt(id)
+        .selected_text(text)
+        .width(260.0)
+        .show_ui(ui, |ui| {
+            ui.selectable_value(cur, String::new(), format!("{empty} (default)"));
+            for it in items {
+                ui.selectable_value(cur, it.clone(), it);
+            }
+        });
+}
+

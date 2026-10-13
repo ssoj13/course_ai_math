@@ -1,0 +1,30 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "otio-edit"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "Editing, command and undo/redo layer over otio-core (OpenTimelineIO in Rust)"
+
+[lib]
+name = "otio_edit"
+path = "src/otio_edit.rs"
+
+[dependencies]
+serde_json = "1"
+
+[dependencies.otio-core]
+path = "../otio-core"
+
+[dependencies.otio-time]
+path = "../otio-time"
+
+[dependencies.otio-schema]
+path = "../otio-schema"
+
+[dependencies.otio-algo]
+path = "../otio-algo"
+
+[dependencies.thiserror]
+version = "2"

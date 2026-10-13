@@ -1,0 +1,44 @@
+# egui-attr-grid — a [label | value] attribute editor grid for egui.
+#
+# A two-column property editor: sorted attribute rows, a resizable label/value
+# splitter (built on egui-splitter-table), per-type value editors
+# (bool/int/int64/uint/float/vec3/vec4/mat3/mat4 editable, numeric `List` inline,
+# everything else as a read-only label), and mixed-value dimming for
+# multi-selection. The widget owns a flat `[AttrField]` the caller builds from
+# its own model and returns the rows the user changed. Hermetic — no app types.
+# (Gathered from playa's attribute editor `ae_ui`, decoupled from playa_engine.)
+[package]
+name = "egui-attr-grid"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "egui [label | value] attribute editor grid with typed editors, resizable splitter, and mixed-value support"
+
+[lib]
+path = "src/egui_attr_grid.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+egui-slider = { path = "../egui-slider" } # slim slider for the numeric editors
+# Colour rows (`color` hint): channel fields + the HDR picker swatch.
+egui-colorpicker = { path = "../egui-colorpicker" }
+egui-splitter-table = { path = "../egui-splitter-table" }
+# Named presets over attribute rows (`preset` module): the generic bar lives in
+# egui-preset; the AttrValue-aware blend + snapshot live here, next to the type.
+egui-preset = { path = "../egui-preset" }
+serde = { workspace = true }
+egui-file-field = { path = "../egui-file-field" }
+# The `font` row hint. Like the path field, it renders the value and nothing else:
+# the family LIST comes from the host, which is the only side that knows what its
+# text shaper can actually draw.
+egui-font-picker = { path = "../egui-font-picker" }
+
+[dev-dependencies]
+serde_json = "1"
+# AccessKit-tree tests: sliders and strips must be findable by role and label.
+# `wgpu` + `snapshot` only for the `--ignored` screenshot tests (WIDGET_SHOTS=dir).
+egui_kittest = { version = "0.36", features = ["wgpu", "snapshot"] }

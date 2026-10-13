@@ -1,0 +1,710 @@
+//! # wgpu-info
+//!
+//! Portable querying of GPU capabilities through [`wgpu`], so applications can stop
+//! guessing conservative limits. The classic symptom this solves: code that caps itself
+//! at 8 storage buffers because it builds the device with [`wgpu::Limits::default`] and
+//! never asks the adapter what it actually supports.
+//!
+//! ## Quick start
+//!
+//! ```no_run
+//! let report = gpu_info::query();
+//! for adapter in &report.adapters {
+//!     println!(
+//!         "{} ({}): max_storage_buffers_per_shader_stage = {}",
+//!         adapter.name, adapter.backend,
+//!         adapter.limits.max_storage_buffers_per_shader_stage,
+//!     );
+//! }
+//! ```
+//!
+//! ## Migrating away from `Limits::default()`
+//!
+//! Replace the conservative default with the adapter's real maximums:
+//!
+//! ```no_run
+//! # async fn demo(adapter: &wgpu::Adapter) -> Result<(), wgpu::RequestDeviceError> {
+//! // Before: required_limits: wgpu::Limits::default()   // caps at 8 storage buffers
+//! let (device, queue) = gpu_info::request_max_device(adapter, wgpu::Features::empty()).await?;
+//! # let _ = (device, queue); Ok(())
+//! # }
+//! ```
+
+#[cfg(all(feature = "wgpu", windows))]
+pub mod external;
+/// Canonical GPU media-image handle ([`GpuImage`]) shared by every cluster GPU consumer.
+/// Lives here because this crate anchors wgpu and owns [`shared_device`] (cycle-free).
+#[cfg(feature = "wgpu")]
+pub mod image;
+#[cfg(feature = "wgpu")]
+mod model;
+/// Pins the module containing this crate before [`shared_device`] creates process-lifetime state
+/// in it (see the module docs: an unloaded plug-in must not leave the device's threads running
+/// unmapped code).
+#[cfg(feature = "wgpu")]
+mod pin;
+/// The persistent pipeline cache of a device ([`pipeline_cache`](fn@pipeline_cache)): compiled pipelines outlive the process.
+#[cfg(feature = "wgpu")]
+pub mod pipeline_cache;
+#[cfg(feature = "wgpu")]
+pub use pipeline_cache::{DiskPipelineCache, create_compute_pipeline, pipeline_cache};
+/// The shared device as raw Vulkan: video extensions, a decode queue, and the `ash` handles a
+/// hardware decoder needs to run on the SAME device wgpu computes on.
+///
+/// wgpu's native Vulkan backend exists on Windows, Linux, Android, and FreeBSD. Other native
+/// targets expose the same API through a backend-unavailable implementation so
+/// [`SharedGpu::vulkan`] remains portable and reports `None` without pulling in Vulkan.
+#[cfg(all(
+    feature = "wgpu",
+    any(
+        windows,
+        target_os = "linux",
+        target_os = "android",
+        target_os = "freebsd"
+    )
+))]
+pub mod shared_vk;
+#[cfg(all(
+    feature = "wgpu",
+    not(target_arch = "wasm32"),
+    not(any(
+        windows,
+        target_os = "linux",
+        target_os = "android",
+        target_os = "freebsd"
+    ))
+))]
+#[path = "shared_vk_unavailable.rs"]
+pub mod shared_vk;
+#[cfg(feature = "wgpu")]
+mod vram;
+/// The one submit-and-wait of the cluster: [`submit`] + [`wait`](fn@wait) / [`wait_idle`] and [`map_read`],
+/// with no blocking `Device::poll` (it held the UI's `present` behind the GPU, and its timed form
+/// panics wgpu-core 30); and the future driver ([`block_on`]) plug-ins may run on host threads.
+#[cfg(feature = "wgpu")]
+pub mod wait;
+
+/// Reused GPU resources: bounded per-device pools of buffers and textures (`pool`). The pool
+/// and the `Gate` are wgpu-free; the buffer and texture keys and their pools need `wgpu`.
+pub mod pool;
+#[cfg(feature = "wgpu")]
+pub use pool::{BufferKey, BufferWorkspace, BufferWorkspaceError, COMPUTE_BUFFERS, TextureKey};
+pub use pool::{Gate, OwnedPermit, Permit, Pooled, ResourcePool};
+/// Windows RAM via `GlobalMemoryStatusEx` (a syscall, not a `wmic` process spawn) — see [`win_mem`].
+#[cfg(windows)]
+mod win_mem;
+
+/// The displays' ICC profiles from the OS (OCIO's `SystemMonitors` source), wgpu-free.
+pub mod displays;
+
+/// OS-level VRAM + system RAM query without a GPU context, no wgpu: `nvidia-smi` / `reg query` /
+/// sysfs / `system_profiler`. `os` itself stays `#![forbid(unsafe_code)]`; the ONE exception is
+/// Windows RAM, which uses the `GlobalMemoryStatusEx` SYSCALL (isolated in `win_mem`) instead of a
+/// `wmic` process spawn — that spawn hitched a consumer's UI thread on every poll.
+/// Complements the wgpu capability report and the DXGI `vram` adapter budget (`VramQuerier`, feature `wgpu`).
+pub mod os;
+
+/// THE RAM / VRAM budget formulas over [`os`] (one [`budget::Policy`] for RAM, the VRAM share and
+/// the resident-path [`budget::plan_vram`]): wgpu-free, so every consumer sizes its caches alike.
+pub mod budget;
+pub use budget::{
+    BudgetError, Policy, VramError, VramPlan, plan_vram, ram_budget, ram_budget_from, vram_budget,
+};
+
+/// Live GPU counters (utilisation, memory in use) cheap enough to poll from a UI frame loop:
+/// IOKit on macOS, DRM sysfs on Linux, wgpu-free and **spawn-free**. Use this for monitors and
+/// [`os`] for one-shot capability probes — `os` shells out and costs ~1 s per call on macOS.
+pub mod stats;
+
+/// Device caps and the single "does this fit one dispatch" question, shared by every tiling
+/// consumer in the cluster. wgpu-free at the core — see the module docs for why the FACTS live
+/// here while tile-sizing POLICY stays with each consumer.
+pub mod limits;
+
+pub use limits::{GpuLimits, TilingReason};
+
+#[cfg(feature = "wgpu")]
+pub use image::{GpuImage, GpuImageError};
+#[cfg(feature = "wgpu")]
+pub use model::{AdapterReport, DownlevelReport, GpuReport, TextureFormatReport};
+#[cfg(feature = "wgpu")]
+pub use vram::{
+    AdapterKey, GpuVramContext, VramInfo, VramQuerier, VramWatch, vram_budget_bytes,
+    vram_budget_from_context,
+};
+#[cfg(feature = "wgpu")]
+pub use wait::{
+    POLL_PERIOD, SLOW_SUBMISSION, Submission, SubmitStats, WaitError, block_on, map_read, submit,
+    submit_stats, wait, wait_idle,
+};
+
+/// Re-exported so consumers spell `wgpu` types from a single, version-matched source.
+#[cfg(feature = "wgpu")]
+pub use wgpu;
+
+/// Enumerate every adapter wgpu can find across all backends and report its capabilities.
+///
+/// Synchronous: wgpu's adapter enumeration is async internally and is driven to completion
+/// here via [`pollster`].
+#[must_use]
+#[cfg(feature = "wgpu")]
+pub fn query() -> GpuReport {
+    query_backends(wgpu::Backends::all())
+}
+
+/// Like [`query`], but restricted to the given backends (e.g. `wgpu::Backends::VULKAN`).
+#[must_use]
+#[cfg(feature = "wgpu")]
+pub fn query_backends(backends: wgpu::Backends) -> GpuReport {
+    let mut desc = wgpu::InstanceDescriptor::new_without_display_handle();
+    desc.backends = backends;
+    let instance = wgpu::Instance::new(desc);
+    let adapters = pollster::block_on(instance.enumerate_adapters(backends));
+
+    GpuReport {
+        wgpu_info_version: env!("CARGO_PKG_VERSION").to_string(),
+        wgpu_version: WGPU_VERSION.to_string(),
+        backends_requested: backends
+            .iter_names()
+            .map(|(name, _)| name.to_ascii_lowercase())
+            .collect(),
+        adapters: adapters.iter().map(AdapterReport::from_adapter).collect(),
+    }
+}
+
+/// The limits an application should request to use the adapter to its fullest.
+///
+/// This is exactly [`wgpu::Adapter::limits`]; the named helper documents intent at the call
+/// site — pass the result as `required_limits` instead of [`wgpu::Limits::default`].
+#[must_use]
+#[cfg(feature = "wgpu")]
+pub fn recommended_limits(adapter: &wgpu::Adapter) -> wgpu::Limits {
+    adapter.limits()
+}
+
+/// Supported MSAA sample counts for `format` on this adapter (always includes `1`), e.g. `[1, 4]`.
+///
+/// Cross-platform: the answer comes straight from `wgpu`'s backend-reported
+/// [`wgpu::TextureFormatFeatureFlags`], so it is accurate on Metal / Vulkan / DX12 / GL alike
+/// (no platform-specific code, no hard-coded `4`). Renderers should intersect the result across
+/// EVERY attachment format a pass uses — e.g. the color target AND the depth format — because a
+/// GPU may support more MSAA counts for color than for depth; committing to a level only one
+/// side supports panics at texture creation.
+#[must_use]
+#[cfg(feature = "wgpu")]
+pub fn supported_sample_counts(adapter: &wgpu::Adapter, format: wgpu::TextureFormat) -> Vec<u32> {
+    model::sample_counts_from_flags(adapter.get_texture_format_features(format).flags)
+}
+
+/// A compact, multi-line summary of a chosen adapter for startup logging.
+#[must_use]
+#[cfg(feature = "wgpu")]
+pub fn adapter_summary(adapter: &wgpu::Adapter) -> String {
+    use core::fmt::Write as _;
+    let r = AdapterReport::from_adapter(adapter);
+    let l = &r.limits;
+    let vendor = r
+        .vendor_name
+        .as_deref()
+        .map(|v| format!("{v} (0x{:04x})", r.vendor & 0xffff))
+        .unwrap_or_else(|| format!("0x{:04x}", r.vendor & 0xffff));
+    let mut s = String::new();
+    let _ = writeln!(s, "GPU: {}  [{}, {}]", r.name, r.backend, r.device_type);
+    let _ = writeln!(
+        s,
+        "  vendor   : {vendor}   device 0x{:04x}",
+        r.device & 0xffff
+    );
+    if !r.driver.is_empty() || !r.driver_info.is_empty() {
+        let _ = writeln!(s, "  driver   : {} {}", r.driver, r.driver_info);
+    }
+    let _ = writeln!(
+        s,
+        "  shader   : model={}  webgpu_compliant={}  subgroup={}..{}",
+        r.downlevel.shader_model,
+        r.downlevel.is_webgpu_compliant,
+        r.subgroup_min_size,
+        r.subgroup_max_size
+    );
+    let _ = writeln!(
+        s,
+        "  buffers  : storage/stage={}  uniform/stage={}  max_storage_binding={}  max_buffer={}",
+        l.max_storage_buffers_per_shader_stage,
+        l.max_uniform_buffers_per_shader_stage,
+        l.max_storage_buffer_binding_size,
+        l.max_buffer_size
+    );
+    let _ = writeln!(
+        s,
+        "  compute  : invocations/wg={}  wg_size=[{}, {}, {}]  wg/dim={}",
+        l.max_compute_invocations_per_workgroup,
+        l.max_compute_workgroup_size_x,
+        l.max_compute_workgroup_size_y,
+        l.max_compute_workgroup_size_z,
+        l.max_compute_workgroups_per_dimension
+    );
+    let _ = write!(
+        s,
+        "  binding  : bind_groups={}  sampled_textures/stage={}  samplers/stage={}",
+        l.max_bind_groups, l.max_sampled_textures_per_shader_stage, l.max_samplers_per_shader_stage
+    );
+    s
+}
+
+/// Request a device with the adapter's **maximum** limits, plus any extra features.
+///
+/// `extra_features` is intersected with what the adapter supports. NOTE (wgpu 30): do NOT pass
+/// [`wgpu::Features::all`] — the adapter reports EXPERIMENTAL features (ray-query, mesh-shader,
+/// cooperative-matrix, …) that `request_device` REJECTS unless you flip `unsafe`
+/// `ExperimentalFeatures::enabled()`. Request every *stable* feature with
+/// `wgpu::Features::all() & !wgpu::Features::all_experimental_mask()` instead (this is what
+/// [`shared_device`] does). The returned device's limits equal `adapter.limits()`, eliminating the
+/// `Limits::default()` guessing game.
+#[cfg(feature = "wgpu")]
+pub async fn request_max_device(
+    adapter: &wgpu::Adapter,
+    extra_features: wgpu::Features,
+) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
+    adapter
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("wgpu-info max-limits device"),
+            required_features: extra_features & adapter.features(),
+            required_limits: adapter.limits(),
+            ..Default::default()
+        })
+        .await
+}
+
+/// Blocking wrapper around [`request_max_device`] for non-async callers.
+#[cfg(feature = "wgpu")]
+pub fn request_max_device_blocking(
+    adapter: &wgpu::Adapter,
+    extra_features: wgpu::Features,
+) -> Result<(wgpu::Device, wgpu::Queue), wgpu::RequestDeviceError> {
+    pollster::block_on(request_max_device(adapter, extra_features))
+}
+
+/// The process-wide shared GPU context: ONE negotiation, ONE physical device.
+///
+/// `wgpu`'s [`Device`](wgpu::Device), [`Queue`](wgpu::Queue) and [`Adapter`](wgpu::Adapter) are
+/// cheap `Arc`-backed handles, so a consumer `.clone()`s these fields into its own device-adoption
+/// entry point (e.g. jph-wgpu's `Gpu::from_parts`, exv-gpu's `from_wgpu`) and every consumer then
+/// shares ONE physical device. That is what makes zero-copy interop possible: decoded frames and
+/// compute results all live on the same device instead of being split across independently
+/// negotiated ones.
+#[cfg(feature = "wgpu")]
+pub struct SharedGpu {
+    /// The shared logical device (max limits + every supported feature). Clone to adopt.
+    pub device: wgpu::Device,
+    /// The queue paired with [`device`](Self::device). Clone to adopt.
+    pub queue: wgpu::Queue,
+    /// The adapter the device was created from. Clone to adopt (some adopters want the adapter).
+    pub adapter: wgpu::Adapter,
+    /// The instance the adapter came from. Clone to adopt.
+    ///
+    /// Needed by GUI adopters: `egui_wgpu::WgpuSetupExisting` wants all four handles, and a
+    /// surface must be created from the SAME instance the adapter belongs to. Without this field
+    /// an egui/eframe host had to negotiate its own instance+adapter+device, which put the UI on a
+    /// different physical device than every compute consumer adopting this one — exactly the split
+    /// this module exists to prevent.
+    pub instance: wgpu::Instance,
+    /// The same device seen as raw Vulkan, when it could be created that way.
+    ///
+    /// `Some` means this device also carries the video extensions and a decode queue family, so a
+    /// hardware decoder can run on it and hand its images straight to wgpu with no copy (see
+    /// [`shared_vk`]). `None` means the adapter is not Vulkan, or has no video-decode queue: a
+    /// decoder then needs its own device and every decoded frame costs a round trip through host
+    /// memory. Consumers that care must CHECK this rather than assume it.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub vulkan: Option<shared_vk::VulkanShared>,
+}
+
+/// Held while either process-wide device ([`shared_device`], [`compute_device`]) is created: wgpu
+/// creates devices of one process one at a time (wgpu issue 10234).
+#[cfg(feature = "wgpu")]
+static DEVICE_CREATION: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Every stable feature, minus experimental ones (which need an unsafe instance opt-in) and minus
+/// `MAPPABLE_PRIMARY_BUFFERS` (wgpu warns it is a "massive performance footgun" on a discrete GPU;
+/// nobody in the cluster maps primary buffers), so ANY adopter's fast path is satisfied without the
+/// negotiation failing. `request_max_device` intersects it with the adapter's features.
+#[cfg(feature = "wgpu")]
+fn stable_features() -> wgpu::Features {
+    (wgpu::Features::all() & !wgpu::Features::all_experimental_mask())
+        .difference(wgpu::Features::MAPPABLE_PRIMARY_BUFFERS)
+}
+
+/// The high-performance, non-fallback adapter of `instance`: the real discrete GPU, not a software
+/// rasterizer.
+#[cfg(feature = "wgpu")]
+fn high_performance_adapter(instance: &wgpu::Instance) -> Option<wgpu::Adapter> {
+    pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::HighPerformance,
+        force_fallback_adapter: false,
+        compatible_surface: None,
+        apply_limit_buckets: false, // wgpu 30
+    }))
+    .ok()
+}
+
+/// Cached result of THE single process-wide device negotiation. `None` = the negotiation ran and
+/// no adapter/device was available — a cached negative, so a GPU-less machine does not re-probe
+/// on every call.
+#[cfg(feature = "wgpu")]
+static SHARED: std::sync::OnceLock<Option<SharedGpu>> = std::sync::OnceLock::new();
+
+/// The instance descriptor of [`shared_device`]: wgpu's defaults without a display handle, then
+/// every instance-level wgpu environment variable (`InstanceDescriptor::with_env`), so
+/// `WGPU_BACKEND` selects the shared device's backend for the process. With no such variable set it
+/// equals `InstanceDescriptor::new_without_display_handle()`.
+#[cfg(feature = "wgpu")]
+pub fn shared_instance_descriptor() -> wgpu::InstanceDescriptor {
+    wgpu::InstanceDescriptor::new_without_display_handle_from_env()
+}
+
+/// Borrow the process-wide shared GPU context, negotiating it EXACTLY ONCE.
+///
+/// This is THE single `Instance` / `request_adapter` / `request_device` negotiation for the whole
+/// process. Every GPU consumer in the cluster should ADOPT this context — cloning the handles into
+/// its own `from_parts` / `from_wgpu` adopter — rather than creating its own [`wgpu::Instance`].
+/// Independent negotiations were the historical cause of test-suite hangs and split decoded/compute
+/// results across two physical devices.
+///
+/// The device is built with the adapter's MAXIMUM limits and every supported *stable* feature
+/// ([`wgpu::Features::all`] minus [`wgpu::Features::all_experimental_mask`] and minus
+/// [`wgpu::Features::MAPPABLE_PRIMARY_BUFFERS`], intersected with the adapter's real feature set),
+/// so an adopter that needs e.g. `TIMESTAMP_QUERY` or
+/// `TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES` for its fast path finds them present, while an
+/// adopter that doesn't simply ignores them. `MAPPABLE_PRIMARY_BUFFERS` is excluded because wgpu
+/// treats enabling it on a discrete GPU as a performance footgun and nobody maps primary buffers.
+/// Experimental features (ray-query, mesh-shader,
+/// cooperative-matrix …) are excluded on purpose: wgpu 30 rejects them at `request_device` unless
+/// the caller flips an `unsafe { ExperimentalFeatures::enabled() }` opt-in, and requesting them
+/// would make the whole negotiation fail with "experimental features are not enabled".
+///
+/// **The module containing this crate is pinned first** (never unmapped for the rest of the
+/// process). The shared device is process-lifetime state: it lives in a `static` that is never
+/// dropped, and wgpu runs threads for it. Inside a dynamically loaded module (an OpenFX plug-in,
+/// for example) that the host later unloads, those threads executed unmapped code (an access
+/// violation) and every reload leaked a whole device. Pinning keeps the code mapped and makes later
+/// loads reuse the image, so the negotiation stays ONE per process; the host's unload still runs
+/// the plug-in's own unload actions. In an executable the pin is a no-op.
+///
+/// Returns `None` (cached) when the module cannot be pinned, when no adapter is available or when
+/// device creation fails — never panics. A pin failure is logged as an error with its reason:
+/// no device is created in a module that could be unmapped under it.
+/// [`OnceLock::get_or_init`](std::sync::OnceLock::get_or_init) collapses concurrent first callers into ONE negotiation.
+///
+/// **The instance honours wgpu's instance-level environment variables**
+/// ([`shared_instance_descriptor`]), read once, at the first call: `WGPU_BACKEND` (for example
+/// `dx12` or `vulkan`) selects the backends the shared device may come from for the whole process;
+/// the [`wgpu::InstanceFlags`] variables (`WGPU_DEBUG`, `WGPU_VALIDATION`,
+/// `WGPU_GPU_BASED_VALIDATION`, `WGPU_VALIDATION_INDIRECT_CALL`, `WGPU_DISCARD_HAL_LABELS`,
+/// `WGPU_ALLOW_UNDERLYING_NONCOMPLIANT_ADAPTER`, `WGPU_STRICT_WEBGPU_COMPLIANCE`) and the backend
+/// options (`WGPU_DX12_COMPILER`, `WGPU_DX12_*`, `WGPU_GLES_MINOR_VERSION`, `WGPU_GL_*`,
+/// `WGPU_NOOP_BACKEND`) apply too. Unset variables change nothing. The adapter choice stays
+/// high-performance, non-fallback: `WGPU_POWER_PREF` and `WGPU_ADAPTER_NAME` are not read.
+#[cfg(feature = "wgpu")]
+pub fn shared_device() -> Option<&'static SharedGpu> {
+    SHARED
+        .get_or_init(|| {
+            if let Err(error) = pin::pin_containing_module() {
+                log::error!(
+                    "gpu-info: no shared device: the module that would own it cannot be pinned \
+                     ({error}); unloading it would leave the device's threads running unmapped code"
+                );
+                return None;
+            }
+            // TODO(gl-backend): the default backends include GL. On Windows its WGL instance
+            // spawns a thread ("wgpu-hal WGL Instance Thread") that owns a hidden window and parks
+            // for the instance's lifetime, although the shared device is Vulkan/DX12/Metal. It was
+            // the thread that crashed in an unloaded OpenFX plug-in (now prevented by the pin
+            // above). Dropping GL from this instance (Backends::PRIMARY) would remove the thread and
+            // speed up negotiation, but changes which adapters `query`-style consumers of the same
+            // instance can see; a separate decision (CHANGELOG, Unreleased, Known issues).
+            let instance = wgpu::Instance::new(shared_instance_descriptor());
+            let adapter = high_performance_adapter(&instance)?;
+            let _creating = DEVICE_CREATION
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let stable = stable_features();
+            let features = stable & adapter.features();
+            let limits = adapter.limits();
+
+            // FIRST try the device that serves both halves: wgpu compute AND hardware video
+            // decode, so a decoded frame never has to travel through host memory to be used.
+            // Only Vulkan can do this; everywhere else we say so and take the ordinary device.
+            #[cfg(not(target_arch = "wasm32"))]
+            if let Some((device, queue, vulkan)) =
+                shared_vk::open_shared(&adapter, features, &limits)
+            {
+                return Some(SharedGpu {
+                    device,
+                    queue,
+                    adapter,
+                    instance,
+                    vulkan: Some(vulkan),
+                });
+            }
+            log::warn!(
+                "gpu-info: no shared decode-capable device on the {:?} backend; a hardware decoder \
+                 will need its own device and every decoded frame will be copied through host \
+                 memory",
+                adapter.get_info().backend
+            );
+            let (device, queue) = pollster::block_on(request_max_device(&adapter, stable)).ok()?;
+            Some(SharedGpu {
+                device,
+                queue,
+                adapter,
+                instance,
+                #[cfg(not(target_arch = "wasm32"))]
+                vulkan: None,
+            })
+        })
+        .as_ref()
+}
+
+/// A process-wide device of its own for GPU work whose results come back to host memory (the OpenFX
+/// effects' CPU-site compute: ofx-rs `ofx::gpu_wgpu`, `ofx-fractal`).
+///
+/// **Why not [`shared_device`]:** a device has one queue, and its work runs in submission order. A
+/// long dispatch on the device the UI draws and presents on holds every later UI frame behind it:
+/// measured on an RTX 3080 Ti (Windows 11, 2026-09-28), a tiny dispatch waited 400 ms (median) behind
+/// 425 ms dispatches on the same device, and 12 ms (median, 30 ms max) behind the same dispatches on
+/// another device of the same adapter - the OS time-slices GPU contexts. Work that is read back
+/// anyway gains nothing from sharing the device, so it gets its own.
+///
+/// **Only between workgroups:** the GPU switches contexts at workgroup boundaries, so what the
+/// other device waits for is how long this device's workgroups run, not its dispatches. Same GPU,
+/// dispatches of ~450 ms: 16384 groups of 64 -> 12 ms; 4096 groups -> 110 ms; 1024 groups -> 465 ms.
+/// Work on this device must therefore keep each workgroup short: many groups, little work per
+/// invocation (no long per-invocation sample loops).
+///
+/// Negotiated once, like [`shared_device`] (same instance environment, adapter choice, maximum
+/// limits and stable features; no video extensions), in the module [`shared_device`] pins, and never
+/// dropped. A process that uses only this one (an OpenFX plug-in in another host) creates one device.
+/// Resources of one device cannot be used on the other.
+#[cfg(feature = "wgpu")]
+pub fn compute_device() -> Option<&'static ComputeGpu> {
+    compute_device_status().ok()
+}
+
+/// The cached compute-device negotiation, including why Auto must use CPU when it failed.
+/// The device and its failure are negotiated exactly once, as in [`compute_device`].
+#[cfg(feature = "wgpu")]
+pub fn compute_device_status() -> Result<&'static ComputeGpu, &'static str> {
+    static COMPUTE: std::sync::OnceLock<Result<ComputeGpu, String>> = std::sync::OnceLock::new();
+    COMPUTE
+        .get_or_init(|| {
+            pin::pin_containing_module().map_err(|error| {
+                let reason = format!("the plug-in module cannot be pinned: {error}");
+                log::error!("gpu-info: no compute device: {reason}");
+                reason
+            })?;
+            let instance = wgpu::Instance::new(shared_instance_descriptor());
+            let adapter =
+                pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+                    power_preference: wgpu::PowerPreference::HighPerformance,
+                    force_fallback_adapter: false,
+                    compatible_surface: None,
+                    apply_limit_buckets: false,
+                }))
+                .map_err(|error| format!("no high-performance compute adapter: {error}"))?;
+            let _creating = DEVICE_CREATION
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let (device, queue) =
+                pollster::block_on(request_max_device(&adapter, stable_features())).map_err(
+                    |error| {
+                        format!(
+                            "cannot create compute device on {}: {error}",
+                            adapter.get_info().name
+                        )
+                    },
+                )?;
+            Ok(ComputeGpu {
+                device,
+                queue,
+                adapter,
+            })
+        })
+        .as_ref()
+        .map_err(String::as_str)
+}
+
+/// The device of [`compute_device`]: `Arc`-backed handles, clone to adopt.
+#[cfg(feature = "wgpu")]
+pub struct ComputeGpu {
+    /// The compute device (maximum limits, every stable feature).
+    pub device: wgpu::Device,
+    /// Its queue.
+    pub queue: wgpu::Queue,
+    /// The adapter it was created from (limits, info).
+    pub adapter: wgpu::Adapter,
+}
+
+/// Major wgpu version this crate targets. Pinned to the `wgpu = "30"` dependency in
+/// `Cargo.toml`; semver keeps the major at 30 for every 30.x patch.
+#[cfg(feature = "wgpu")]
+const WGPU_VERSION: &str = "30";
+
+// Gated with the half they exercise: every fixture here builds a `GpuReport`, which only exists
+// when the `wgpu` feature is on. `os` is covered by its own module's tests, which stay available
+// in a CPU-only build — that being the point of the split.
+#[cfg(all(test, feature = "wgpu"))]
+mod tests {
+    use super::*;
+
+    /// A GPU-free synthetic report for testing serialization and diffing.
+    fn sample() -> GpuReport {
+        GpuReport {
+            wgpu_info_version: "0.1.0".into(),
+            wgpu_version: "29".into(),
+            backends_requested: vec!["vulkan".into()],
+            adapters: vec![AdapterReport {
+                name: "Test GPU".into(),
+                backend: "vulkan".into(),
+                device_type: "DiscreteGpu".into(),
+                vendor: 0x10de,
+                vendor_name: Some("NVIDIA".into()),
+                device: 0x1234,
+                pci_bus_id: "0000:01:00.0".into(),
+                driver: "test".into(),
+                driver_info: "1.0".into(),
+                subgroup_min_size: 32,
+                subgroup_max_size: 32,
+                features: vec!["TEXTURE_BINDING_ARRAY".into()],
+                limits: wgpu::Limits::default(),
+                downlevel: DownlevelReport {
+                    is_webgpu_compliant: true,
+                    shader_model: "Sm5".into(),
+                    flags: vec!["COMPUTE_SHADERS".into()],
+                },
+                texture_formats: vec![],
+            }],
+        }
+    }
+
+    /// MSAA flag -> concrete counts mapping is GPU-free (synthetic flags), so it runs anywhere.
+    #[test]
+    fn sample_counts_from_flags_maps_msaa() {
+        use wgpu::TextureFormatFeatureFlags as F;
+        // No MSAA flags -> only single-sampled.
+        assert_eq!(crate::model::sample_counts_from_flags(F::empty()), vec![1]);
+        // 2x + 4x present, 8x/16x absent.
+        let counts = crate::model::sample_counts_from_flags(F::MULTISAMPLE_X2 | F::MULTISAMPLE_X4);
+        assert_eq!(counts, vec![1, 2, 4]);
+    }
+
+    #[test]
+    fn json_round_trip() {
+        let report = sample();
+        let json = serde_json::to_string(&report).unwrap();
+        let back: GpuReport = serde_json::from_str(&json).unwrap();
+        assert_eq!(report, back);
+    }
+
+    #[test]
+    fn diff_identical_is_empty() {
+        assert!(sample().diff(&sample()).is_empty());
+    }
+
+    /// Requires a real GPU adapter; run with `cargo test -- --ignored`.
+    #[test]
+    #[ignore = "requires a real GPU adapter"]
+    fn live_query_reports_real_limits() {
+        let report = query();
+        assert!(
+            !report.adapters.is_empty(),
+            "no adapters enumerated on this system"
+        );
+        assert!(
+            report
+                .adapters
+                .iter()
+                .any(|a| a.limits.max_storage_buffers_per_shader_stage >= 8),
+            "expected at least one adapter at or above the baseline storage-buffer limit"
+        );
+    }
+
+    /// Pins the single-negotiation guarantee: two calls return the SAME `&SharedGpu`.
+    /// Requires a real GPU adapter; run with `cargo test -- --ignored`.
+    #[test]
+    #[ignore = "requires a GPU"]
+    fn shared_device_is_singleton() {
+        let a = shared_device().expect("no shared GPU device available on this system");
+        let b = shared_device().expect("shared device vanished on the second call");
+        assert!(
+            std::ptr::eq(a, b),
+            "shared_device() returned two distinct contexts — negotiation ran more than once"
+        );
+    }
+
+    /// Without `WGPU_BACKEND` the shared instance keeps wgpu's default backend set. A process
+    /// that sets the variable cannot check that: the test says so and checks nothing.
+    #[test]
+    fn shared_instance_descriptor_without_env_keeps_the_default_backends() {
+        if let Some(value) = std::env::var_os("WGPU_BACKEND") {
+            println!("SKIPPED: WGPU_BACKEND={value:?} is set in this test process");
+            return;
+        }
+        assert_eq!(
+            shared_instance_descriptor().backends,
+            wgpu::InstanceDescriptor::new_without_display_handle().backends
+        );
+    }
+
+    /// GPU-free OnceLock idempotency: repeated calls yield the same cached state (both `Some`
+    /// or both `None`) and a pointer-stable `&'static`. Safe even without a GPU (returns `None`).
+    #[test]
+    fn shared_device_is_idempotent() {
+        let first = shared_device();
+        let second = shared_device();
+        assert_eq!(
+            first.is_some(),
+            second.is_some(),
+            "shared_device() Option-state changed between calls"
+        );
+        match (first, second) {
+            (Some(a), Some(b)) => {
+                assert!(std::ptr::eq(a, b), "cached context is not pointer-stable")
+            }
+            (None, None) => {}
+            _ => unreachable!("is_some() equality already asserted above"),
+        }
+    }
+
+    #[test]
+    fn diff_detects_limit_change() {
+        let a = sample();
+        let mut b = sample();
+        b.adapters[0].limits.max_storage_buffers_per_shader_stage = 64;
+        let diff = a.diff(&b);
+        assert_eq!(diff.len(), 1);
+        assert!(diff[0].contains("maxStorageBuffersPerShaderStage"));
+        assert!(diff[0].contains("8 -> 64"));
+    }
+
+    /// Calls `vram_budget_bytes` against live adapters; no panic.
+    #[test]
+    #[ignore = "requires a GPU"]
+    fn live_vram_budget_no_panic() {
+        let report = query();
+        if report.adapters.is_empty() {
+            return;
+        }
+        let mut desc = wgpu::InstanceDescriptor::new_without_display_handle();
+        desc.backends = wgpu::Backends::all();
+        let instance = wgpu::Instance::new(desc);
+        let adapters = pollster::block_on(instance.enumerate_adapters(wgpu::Backends::all()));
+        for adapter in &adapters {
+            let budget = vram_budget_bytes(adapter);
+            println!(
+                "{}: vram_budget_bytes = {:?}",
+                adapter.get_info().name,
+                budget
+            );
+        }
+    }
+}

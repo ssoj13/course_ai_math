@@ -1,0 +1,81 @@
+    fn orbit_camera(&mut self, ui: &egui::Ui, resp: &egui::Response, over_toolbar: bool) {
+        use cam_controls::{CameraIntent, OrbitPose};
+        use glam::Vec3;
+        let radius = self
+            .scene
+            .camera_reference
+            .unwrap_or(self.scene.formula.framing_radius());
+        let cam = &mut self.scene.camera;
+        let rig = &mut self.orbit.rig;
+        if rig.has_inertia() && self.orbit_written != Some(*cam) {
+            rig.stop_inertia();
+        }
+        let nav = self
+            .controls
+            .navigation(cam.fov_y_degrees.to_radians(), resp.rect.height());
+        rig.apply_navigation(nav);
+        rig.pitch_limit = 89.0_f32.to_radians();
+        rig.projection.distance_min = 0.05 * radius;
+        rig.projection.distance_max = f32::MAX;
+        // Seeded from yaw / pitch, not the view vector: straight up or down keeps its heading.
+        // The rig's turntable yaw is the camera yaw minus a quarter turn (its offset axis is +X).
+        let seed = OrbitPose::from_yaw_pitch(
+            (cam.yaw_degrees - 90.0).to_radians(),
+            cam.pitch_degrees.to_radians(),
+            cam.distance * radius,
+            Vec3::from_array(cam.target),
+        );
+        rig.pose = seed;
+
+        let buttons = cam_controls_egui::OrbitButtons {
+            // RMB belongs to flight.
+            dolly: None,
+            wheel: !over_toolbar,
+            // Shift + tumble: nearest world plane; Ctrl + Shift: nearest axis view.
+            shift_snap: true,
+            ..cam_controls_egui::OrbitButtons::HOUDINI
+        };
+        let frame =
+            cam_controls_egui::gather_orbit_intents(ui, resp, &nav, &mut self.orbit_drag, buttons);
+        let viewport = cam_viewport::ViewportSize::new(
+            resp.rect.width().max(1.0) as u32,
+            resp.rect.height().max(1.0) as u32,
+        );
+        // The rig pans in the unrolled view plane: turn screen motion back by the roll.
+        let (sin, cos) = cam.roll_degrees.to_radians().sin_cos();
+        let unroll = |x: f32, y: f32| (x * cos + y * sin, y * cos - x * sin);
+        for intent in frame.intents {
+            let intent = match intent {
+                CameraIntent::Pan { dx_px, dy_px } => {
+                    let (dx_px, dy_px) = unroll(dx_px, dy_px);
+                    CameraIntent::Pan { dx_px, dy_px }
+                }
+                CameraIntent::PanInertia { dx_rate, dy_rate } => {
+                    let (dx_rate, dy_rate) = unroll(dx_rate, dy_rate);
+                    CameraIntent::PanInertia { dx_rate, dy_rate }
+                }
+                other => other,
+            };
+            self.orbit.apply_intent(intent, viewport);
+        }
+        let rig = &mut self.orbit.rig;
+        let coasting = rig.has_inertia();
+        if coasting {
+            rig.update_dynamics(nav_dt(ui.ctx()));
+        }
+        // Write back only real changes: a still drag must not restart the progressive render.
+        let pose = rig.pose;
+        if pose != seed {
+            let (yaw, pitch) = cam_controls::yaw_pitch_from_orientation(pose.orientation);
+            cam.yaw_degrees = yaw.to_degrees() + 90.0;
+            cam.pitch_degrees = pitch.to_degrees();
+            cam.target = pose.target.to_array();
+            cam.distance = pose.distance / radius;
+            self.navigated = true;
+        }
+        self.orbit_written = rig.has_inertia().then_some(*cam);
+        if coasting || frame.request_repaint {
+            ui.ctx().request_repaint();
+        }
+    }
+

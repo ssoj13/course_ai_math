@@ -1,0 +1,111 @@
+    pub fn ui(&mut self, ui: &mut egui::Ui, browse: &mut bool, swap: bool) -> bool {
+        self.poll();
+        let before = self.sel.clone();
+        let mut reload = false;
+        self.presets
+            .ui(ui, &mut self.sel, &mut self.preset_edit, swap);
+        ui.add_space(4.0);
+        ui.checkbox(&mut self.sel.on, "OCIO display transform")
+            .on_hover_text("Show the colour image through the OCIO display / view (isolated channels stay raw).\nOff: the built-in sRGB display with the tone operator.");
+        ui.add_space(4.0);
+
+        let mut config = self.sel.config.clone();
+        egui::Grid::new("ocio.grid").num_columns(2).spacing([8.0, 4.0]).show(ui, |ui| {
+            ui.label("Config");
+            ui.horizontal(|ui| {
+                config_combo(ui, &mut config);
+                if ui.button("File…").on_hover_text("Load a config file (.ocio / .ocioz).").clicked() {
+                    *browse = true;
+                }
+                reload = ui.button("Reload").on_hover_text("Read the config again (after it changed on disk).").clicked();
+            });
+            ui.end_row();
+            if config != self.sel.config {
+                // The names of the old config mean nothing in the new one.
+                self.sel = Sel { on: self.sel.on, config, ..Sel::default() };
+            }
+            if self.sel.config != before.config || reload {
+                self.cfg = None;
+            }
+            let Some(ocio) = self.cfg.as_ref().and_then(|(_, config)| config.as_ref().ok()).cloned() else {
+                return;
+            };
+            let owned = |v: Vec<&str>| v.into_iter().map(str::to_owned).collect::<Vec<_>>();
+            let hdr = self.hdr;
+            let displays = owned(ocio.displays(hdr));
+            let resolved = ocio.resolve(&self.sel, hdr).ok();
+            let views = resolved.as_ref().map(|n| owned(ocio.views(&n.display, hdr))).unwrap_or_default();
+            let (inputs, looks) = (owned(ocio.inputs()), owned(ocio.looks()));
+            let auto_input = ocio.working_space().map_or_else(|| "none found".to_owned(), |n| format!("auto: {n}"));
+            let input_warning = resolved
+                .as_ref()
+                .and_then(|n| (ocio.is_working(&n.input) == Some(false)).then(|| n.input.clone()));
+            let dflt = |f: fn(&Names) -> &str| resolved.as_ref().map_or(String::new(), |n| f(n).to_owned());
+
+            ui.label("Input").on_hover_text(
+                "This config's linear AP1 (ACEScg) colour space: the tracer renders in ACEScg. Default: found by its transform to the aces_interchange role (else by the ACES names).",
+            );
+            ui.horizontal(|ui| {
+                combo(ui, "ocio.working_input", &mut self.sel.working_input, &inputs, &auto_input);
+                if let Some(name) = &input_warning {
+                    ui.colored_label(egui_widgets_config::semantic(ui).warn, egui_widgets_config::icons::WARNING)
+                        .on_hover_text(format!("\"{name}\" is not linear AP1: colours will be wrong."));
+                }
+            });
+            ui.end_row();
+            ui.label("Display").on_hover_text(
+                "The target display for rendering and export. HDR targets remain selectable on SDR screens; WarpBro presents an SDR preview there. Settings > Display selects the actual window output.",
+            );
+            let d_before = self.sel.display.clone();
+            combo(ui, "ocio.display", &mut self.sel.display, &displays, &dflt(|n| &n.display));
+            if self.sel.display != d_before {
+                // The view list belongs to the display.
+                self.sel.view.clear();
+            }
+            ui.end_row();
+            ui.label("View").on_hover_text("The rendering of the scene for the display.");
+            combo(ui, "ocio.view", &mut self.sel.view, &views, &dflt(|n| &n.view));
+            ui.end_row();
+            ui.label("Look").on_hover_text("A look applied instead of the view's own looks.");
+            combo(ui, "ocio.look", &mut self.sel.look, &looks, "(the view's looks)");
+            ui.end_row();
+        });
+
+        // One rebuild for whatever changed this frame.
+        let changed = self.sel != before || reload;
+        if changed {
+            if reload {
+                self.reload();
+            } else {
+                self.rebuild();
+            }
+        }
+        if self.pending {
+            ui.label("Preparing colour configuration…");
+            ui.ctx()
+                .request_repaint_after(std::time::Duration::from_millis(33));
+        } else if let Some(e) = &self.err {
+            ui.add_space(4.0);
+            ui.colored_label(ui.visuals().error_fg_color, format!("OCIO not shown: {e}"));
+        } else if let Err(e) = self.config() {
+            ui.add_space(4.0);
+            ui.colored_label(ui.visuals().error_fg_color, e);
+        }
+        changed
+    }
+}
+
+/// Named application colour slots, persisted with preferences rather than scenes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ColourPreset {
+    pub name: String,
+    pub selection: Sel,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+
+pub struct ColourPresets {
+    pub slots: [ColourPreset; 4],
+}
+
+impl Default for ColourPresets {

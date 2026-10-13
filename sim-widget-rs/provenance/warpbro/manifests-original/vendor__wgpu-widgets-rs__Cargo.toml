@@ -1,0 +1,42 @@
+# wgpu-widgets-rs — generic wgpu UI primitives (text engines + 3D SDF widgets).
+#
+# A single workspace holding three independent member crates. Consumers git-ref
+# exactly the crate they need (cargo only builds the referenced package + its
+# deps), e.g.:
+#   wgpu-text    = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", package = "wgpu-text" }
+#   wgpu-widgets = { git = "ssh://git@github.com/ssoj13/wgpu-widgets-rs.git", package = "wgpu-widgets" }
+#
+# Internal DAG: wgpu-text-3d <- wgpu-text (opt `engine-mesh3d`) <- wgpu-widgets.
+# `flex-geom` is a leaf with zero GPU deps (only `glam`) — wgpu-widgets-core depends
+# on it and re-exports its types; consumers who must stay wgpu-free (e.g. nodes-core
+# in the sibling nodes-rs workspace) can git-ref just `flex-geom` directly.
+[workspace]
+resolver = "2"
+members = ["crates/flex-geom", "crates/ui-theme", "crates/wgpu-pick", "crates/wgpu-text-3d", "crates/wgpu-text", "crates/wgpu-hud", "crates/wgpu-widgets-core", "crates/wgpu-widgets", "crates/wgpu-widgets-graph", "crates/wgpu-colorpicker", "crates/wgpu-tube", "crates/wgpu-node", "crates/wgpu-prefs", "crates/wgpu-widgets-demo"]
+
+# Shared graphics stack pins (wgpu 29 / glam 0.33). Member crates opt in via
+# `<dep> = { workspace = true }`; crate-specific deps (skrifa, lyon, glyphon,
+# etagere, slotmap, arboard, …) stay pinned in their own manifests.
+[workspace.dependencies]
+wgpu = { version = "30", default-features = false, features = ["vulkan", "gles", "metal", "std", "wgsl"] }
+# 0.33.2+: the `glam::camera` module (the `Mat4` look_*/perspective_* constructors are deprecated
+# in 0.33 and removed in 0.34).
+glam = "0.33.2"
+bytemuck = { version = "1", features = ["derive"] }
+glyphon = "0.12"
+thiserror = "2"
+log = "0.4"
+pollster = "1.0"
+winit = "0.30"
+env_logger = "0.11"
+# Internal members shared across the workspace (path deps promoted to workspace
+# deps so member crates opt in via `{ workspace = true }`).
+wgpu-text = { path = "crates/wgpu-text" }
+wgpu-widgets-core = { path = "crates/wgpu-widgets-core" }
+flex-geom = { path = "crates/flex-geom" }
+ui-theme = { path = "crates/ui-theme" }
+wgpu-tube = { path = "crates/wgpu-tube" }
+wgpu-node = { path = "crates/wgpu-node" }
+
+[profile.release]
+opt-level = 3

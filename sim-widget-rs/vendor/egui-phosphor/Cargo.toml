@@ -1,0 +1,27 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-phosphor"
+description = "Phosphor icons for egui"
+version = "0.14.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/amPerl/egui-phosphor"
+
+[dependencies.egui]
+version = "0.36"
+default-features = false
+
+[features]
+default = ["regular"]
+thin = []
+light = []
+regular = []
+bold = []
+fill = []
+
+[dev-dependencies]
+eframe = "0.36"
+
+[[example]]
+name = "multiple_variants"
+required-features = ["thin", "light", "regular", "bold", "fill"]

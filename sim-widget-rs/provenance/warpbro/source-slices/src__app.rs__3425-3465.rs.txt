@@ -1,0 +1,41 @@
+    fn inspector(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            if ui.button("Render & Viewport profiles…").clicked() {
+                self.open_settings(SettingsPage::Render);
+            }
+            if ui.button("New noise seed").clicked() {
+                self.seed = self.seed.wrapping_add(7920);
+            }
+        });
+        self.remember_material_targets();
+        if let Some(material) = self.world.selection
+            && self
+                .world
+                .document
+                .info(material)
+                .is_ok_and(|node| node.kind == crate::world::WorldKind::Material)
+        {
+            let apply = ui.add_enabled(!self.material_assignment_targets().is_empty(), egui::Button::new("Apply to object"))
+                .on_hover_ui(|ui| {
+                    if self.material_assignment_targets().is_empty() {
+                        ui.label("Select an object with a Material field, then select a material to edit.");
+                    } else {
+                        ui.label("Assign this material to:");
+                        for &id in self.material_assignment_targets() {
+                            if let Ok(node) = self.world.document.info(id) { ui.label(node.name); }
+                        }
+                    }
+                }).clicked();
+            if apply {
+                self.status = match self.assign_gallery_material(material, AssignTo::Selected) {
+                    Ok(()) => "Material assigned".into(),
+                    Err(error) => error,
+                };
+            }
+        }
+        self.world_ui.inspector(ui, &mut self.world);
+        if std::mem::take(&mut self.world_ui.material_library_requested) {
+            self.panels_to_open.push(dock::Panel::Materials);
+        }
+    }
+

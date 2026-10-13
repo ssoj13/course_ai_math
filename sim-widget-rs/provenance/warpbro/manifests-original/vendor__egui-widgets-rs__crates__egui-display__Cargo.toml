@@ -1,0 +1,35 @@
+[package]
+name = "egui-display"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Float egui canvas and explicit SDR/HDR window output"
+
+[dependencies]
+egui.workspace = true
+wgpu.workspace = true
+# The backdrop's canvas-clearing paint callback (`show_backdrop`) runs in egui's wgpu pass.
+egui-wgpu.workspace = true
+bytemuck.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log = "0.4"
+# Screenshots (`capture`, `screenshot`): readback through the cluster's one GPU wait
+# (submit + map_read, never a blocking poll), and the PNG (cICP/mDCV/cLLI) encoder. No EXR (exr-core is in the exr-rs repo, which depends on this one): hosts write scRGB files.
+gpu-mem = { package = "gpu-info-rs", git = "ssh://git@github.com/ssoj13/gpu-info-rs.git", branch = "main", default-features = false, features = ["wgpu"] }
+png.workspace = true
+# Exports publish through a temp sibling renamed over the destination (export.rs `temp_for`).
+tempfile = "3"
+half.workspace = true
+thiserror.workspace = true
+# Icon glyphs of the backdrop kinds (`BackdropKind::icon`), shared with every widget.
+egui-widgets-config = { path = "../egui-widgets-config" }
+
+[dev-dependencies]
+naga = { version = "30", features = ["wgsl-in"] }
+vfx-ocio = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+pollster = "1.0"
+half.workspace = true

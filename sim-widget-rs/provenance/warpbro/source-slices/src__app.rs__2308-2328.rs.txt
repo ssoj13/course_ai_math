@@ -1,0 +1,21 @@
+    fn window_shot_menu(&mut self, ui: &mut egui::Ui) {
+        let hint = "The whole window as presented (viewport, panels, menus) at its physical \
+            resolution. EXR: linear BT.709 light, 1.0 = SDR white, whiteLuminance in nits. PQ PNG: \
+            16-bit ST 2084 / BT.2020 with cICP; SDR white at the monitor's (HDR) or 203 nits.";
+        for files in crate::window_shot::WindowFiles::ALL {
+            use crate::hotkeys::{Command as Hotkey, Scope, menu_item};
+            let response = if files == crate::window_shot::WindowFiles::ExrAndPq {
+                menu_item(ui, files.label(), Scope::Global, Hotkey::WindowShot)
+            } else {
+                ui.button(files.label())
+            };
+            if response.on_hover_text(hint).clicked() {
+                self.request_window_shot(files, Monitor::read(ui.ctx()));
+                ui.close();
+            }
+        }
+    }
+
+    /// Arm a whole-window screenshot of `files` into a new folder under `~/.warpbro/out`, with
+    /// SDR white at `monitor`'s reference white (`Monitor::sdr_white_nits`). The window captures
+    /// the frame after this one (`take_window_shot`).

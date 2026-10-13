@@ -1,0 +1,5 @@
+fn b_row(label: &str, v: bool, default: bool) -> AttrField {
+    AttrField::new(label, AttrValue::Bool(v)).with_default(AttrValue::Bool(default))
+}
+/// Draws Settings `rows` as an attribute grid with the Attribute Editor's metrics and hands every
+/// edit (row label, new value) to `apply`.

@@ -1,0 +1,20 @@
+# egui-hotkeys - panel-scoped keyboard routing for egui apps.
+#
+# The pointer-owned panel decides which command table a key press reads; global bindings
+# reserve their chords first. Generic over the app's scope and command types (a `Keymap`
+# trait), hermetic (egui only). Ported from warpbro-rs `src/hotkeys.rs`; see CLAUDE.md.
+[package]
+name = "egui-hotkeys"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Panel-scoped keyboard routing for egui: exact chords, previous-frame panel geometry, global-first lookup"
+
+[lib]
+path = "src/egui_hotkeys.rs"
+
+[dependencies]
+egui = { workspace = true }

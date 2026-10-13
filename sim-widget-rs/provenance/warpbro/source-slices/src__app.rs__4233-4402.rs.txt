@@ -1,0 +1,170 @@
+    pub(crate) fn ui(&mut self, root: &mut egui::Ui) {
+        let ctx = root.ctx().clone();
+        self.navigated = false;
+        self.apply_fonts(&ctx);
+        self.update_scene_picker(&ctx);
+        self.update_take_picker(&ctx);
+        self.colour.poll();
+        self.world.new_key = self.world_ui.new_key;
+        let dt = ctx.input(|i| i.stable_dt).max(1.0e-4);
+        self.frame_ms = self.frame_ms * 0.9 + dt * 1000.0 * 0.1;
+        self.sync_preview(dt, &ctx);
+        if self.preview.position().is_none() {
+            self.world_ui.advance(dt, &self.world);
+        }
+        if let Err(error) = self.refresh_scene() {
+            self.world_ui.playing = false;
+            self.status = error;
+        }
+        let edit_frame = f64::from(self.world_ui.playhead);
+        let edit_origin = self.load_revision;
+        use crate::hotkeys::{self, Command as Hotkey, Scope};
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::ToggleUi) {
+            self.show_ui = !self.show_ui;
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::AddNode) {
+            let at = ctx
+                .pointer_hover_pos()
+                .unwrap_or_else(|| ctx.content_rect().center());
+            self.world_ui.open_add_menu(at);
+        }
+        // A window shot armed in an earlier frame is captured after this one.
+        if let Some((_, drawn)) = &mut self.window_shot {
+            *drawn = true;
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::NewScene) {
+            self.new_scene();
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::OpenScene) {
+            self.scene_file_dialog(false);
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::SaveScene) {
+            self.save_scene();
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::SaveSceneAs) {
+            self.scene_file_dialog(true);
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::WindowShot) {
+            self.request_window_shot(
+                crate::window_shot::WindowFiles::ExrAndPq,
+                Monitor::read(&ctx),
+            );
+        }
+        if hotkeys::consume(&ctx, Scope::Global, Hotkey::Redo) {
+            self.world.redo();
+        } else if hotkeys::consume(&ctx, Scope::Global, Hotkey::Undo) {
+            self.world.undo();
+        }
+        self.node_clipboard(&ctx);
+
+        if let Err(error) = self.refresh_scene() {
+            self.status = error;
+        }
+        let before = self.snapshot_before.take();
+        let thumbs_pending = self.render_one_thumbnail(&ctx);
+        self.poll_events(&ctx);
+        self.export.update(&self.renderer);
+        self.viewport_visible = false;
+        self.remember_material_targets();
+
+        if self.show_ui {
+            egui::Panel::top("top").show(root, |ui| self.top_bar(ui));
+            egui::Panel::bottom("status").show(root, |ui| self.status_bar(ui));
+        }
+        egui::CentralPanel::default()
+            .frame(egui::Frame::NONE)
+            .show(root, |ui| {
+                if self.show_ui {
+                    self.dock_ui(ui);
+                } else {
+                    self.viewport(ui);
+                }
+            });
+        self.world_ui.add_menu_ui(root.ctx(), &mut self.world);
+
+        if !self.viewport_visible {
+            if let Some(request) = &mut self.request {
+                request.active = false;
+                self.renderer.request_viewport(request.clone());
+            }
+            self.fly = None;
+            ctx.send_viewport_cmd(egui::ViewportCommand::CursorGrab(egui::CursorGrab::None));
+        }
+        // A held button is a camera gesture unless the manipulator owns the drag: its own gesture
+        // must stay the open undo step until release, not be closed by this one every frame.
+        let camera_gesture = (self.fly.is_some()
+            || (self.gizmo_gesture.is_none() && ctx.input(|i| i.pointer.any_down())))
+        .then(|| {
+            egui::Id::new(("viewport_camera_edit", self.world.document.active_camera)).value()
+        });
+        if let Some(before) = before.as_ref()
+            && self.load_revision == edit_origin
+        {
+            self.record_take(&ctx, before.camera, camera_gesture);
+        }
+        if let Some(before) = before.as_ref()
+            && self.load_revision == edit_origin
+            && (self.scene.camera != before.camera
+                || self.scene.render != before.render
+                || self.scene.colour != before.colour)
+        {
+            if self.scene.camera != before.camera
+                && let Err(error) = self.world.navigate_camera(
+                    &self.scene,
+                    edit_frame,
+                    self.world_ui.auto_key,
+                    camera_gesture,
+                )
+            {
+                // Rejected navigation must not leave an unauthored viewport pose or inertia.
+                self.evaluated_world = None;
+                self.fly = None;
+                self.status = error;
+            }
+            let gesture = egui_attr_grid::edit_gesture(&ctx)
+                .or(camera_gesture)
+                .or_else(|| {
+                    ctx.input(|input| input.pointer.primary_released())
+                        .then(|| self.world.active_edit())
+                        .flatten()
+                });
+            let result = if gesture.is_some() {
+                self.world.edit_snapshot_with_gesture(
+                    self.world.selection,
+                    before,
+                    &self.scene,
+                    edit_frame,
+                    gesture,
+                )
+            } else {
+                self.world
+                    .edit_snapshot(self.world.selection, before, &self.scene, edit_frame)
+            };
+            if let Err(error) = result {
+                self.status = error;
+            }
+        }
+        self.snapshot_before = before;
+        self.remember_material_targets();
+        self.process_preview_intent(&ctx);
+        self.process_picked_take();
+        self.world.finish_edit_unless(
+            egui_attr_grid::edit_gesture(&ctx)
+                .or(camera_gesture)
+                .or(self.gizmo_gesture),
+        );
+        if let Err(error) = self.refresh_scene() {
+            self.status = error;
+        }
+        self.save_settings(&ctx);
+        if let Some(error) = self.current().and_then(|t| t.colour_error.as_deref()) {
+            self.status = format!("Colour output failed: {error}");
+        }
+        self.handle_snap(&ctx, thumbs_pending);
+        ctx.request_repaint_after(std::time::Duration::from_secs_f64(
+            1.0 / self.gui_fps as f64,
+        ));
+    }
+}
+
+#[allow(dead_code)]

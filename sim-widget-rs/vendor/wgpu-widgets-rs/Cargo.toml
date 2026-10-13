@@ -1,0 +1,4 @@
+# Copy-only workspace; unrelated donor members and native app are not installed.
+[workspace]
+resolver = "3"
+members = ["crates/flex-geom", "crates/ui-theme", "crates/wgpu-node", "crates/wgpu-pick", "crates/wgpu-text", "crates/wgpu-tube"]

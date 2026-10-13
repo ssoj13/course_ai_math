@@ -1,0 +1,14 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+name = "imath-rs"
+description = "Pure-Rust 1:1 port of Imath (Vec/Matrix/Box, half semantics) for exr-rs"
+keywords = ["imath", "vfx", "math", "half", "vector"]
+categories = ["mathematics", "rendering"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/exr-rs"
+rust-version = "1.96"
+
+[dependencies]

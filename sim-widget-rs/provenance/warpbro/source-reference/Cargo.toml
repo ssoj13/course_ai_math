@@ -1,0 +1,105 @@
+[package]
+name = "warpbro"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "WarpBro"
+path = "src/main.rs"
+
+[features]
+default = []
+
+[workspace]
+
+[dependencies]
+# The fractal path tracer shared with ofx-rs: parameter ABI and sampling, the CUDA kernels
+# (built into this binary through #[cuda_module]) and the material presets.
+fractal-core = { git = "ssh://git@github.com/ssoj13/fractal-rs.git", branch = "main" }
+fractal-kernels = { git = "ssh://git@github.com/ssoj13/fractal-rs.git", branch = "main" }
+fractal-env = { git = "ssh://git@github.com/ssoj13/fractal-rs.git", branch = "main" }
+fractal-materials = { git = "ssh://git@github.com/ssoj13/fractal-rs.git", branch = "main" }
+playa-player = { git = "ssh://git@github.com/ssoj13/playa.git", branch = "main", default-features = false }
+# OIDN for ACEScg input (AP1 autoexposure + firefly clamp).
+pt-denoise-oidn = { git = "ssh://git@github.com/ssoj13/render-rs.git", branch = "main" }
+playa-graph = { git = "ssh://git@github.com/ssoj13/playa.git", branch = "main" }
+playa-engine = { git = "ssh://git@github.com/ssoj13/playa.git", branch = "main", default-features = false }
+playa-time = { git = "ssh://git@github.com/ssoj13/playa.git", branch = "main" }
+playa-coord = { git = "ssh://git@github.com/ssoj13/playa.git", branch = "main" }
+playa-events = { git = "ssh://git@github.com/ssoj13/playa.git", branch = "main" }
+egui-outliner = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-tab-menu = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+# Our Windows fork includes the Rust 1.99 backend fixes.
+cuda-device = { git = "ssh://git@github.com/ssoj13/cuda-rust-windows.git", branch = "main" }
+cuda-host = { git = "ssh://git@github.com/ssoj13/cuda-rust-windows.git", branch = "main" }
+# The monorepo ships cuda-core next to cuda-host; one source keeps a single cuda-core in the graph.
+cuda-core = { git = "ssh://git@github.com/ssoj13/cuda-rust-windows.git", branch = "main" }
+egui = "0.36"
+egui_dock = { version = "0.21", features = ["serde"] }
+egui-dock-layout = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-viewport-toolbar = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+# Viewport transform manipulator (Q / W / E / R tools, as in Playa).
+egui-gizmo = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-wgpu = "0.36"
+egui-winit = "0.36"
+wgpu = "30"
+winit = "0.30"
+bytemuck = "1"
+anyhow = "1"
+vfx-ocio = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main", features = ["gpu", "parallel"] }
+egui-display = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-hdr-view = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+gpu-info = { package = "gpu-info-rs", git = "ssh://git@github.com/ssoj13/gpu-info-rs.git", branch = "main", default-features = false, features = ["wgpu"] }
+# OpenEXR = our own 1:1 port (exr-rs), never crates.io `exr`; same source as vfx-io so it unifies.
+exr-core = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+imath-rs = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+egui-layout-manager = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+av-codec = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main", default-features = false, features = ["enc-hevc", "hwaccel-vulkan"] }
+av-hwaccel-vulkan = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main", features = ["vulkan"] }
+av-codec-core = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-format-core = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-format = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-format-movenc = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-swscale = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-util-core = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-util-frame = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+av-util-pixfmt = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }
+
+standard-surface-bsdf = { git = "ssh://git@github.com/ssoj13/render-rs.git", branch = "main", features = ["cuda-math"] }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+png = "0.18.1"
+dirs = "7.0.0"
+cam-controls = { git = "ssh://git@github.com/ssoj13/gitnexus-rs.git", branch = "main" }
+# Shared egui -> camera intent bindings (orbit buttons, fly keys, speed modifiers).
+cam-controls-egui = { git = "ssh://git@github.com/ssoj13/gitnexus-rs.git", branch = "main" }
+
+glam = "0.33.6"
+cam-viewport = { git = "ssh://git@github.com/ssoj13/gitnexus-rs.git", branch = "main" }
+
+log = "0.4"
+rayon = "1"
+egui-file-dialog = { git = "ssh://git@github.com/ssoj13/egui-file-dialog.git", branch = "main" }
+egui-file-field = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-prefs2 = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-phosphor = { git = "ssh://git@github.com/ssoj13/egui-phosphor.git", branch = "main" }
+
+env_logger = "0.11"
+
+egui-attr-grid = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+# The HDR colour picker (timeline colour lanes; the AE gets it through egui-attr-grid).
+egui-colorpicker = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-titlebar = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-statusbar = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-widgets-config = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+egui-track-timeline = { git = "ssh://git@github.com/ssoj13/egui-widgets-rs.git", branch = "main" }
+curves = { git = "ssh://git@github.com/ssoj13/curves-rs.git", branch = "main", features = ["serde"] }
+# Radiance .hdr only: EXR environments are read by `exr_io` (exr-core); the `exr` feature would pull crates.io exrs.
+image = { version = "0.25", default-features = false, features = ["hdr"] }
+# Local time for the output folder names.
+jiff = "0.2"
+
+[dev-dependencies]
+# Half-float pixels of synthetic window captures (`window_shot` tests; egui-display's `Pixels::RgbaF16`).
+half = "2.7"
+av-format-mov = { git = "ssh://git@github.com/ssoj13/ffmpeg-rs.git", branch = "main" }

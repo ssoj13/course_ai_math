@@ -1,0 +1,22 @@
+# egui-pattern — procedural pattern fills (hatch, cross-hatch, dots, stripes, checker).
+#
+# A pattern is DATA: a few periodic primitives (line families, dot grids, a checker) whose
+# union is rasterised, antialiased, into one seamless tile in physical pixels. The tile is a
+# repeating egui texture, so filling a rect of any size is ONE textured quad - no per-line
+# shapes. The generator (`gen`) has no egui dependency; `fill_pattern` is the egui glue.
+[package]
+name = "egui-pattern"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Procedural pattern fills for egui: seamless generated tiles drawn as one textured quad"
+
+[lib]
+path = "src/egui_pattern.rs"
+
+[dependencies]
+egui = { workspace = true }
+log = "0.4"

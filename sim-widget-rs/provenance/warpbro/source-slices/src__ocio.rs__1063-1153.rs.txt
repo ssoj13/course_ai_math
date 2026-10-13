@@ -1,0 +1,91 @@
+    fn ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        selection: &mut Sel,
+        edit: &mut Option<PresetEdit>,
+        swap: bool,
+    ) {
+        use crate::hotkeys::{SlotClick, slot_click, slot_hint};
+        let mapping = slot_hint(
+            swap,
+            "name and save the current colour settings",
+            "restore this preset",
+        );
+        ui.horizontal_wrapped(|ui| {
+            ui.label("Color presets");
+            for (index, slot) in self.slots.iter().enumerate() {
+                let s = &slot.selection;
+                let hint = format!(
+                    "{mapping}\n\nConfig: {}\nInput: {}\nDisplay: {}\nView: {}\nLook: {}\nOCIO: {}",
+                    source(&s.config),
+                    if s.working_input.is_empty() {
+                        "auto ACEScg"
+                    } else {
+                        &s.working_input
+                    },
+                    s.display,
+                    s.view,
+                    if s.look.is_empty() {
+                        "the view's looks"
+                    } else {
+                        &s.look
+                    },
+                    if s.on { "on" } else { "off" },
+                );
+                let response = ui
+                    .add(egui::Button::new(&slot.name).selected(s == selection))
+                    .on_hover_text(hint);
+                match slot_click(&response, swap) {
+                    Some(SlotClick::Store) => {
+                        *edit = Some(PresetEdit {
+                            index,
+                            name: slot.name.clone(),
+                            selection: selection.clone(),
+                            focus: true,
+                        });
+                    }
+                    Some(SlotClick::Recall) => *selection = slot.selection.clone(),
+                    None => {}
+                }
+            }
+        });
+        let mut save = false;
+        let mut cancel = false;
+        let mut open = true;
+        if let Some(draft) = edit.as_mut() {
+            egui::Window::new("Save color preset")
+                .id(egui::Id::new("ocio.preset_name"))
+                .collapsible(false)
+                .resizable(false)
+                .open(&mut open)
+                .show(ui.ctx(), |ui| {
+                    ui.label(format!("Preset {}", draft.index + 1));
+                    let response = ui
+                        .add(egui::TextEdit::singleline(&mut draft.name).hint_text("Preset name"));
+                    if draft.focus {
+                        response.request_focus();
+                        draft.focus = false;
+                    }
+                    let valid = !draft.name.trim().is_empty();
+                    save = valid
+                        && response.lost_focus()
+                        && ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    cancel = ui.input(|i| i.key_pressed(egui::Key::Escape));
+                    ui.horizontal(|ui| {
+                        save |= ui.add_enabled(valid, egui::Button::new("Save")).clicked();
+                        cancel |= ui.button("Cancel").clicked();
+                    });
+                });
+        }
+        if save {
+            if let Some(draft) = edit.take() {
+                self.store(draft.index, &draft.name, &draft.selection);
+            }
+        } else if cancel || !open {
+            *edit = None;
+        }
+    }
+}
+
+/// The config combo: automatic ($OCIO or the default built-in), OCIO's built-in
+/// configs, or the file in use.

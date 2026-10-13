@@ -1,0 +1,38 @@
+# egui-viewport — a generic 2-D image viewport widget for egui.
+#
+# Pan / zoom / fit / home (100%) navigation, a pixel-coordinate + RGBA readout
+# HUD, channel isolation (R/G/B/A/RGB) reported as state, and click/drag scrub
+# reporting. The widget owns NO image data and NO GPU: the caller already has its
+# image on a GPU/egui texture and passes the `egui::TextureId` + pixel size; the
+# widget paints it with `painter.image()` and maps pointer input into image
+# pixels. All side effects (applying the channel filter, seeking a scrub frame)
+# are returned to the caller via `ViewportResponse` — the widget mutates only the
+# caller-owned `ViewportState` (pan / zoom / channel / pinned pixel).
+#
+# (Gathered from exr-rs `exr-view` and openvdb-rs `vdb-view` — both shipped an
+# identical app-coupled `viewport.rs` bound to `ImageBackend`/`ColorPass`/
+# `DisplayGpu`/`ViewControls`/`Playback` and wgpu. Those types were stripped out:
+# the GPU colour pass + texture upload now belong to the caller, channel
+# isolation is reported as a `Channel` enum in the state, and pixel values come
+# from an optional `read_pixel` callback. The fit/home/zoom-to-cursor math is
+# preserved verbatim.)
+
+[package]
+name = "egui-viewport"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic 2-D image viewport for egui: pan / zoom / fit / home, pixel readout, channel isolation, scrub reporting"
+
+[lib]
+path = "src/egui_viewport.rs"
+
+[dependencies]
+# `serde` feature so `egui::Vec2` (stored in `ViewportState.pan`) derives
+# Serialize/Deserialize and the whole state can live in a saved layout.
+egui = { workspace = true, features = ["serde"] }
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }

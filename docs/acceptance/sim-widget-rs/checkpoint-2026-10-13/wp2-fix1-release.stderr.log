@@ -1,0 +1,63 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+warning: unused variable: `features`
+   --> C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\vendor\gpu-info-rs\src\lib.rs:431:17
+    |
+431 |             let features = stable & adapter.features();
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_features`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `limits`
+   --> C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\vendor\gpu-info-rs\src\lib.rs:432:17
+    |
+432 |             let limits = adapter.limits();
+    |                 ^^^^^^ help: if this is intentional, prefix it with an underscore: `_limits`
+
+warning: function `anchor` is never used
+  --> C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\vendor\gpu-info-rs\src\pin.rs:31:4
+   |
+31 | fn anchor() -> *const () {
+   |    ^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: variants `Luid` and `Uuid` are never constructed
+   --> C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\vendor\gpu-info-rs\src\vram.rs:373:5
+    |
+370 | pub(crate) enum PhysId {
+    |                 ------ variants in this enum
+...
+373 |     Luid(u64),
+    |     ^^^^
+374 |     /// `VkPhysicalDeviceIDProperties::deviceUUID` (Vulkan without a valid LUID, i.e. Linux).
+375 |     Uuid([u8; 16]),
+    |     ^^^^
+    |
+    = note: `PhysId` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: function `vram_budget_adapter` is never used
+   --> C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\vendor\gpu-info-rs\src\vram.rs:269:19
+    |
+269 |     pub(super) fn vram_budget_adapter(_adapter: &wgpu::Adapter) -> Option<u64> {
+    |                   ^^^^^^^^^^^^^^^^^^^
+
+warning: `gpu-info-rs` (lib) generated 5 warnings (run `cargo fix --lib -p gpu-info-rs` to apply 2 suggestions)
+   Compiling sim-editor-ui v0.1.0 (C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\crates\sim-editor-ui)
+   Compiling sim-render-trial v0.1.0 (C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\tools\render-trial)
+warning: unused variable: `snapshot`
+   --> src\editor_web.rs:101:7
+    |
+101 |   let snapshot=self.host.model.session.snapshot();let points=["origin","A","B"].map(|id|self.host.model.position(id).map(|p|p.to_ar...
+    |       ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_snapshot`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused variable: `points`
+   --> src\editor_web.rs:101:55
+    |
+101 | ...el.session.snapshot();let points=["origin","A","B"].map(|id|self.host.model.position(id).map(|p|p.to_array()).unwrap_or([0.;3]));
+    |                              ^^^^^^ help: if this is intentional, prefix it with an underscore: `_points`
+
+warning: `sim-render-trial` (lib) generated 2 warnings (run `cargo fix --lib -p sim-render-trial` to apply 2 suggestions)
+    Finished `release` profile [optimized] target(s) in 22.32s

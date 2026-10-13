@@ -1,5 +1,122 @@
 # HANDOFF — math_en ("Math for AI" interactive textbook)
 
+## Current Rust widget handoff — 2026-10-13
+
+This section supersedes the historical 2026-10-11 execution status below for the Rust
+widget task only. Current source and evidence: [widget instructions](sim-widget-rs/AGENTS.md),
+[implementation ledger](sim-widget-rs/docs/implementation-status.md),
+[full 18-task plan](plans/20261012-explainer-runtime/phase-04-implementation.md).
+
+**STOP checkpoint:** the user ordered HANDOFF update, push everything and stop.
+Implementation is stopped. Root owns the requested commit/push and its outcome; this
+note does not assert that a push has succeeded. Resume only on the user's instruction.
+
+The actual Rust/WASM egui + wgpu startup GUI was observed in Chrome at
+[editor.html](http://127.0.0.1:43874/editor.html), against the copied 87-package closure.
+Startup freeze: 57 paths, SHA256
+`bd019a2a92393ed7db898d0628dc1418db02eb9aacbe75e1dc9fca8d6a0bc20b`.
+Completed independent startup review is **FINDINGS**, SHA256
+`7b3b506f9e16a375c6b1f2841ca3e6fcef7feb6c6ea74bb725630152b8974438`:
+EDITOR-R1 clean-focus pending ownership/rejected false draft and EDITOR-R2
+Ctrl+Shift+Z Redo failure are confirmed. Tested Undo and B-drag Cancel pass.
+O1 clean locale draft formatting and O2 publication coherence remain open.
+
+GUI FIX1 is incomplete and **not accepted or promoted**:
+
+- Edited `sim-editor-ui/src/{panels/inspector.rs,transport.rs,hotkeys.rs,shell.rs,catalog.rs}`
+  and `tools/render-trial/src/editor_web.rs`; added `tests/editor_fix1.rs`.
+- Native check PASS 2.72 s, WASM check PASS 20.01 s, release PASS 22.32 s,
+  wasm-bindgen exit0. Release emits two unused snapshot/points warnings.
+- Latest new native suite **10 cases: 4 PASS / 6 FAIL**; old seven-case headless suite
+  was not reached after failure. Dirty transfer/range retry/play-invalid/locale/ABA/Escape
+  and real hotkey focus routing require completion; do not weaken tests.
+  Temporary TRACE eprintln diagnostics remain in the new test file.
+- Inspector writes clean-focus handoff and feedback-based dirty reconciliation;
+  redo-first and clean-locale refresh source are written but unverified.
+- O2 second paint was removed after held-pointer state rejection. Current source
+  prepares GUI/scene/picker from one pre-intent FrameSnapshot and publishes canonical
+  writes on the next demand frame; feedback drains before the next UI pass.
+  gui_revision/scene_revision/canonical_revision coherence still needs full verification.
+- `editor-fix1.html/js/pkg-editor-fix1` rebuilt; worker boot-only browser observation,
+  **no functional FIX1 browser proof or independent correction review**.
+  Original editor artifacts and manual user tab 1696999236 remain unchanged.
+- WP-1 paused: copied gizmo `neutral.rs` 11191 B and public module/native check only;
+  kernel/lifecycle integration not implemented.
+- Startup WASM **10,271,979 B raw / 3,273,482 B gzip — SIZE FAIL**, no waiver.
+  Full WP/Task03/04/all18, PICK-P1/performance/lifecycle/IME/a11y/locale remain open.
+  Original Session/math remains authority; no private panel history/core/schema replacement.
+
+Portable evidence is copied under
+[checkpoint-2026-10-13](docs/acceptance/sim-widget-rs/checkpoint-2026-10-13/):
+startup report/review and FIX1 logs only; giant source snapshots excluded.
+Historical progress notes below precede this stopped checkpoint.
+
+### Resume commands (planned; do not execute while stopped)
+
+From repository root, restart the loopback preview if absent (existing server was PID101556,
+12-hour lifetime; do not assume it survives):
+
+```powershell
+bun sim-widget-rs/tools/render-trial.ts serve --port 43874
+```
+
+From `sim-widget-rs`, first finish defects and run retained/new tests:
+
+```powershell
+cargo test --locked --offline -p sim-editor-ui
+```
+
+From repository root, rebuild the isolated FIX1 artifact after source corrections:
+
+```powershell
+cargo build --locked --offline --manifest-path sim-widget-rs/tools/render-trial/Cargo.toml --lib --target wasm32-unknown-unknown --release --target-dir sim-widget-rs/target
+wasm-bindgen sim-widget-rs/target/wasm32-unknown-unknown/release/sim_render_trial.wasm --target web --out-dir sim-widget-rs/tools/render-trial/web/pkg-editor-fix1
+```
+
+Then use a fresh own browser tab at `http://127.0.0.1:43874/editor-fix1.html`,
+reproduce original R1/R2 witnesses plus locale/publication/input cases, freeze exact
+sources/artifacts and obtain different-model review before promotion. Preserve manual tabs.
+
+- Latest user correction, 2026-10-13: «мы КОПИРУЕМ крейты из warpbro и других проектов».
+  Vendor the selected required crates and own-project closure from Warpbro, egui-widgets
+  (gizmo/widgets), other cglibs and StoryTold into `sim-widget-rs`; preserve the whole
+  Warpbro UI and our wgpu viewport. The old SSH-only and UI-only exception rulings are
+  superseded. Record frozen source commit/hashes/licenses/NOTICE/assets/local patches;
+  local path dependencies replace own-project Git dependencies. **Do not vendor crates.io**:
+  normal registry dependencies remain pinned by Cargo.lock.
+- [Full Warpbro UI port plan](plans/20261012-explainer-runtime/phase-06-warpbro-ui-port.md)
+  is APPROVED_FOR_IMPLEMENTATION (architecture only). WP-0 preflight/implementation underway,
+  original `/root/sim_renderer_impl` sole product writer. Before product copy obtain complete
+  activated transitive file/resources/license provenance. Preflight is now APPROVED_FOR_COPY_PREFLIGHT:
+  `.superpowers/sdd/sim-widget-rs/warpbro-ui-copy-transitive-preflight-review.json`,
+  SHA256 `4646a50ba0c1abbe3247b9ce61be75b3458ad964bc251fa568fe8bcc18daf9c0`.
+  First raw product copy DONE: executor 1703 entries / 38453205 B, 1655 required matching
+  files + 46 UI slices + 2 Cargo references; root saw 17 new vendor roots plus existing StoryTold.
+  Manifest normalization/portable UI code underway; native/WASM/browser not yet compiled.
+  WP-0 acceptance requires frozen post-patch/hash/local Cargo resolution and independent review.
+  Frozen Warpbro853590699cd220532a15063442fa94e8e3c49794/egui96fc02ff58f30f3ea8a39193c39f39004a7835b7;
+  plan SHAfb870f581883058edcb76b7367184096e290b5cc9808bfea3a57902e13bc572e,
+  review SHAf1969d65e7cf6492e0f03598d16dbf195ec4d9a49a1dab87704e566a90d95acc.
+  Donor working tree concurrent foreign edits are excluded from frozen copy inputs.
+- CONSUMER-R2 pending-first-success correction is independently APPROVED, retaining R1
+  recovery; review `.superpowers/sdd/sim-widget-rs/task-03-input-consumer-fix2-review.json`,
+  39,041 B SHA256 `8a7c771788e8c6b13605ae8dadd2740132a444414ac0738b2f1a91c50c371eb3`.
+  Initial invalid/no-op proposal remains pending; a valid held-pointer continuation works;
+  admitted writes retain compensation even if rendering fails.
+- Native scoped checks and actual Chrome singular→valid→Escape plus rebuilt MMB/wheel
+  smoke pass. Native OS autoscroll was not reproduced by CDP. User says the wheel cover
+  no longer appears; its root cause remains unconfirmed. Existing manual tab is untouched.
+  `cosines-input-fix2.html` is staged, not a canonical promotion.
+- Full Tasks 03/04 and all 18 tasks remain open; PICK-P1 and renderer WASM **385,747 B
+  gzip > 300,000 B** remain open without waiver. Current own translation gizmo is not
+  final shared professional gizmo integration.
+- Preserve one Session/evaluator, InputCoordinator, common picker, ViewState and GpuHost.
+  Full professional UI, EN/RU, 11 CSS px compact typography and no Holo remain required.
+  Continue through the reviewed full port contract; no donor/product edits by docs owner,
+  no implicit commit/push, and preserve all other agents' work.
+
+## Historical course handoff (2026-10-11)
+
 Updated 2026-10-11 ~20:15 by controller session math-en (Claude). User ordered: stop agents, commit, merge into main. Read this, then [AGENTS.md](AGENTS.md) (working
 notebook: contracts, traps, TODO), [task.md](task.md) (the user's own words, Russian), the recover plan/ledger
 `.superpowers/sdd/2026-10-11-recover/plan.md` (gitignored, on disk only, append-only log of everything below), and

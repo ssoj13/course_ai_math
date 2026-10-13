@@ -1,0 +1,17 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+name = "deflate-rs"
+description = "Pure-Rust 1:1 port of libdeflate (DEFLATE/zlib/gzip) for exr-rs"
+keywords = ["deflate", "libdeflate", "zlib", "compression", "gzip"]
+categories = ["compression", "encoding"]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/ssoj13/exr-rs"
+rust-version = "1.96"
+
+[features]
+probe = []
+
+[dependencies]

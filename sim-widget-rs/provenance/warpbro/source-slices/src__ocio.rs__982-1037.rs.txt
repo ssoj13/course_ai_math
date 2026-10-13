@@ -1,0 +1,56 @@
+pub struct ColourPreset {
+    pub name: String,
+    pub selection: Sel,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+
+pub struct ColourPresets {
+    pub slots: [ColourPreset; 4],
+}
+
+impl Default for ColourPresets {
+    fn default() -> Self {
+        let choices = [
+            (
+                "SDR · sRGB",
+                "sRGB - Display",
+                "ACES 2.0 - SDR 100 nits (Rec.709)",
+                "",
+            ),
+            (
+                "SDR · P3",
+                "Display P3 - Display",
+                "ACES 2.0 - SDR 100 nits (P3 D65)",
+                "",
+            ),
+            ("sRGB, no rendering", "sRGB - Display", "Un-tone-mapped", ""),
+            (
+                "HDR · 1000 nits",
+                "Display P3 HDR - Display",
+                "ACES 2.0 - HDR 1000 nits (P3 D65)",
+                "ACES 1.3 Reference Gamut Compression",
+            ),
+        ];
+        Self {
+            slots: choices.map(|(name, display, view, look)| ColourPreset {
+                name: name.into(),
+                selection: Sel {
+                    on: true,
+                    config: "ocio://studio-config-latest".into(),
+                    display: display.into(),
+                    view: view.into(),
+                    look: look.into(),
+                    ..Sel::default()
+                },
+            }),
+        }
+    }
+}
+
+struct PresetEdit {
+    index: usize,
+    name: String,
+    selection: Sel,
+    focus: bool,
+}

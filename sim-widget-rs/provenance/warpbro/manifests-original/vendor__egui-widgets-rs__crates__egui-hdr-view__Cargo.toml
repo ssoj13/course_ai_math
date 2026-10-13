@@ -1,0 +1,32 @@
+# egui-hdr-view — show an HDR (or LDR) image inside egui via wgpu.
+#
+# Presents an interleaved RGBA frame (u8 / f16 / f32) as a textured quad drawn in
+# egui's wgpu paint pass, with exposure / gamma and a Reinhard / ACES tonemap.
+# Unlike egui-gpu-view (which displays an already-rendered offscreen texture),
+# this OWNS the present pipeline + tonemap shader and uploads CPU pixel buffers.
+# The caller supplies packed RGBA bytes + a model/view/proj transform; the widget
+# manages texture (re)creation across format/size changes. Generic — no app
+# types. (Gathered from playa's viewport renderer, decoupled from playa_engine.)
+[package]
+name = "egui-hdr-view"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Show an HDR/LDR RGBA image (u8/f16/f32) in egui via wgpu, with exposure/gamma and Reinhard/ACES tonemapping"
+
+[lib]
+path = "src/egui_hdr_view.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+
+[dev-dependencies]
+# The GPU pixel test (tests/gpu.rs): adapter/device setup and f16 readback.
+pollster = "1.0"
+half.workspace = true

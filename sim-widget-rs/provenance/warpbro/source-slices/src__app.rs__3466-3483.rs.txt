@@ -1,0 +1,18 @@
+    fn status_bar(&mut self, ui: &mut egui::Ui) {
+        ui.scope(|ui| {
+            if self.status_resizable {
+                self.resizable_status_bar(ui);
+            } else {
+                self.fixed_status_bar(ui);
+            }
+        })
+        .response
+        .context_menu(|ui| {
+            ui.checkbox(&mut self.status_resizable, "Resizable sections");
+            if ui.button("Reset section widths").clicked() {
+                self.status_layout = Default::default();
+                ui.close();
+            }
+        });
+    }
+

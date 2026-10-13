@@ -1,0 +1,30 @@
+[package]
+name = "nodes-egui"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+description = "egui bridge for nodes-view (native texture)"
+license = "MIT"
+
+[dependencies]
+# Pure egui<->wgpu bridge: only egui + egui-wgpu (for RenderState). Deliberately NOT eframe,
+# so embedders don't drag winit/glutin/etc. into their tree just to show a graph panel.
+# (eframe is a dev-dependency below, used only by the example's standalone app.)
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+glam = { workspace = true }
+log = { workspace = true }
+nodes-core = { path = "../nodes-core" }
+nodes-view = { path = "../nodes-view" }
+wgpu = { workspace = true }
+
+[dev-dependencies]
+# Examples run a real eframe app; add default fonts (feature-unified into the
+# regular eframe dep for dev/example/test builds only) so labels are visible.
+eframe = { workspace = true, default-features = false, features = ["wgpu", "default_fonts"] }
+# `editor_in_egui` PoC: the REAL nodes-chrome status bar composited over the graph in egui,
+# driven through the editor's own InputRouter (neutral door). winit = MouseButton for RawInput.
+nodes-chrome = { path = "../nodes-chrome" }
+wgpu-widgets = { workspace = true }
+env_logger = { workspace = true }
+winit = { workspace = true }

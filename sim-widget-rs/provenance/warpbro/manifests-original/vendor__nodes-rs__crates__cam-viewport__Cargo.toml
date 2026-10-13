@@ -1,0 +1,10 @@
+[package]
+name = "cam-viewport"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+description = "Viewport pixel / NDC / ray math (GPU-agnostic, RH WebGPU). Copied from gitnexus-rs cam-viewport."
+
+# Descriptive lib root kept as the upstream layout (src/lib.rs + src/coords.rs).
+[dependencies]
+glam = { workspace = true }

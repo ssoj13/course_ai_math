@@ -1,0 +1,25 @@
+[package]
+name = "vfx-lut"
+description = "LUT types and parsing for VFX color pipelines"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["rayon"]
+# The `_par` LUT helpers run on rayon's pool (vfx-core's default runner); without it they are
+# serial and rayon is not linked (an OpenFX plug-in build through vfx-compute).
+rayon = ["vfx-core/rayon"]
+
+[dependencies]
+vfx-core = { workspace = true }
+thiserror = { workspace = true }
+quick-xml = { workspace = true }
+wide = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,121 @@
+# egui-widgets-rs — a collection of reusable, generic egui widgets.
+#
+# Each widget lives in its own crate under `crates/`, pinned to a single egui
+# version (0.34) and carrying NO application-specific types: every widget is
+# usable standalone by any egui app. Widgets were gathered from the sibling
+# cglibs projects (exr-rs, vfx-rs, gitnexus-rs, mermaid-rs, playa, colmap-rs,
+# openvdb-rs) and decoupled from their host engines. The `egui-widgets-demo`
+# crate is a single eframe gallery app that exercises every widget at once.
+[workspace]
+resolver = "3"
+members = [
+    "crates/egui-widgets-config",
+    "crates/egui-value-editor",
+    "crates/egui-timeline",
+    "crates/egui-statusbar",
+    "crates/egui-menubar",
+    "crates/egui-splitter-table",
+    "crates/egui-attr-grid",
+    "crates/egui-colorpicker",
+    "crates/egui-prefs",
+    "crates/egui-prefs2",
+    "crates/egui-progressbar",
+    "crates/egui-help-overlay",
+    "crates/egui-logbuffer",
+    "crates/egui-drag-overlay",
+    "crates/egui-gpu-view",
+    "crates/egui-hdr-view",
+    "crates/egui-display",
+    "crates/egui-scopes",
+    "crates/egui-camera-controls",
+    "crates/egui-viewport",
+    "crates/egui-viewport-overlays",
+    "crates/egui-viewport-hud",
+    "crates/egui-viewport-toolbar",
+    "crates/egui-track-timeline",
+    "crates/egui-pattern",
+    "crates/egui-keyframes",
+    "crates/egui-hotkeys",
+    "crates/egui-nodes-view",
+    "crates/egui-otio-timeline",
+    "crates/egui-asset-browser",
+    "crates/egui-outliner",
+    "crates/egui-arbor",
+    "crates/egui-layout-manager",
+    "crates/egui-dock-layout",
+    "crates/egui-preset",
+    "crates/egui-jobs-table",
+    "crates/egui-encode-dialog",
+    "crates/egui-gizmo",
+    "crates/egui-ramp",
+    "crates/egui-slider",
+    "crates/egui-file-field",
+    "crates/egui-font-picker",
+    "crates/egui-spinner",
+    "crates/egui-toast",
+    "crates/egui-image-clip",
+    "crates/egui-titlebar",
+    "crates/egui-charts",
+    "crates/egui-command-palette",
+    "crates/egui-tab-menu",
+    "crates/egui-puffin",
+    "crates/egui-widgets-demo",
+]
+
+# The gizmo's vendored upstream reference crates (`transform-gizmo` /
+# `transform-gizmo-egui` 0.9) live under `crates/egui-gizmo/_ref/` as read-only
+# study material; keep them OUT of the workspace build.
+exclude = ["crates/egui-gizmo/_ref"]
+
+# Shared metadata inherited by member crates via `<field>.workspace = true`.
+[workspace.package]
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96" # current OIIO dependency requires 1.96
+
+# Shared dependency versions; members opt in via `<dep> = { workspace = true }`.
+# egui is pinned ONCE here so every widget compiles against the same ABI and the
+# demo app can link them all together.
+[workspace.dependencies]
+egui = "0.36"
+egui_extras = "0.36"
+# Shared icon convention: egui-phosphor pins the Phosphor icon font + ~1500 glyph
+# constants (egui_phosphor::regular::*). Taken from OUR FORK because upstream has no
+# egui-0.36 release - its newest (0.13.0) and its main branch both still require
+# egui ^0.35, which made it the last thing pinning this workspace to 0.35. The fork
+# changes nothing but that requirement. Retire it when upstream publishes for 0.36.
+# The demo registers the font once (egui_phosphor::add_to_fonts) so all icons render.
+egui-phosphor = { git = "ssh://git@github.com/ssoj13/egui-phosphor.git", branch = "main" }
+egui-wgpu = "0.36"
+wgpu = "30"
+# eframe with the wgpu backend so the demo can host the GPU widgets
+# (egui-gpu-view, egui-scopes) alongside the CPU-painted ones.
+eframe = {version = "0.36", default-features = false, features = ["wgpu", "default_fonts"] }
+serde = { version = "1", features = ["derive"] }
+bitflags = "2"
+bytemuck = { version = "1", features = ["derive"] }
+# glam pinned ONCE here (mint feature deliberately OFF — gizmo internalises its
+# math to glam f64). Kept in lockstep with wgpu-widgets-rs (both glam 0.33) so a
+# consumer that pulls both resolves a single glam version.
+glam = "0.33"
+serde_json = "1"
+thiserror = "2"
+# Docking. Pinned here so `egui-dock-layout` and any consumer agree on the DockState ABI:
+# a layout blob is only portable between builds that share one egui_dock version.
+egui_dock = { version = "0.21", features = ["serde"] }
+half = { version = "2", features = ["bytemuck"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+# PNG writing of HDR screenshots (egui-display): the cICP / mDCV / cLLI chunks.
+png = "0.18"
+# OpenEXR = our own 1:1 port (exr-rs), never crates.io `exr` (cglibs/EXR_EVERYWHERE.md).
+exr-core = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+imath-rs = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+# NO `[patch.crates-io]` here any more, and that is the point. The block existed only because
+# wgpu 30 had no released egui: egui 0.35.0 still pinned wgpu 29, and only emilk/egui `main`
+# had moved. egui 0.36 is the first RELEASE on wgpu 30, which is the exit condition named in
+# colmap-rs/docs/egui-wgpu-bump.md - so the bridge is gone and every egui crate now comes from
+# crates.io like any other dependency. Do not reintroduce it: a git egui would once again be a
+# different package from the registry one at the same version, and split the lock.

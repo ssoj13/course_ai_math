@@ -1,0 +1,31 @@
+# egui-scopes — GPU video scopes (histogram / waveform / vectorscope) for egui.
+#
+# Each scope runs entirely on the GPU (wgpu 29 compute): it scatters directly from
+# a caller-supplied linear `wgpu::TextureView` source (zero CPU re-upload) into an
+# output texture, registered with egui-wgpu and painted via `painter.image()`.
+# Generic — the source is any `wgpu::TextureView`; no app types. (Gathered from
+# exr-rs's exr-view, shared verbatim with openvdb-rs's vdb-view.)
+[package]
+name = "egui-scopes"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "GPU video scopes (histogram / waveform / vectorscope) for egui, scattering from a wgpu texture"
+
+[lib]
+path = "src/egui_scopes.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
+
+[dev-dependencies]
+# Headless WGSL validation (parse + validate) of every scope shader — wgpu only
+# validates at pipeline creation, so this catches typos in `cargo test` without a
+# GPU. Pinned to the same naga major as wgpu 30 (naga 30) so the grammar matches.
+naga = { version = "30", features = ["wgsl-in"] }

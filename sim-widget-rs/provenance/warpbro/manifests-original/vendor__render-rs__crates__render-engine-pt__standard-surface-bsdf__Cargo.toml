@@ -1,0 +1,33 @@
+[package]
+name = "standard-surface-bsdf"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+# A derivative of MaterialX (Apache-2.0); see NOTICE.
+license = "Apache-2.0"
+description = "Autodesk Standard Surface BSDF (MaterialX port): CPU f32 twin plus WGSL library, no GPU dependency"
+keywords = ["pbr", "bsdf", "materialx", "standard-surface", "wgsl"]
+categories = ["rendering", "graphics"]
+readme = "README.md"
+# LICENSE and NOTICE travel with every checkout and package (Apache-2.0 section 4).
+include = ["Cargo.toml", "README.md", "LICENSE", "NOTICE", "src/**", "tests/**"]
+
+[features]
+# Device builds through cuda-oxide: f32 methods instead of libm (whose x86 SSE sqrt cannot be
+# lowered), and cuda-device's local-memory-free sin_cos. It builds only under cargo oxide,
+# whose toolchain setup cuda-device's proc macros need.
+cuda-math = ["dep:cuda-device"]
+
+[dependencies]
+libm = { workspace = true }
+# Only with cuda-math: the default build stays free of any GPU dependency.
+cuda-device = { git = "ssh://git@github.com/ssoj13/cuda-rust-windows.git", branch = "main", optional = true }
+
+[dev-dependencies]
+# The naga that wgpu 30 locks (30.0.0), used only to parse and validate the WGSL twin.
+naga = { version = "30", features = ["wgsl-in"] }
+# GPU parity harness (tests/gpu_parity.rs, ignored unless a compute adapter is present).
+wgpu = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }

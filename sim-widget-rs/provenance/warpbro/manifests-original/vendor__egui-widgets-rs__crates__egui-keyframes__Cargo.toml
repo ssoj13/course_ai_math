@@ -1,0 +1,36 @@
+# egui-keyframes — a reusable generic keyframe / animation-curve panel for egui.
+#
+# An After Effects-style attribute + keyframe editor: a list of animatable
+# properties, each with a value editor and a keyframe track (diamonds on a time
+# ruler), a draggable playhead, and add/move/delete keyframe interactions.
+# Fully GENERIC — no application types. The caller passes a flat snapshot model
+# each frame and applies the returned edit intents (`KeyAction`). The widget
+# never owns or mutates the model.
+#
+# Gathered from playa (crates/playa-ui/src/widgets/ae/ae_ui.rs) and decoupled
+# from playa-engine types (Attrs/AttrValue, Effect, Uuid, serde_json values).
+
+[package]
+name = "egui-keyframes"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A reusable generic egui keyframe / animation-curve panel — properties, keyframe tracks, playhead"
+
+[lib]
+path = "src/egui_keyframes.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-slider = { path = "../egui-slider" } # slim slider for the numeric editors
+egui-widgets-config = { path = "../egui-widgets-config" }
+# `serde` only persists the small view-state struct (column width). Optional, on
+# by default to match the sibling widgets; disable with default-features = false.
+serde = { workspace = true, optional = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]

@@ -1,0 +1,57 @@
+# `egui-puffin` — vendored + patched `puffin_egui` (egui 0.34), the in-game puffin
+# flamegraph profiler widget. Renamed to the `egui-*` convention of this library;
+# the import path is `egui_puffin`. Consolidated into the egui-widgets-rs
+# workspace (was its own `ssoj13/puffin-egui-rs` repo) so every project that wants
+# the profiler on egui 0.34 (playa, gitnexus-rs, …) consumes ONE patched copy via
+# the same git-ref as the rest of the widgets. Upstream `puffin_egui` still pins
+# egui ^0.33; this copy is bumped to 0.34 (see deps below).
+#
+# A workspace member here, NOT a workspace root: its deps stay EXPLICIT (not
+# `*.workspace = true`) to keep the vendored copy faithful — the pins already
+# match the workspace `egui = "0.34"` so a single egui resolves in the lock.
+[package]
+name = "egui-puffin"
+version = "0.30.0"
+authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+categories = ["development-tools::profiling", "game-development", "gui"]
+description = "Show puffin profiler flamegraph in-game using egui (vendored, patched for egui 0.34)"
+edition = "2024"
+homepage = "https://github.com/EmbarkStudios/puffin"
+keywords = ["profiler", "gamedev", "gui"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ssoj13/puffin-egui-rs"
+rust-version = "1.95" # matches the workspace MSRV, now set by egui 0.36 (the flamegraph's own floor is 1.87, for `u32::is_multiple_of`)
+# Vendored locally and bumped from egui ^0.33 to egui 0.34 — not for crates.io.
+publish = false
+
+# NOTE: This is a *vendored* copy of `puffin_egui` 0.30.0. The upstream crate
+# pins `egui = "^0.33"`; this project targets egui 0.34, so we maintain a local
+# patched copy. The original used `*.workspace = true` dependencies inheriting
+# from the puffin workspace — those are inlined here with explicit versions
+# (egui / egui_extras bumped to 0.34) so the crate builds standalone.
+
+[dependencies]
+# The one icon source (egui-phosphor behind named `icons`), never raw glyphs.
+egui-widgets-config = { path = "../egui-widgets-config" }
+# Deliberately EXPLICIT, not `workspace = true` (see the header note: the vendored copy
+# stays faithful to upstream's shape). Two consequences to know:
+#  - these must be bumped in lockstep with the workspace pins or a second egui enters
+#    the lock — which is exactly what happened when the workspace moved to 0.36;
+#  - inheriting is not even possible here: the workspace entry carries egui's default
+#    features, and a member cannot turn `default-features` back off.
+egui = { version = "0.36", default-features = false }
+egui_extras = { version = "0.36", default-features = false, features = ["serde"] }
+indexmap = { version = "2", features = ["serde"] }
+log = "0.4"
+log-once = "0.4"
+natord = "1.0.9"
+parking_lot = "0.12"
+puffin = { version = "0.20.0", features = ["packing"] }
+serde = { version = "1", features = ["derive", "rc"], optional = true }
+time = { version = "0.3", default-features = false, features = ["formatting", "macros"] }
+vec1 = "1"
+web-time = "1.1"
+
+[features]
+default = []
+serde = ["dep:serde", "egui/serde", "indexmap/serde"]

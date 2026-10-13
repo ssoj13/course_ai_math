@@ -1,0 +1,84 @@
+ocio_profile_version: 2
+
+environment: {}
+search_path: ""
+strictparsing: true
+luma: [0.2126, 0.7152, 0.0722]
+description: LegacyViewingPipeline parity fixture (gen_ocio_viewing_pipeline.py)
+
+roles:
+  reference: lin
+  scene_linear: lin
+  color_timing: logcs
+  data: raw
+
+file_rules:
+  - !<Rule> {name: Default, colorspace: lin}
+
+displays:
+  Disp:
+    - !<View> {name: Standard, colorspace: gam}
+    - !<View> {name: Looked, colorspace: gam, looks: warm}
+    - !<View> {name: Raw, colorspace: raw}
+    - !<View> {name: Flat, colorspace: gam, looks: cool}
+
+active_displays: [Disp]
+active_views: [Standard, Looked, Raw, Flat]
+
+looks:
+  - !<Look>
+    name: warm
+    process_space: logcs
+    transform: !<CDLTransform> {slope: [1.2, 1.0, 0.8], offset: [0.02, 0.0, -0.02], power: [1.0, 1.1, 1.0], sat: 0.9}
+
+  - !<Look>
+    name: cool
+    process_space: lin
+    transform: !<MatrixTransform> {matrix: [0.9, 0.05, 0.05, 0, 0.0, 1.0, 0.0, 0, 0.1, 0.0, 1.1, 0, 0, 0, 0, 1]}
+
+  - !<Look>
+    name: gone
+    process_space: logcs
+    transform: !<FileTransform> {src: no_such_lut_anywhere.spi3d, interpolation: linear}
+
+colorspaces:
+  - !<ColorSpace>
+    name: lin
+    family: scene
+    isdata: false
+    bitdepth: 32f
+    description: Scene-linear reference (display, scene_linear and reference role).
+
+  - !<ColorSpace>
+    name: logcs
+    family: log
+    isdata: false
+    bitdepth: 32f
+    from_scene_reference: !<LogAffineTransform> {base: 2, log_side_slope: 0.1, log_side_offset: 0.55, lin_side_slope: 1, lin_side_offset: 0.01}
+
+  - !<ColorSpace>
+    name: gam
+    family: display
+    isdata: false
+    bitdepth: 32f
+    from_scene_reference: !<ExponentWithLinearTransform> {gamma: 2.4, offset: 0.055, direction: inverse}
+
+  - !<ColorSpace>
+    name: raw
+    family: raw
+    isdata: true
+    bitdepth: 32f
+
+  - !<ColorSpace>
+    name: ecdyn
+    family: test
+    isdata: false
+    bitdepth: 32f
+    from_scene_reference: !<ExposureContrastTransform> {style: video, exposure: 0.5}
+
+  - !<ColorSpace>
+    name: ecstatic
+    family: test
+    isdata: false
+    bitdepth: 32f
+    from_scene_reference: !<ExposureContrastTransform> {style: linear, exposure: 0.0, contrast: 1.0, gamma: 1.0}

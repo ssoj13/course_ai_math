@@ -1,0 +1,124 @@
+    pub fn ui<H>(
+        &mut self,
+        ui: &mut egui::Ui,
+        host: &mut H,
+        timeline: (u32, u32, f64, u32),
+        service: &RenderService,
+        ocio: Option<&crate::ocio::Ocio>,
+        current: &crate::ocio::Sel,
+        rows: impl FnOnce(&mut egui::Ui, &mut H),
+        freeze: impl FnOnce(&mut H) -> Scene,
+    ) {
+        let running = self.is_running();
+        let kind_before = self.settings.output.output_kind();
+        ui.add_enabled_ui(!running, |ui| {
+            // One grid, so every value column lines up: the host's rows, the settings every
+            // format shares, then the format row (the tabs) and only that format's options.
+            egui::Grid::new("render_encode").num_columns(2).show(ui, |ui| {
+                rows(ui, host);
+                ui.label("Name"); ui.horizontal(|ui| {
+                    ui.text_edit_singleline(&mut self.settings.job.name);
+                    ui.label(format!(".{}", self.settings.suffix()));
+                }); ui.end_row();
+                ui.label("Resolution"); ui.horizontal(|ui| { ui.add(egui::DragValue::new(&mut self.settings.output.width).range(1..=MAX_AXIS)); ui.label("×"); ui.add(egui::DragValue::new(&mut self.settings.output.height).range(1..=MAX_AXIS)); }); ui.end_row();
+                ui.label("Samples / frame"); ui.label(match self.quality {
+                    Some((samples, scale)) => format!("{samples} · Output Quality · {:.0}% resolution", scale * 100.0),
+                    None => "Output Quality unavailable".into(),
+                }); ui.end_row();
+                ui.label("Denoise"); ui.checkbox(&mut self.settings.output.denoise_at_completion, "Once at completion").on_hover_text("Run OIDN once after all samples of each exported frame; override Output profile denoise cadence."); ui.end_row();
+                ui.label("Frame range"); ui.horizontal(|ui| {
+                    ui.add(egui::DragValue::new(&mut self.settings.job.first).range(0..=u32::MAX)); ui.label("…"); ui.add(egui::DragValue::new(&mut self.settings.job.last).range(0..=u32::MAX));
+                    if ui.button("Current frame").on_hover_text("Render only the frame under the playhead.").clicked() {
+                        self.settings.job.first = timeline.3;
+                        self.settings.job.last = timeline.3;
+                    }
+                    if ui.button("Timeline").on_hover_text("The timeline's range, and its FPS for video.").clicked() {
+                        self.settings.job.first = timeline.0;
+                        self.settings.job.last = timeline.1;
+                        self.settings.job.set_fps(timeline.2);
+                    }
+                }); ui.end_row();
+                ui.label("Format"); ui.horizontal(|ui| {
+                    for format in ExportFormat::ALL {
+                        ui.selectable_value(&mut self.settings.output.format, format, format.label());
+                    }
+                }); ui.end_row();
+                if let (Some(kind), Some(ocio)) = (self.settings.output.output_kind(), ocio) {
+                    self.output_transform_ui(ui, ocio, current, kind);
+                }
+                if self.settings.output.format == ExportFormat::Png {
+                    ui.label("Encoding");
+                    egui::ComboBox::from_id_salt("png_encoding").selected_text(self.settings.output.png.label()).show_ui(ui, |ui| {
+                        for encoding in PngEncoding::ALL {
+                            ui.selectable_value(&mut self.settings.output.png, encoding, encoding.label());
+                        }
+                    }); ui.end_row();
+                    if self.settings.output.png.hdr() {
+                        ui.label("HDR peak");
+                        ui.add(egui::DragValue::new(&mut self.settings.output.png_peak_nits).range(PEAK_NITS).suffix(" nits"))
+                            .on_hover_text("When the scene's view is not an HDR view of this kind, the HDR view whose measured peak is nearest this. The file records the rendered view's measured peak (mDCV, HLG system gamma).");
+                        ui.end_row();
+                    }
+                    ui.label("Video");
+                    let found = ffmpeg().map(|p| format!("Also encode the finished sequence with {} into the PNGs' name with .mov / .mp4 (name.pq.mp4), tagged like the PNGs; an HDR10 HEVC carries the PNGs' mastering peak and the clip's MaxCLL / MaxFALL. A stopgap until the built-in encoder carries HDR.", p.display()));
+                    egui::ComboBox::from_id_salt("png_video").selected_text(self.settings.output.png_video.label()).show_ui(ui, |ui| {
+                        for video in PngVideo::ALL {
+                            ui.selectable_value(&mut self.settings.output.png_video, video, video.label());
+                        }
+                    }).response.on_hover_text(found.unwrap_or_else(|e| e)); ui.end_row();
+                    if self.settings.output.png_video != PngVideo::Off {
+                        self.fps_row(ui);
+                    }
+                    if self.settings.output.png_video == PngVideo::Hevc {
+                        self.quality_row(ui, "CRF");
+                    }
+                }
+                if self.settings.output.format == ExportFormat::Hevc {
+                    ui.label("Encoder");
+                    egui::ComboBox::from_id_salt("video_encoder").selected_text(self.settings.output.encoder.label()).show_ui(ui, |ui| {
+                        for encoder in VideoEncoder::ALL {
+                            ui.selectable_value(&mut self.settings.output.encoder, encoder, encoder.label());
+                        }
+                    }); ui.end_row();
+                    self.fps_row(ui);
+                    self.quality_row(ui, "QP");
+                    if self.settings.output.encoder == VideoEncoder::Kvazaar {
+                        ui.label("Prediction"); ui.label("Independent I-frames"); ui.end_row();
+                    }
+                }
+            });
+            // An override names a display of one kind (SDR / PQ / HLG): a new kind starts automatic.
+            self.settings.output.normalize_override(kind_before);
+            ui.small(self.settings.output.format.hint());
+            ui.weak(format!("Written to {}", self.out_root.join("<date_time>").display()));
+            ui.weak("Animation is sampled at each frame. The scene and keys are frozen when export starts.");
+            // The same quality, scaling and checks a start applies (`start`).
+            let validation = self.quality.ok_or_else(|| "The Output render profile cannot be evaluated".to_string()).and_then(|(samples, scale)| {
+                let mut preview = self.settings.clone();
+                preview.apply_quality(samples, scale);
+                preview.resolve(&self.out_root);
+                preview.validate()
+            });
+            if let Err(error) = &validation { ui.colored_label(egui::Color32::LIGHT_RED,error); }
+            if ui.add_enabled(validation.is_ok(),egui::Button::new("Start render")).clicked() {
+                let scene = freeze(host);
+                if let Err(error) = self.start(&scene,service) { self.status = error; }
+            }
+        });
+        if running {
+            let total = self
+                .run
+                .as_ref()
+                .map(|r| r.settings.frame_count())
+                .unwrap_or(1);
+            ui.add(
+                egui::ProgressBar::new(self.completed as f32 / total as f32)
+                    .text(format!("{} / {total} frames written", self.completed)),
+            );
+            if ui.button("Cancel").clicked() {
+                self.cancel(service);
+            }
+        }
+        ui.label(&self.status);
+    }
+    /// The "FPS" grid row of every video (the Video format, a PNG export's video).

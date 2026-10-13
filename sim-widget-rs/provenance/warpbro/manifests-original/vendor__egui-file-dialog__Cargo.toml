@@ -1,0 +1,72 @@
+[package]
+name = "egui-file-dialog"
+description = "easy-to-use and customizable file dialog for egui"
+version = "0.15.0"
+edition = "2021"
+authors = ["Jannis Teipel <jannistpl@gmail.com>"]
+repository = "https://github.com/jannistpl/egui-file-dialog"
+homepage = "https://github.com/jannistpl/egui-file-dialog"
+readme = "README.md"
+license = "MIT"
+exclude = ["media/", "!media/readme/", ".github/"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+egui = { version = "0.36.0", default-features = false }
+# fetch user folders
+directories = "6.0"
+# canonicalize paths
+dunce = "1.0.5"
+# fetch disks
+sysinfo = { version = "0.39", default-features = false, features = ["disk"] }
+# persistent storage
+serde = { version = "1", features = ["derive"], optional = true }
+# meta-data storage
+indexmap = { version = "2.7.0", features = ["serde"], optional = true }
+
+# info panel meta-data display
+image-meta = { version = "0.1.2", optional = true }
+chrono = { version = "0.4.39", optional = true }
+
+[dev-dependencies]
+eframe = { version = "0.36.0", default-features = false, features = [
+    "glow",
+    "persistence",
+    "wayland",
+    "x11",
+] }
+egui-file-dialog = { path = "." , features = ["information_view"] }
+egui_extras = { version = "0.36", features = ["all_loaders"] }
+# required by the egui loaders
+image = { version = "0.25.5", features = ["bmp", "jpeg", "gif", "png", "tiff", "rayon"] }
+tempdir = "0.3"
+
+[features]
+default = ["serde", "default_fonts"]
+serde = ["dep:serde"]
+default_fonts = ["egui/default_fonts"]
+information_view = ["dep:chrono", "image-meta", "indexmap"]
+
+[lints.rust]
+unsafe_code = "warn"
+
+[lints.clippy]
+nursery = { level = "deny", priority = 0 }
+pedantic = { level = "deny", priority = 1 }
+enum_glob_use = { level = "deny", priority = 2 }
+perf = { level = "warn", priority = 3 }
+style = { level = "warn", priority = 4 }
+unwrap_used = { level = "deny", priority = 5 }
+expect_used = { level = "deny", priority = 6 }
+
+# These lints might be useful in the future but are not enabled for now
+struct_excessive_bools = { level = "allow", priority = 10 }
+return_self_not_must_use = { level = "allow", priority = 11 }
+must_use_candidate = { level = "allow", priority = 12 }
+struct_field_names = { level = "allow", priority = 13 }
+missing_fields_in_debug = { level = "allow", priority = 14 }
+missing_errors_doc = { level = "allow", priority = 15 }
+module_name_repetitions = { level = "allow", priority = 16 }
+cast_precision_loss = { level = "allow", priority = 17 }
+missing_const_for_fn = { level = "allow", priority = 18 }

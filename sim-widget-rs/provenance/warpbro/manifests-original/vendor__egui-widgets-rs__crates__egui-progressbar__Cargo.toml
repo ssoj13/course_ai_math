@@ -1,0 +1,21 @@
+# egui-progressbar — a tiny custom-painted progress bar.
+#
+# A fixed-size bar (dark track + coloured fill) with a centred "current/total"
+# count drawn on top. Custom-painted (not egui's built-in ProgressBar) so it fits
+# a status row at an exact pixel size. Generic — no app types. (Gathered from playa.)
+[package]
+name = "egui-progressbar"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A tiny fixed-size, custom-painted egui progress bar with a count overlay"
+
+[lib]
+path = "src/egui_progressbar.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

@@ -1,0 +1,35 @@
+# egui-jobs-table — a generic async-job / task-queue table for egui.
+#
+# A sortable + filterable table of job rows, each carrying a status badge
+# (queued / running / done / failed / cancelled), an optional progress bar, and
+# per-row action buttons (cancel / retry / open / remove). The model is flat and
+# caller-owned: the widget renders `&[JobRow]` + a `&mut JobsTableState` and
+# returns a `Vec<JobAction>` for the host to apply — no internal job queue, no
+# network, no app types. Column headers are caller-supplied. (Gathered from the
+# playa `playa-jobs-ui` panel and decoupled from playa-jobs-core / Seedance.)
+#
+[package]
+name = "egui-jobs-table"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A generic, sortable/filterable egui table for async jobs with status badges, progress bars, and per-row actions"
+
+[lib]
+path = "src/egui_jobs_table.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+egui_extras = { workspace = true }
+# `serde` is optional — only needed when the host persists `JobsTableState`
+# (sort column / direction / filter text) across runs.
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+# Derive `Serialize`/`Deserialize` on the persistable view state.
+serde = ["dep:serde"]

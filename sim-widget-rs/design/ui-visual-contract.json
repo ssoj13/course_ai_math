@@ -1,0 +1,332 @@
+{
+  "version": 3,
+  "date": "2026-10-12",
+  "status": "DESIGN_REFERENCE_AWAITING_INDEPENDENT_REVIEW",
+  "scope": {
+    "product": "Full sim-widget-rs explainer: embedded learner, full-window learner lab, author editor",
+    "authority": "sim-widget-rs/AGENTS.md Visual authority + user 2026-10-12",
+    "user": [
+      "holo не надо",
+      "нужна добротная и понятная, плавная визуализация",
+      "с хорошим приятным UI"
+    ],
+    "tasks": "All 18 implementation tasks remain in scope. This reference does not implement or close any runtime/task acceptance.",
+    "ownership": "Only this JSON and ui-design-preview/**; no course, donor, plan, product or commit changes"
+  },
+  "artifacts": {
+    "preview": ".superpowers/sdd/sim-widget-rs/ui-design-preview/index.html",
+    "reviewState": "Peer review pending; static reference is not runtime evidence",
+    "launch": "Open index.html locally; no external font/image/script dependencies. Anchor navigation changes reference section only.",
+    "sample": "Accepted cosine fixture: a=3, b=4, theta=60 degrees, c_squared=13. SVG geometry authored directly for these constants; no sample evaluator.",
+    "browserInspection": {
+      "status": "NOT_RUN",
+      "reason": "CUA refused local file:// URL; allowed protocols http/https only, with explicit no workaround instruction. No alternate surface/server opened.",
+      "method": "File/content checks only; screenshots and responsive rendered acceptance remain independent review work.",
+      "attemptedMethod": "cua.createBrowserTab(\"chrome\", fileUrl, {sessionName:\"🎨 Design reference\"})",
+      "attemptedUrl": "file:///C:/projects/projects.rust.cg/cgprojs/math_en/.superpowers/sdd/sim-widget-rs/ui-design-preview/index.html",
+      "rejection": "Browser Use rejected this action due to browser security policy. Reason: The browser URL policy blocks this action. Browser use cannot visit the requested page. The requested URL protocol is not allowed. Allowed protocols: \"http:\", \"https:\". The agent must not attempt to achieve the same outcome via workaround, indirect execution, raw CDP or browser commands, alternate browser surfaces, or policy circumvention. Proceed only with a materially safer alternative that does not require this blocked browser action; if none exists, stop and request user input."
+    }
+  },
+  "sources": {
+    "local": [
+      "sim-widget-rs/AGENTS.md",
+      "plans/20261012-explainer-runtime/phase-01-featureset.md",
+      "plans/20261012-explainer-runtime/phase-04-implementation.md",
+      "plans/20261012-explainer-runtime/phase-03-reuse-audit.md",
+      "sim-widget-rs/docs/implementation-status.md"
+    ],
+    "guidelines": "https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md",
+    "readOnlyDonor": "C:/projects/projects.rust.cg/artcraft/storytold/craft-libs/crates/ui/src"
+  },
+  "direction": {
+    "description": "Neutral graphite author workbench and a light reading context. Mathematical viewport is quiet graphite with semantic colored geometry, modest Cartesian grid and opaque labels. Warmth comes from comfortable spacing, helpful copy and predictable controls.",
+    "distinguishingChoices": [
+      "Broad undistracted scene area with math strip immediately below, not a decorative dashboard.",
+      "Author panes share flat surfaces/dividers; controls have modest 5px radii while workspace corners remain nearly square.",
+      "Readable labels carry names and values; icons are short navigation aids, never sole instruction.",
+      "Reader controls align with the demonstrated formula, while author tools remain available in named panels."
+    ],
+    "exclusions": [
+      "Galaxies/starfield",
+      "Neon/additive glow",
+      "HUD instruments",
+      "Glass/translucent cards",
+      "Reflective floor",
+      "Decorative gradients",
+      "Hardware-driven omissions"
+    ],
+    "alignment": "Pane titles, fields, lists and prose left aligned; numbers right aligned; mathematical display centered within its own stable box."
+  },
+  "tokens": {
+    "fonts": {
+      "ui": "Segoe UI, system-ui, sans-serif",
+      "data": "Cascadia Code, Consolas, ui-monospace, monospace",
+      "math": "Cambria Math, STIX Two Math, serif",
+      "rationale": "Local Windows workbench familiarity and Cyrillic support; readable UI and distinct mathematical letterforms without font downloads.",
+      "sizesPx": {
+        "denseLabel": 11,
+        "ui": 11,
+        "ordinarySceneLabel": 11,
+        "principalTouchSceneValue": 16,
+        "readerBody": 16,
+        "sectionTitle": 18,
+        "math": 22
+      },
+      "lineHeight": {
+        "ui": 1.45,
+        "prose": 1.65
+      },
+      "weights": {
+        "normal": 400,
+        "emphasis": 600
+      },
+      "numeric": "tabular-nums lining-nums; reserve signed numeric width with units in separate fixed slots"
+    },
+    "color": {
+      "workspace": "#20242B",
+      "pane": "#272C34",
+      "raised": "#303641",
+      "input": "#1E232A",
+      "border": "#454F5D",
+      "text": "#EDF1F6",
+      "muted": "#B4BFCE",
+      "accent": "#93B6EF",
+      "selectionFill": "#334B6C",
+      "focus": "#B9D2FF",
+      "canvas": "#20262E",
+      "grid": "#35414F",
+      "axis": "#718296",
+      "a": "#7DCAC0",
+      "b": "#A9BFF1",
+      "angle": "#EAC47F",
+      "result": "#DDB3D0",
+      "success": "#9BCFB5",
+      "warning": "#EAC47F",
+      "error": "#F0A5A5",
+      "readerPage": "#F2F4F7",
+      "readerPaper": "#FFFFFF",
+      "readerText": "#243141",
+      "readerMuted": "#536174",
+      "readerBorder": "#D5DDE7",
+      "semanticRule": "Keep a/b/angle/result colors stable across scene, fields, formula and graph. Text labels, shape and stroke patterns also communicate role. Neutral chrome accent is not a fifth mathematical value.",
+      "contrastRule": "Validate actual text pairs >=4.5:1 for ordinary text; control boundaries/focus/essential geometry >=3:1 against adjacent surface. Subtle grid is auxiliary; never use its color for essential data.",
+      "controlBoundary": "#A6B8D0",
+      "controlHover": "#B9D2FF",
+      "borderUsage": "Subtle #454F5D is reserved for pane/layout dividers; ordinary input/button/navigation/readonly boundaries use #A6B8D0.",
+      "controlPressedFill": "#263344"
+    },
+    "spacingPx": [
+      4,
+      8,
+      12,
+      16,
+      24,
+      32
+    ],
+    "radiiPx": {
+      "field": 5,
+      "button": 5,
+      "group": 8,
+      "workspace": 3
+    },
+    "dimensionsPx": {
+      "authorTopbar": 36,
+      "paneHeader": 28,
+      "denseRow": 24,
+      "defaultControl": 26,
+      "desktopInput": 24,
+      "desktopFieldRow": 26,
+      "groupGap": 8,
+      "panePadding": 8,
+      "verticalControlPadding": 4,
+      "formulaMinimum": 40,
+      "viewportToolbar": 34,
+      "timelineRuler": 22,
+      "timelineRow": 24,
+      "trackPadding": 6,
+      "touchTarget": 44,
+      "touchFieldOuter": 46,
+      "touchFieldInput": 44,
+      "desktopTree": 208,
+      "desktopInspector": 272,
+      "minSceneWidth": 380,
+      "bottomEditors": 221,
+      "splitterHit": 8,
+      "splitterVisible": 1
+    },
+    "density": "Compact desktop by user authority:11px UI with24–26px rows/controls,8px groups and8px pane padding. any-pointer:coarse or viewport<=720 restores44px targets; field outer46px includes borders around44px input. Larger textbook prose/formulas and CSS-pixel geometry labels remain separate. Compactness never relies on font/geometry scaling."
+  },
+  "shells": {
+    "embedded": {
+      "composition": [
+        "Scene title + one sentence of aim",
+        "Viewport with camera/fit controls and explicitly available expand action",
+        "Formula and exact input fields a/b/theta; derived c_squared read-only",
+        "Current step caption + previous/play/next + scrub; chapter entry through named menu",
+        "Return to guide appears when overrides exist; reset view and reset values separate"
+      ],
+      "size": "Geometry retains aspect-reserved scene size. Compact header/inputs/transport and content-sized formula; under720px/coarse touch commands44px and fields46px outer/44px input. Formula grows only for genuine wraps; no92/86px blank-height gate.",
+      "controls": "Show only document-permitted learner edits. Author create/import/export/keyframe tools are not learner controls. All permitted views/actions remain reachable through labelled expansion or view menu.",
+      "focus": "Initial load never steals lesson focus; expand retains semantic focus and state. Close expanded view restores originating control.",
+      "text": "Keep c²=13 and full relation visible; controls do not cover geometry. Teach the meaning of theta before assuming notation fluency."
+    },
+    "learnerLab": {
+      "composition": [
+        "Topbar with lesson title, current chapter, view/layout controls, return to lesson",
+        "Left pane: lesson objects and guide chapters; graph is read-only",
+        "Center: scene; optional synchronized second view or table/plot",
+        "Right: permitted typed parameters, derived results and provenance",
+        "Bottom: step transport and captions; Graph/Table/Code/Terms tabs for linked inspection"
+      ],
+      "default": "Scene + allowed inputs + current formula/caption are visible first. Additional views open through explicit tabs. Lab panel layouts persist as view preferences, not document history.",
+      "capabilities": "Read-only computation/term graphs, tables, tensor memory/trace, plots, UV/image channels, A/B, seed/replay controls and state links appear when relevant to the document. Editing operators/keyframes/permissions remains an author capability.",
+      "phone": "Single active scene/data view with labelled view switcher; parameters and guide use stacked disclosure sections. All panels remain reachable; no tiny desktop docking squeezed into a phone."
+    },
+    "author": {
+      "composition": "36px compact project/workspace toolbar; left scene/project tree; center reserved viewport toolbar + geometry + content-sized formula strip; right tabbed inspector; bottom Timeline/Curves/Graph/Guidance panels.",
+      "topbar": [
+        "Open/save/package commands in Project menu",
+        "Undo/redo with semantic transaction names",
+        "Workspace presets: Scene, Animate, Compute, Guide",
+        "Learner preview with explicit preview role and edit-return action",
+        "Validated export/embed action with dependency/permission diagnostics"
+      ],
+      "organization": {
+        "sceneTree": "Search, add palette, hierarchy rows; selected name always readable. Visibility/lock/isolate on hover or selected row, keyboard actions exposed in context menu. Multi-selection count and mixed inspector values explicit.",
+        "projectTree": "Named Objects/Assets/Compositions tabs; assets show dependencies, loading/cancel/retry and missing resources; imported GLB/ABC/USD display format capability diagnostics.",
+        "inspector": "Object/Parameters/Bindings/Learner tabs. Common fields first; disclosure groups for transforms, pivot/parenting, units/axes, materials/lights/textures/custom WGSL, constraints, image channels, quality. Property search finds collapsed fields. Scalar/int/bool/vector/matrix/enum/color/file controls generated from schema. Reference selected identity is triangle; heading, tree selection and hint agree. Fields a/b/theta explicitly affect that triangle; curve track context states Triangle / theta. Desktop common fields26px row/24px envelope, first group avoids duplicate top margin; explanations stay present with4px helper margin.",
+        "timeline": "Persistent transport; chapter/marker lane then object track tree with numeric/current value column; key/clip lanes, group/NLA/additive layer controls, snap, work range, zoom navigator. Clear logical time unit displayed; audio/captions lanes named. Current selected track stays synchronized with curves and inspector. Track list reserves same22px ruler row as lanes; shared24px row heights, identical6px vertical padding, playhead anchored after ruler. Key20px chapter plate sits centered in24px desktop lane;10px key diamond retains stroke clearance. Coarse/mobile lane44px.",
+        "curveEditor": "Track list + graph, mode switch Value/Speed, interpolation selector and tangent buttons. Keys and handles have distinct shapes; selected keys get outline. Hold/linear/Bezier/auto/continuous and retiming/camera paths supported through inspector and context menu. Only runtime-authoritative sampled curves carry mathematical value labels; schematic reference has no time/value data.",
+        "computationGraph": "Graph toolbar includes search/add/fit and diagnostic filter; nodes show operation name, typed input/output ports and shape/unit/provenance. Edges follow actual evaluated graph IDs. Select node => operands/results and source location in inspector. Connection validation previews error before commit; invalid cycle/unit/shape connection does not create a partial graph.",
+        "guidance": "Chapters, pause gates, hotspots, branch/state-machine editor, captions, quizzes/challenges and optional audio available as author panels. Preview shows exactly permitted learner controls and reset policy.",
+        "history": "Named transaction list separate from session event log/replay and workspace history. Camera/hover/selection are view state. Recovery/conflict states describe which file/tab owns unsaved data.",
+        "export": "Portable archive + PNG/SVG/frame/video destinations; format/capability matrix, assets/license manifest, explicit codec support and deterministic time range. Disabled format explains reason; no false completion status."
+      },
+      "resizing": "Desktop pane limits: tree 180..320px, inspector 248..400px; central view >=380px. Splitters keyboard resize with 8px hit region; 1px divider. Presets restore a usable layout. Float means in-app pane, not OS window.",
+      "constrainedWidth": "Under 1100px tree can become a named Objects drawer; under 820px one main editor + inspector toggle + bottom section. Native/full-window continues to offer all editors; 320px fallback stacks labelled sections and viewport. Workspace collapse is user visible and reversible, not feature removal. Static graph specimen switches to readable vertical nodes on phones; curve specimen retains natural width in a named keyboard-scrollable region. At <=980px labelled 'Открыть объекты' native disclosure shows full tree in reference. It changes reference visibility only; runtime drawer implementation remains unproven. Drawer open state includes identical triangle selection and keyboard/focus-return guidance. Compact Objects disclosure also restores Library/Resources/Compositions/Add. Figure layout switches to narrow at actual container<=500px, independent of viewport/media; desktop narrow still11px labels. Scene canvas has explicit layer0, labels1/handles2; reserved viewport toolbar is34px above figure, controls3/corner4."
+    }
+  },
+  "states": {
+    "control": {
+      "normal": "Solid input surface and discernible 1px border; persistent label above/beside; units outside editable text. Boundary #A6B8D0 is separate from subtle pane divider.",
+      "hover": "Raised fill or lighter border, no scale/position change.",
+      "pressed": "Background #263344 with #A6B8D0 boundary; stable size and 11px label. Static pressed specimen is not an active command.",
+      "selected": "Selection fill + 2px semantic indicator + aria-pressed/selected as applicable; color alone insufficient.",
+      "focus": "2px light blue outline with 2px offset or inset at clipped edges, visible against both surfaces; never hidden under sticky chrome.",
+      "disabled": "Dim foreground while retaining label; explicit nearby reason or accessible description; not shown as an active command.",
+      "readonly": "Non-editable value with result label and read-only semantics; not styled as disabled unreadable text.",
+      "locked": "Lock icon + text/description; unlock is a separate permission-checked action.",
+      "mixed": "Em dash and 'Mixed values' accessible text; editing deliberately applies one validated multi-edit transaction.",
+      "invalid": "Error icon + border + inline message stating rejected value/constraint and valid next step; keep typed value for correction, truth unchanged.",
+      "loading": "Reserved area with concise stage/progress and Cancel when possible. No endless spinner after a failed request.",
+      "stale": "Explicit state when dependency/file changed; stale async results never silently replace active document.",
+      "empty": "One concrete create/open/import action, not fabricated sample data."
+    },
+    "semanticFocus": "Selection persists; hover uses a lighter outline; guide focus uses dashed bracket/caption. Pointer exit restores guide while leaving selection. Propagate stable semantic IDs across all views.",
+    "status": "Model failures are inline at source and in a focusable diagnostic list. No success toast or saved indicator until operation has confirmed completion.",
+    "numberField": "Drag/scrub, Enter exact editing, commit/rollback, arrow nudge and visible unit. Show authored/base vs live override in inspector; Return to guide removes override. Reset values writes permitted current defaults as overrides with pause; Reset view only changes camera.",
+    "animationKey": "Diamond for keyframe, small square for hold, tangent handles circles; interpolation name visible. Key at current time uses filled diamond, not ambiguous colored dot."
+  },
+  "interaction": {
+    "keyboard": "Tab moves between control groups, arrow navigation within tree/tabs/graph/timeline, Enter selects/edits, Space activates focused transport, Escape cancels current interaction before closing a panel. Scope shortcuts to focused workspace; editable text keeps native keys/IME. All dragging has exact-field or menu alternatives; remappable keymap lists conflicts.",
+    "pointer": "Pointer capture on actual drag handle. Direct drag/scrub updates truth/presentation without easing lag. One pointer gesture creates one undoable transaction. Esc/pointercancel returns checkpoint and never triggers a click.",
+    "touch": "44px targets; viewport handle radius >=22 CSS px. Vertical page scroll preserved away from handles; viewport gesture handling starts only on hit and indicates captured gesture. Numeric edit opens exact-value sheet; drag also has nudge controls. No hover-only command.",
+    "camera": "Fit all/selected, ortho/perspective and view presets are labelled; page wheel scroll remains available; modified zoom and explicit zoom controls coexist. Navigation hints shown on focus/context request, not permanently as HUD.",
+    "docking": "Craft docking move/split/float validated through application dispatch; drop target visible and keyboard layout actions available. Layout restoration does not replay mathematical edits.",
+    "undo": "History transaction labels explain what changed; failed validation adds neither partial state nor false history entry.",
+    "accessibility": "DOM equivalent for canvas objects/value summaries and graph/table data, accessible name/descriptions for every action. egui author path requires measured AccessKit focus/IME/clipboard/screen-reader result before shell acceptance. Meaningful caption does not rely on canvas pixels alone.",
+    "localization": "Formal Russian imperatives, units outside fields, stable untranslated IDs; accommodate long EN/RU labels and locale number formatting without changing mathematical values. Browser zoom allowed."
+  },
+  "motion": {
+    "aim": "Smooth response communicates relationships rather than decoration.",
+    "direct": "Drag, continuous scrub and captured camera gestures follow input exactly; no spring between pointer and picked handle. Input interrupts any existing transition immediately.",
+    "discrete": "Keyboard/typed commits may ease presentation with critically damped spring; settle exactly on current truth. Motion never recomputes or alters truth, seed or logical time.",
+    "guides": "Playback only after user action. Step/back/scrub/seek produce deterministic authority state; captions and graph focus synchronized to logical time, not decorative wall-clock fades.",
+    "timingsMs": {
+      "controlFeedback": 80,
+      "panelOpen": 140,
+      "discretePresentationTarget": 180,
+      "cameraPresetTarget": 220
+    },
+    "timingNote": "Design targets, not measurements; runtime evidence must establish practical latency/frame stability. Transitions explicit transform/opacity, no transition:all.",
+    "labels": "Screen-pixel font and handle sizes independent of zoom. Stable anchoring with collision avoidance and hysteresis; numbers use fixed-width boxes. Move labels only when necessary, never through the figure; expose values in inspector if no collision-free position. Small displays preserve meaning.",
+    "reducedMotion": "Remove panel/camera easing and continuous decorative animation; step/cut presentation preserves all same values, controls, steps and geometry. No teaching content omitted.",
+    "truthVsShown": "Authoritative table/formula values always describe current truth. If discrete geometry is still settling, show unobtrusive transitional state or keep geometry-linked value presentation synchronized; never imply false measured agreement."
+  },
+  "geometry": {
+    "strokes": "Essential SVG paths use vector-effect:non-scaling-stroke; side width2.5 CSS px, angle arc2 CSS px. DOM vertex handles14 CSS px diameter and2px outline, independent of geometry scale. Auxiliary grid remains quiet.",
+    "fills": "Matte surfaces, low-opacity semantic region fills only when pedagogically meaningful. No specular UI/glass effects. Materials/lights remain full author capabilities.",
+    "labels": "Desktop ordinary scene values/names are 11 CSS px by latest user choice; principal touch values16 CSS px, vertex/axis names11 CSS px. Separate absolutely-positioned DOM labels inside aspect-ratio figure; labels never inherit SVG scale. Fixed backing boxes reserve width: desktop a/b50,c64,angle42px; touch a/b64,c80,angle54px. Label positions switch explicitly at <=720px. Backing-to-side checks include1.25px half-stroke, not only label-pair rectangles; wide c anchor65%, narrow c82%. Container width<=500px uses narrow geometry.",
+    "framing": "Fit includes semantic geometry/labels without clipping; axes/gizmo/panel areas reserved; inspector outside scene in default layouts. Expose explicit viewport tabs for local/world/view, clipping, A/B and synchronized views. Static reference reserves viewport toolbar above geometry; controls/corner have explicit z3/4, figurez0, DOM labelsz1 and handlesz2.",
+    "singular": "Undefined/singular input/result shows reason and affected operation; draw only valid components, never invented zeros.",
+    "quality": "Explicit quality preset/capability diagnostics affect AA/resolution/render cost; do not automatically remove labels, formula, controls or mathematical objects.",
+    "referenceFraming": "Wide SVG760x420 maps O(180,306),A(300,98.15390309173472),B(500,306),scale80. Narrow SVG320x300 maps O(62,225),A(144.5,82.10580837556762),B(282,225),scale55. Separate DOM label/handle percent anchors share the exact SVG aspect ratio; no min-height letterbox changes their coordinate system. Narrow figure max-width480px. Both diagrams are static constants, not another evaluator. Graph node text is HTML/CSS11px, not SVG-scaled; narrow graph rearranges vertically. Curve SVG remains660x190 CSS px in a named scroll region so its11-unit labels are11px. Narrow value a anchors at14%, result c at82%, and axis x at95.5% to keep positive backing/name-box edge reserve in the320px embedded source model."
+  },
+  "coverage": [
+    {
+      "tasks": "01–02",
+      "ui": "No separate foundation dashboard; stable semantic IDs and authority/provenance support all fields/history."
+    },
+    {
+      "tasks": "03–04",
+      "ui": "Readable viewport, inputs, focus, camera, docking, menus, accessibility and responsive presets."
+    },
+    {
+      "tasks": "05–06",
+      "ui": "Full transport, curves/branches/replay/seed; linked formulas/tables/tensors/plots/autodiff/images/code/terms."
+    },
+    {
+      "tasks": "07",
+      "ui": "Full author tree/palette/inspector/graph/curves/guidance/permissions/templates."
+    },
+    {
+      "tasks": "08–11",
+      "ui": "Asset/dependency panes, progress/cancel/retry; GLB/ABC/USD semantics and format capability diagnostics."
+    },
+    {
+      "tasks": "12–13",
+      "ui": "Save/open/version/recovery/conflict and portable/export/audio/caption workflows with honest completion states."
+    },
+    {
+      "tasks": "14–15",
+      "ui": "Distinct author/learner roles and artifacts; embedded/full-window continuity; isolated EN/RU cosine trial."
+    },
+    {
+      "tasks": "16–18",
+      "ui": "All canonical scenes and 98 course entry mapping preserve visual rules; independent full acceptance remains required."
+    }
+  ],
+  "craftUiAdapter": {
+    "theme": "WidgetPalette.apply_to handles five egui background states only. Install app-owned fonts, spacing, surfaces, selection and focus separately. noninteractive is not a disabled palette.",
+    "buttons": "IconButton::new(label,size,style).selected(...).show(...) supplies accessible label/response; app owns command dispatch and selection. Populate normal/hovered/pressed/selected + nonzero focus_stroke; use stable push_id.",
+    "docking": "Layout/Node/Action + DockArea/DockContent/DockStyle/PanelLimits; application validates/actions with permissions. Persist layout as view preferences; do not conflate with document Undo.",
+    "toolbar": "fit_toolbar preserves ordered groups and returns overflow indices; app must expose every index through full-size labelled overflow menu, or wrapping/scrollable fallback when fit returns None.",
+    "caution": "Donor inspected read-only; these APIs do not establish complete author product, application command history or browser accessibility. No donor source edits."
+  },
+  "peerReview": {
+    "requested": [
+      "Inspect author/learner/embedded composition and readability at 1440,1024,720,390,320 CSS px.",
+      "Compare fixture side lengths/angle/formula/result, including static SVG triangle geometry.",
+      "Check state specimens, keyboard/touch alternatives and motion/override semantics against runtime contracts.",
+      "Identify unexposed full features, role confusion, unreadable/overflowing labels or false runtime claims.",
+      "Then require real implemented runtime screenshots + measured motion/focus/IME/clipboard/accessibility and payload evidence before acceptance."
+    ],
+    "unresolved": [
+      "Final DOM versus egui author shell decision remains measured gate.",
+      "Static reference cannot demonstrate input latency, animation/picking/math/runtime correctness or complete task acceptance.",
+      "No fixture-based authored animation curve available; curve illustration is explicitly schematic with no time/value numbers."
+    ],
+    "correctionRound": 2,
+    "sourceChecksOnly": "Density iteration2 and historical fix1 F1/F2/F3 source corrections await independent re-review. Browser/rendered/mobile/screenshots/interactions remain NOT_RUN. User manual screenshot was inspected for spacing feedback; it is not our runtime/render acceptance."
+  },
+  "typographyAuthority": {
+    "user": "выглядит хорошо, шрифт меньше сделай. там что-то типа 14 сейчас, надо 11",
+    "scope": "Main desktop UI, ordinary controls/panel/tree/track labels and ordinary scene labels use 11 CSS px. This later user choice replaces prior >=14px desktop label floor; compact pointer hit regions>=24px and coarse44px remain.",
+    "hierarchy": "Headings and mathematical display are explicitly larger; embedded textbook prose remains 16px reading text. Principal touch scene values are 16px, ordinary vertex names 11px; touch targets44px; field outer46px surrounds44px native input."
+  },
+  "densityAuthority": {
+    "user": "вертикальные промежутки в UI можно уменьшить, сделать всё компактнее? это уже почти то что надо, просто у нас огромные гапы по вертикали везде",
+    "iteration": 2,
+    "scope": "Author/lab/embed/state reference chrome; desktop11px preserved. Main geometry/labels/content preserved. User screenshot read as feedback, not independent rendered evidence."
+  }
+}

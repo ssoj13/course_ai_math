@@ -1,0 +1,40 @@
+# egui-layout-manager — a generic named-layout save/restore widget for egui.
+#
+# A combo-box + Save/Restore/Delete/Rename toolbar that manages a set of NAMED
+# layout blobs (name -> serialized `String`) for any egui app that can serialize
+# its own dock/window arrangement to text (e.g. `serde_json::to_string` of an
+# `egui_dock::DockState`). The widget is FULLY decoupled from egui_dock and from
+# any app layout type: the HOST passes IN the current serialized layout on Save,
+# and receives the chosen blob back (via `LayoutAction::Restore`) to apply on
+# Restore. The store (`LayoutStore`) is plain serde data so the host can persist
+# the whole named set in its own settings file.
+#
+# Gathered from playa's named dock-layout feature
+# (`playa-app/src/app/layout.rs` + the timeline toolbar combo in
+# `playa-ui/.../timeline_ui.rs`) and decoupled from playa's `AppSettings` /
+# `egui_dock` / event bus.
+[package]
+name = "egui-layout-manager"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Named dock-layout save/restore widget for egui — combo + Save/Restore/Delete/Rename over an opaque String blob, no egui_dock dependency"
+
+[lib]
+path = "src/egui_layout_manager.rs"
+
+[dependencies]
+egui = { workspace = true }
+# Shared icon vocabulary for the Save/Delete/Rename toolbar glyphs (host still
+# registers the phosphor font) — the workspace icon convention.
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }
+indexmap = { version = "2", features = ["serde"] }
+
+[dev-dependencies]
+# JSON is only used by the store's serde round-trip test; the widget itself is
+# format-agnostic (the host picks its own serializer for the layout blob).
+serde_json = "1"

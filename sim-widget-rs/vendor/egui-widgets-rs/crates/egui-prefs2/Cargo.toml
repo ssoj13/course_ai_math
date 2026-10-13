@@ -1,0 +1,35 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-prefs2"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "Two-pane Settings panel for egui (vfx-view look): icon category sidebar + sectioned content + Reset footer. Persistable."
+
+[lib]
+name = "egui_prefs2"
+path = "src/egui_prefs2.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.box-rs]
+package = "box-rs"
+path = "../../../box-rs"
+
+[dependencies.egui-attr-grid]
+path = "../egui-attr-grid"
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"
+
+[dev-dependencies.egui_kittest]
+version = "0.36"
+features = ["wgpu", "snapshot"]

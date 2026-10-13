@@ -1,0 +1,10 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "cam-viewport"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Viewport pixel / NDC / ray math (GPU-agnostic, RH WebGPU). Copied from gitnexus-rs cam-viewport."
+
+[dependencies.glam]
+version = "0.33.2"

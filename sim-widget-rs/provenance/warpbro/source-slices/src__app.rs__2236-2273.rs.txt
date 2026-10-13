@@ -1,0 +1,38 @@
+    pub(super) fn snapshot_menu(&mut self, ui: &mut egui::Ui) {
+        use crate::render_service::{FrameFile, PngEncoding};
+        let monitor = Monitor::read(ui.ctx());
+        let displayed = if monitor.hdr {
+            "HDR10 PQ PNG: the monitor shows HDR"
+        } else {
+            "8-bit sRGB PNG: the monitor shows SDR"
+        };
+        let items = [
+            ("Save image (as displayed)", displayed, None),
+            (
+                "Save SDR PNG",
+                "8-bit sRGB / BT.709: the SDR rendering (an HDR view's SDR preview)",
+                Some(FrameFile::Png(PngEncoding::Sdr8)),
+            ),
+            (
+                "Save HDR10 PQ PNG",
+                "16-bit PQ / BT.2020 with cICP: what an HDR monitor shows for this view (an SDR view's white at the monitor's, else BT.2408's 203 nits); needs an HDR-aware viewer",
+                Some(FrameFile::Png(PngEncoding::Hdr10)),
+            ),
+            (
+                "Save display EXR",
+                "Linear display light, float, display primaries",
+                Some(FrameFile::DisplayExr),
+            ),
+        ];
+        for (label, hint, file) in items {
+            if ui.button(label).on_hover_text(hint).clicked() {
+                self.save_frame(monitor, file);
+                ui.close();
+            }
+        }
+    }
+
+    /// Save the viewport's current frame as `monitor` shows it. `None` saves it as displayed:
+    /// an HDR10 PNG when the monitor shows HDR (relative light at the monitor's SDR white, so
+    /// the file is as bright as the screen), an SDR PNG otherwise. One path for the File menu
+    /// and the toolbar.

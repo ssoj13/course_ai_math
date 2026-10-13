@@ -1,0 +1,25 @@
+# otio-edit — editing/command/undo layer over the otio-core timeline model.
+#
+# Drives a Rust NLE timeline widget: high-level edit operations
+# (insert/overwrite/ripple/razor/trim/…), a journal-of-primitives undo/redo, a
+# per-track layout cache, and change notification. See PLAN.md.
+[package]
+name = "otio-edit"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "Editing, command and undo/redo layer over otio-core (OpenTimelineIO in Rust)"
+
+[lib]
+# Descriptive root name over the default lib.rs (project convention).
+name = "otio_edit"
+path = "src/otio_edit.rs"
+
+[dependencies]
+otio-core = { path = "../otio-core" }
+otio-time = { path = "../otio-time" }
+otio-schema = { path = "../otio-schema" }
+otio-algo = { path = "../otio-algo" }
+serde_json = "1"
+thiserror = { workspace = true }

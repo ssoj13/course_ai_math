@@ -1,0 +1,4 @@
+# Copy-only workspace; unrelated donor members and native app are not installed.
+[workspace]
+resolver = "3"
+members = ["crates/ocio/vfx-icc", "crates/ocio/vfx-lut", "crates/base/vfx-core", "crates/base/vfx-math", "crates/base/vfx-transfer", "crates/ocio/vfx-ocio"]

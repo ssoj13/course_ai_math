@@ -1,0 +1,17 @@
+# MurmurHash3 family — pure std, zero dependencies.
+# - x64_128: byte-compatible with Alembic C++ (array-sample digests)
+# - x86_32: Cryptomatte / mmh3 MurmurHash3_x86_32
+# Standalone canonical crate, reused via git-ref.
+[package]
+name = "murmur3"
+version = "0.2.0"
+edition = "2024"
+description = "MurmurHash3 x64_128 (Alembic) and x86_32 (Cryptomatte)"
+license = "MIT OR Apache-2.0"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+repository = "https://github.com/ssoj13/murmur3"
+homepage = "https://github.com/ssoj13/murmur3"
+keywords = ["murmurhash", "hash", "alembic", "cryptomatte", "murmur3"]
+categories = ["algorithms"]
+
+[dependencies]

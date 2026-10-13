@@ -1,0 +1,96 @@
+    fn material_library(&mut self, ui: &mut egui::Ui) {
+        use crate::materials::{CATEGORIES, PRESETS};
+        ui.label("Click a preset to add a Material node to the work area. Assign it separately.");
+        let selected_targets = {
+            self.remember_material_targets();
+            !self.material_assignment_targets().is_empty()
+        };
+        let any_fractal = !self.world.document.material_consumers().is_empty();
+        let mut add = None;
+        let mut assign = None;
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                for category in CATEGORIES {
+                    egui::CollapsingHeader::new(category)
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            let (columns, size) = thumbnail_grid(
+                                ui.available_width(),
+                                Vec2::splat(SWATCH as f32),
+                                6.0,
+                            );
+                            egui::Grid::new(("library", category))
+                                .spacing([6.0, 6.0])
+                                .show(ui, |ui| {
+                                    let mut column = 0;
+                                    for (index, preset) in PRESETS
+                                        .iter()
+                                        .enumerate()
+                                        .filter(|(_, p)| p.category == category)
+                                    {
+                                        let response = ui
+                                            .push_id(index, |ui| {
+                                                ui.vertical(|ui| {
+                                                    ui.set_width(size.x);
+                                                    if let Some(texture) = &self.swatches[index] {
+                                                        ui.add(
+                                                            egui::Image::new((texture.id(), size))
+                                                                .corner_radius(6.0),
+                                                        );
+                                                    } else {
+                                                        let (rect, _) = ui.allocate_exact_size(
+                                                            size,
+                                                            Sense::hover(),
+                                                        );
+                                                        ui.painter().rect_filled(
+                                                            rect,
+                                                            6.0,
+                                                            ui.visuals().extreme_bg_color,
+                                                        );
+                                                    }
+                                                    ui.add(
+                                                        egui::Label::new(
+                                                            RichText::new(preset.name()).small(),
+                                                        )
+                                                        .truncate(),
+                                                    );
+                                                })
+                                                .response
+                                                .interact(Sense::click())
+                                            })
+                                            .inner;
+                                        if response.clicked() {
+                                            add = Some(index);
+                                        }
+                                        response.context_menu(|ui| {
+                                            if ui.button("Add to work area").clicked() {
+                                                add = Some(index);
+                                                ui.close();
+                                            }
+                                            ui.separator();
+                                            if let Some(to) =
+                                                Self::assign_menu(ui, selected_targets, any_fractal)
+                                            {
+                                                assign = Some((index, to));
+                                            }
+                                        });
+                                        column += 1;
+                                        if column == columns {
+                                            ui.end_row();
+                                            column = 0;
+                                        }
+                                    }
+                                });
+                        });
+                }
+            });
+        if let Some(index) = add {
+            self.add_library_material(index);
+        }
+        if let Some((index, to)) = assign {
+            let result = self.assign_library_material(index, to);
+            self.status = Self::assign_status(result, to);
+        }
+    }
+

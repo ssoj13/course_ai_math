@@ -1,0 +1,364 @@
+{
+  "schema_version": 2,
+  "id": "cosines",
+  "revision": 0,
+  "required_capabilities": [
+    "math.scalar.v1",
+    "timeline.scalar.v1"
+  ],
+  "parameters": [
+    {
+      "id": "a",
+      "value_id": "a",
+      "default": {
+        "kind": "scalar",
+        "data": 3
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "range": {
+        "min": 0.1,
+        "max": 100
+      },
+      "readonly": false,
+      "source_refs": [],
+      "metadata": {
+        "step": null,
+        "integer_step": null,
+        "precision": null,
+        "display_unit": null,
+        "integer_range": null,
+        "enum_choices": [],
+        "optional_file": false,
+        "locked": false,
+        "learner_exposed": true
+      }
+    },
+    {
+      "id": "b",
+      "value_id": "b",
+      "default": {
+        "kind": "scalar",
+        "data": 4
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "range": {
+        "min": 0.1,
+        "max": 100
+      },
+      "readonly": false,
+      "source_refs": [],
+      "metadata": {
+        "step": null,
+        "integer_step": null,
+        "precision": null,
+        "display_unit": null,
+        "integer_range": null,
+        "enum_choices": [],
+        "optional_file": false,
+        "locked": false,
+        "learner_exposed": true
+      }
+    },
+    {
+      "id": "theta",
+      "value_id": "theta",
+      "default": {
+        "kind": "scalar",
+        "data": 1.0471975511965976
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 1
+        }
+      },
+      "range": {
+        "min": 0,
+        "max": 3.141592653589793
+      },
+      "readonly": false,
+      "source_refs": [],
+      "metadata": {
+        "step": null,
+        "integer_step": null,
+        "precision": null,
+        "display_unit": null,
+        "integer_range": null,
+        "enum_choices": [],
+        "optional_file": false,
+        "locked": false,
+        "learner_exposed": true
+      }
+    }
+  ],
+  "constants": [
+    {
+      "id": "two",
+      "value": {
+        "kind": "scalar",
+        "data": 2
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    }
+  ],
+  "operations": [
+    {
+      "id": "square-a",
+      "operator": "scalar.mul",
+      "inputs": [
+        "a",
+        "a"
+      ],
+      "output": "a2",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "square-b",
+      "operator": "scalar.mul",
+      "inputs": [
+        "b",
+        "b"
+      ],
+      "output": "b2",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "sum-squares",
+      "operator": "scalar.add",
+      "inputs": [
+        "a2",
+        "b2"
+      ],
+      "output": "sum",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "ab",
+      "operator": "scalar.mul",
+      "inputs": [
+        "a",
+        "b"
+      ],
+      "output": "ab",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "twice",
+      "operator": "scalar.mul",
+      "inputs": [
+        "two",
+        "ab"
+      ],
+      "output": "twice_ab",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "cos",
+      "operator": "scalar.cos",
+      "inputs": [
+        "theta"
+      ],
+      "output": "cos_theta",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "projection",
+      "operator": "scalar.mul",
+      "inputs": [
+        "twice_ab",
+        "cos_theta"
+      ],
+      "output": "cross",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "subtract",
+      "operator": "scalar.sub",
+      "inputs": [
+        "sum",
+        "cross"
+      ],
+      "output": "c2",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "root",
+      "operator": "scalar.sqrt",
+      "inputs": [
+        "c2"
+      ],
+      "output": "c",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    }
+  ],
+  "tracks": [
+    {
+      "parameter": "theta",
+      "keys": [
+        {
+          "time": "0",
+          "value": 1.0471975511965976,
+          "interpolation": "linear"
+        },
+        {
+          "time": "254016000000",
+          "value": 2.0943951023931953,
+          "interpolation": "linear"
+        }
+      ]
+    }
+  ],
+  "constraints": [],
+  "objects": [
+    {
+      "id": "triangle",
+      "label": "Triangle",
+      "bindings": {
+        "opposite_length": "c"
+      },
+      "assets": [],
+      "properties": {
+        "opposite_length": {
+          "shape": {
+            "kind": "scalar"
+          },
+          "unit": {
+            "length": 1,
+            "time": 0,
+            "angle": 0
+          }
+        }
+      }
+    }
+  ],
+  "assets": [],
+  "authority": "rust_fp64_sequential",
+  "learner_permissions": {
+    "overrides": true,
+    "return_to_guide": true,
+    "seek": true,
+    "playback": true
+  }
+}

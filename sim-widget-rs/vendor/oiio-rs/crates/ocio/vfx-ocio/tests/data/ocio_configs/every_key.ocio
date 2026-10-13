@@ -1,0 +1,265 @@
+ocio_profile_version: 2.5
+
+environment:
+  SHOT: sh010
+search_path: [luts]
+strictparsing: true
+family_separator: "~"
+luma: [0.2126, 0.7152, 0.0722]
+name: every-key
+description: |
+  Every YAML key OCIO 2.5 reads (OCIOYaml.cpp), with non-default values.
+  Second line.
+
+roles:
+  default: raw
+  scene_linear: lin
+  aces_interchange: lin
+  compositing_log: log
+  color_timing: log
+  cie_xyz_d65_interchange: disp
+
+file_rules:
+  - !<Rule> {name: EXR, colorspace: lin, pattern: "*", extension: exr, custom: {owner: comp}}
+  - !<Rule> {name: Movies, colorspace: vid, regex: ".*\\.mov$"}
+  - !<Rule> {name: ColorSpaceNamePathSearch}
+  - !<Rule> {name: Default, colorspace: raw}
+
+viewing_rules:
+  - !<Rule> {name: scene, encodings: [scene-linear, log]}
+  - !<Rule> {name: one, colorspaces: lin, custom: {k: v}}
+
+shared_views:
+  - !<View> {name: shared vt, view_transform: vt scene, display_colorspace: <USE_DISPLAY_NAME>, looks: look1, rule: scene, description: a shared view}
+
+displays:
+  disp:
+    - !<View> {name: raw, colorspace: raw}
+    - !<View> {name: film, view_transform: vt scene, display_colorspace: disp, look: look1, description: film view}
+    - !<Views> [shared vt]
+
+virtual_display:
+  - !<View> {name: vraw, colorspace: raw}
+  - !<Views> [shared vt]
+
+active_displays: [disp]
+active_views: []
+inactive_colorspaces: [hidden]
+
+looks:
+  - !<Look>
+    name: look1
+    process_space: lin
+    description: a look
+    interchange:
+      amf_transform_ids: |
+        urn:a
+        urn:b
+    transform: !<CDLTransform> {slope: [1.1, 1, 0.9], offset: [0.01, 0, -0.01], power: [1.2, 1, 0.8], sat: 0.9}
+    inverse_transform: !<CDLTransform> {slope: [1.1, 1, 0.9], offset: [0.01, 0, -0.01], power: [1.2, 1, 0.8], sat: 0.9, style: noclamp, direction: inverse}
+
+default_view_transform: vt scene
+
+view_transforms:
+  - !<ViewTransform>
+    name: vt scene
+    family: vts
+    description: scene view transform
+    categories: [cat1, cat2]
+    from_scene_reference: !<GroupTransform>
+      children:
+        - !<ExponentWithLinearTransform> {gamma: 2.4, offset: 0.055, direction: inverse}
+        - !<RangeTransform> {min_in_value: 0, max_in_value: 1, min_out_value: 0, max_out_value: 1}
+
+  - !<ViewTransform>
+    name: vt display
+    from_display_reference: !<MatrixTransform> {matrix: [0.9, 0.1, 0, 0, 0, 1, 0, 0, 0, 0.1, 0.9, 0, 0, 0, 0, 1]}
+
+display_colorspaces:
+  - !<ColorSpace>
+    name: disp
+    family: Display
+    equalitygroup: ""
+    bitdepth: 32f
+    isdata: false
+    encoding: sdr-video
+    allocation: uniform
+    from_display_reference: !<ExponentWithLinearTransform> {gamma: 2.4, offset: 0.055, direction: inverse}
+
+colorspaces:
+  - !<ColorSpace>
+    name: raw
+    family: Utility
+    bitdepth: 32f
+    isdata: true
+    allocation: uniform
+
+  - !<ColorSpace>
+    name: lin
+    aliases: [linear, scene]
+    interop_id: linear
+    family: Scene~Linear
+    equalitygroup: grp
+    bitdepth: 16f
+    description: the reference
+    categories: [file-io, working-space]
+    encoding: scene-linear
+    interchange:
+      amf_transform_ids: "urn:x"
+    allocation: lg2
+    allocationvars: [-8, 5, 0.00390625]
+
+  - !<ColorSpace>
+    name: hidden
+    bitdepth: 8ui
+    to_scene_reference: !<MatrixTransform> {offset: [0.1, 0, 0, 0]}
+
+  - !<ColorSpace>
+    name: vid
+    bitdepth: 10ui
+    from_scene_reference: !<ExponentWithLinearTransform> {gamma: [2.2, 2.4, 2.6, 1], offset: [0.099, 0.055, 0.03, 0], style: mirror}
+
+  - !<ColorSpace>
+    name: alloc
+    to_scene_reference: !<AllocationTransform> {allocation: lg2, vars: [-8, 5, 0.00390625], direction: inverse}
+
+  - !<ColorSpace>
+    name: builtin
+    to_scene_reference: !<BuiltinTransform> {style: ACEScct_to_ACES2065-1}
+
+  - !<ColorSpace>
+    name: cdl
+    to_scene_reference: !<CDLTransform> {slope: [1.1, 1, 0.9], power: [1.2, 1, 0.8], saturation: 0.8, style: noclamp}
+
+  - !<ColorSpace>
+    name: cst
+    to_scene_reference: !<ColorSpaceTransform> {src: vid, dst: lin, data_bypass: false, direction: inverse}
+
+  - !<ColorSpace>
+    name: dvt
+    from_scene_reference: !<DisplayViewTransform> {src: lin, display: disp, view: film, looks_bypass: true, data_bypass: false}
+
+  - !<ColorSpace>
+    name: exp
+    to_scene_reference: !<ExponentTransform> {value: [2.2, 2.3, 2.4, 1], style: pass_thru}
+
+  - !<ColorSpace>
+    name: exp scalar
+    to_scene_reference: !<ExponentTransform> {value: 2.2, style: mirror, direction: inverse}
+
+  - !<ColorSpace>
+    name: ec
+    to_scene_reference: !<ExposureContrastTransform> {style: video, exposure: 0.5, contrast: 1.2, gamma: 1.1, pivot: 0.2, log_exposure_step: 0.1, log_midway_gray: 0.4}
+
+  - !<ColorSpace>
+    name: ec dynamic
+    to_scene_reference: !<ExposureContrastTransform> {style: log, pivot: 0.18}
+
+  - !<ColorSpace>
+    name: file
+    to_scene_reference: !<FileTransform> {src: shaper.cube, interpolation: linear}
+
+  - !<ColorSpace>
+    name: file default interp
+    to_scene_reference: !<FileTransform> {src: shaper.cube, direction: inverse}
+
+  - !<ColorSpace>
+    name: ff
+    to_scene_reference: !<FixedFunctionTransform> {style: ACES_GamutComp13, params: [1.147, 1.264, 1.312, 0.815, 0.803, 0.88, 1.2]}
+
+  - !<ColorSpace>
+    name: ff inv
+    to_scene_reference: !<FixedFunctionTransform> {style: RGB_TO_HSV, direction: inverse}
+
+  - !<ColorSpace>
+    name: gp log
+    to_scene_reference: !<GradingPrimaryTransform> {style: log, brightness: {rgb: [0.1, 0, -0.1], master: 0.05}, contrast: {rgb: [1.1, 1, 0.9], master: 1.05}, gamma: {rgb: [1, 1.1, 1], master: 0.95}, saturation: 1.1, pivot: {contrast: -0.3, black: 0.05, white: 0.95}, clamp: {black: -0.1, white: 1.2}}
+
+  - !<ColorSpace>
+    name: gp lin
+    to_scene_reference: !<GradingPrimaryTransform> {style: linear, offset: {rgb: [0.01, 0, 0], master: 0.02}, exposure: {rgb: [0.1, 0.2, 0.3], master: 0.5}, contrast: {rgb: [1.2, 1, 1], master: 1}, pivot: {contrast: 0.2}}
+
+  - !<ColorSpace>
+    name: gp video
+    to_scene_reference: !<GradingPrimaryTransform> {style: video, lift: {rgb: [0.01, 0.02, 0.03], master: 0}, gain: {rgb: [1.1, 1, 0.9], master: 1.05}, gamma: {rgb: [1.1, 1, 1], master: 1}, pivot: {black: 0.1, white: 0.9}, direction: inverse}
+
+  - !<ColorSpace>
+    name: rgb curve
+    to_scene_reference: !<GradingRGBCurveTransform>
+      style: log
+      lintolog_bypass: true
+      red: {control_points: [-6, -6, 0, 0.2, 6, 6]}
+      master: {control_points: [-5, -5, 1, 1.5, 5, 5], slopes: [1, 1.2, 1]}
+
+  - !<ColorSpace>
+    name: rgb curve lin
+    to_scene_reference: !<GradingRGBCurveTransform> {style: linear, green: {control_points: [-7, -7, 0, 0.5, 7, 7]}, direction: inverse}
+
+  - !<ColorSpace>
+    name: hue curve
+    to_scene_reference: !<GradingHueCurveTransform>
+      style: log
+      hsy_transform: none
+      hue_sat: {control_points: [0, 1, 0.5, 1.3, 1, 1]}
+      lum_lum: {control_points: [-7, -7, 0, 0.2, 7, 7]}
+
+  - !<ColorSpace>
+    name: tone
+    to_scene_reference: !<GradingToneTransform>
+      style: log
+      blacks: {rgb: [1.1, 1, 1], master: 0.9, start: 0.4, width: 0.4}
+      shadows: {rgb: [1, 1.1, 1], master: 1, start: 0.5, pivot: 0}
+      midtones: {rgb: [1, 1, 1.1], master: 1, center: 0.4, width: 0.6}
+      highlights: {rgb: [0.9, 1, 1], master: 1, start: 0.3, pivot: 0.9}
+      whites: {rgb: [1, 0.9, 1], master: 1.1, start: 0.4, width: 0.5}
+      s_contrast: 1.2
+
+  - !<ColorSpace>
+    name: group inv
+    to_scene_reference: !<GroupTransform>
+      direction: inverse
+      children:
+        - !<MatrixTransform> {matrix: [1.1, 0.1, 0, 0, 0, 0.9, 0.1, 0, 0.2, 0, 1, 0, 0, 0, 0, 1], offset: [0.01, 0, -0.02, 0]}
+        - !<LogTransform> {base: 10}
+
+  - !<ColorSpace>
+    name: log affine
+    to_scene_reference: !<LogAffineTransform> {base: 10, log_side_slope: [0.3, 0.31, 0.32], log_side_offset: 0.6, lin_side_slope: 1.1, lin_side_offset: 0.01, direction: inverse}
+
+  - !<ColorSpace>
+    name: log camera
+    to_scene_reference: !<LogCameraTransform> {base: 10, log_side_slope: 0.25, log_side_offset: 0.39, lin_side_slope: 5.6, lin_side_offset: 0.05, lin_side_break: 0.011, linear_slope: [5.3, 5.3, 5.3], direction: inverse}
+
+  - !<ColorSpace>
+    name: log camera nolin
+    to_scene_reference: !<LogCameraTransform> {log_side_slope: 0.0648, log_side_offset: -0.296, lin_side_slope: 2231.8, lin_side_offset: 64, lin_side_break: -0.018, direction: inverse}
+
+  - !<ColorSpace>
+    name: log
+    to_scene_reference: !<LogTransform> {direction: inverse}
+
+  - !<ColorSpace>
+    name: look xf
+    to_scene_reference: !<LookTransform> {src: lin, dst: lin, looks: look1}
+
+  - !<ColorSpace>
+    name: range
+    to_scene_reference: !<RangeTransform> {min_in_value: -0.1, max_in_value: 1.1, min_out_value: 0, max_out_value: 1, style: noClamp}
+
+  - !<ColorSpace>
+    name: range half
+    to_scene_reference: !<RangeTransform> {min_in_value: 0.1, min_out_value: 0.1}
+
+named_transforms:
+  - !<NamedTransform>
+    name: nt fwd
+    aliases: [ntf]
+    description: forward only
+    family: nts
+    categories: [file-io]
+    encoding: log
+    transform: !<ExponentTransform> {value: 2.2}
+
+  - !<NamedTransform>
+    name: nt inv
+    inverse_transform: !<LogTransform> {base: 2}

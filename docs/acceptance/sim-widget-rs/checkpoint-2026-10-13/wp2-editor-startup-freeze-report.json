@@ -1,0 +1,403 @@
+{
+  "scope": "BOUNDED_NEW_EDITOR_STARTUP_ONLY",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
+  "date": "2026-10-13T09:17:24.640Z",
+  "url": "http://127.0.0.1:43874/editor.html",
+  "worker_tab": "1696999233",
+  "user_tab_untouched": "1696999236",
+  "server_pid": 101556,
+  "files": [
+    {
+      "path": "sim-widget-rs/Cargo.lock",
+      "sha256": "dcda03aa173bf4b3fce579d6419d87a0cd3cb80ff5cbd6bac6e6e83d11842168",
+      "bytes": 50860
+    },
+    {
+      "path": "sim-widget-rs/Cargo.toml",
+      "sha256": "0e36edf1319dce1831f5b0508abc84345366c331942f4df9ba72b62c7d771695",
+      "bytes": 4720
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/Cargo.toml",
+      "sha256": "0e8d49fb8438de456cda253a799b83cf812f8801d33738175a44dc82039f0038",
+      "bytes": 1297
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/accessibility.rs",
+      "sha256": "36e54984acf10e423c6864a5cead10095601b62e4d7e8ae508c8de8c4526b2d1",
+      "bytes": 586
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/camera_slots.rs",
+      "sha256": "0acac7e0e9ca4487645fec3958004c6431a4de9c03b26b6f999467053d276747",
+      "bytes": 1024
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/catalog.rs",
+      "sha256": "18d6d373695ea977cfca4ab7d9f48b63cc61dd2d7e0dfda0a0199e9371d49522",
+      "bytes": 13187
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/chrome.rs",
+      "sha256": "870eceb2a891055f45dc10d90b780ba6e93823ae5c7f3a864905ef0de7298b64",
+      "bytes": 8486
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/color_ui.rs",
+      "sha256": "39df36dbdf0de5ee9f0d47c27f77b1be6aa6b7932598d2bfb05fe77b2e37ae7f",
+      "bytes": 2084
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/dock.rs",
+      "sha256": "7164dc02fe8eb065432b005695dfd4fb2ab7d66715073457c6a868cd75165632",
+      "bytes": 8611
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/hotkeys.rs",
+      "sha256": "a169f0652d8875ccc4a47dff3aa0d3f94cda7cf18e77982398732ee9c8375984",
+      "bytes": 902
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/intents.rs",
+      "sha256": "6ac45f437b48134c7691acbcfa47f2a8ef9119ef42b497a4c384eb228833a36c",
+      "bytes": 5667
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/language.rs",
+      "sha256": "634e76e2bbc780a1f1e01f2c09dc3ac73b5dc142faf40caf8e9acdaf472e6fd6",
+      "bytes": 3792
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/lib.rs",
+      "sha256": "31267d0262c0e28aa31e97e633eaad2ffd4f7827b096e3ecf9e7a2dcecb1780a",
+      "bytes": 681
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/catalog.rs",
+      "sha256": "359d96096b191b8b7b232123cc85dd86cb0a7a6dac3da0450c63d85077e00a73",
+      "bytes": 3674
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/export.rs",
+      "sha256": "41936e312b77d2ea818ddf5d8805444f27595f8e4a2ef74bf4d131c22e81f068",
+      "bytes": 4401
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/inspector.rs",
+      "sha256": "c364510bc7fc8d02018e00ed2f0565f37cb4a08daaee0ff4e855d344b84d99e3",
+      "bytes": 12028
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/materials.rs",
+      "sha256": "9e60a735a69a898066e1de77f9e110ff17d5823a572325b6c5922b0b34f7f09a",
+      "bytes": 3438
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/mod.rs",
+      "sha256": "112e0cdfb61c6bca6710b48428c3f5fd8e63662d0c7bde330f78b08a41d91a7d",
+      "bytes": 243
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/outliner.rs",
+      "sha256": "978fe6eeb1e4c2b668018d2ff6ddb77ae48908b36a7e953e985f31068832970a",
+      "bytes": 3928
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/render_profiles.rs",
+      "sha256": "4a974925a0f2760516ed6b699813361908e921a329e38849c82445a8ce3df0fb",
+      "bytes": 3527
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/takes.rs",
+      "sha256": "b5d4cd853cbbb89c42dfa3e64b675bdf1e55abb1fe64bcd2cd219f153e4b382b",
+      "bytes": 7448
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/panels/timeline.rs",
+      "sha256": "a6140ed382f542429a85b2540785e1b5144ec0eb9b3e08c892873f2398dfc028",
+      "bytes": 6488
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/preferences.rs",
+      "sha256": "1a5e27347c99adbd427c13117d3648ad2e27d23aebe1356a0800bc3c8dcbc554",
+      "bytes": 7222
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/projection.rs",
+      "sha256": "8a76fa438851d48bd9e0188c5dab01a6d398d31b581dd689e27a926e8411fedc",
+      "bytes": 3714
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/shell.rs",
+      "sha256": "5f00686cebbc8c1af7bbf9bf5ced5ea12f3bd1462061b6a3ef6a1dd4aef67c68",
+      "bytes": 5082
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/src/transport.rs",
+      "sha256": "dd8a0187039d85dd872f427188f381b1ea49fd11c58cf8066f9ce917d1d8291c",
+      "bytes": 5336
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-editor-ui/tests/headless.rs",
+      "sha256": "3f0db58495e0e411cf1a482af29bcd42a24562581a3f8824c71514f76c75bcd4",
+      "bytes": 8496
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/Cargo.toml",
+      "sha256": "13a7cb0d1fad574288e117936f1e8230e580985df1d86fce39c358d9534e85a5",
+      "bytes": 1299
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/bindings.rs",
+      "sha256": "6d4b6e32f6e967b8e057221835f21bec6c06a94dc4b388eba398244d887331e3",
+      "bytes": 4297
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/bounds.rs",
+      "sha256": "7d90826a3b63e77b14fcaad55b1e273b30ba6284f7b747be57f548516927eaf0",
+      "bytes": 1494
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/camera.rs",
+      "sha256": "9976f105df5c378d402bcae6ea82a1644008a7628e93bcca27b317f4fdc5c0ed",
+      "bytes": 7716
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/capability.rs",
+      "sha256": "97bc07df0f31bc5763ab5902a238a8639c60a71236d39c5992e065dbd385788c",
+      "bytes": 3403
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/error.rs",
+      "sha256": "455e0d4fa9ca252c64f7dbe9f8ee7b91119604d3b6279b4a85b4ff3ab7467dca",
+      "bytes": 989
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/frame.rs",
+      "sha256": "b1b932c71debaf3dc5f6d510d03c159d5eaebfbb185737bff2b85a3e694d0678",
+      "bytes": 8247
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/geometry.rs",
+      "sha256": "53dd9e45749f9e5dd1e60718100168c2bde7a1ed64f7470a4131fac2b6d65423",
+      "bytes": 12158
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/gpu/mod.rs",
+      "sha256": "6f1af4e7453a2742018ed408fedbadfd13777e532fc29fae1fa795a0166b2c14",
+      "bytes": 22361
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/hierarchy.rs",
+      "sha256": "c92924869e7297d2307c9af417b0b9ad9ff182ddf0d36f5af150aa1795b7a39d",
+      "bytes": 3047
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/input.rs",
+      "sha256": "c24e1fe23af316aef1eb4803e15e114ae6e9f4b4bb188a68092422e91487c884",
+      "bytes": 18755
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/input_pointer.rs",
+      "sha256": "ea6ddbc9cf3ee56b10dc8ec8aeb2477552eae910df67de28cb7803a450035e3f",
+      "bytes": 3436
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/interaction.rs",
+      "sha256": "020fd8eb1f2ec5134fc23d42c4a21faf439a4feb82fcdcb007b409f23ebab652",
+      "bytes": 5136
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/lib.rs",
+      "sha256": "f694000add4957c25da6900db96f303b2cea1894ad13e6309a03858342069600",
+      "bytes": 480
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/material.rs",
+      "sha256": "494af3b3c1e3bf84291ffe1c8d657cd16df557bb27da6f794710284e48d417fb",
+      "bytes": 6732
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/picking.rs",
+      "sha256": "57a36d341128fb0faf14c48187fe1fc03e40d95ecd8549529f607c47cdbe6089",
+      "bytes": 27188
+    },
+    {
+      "path": "sim-widget-rs/crates/sim-render/src/shader.rs",
+      "sha256": "aeef3a8de81702dee19f81aa9f4369ff4a1ba70ba491fc61a24f52f422f52e83",
+      "bytes": 2147
+    },
+    {
+      "path": "sim-widget-rs/provenance/warpbro/patches/manifests.json",
+      "sha256": "38bd7fbf86be199b704c8f6be8730a723b61c8f3b07ac4ac4103faef60bcb968",
+      "bytes": 64578
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/Cargo.lock",
+      "sha256": "16da6da9064af7be6ab8bbc7adb04924039ebccef9abb0adcf015a084a531c74",
+      "bytes": 51539
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/Cargo.toml",
+      "sha256": "8a3bbe8a8dabfb3f049d925197abde6cc558b65dd55ff8d85e08aeab2976f8c4",
+      "bytes": 1636
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/src/cosines.rs",
+      "sha256": "ab520f4054e3e3842cc02f560fdf9a718fdc4f55a4ccae629e590052cb308493",
+      "bytes": 7656
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/src/cosines_input.rs",
+      "sha256": "91dc2f3843b3ceca86e324daed89e2ad3549008c2e412a664d7444b0b9fc9e1e",
+      "bytes": 10205
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/src/cosines_web.rs",
+      "sha256": "e071c93a7d4717d0bd5dd4d633751158d169ccafdb68e0d701b0f15b3e5efcc9",
+      "bytes": 25138
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/src/editor_web.rs",
+      "sha256": "50b49c3618bdcce33f454f04227f42a84af405a35ddbec0bb04a79f841627d09",
+      "bytes": 18959
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/src/lib.rs",
+      "sha256": "b31ed17d56ac5531360f1d3c81e059f18e65a8cc632cb97652ffd7236233d281",
+      "bytes": 11518
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/src/main.rs",
+      "sha256": "eaaf01af3ec4ec76f8ba400605285c8d4e647e26fc4205e192122bf04fdebf20",
+      "bytes": 1282
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/web/editor.html",
+      "sha256": "47e15a1fea287d243a4ac94d4089250817255ffb8ba30a6b88dec9b435d72af2",
+      "bytes": 928
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/web/editor.js",
+      "sha256": "148692170c1aa497f2365b7697426befae6f002654cb5273b39924619b283a2e",
+      "bytes": 5435
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/web/pkg-editor/sim_render_trial.js",
+      "sha256": "9b5bba867839a0f9ac59cab4cc15818b211cb945e74002dfb82ac5782c2f631f",
+      "bytes": 148475,
+      "gzip_bytes": 21619
+    },
+    {
+      "path": "sim-widget-rs/tools/render-trial/web/pkg-editor/sim_render_trial_bg.wasm",
+      "sha256": "c976f2d6f491a50d3b4706626ce9d73dd16ea0ab6d0e5d80b2a20e060fc4efda",
+      "bytes": 10271979,
+      "gzip_bytes": 3273482
+    }
+  ],
+  "commands": [
+    {
+      "command": "cargo build --offline --manifest-path sim-widget-rs/tools/render-trial/Cargo.toml --lib --target wasm32-unknown-unknown --release --target-dir sim-widget-rs/target",
+      "log": ".superpowers/sdd/sim-widget-rs/wp2-editor-build2.stderr.log",
+      "result": "PASS release7.03s"
+    },
+    {
+      "command": "wasm-bindgen sim-widget-rs/target/wasm32-unknown-unknown/release/sim_render_trial.wasm --target web --out-dir sim-widget-rs/tools/render-trial/web/pkg-editor",
+      "log": ".superpowers/sdd/sim-widget-rs/wp2-editor-bindgen.stderr.log",
+      "result": "PASS exit0"
+    }
+  ],
+  "actual_browser": {
+    "startup": {
+      "a": 3,
+      "b": 4,
+      "c2": 12.999999999999996,
+      "revision": 0,
+      "ready": true,
+      "device_count": 1,
+      "submissions_per_frame": 1,
+      "msaa": 4,
+      "error": ""
+    },
+    "play": {
+      "playing": true,
+      "intent": true,
+      "time": "23760656640",
+      "revision": 11,
+      "c2": 15.090224098231337
+    },
+    "numeric": {
+      "a": 4,
+      "b": 4,
+      "can_undo": true,
+      "c2": 29.907099864635416,
+      "error": ""
+    },
+    "B_drag": {
+      "before": {
+        "time": "248300640000",
+        "revision": 67,
+        "O": [
+          0,
+          0,
+          0
+        ],
+        "A": [
+          -1.9178314410236261,
+          3.5102596148748373,
+          0
+        ],
+        "B": [
+          4,
+          0,
+          0
+        ]
+      },
+      "after": {
+        "time": "248300640000",
+        "revision": 74,
+        "O": [
+          0,
+          0,
+          0
+        ],
+        "A": [
+          -1.9178314410236281,
+          3.5102596148748355,
+          0
+        ],
+        "B": [
+          3.644444444444444,
+          0.3259259259259254,
+          0
+        ],
+        "b": 3.6589893437713976,
+        "theta": 1.9816395448995396,
+        "c2": 41.0788940686346
+      },
+      "error": ""
+    }
+  },
+  "observed_corrected_defects": [
+    {
+      "issue": "Chrome PointerEvent.button=-1 rejected u8 JSON",
+      "fix": "Normalize button for non-button events in JS; down/up0..2 retained"
+    },
+    {
+      "issue": "DOM host.event/cancel during async mut render caused wasm-bindgen recursive alias rejection",
+      "fix": "Bounded2048 serialized event queue drained before render await; physical capture cleanup immediate; cancel queued"
+    }
+  ],
+  "source_copy_reference": "sim-widget-rs/provenance/warpbro/copy-proof.json",
+  "preflight_review_sha": "4646a50ba0c1abbe3247b9ce61be75b3458ad964bc251fa568fe8bcc18daf9c0",
+  "limitations": [
+    "No full WP0/WP1/Task03 acceptance; all18 gates remain required",
+    "Physical artifact size budget remains OPEN/overbudget, no waiver",
+    "Runtime egui source UI precedes admitted command; next repaint publication coherence requires independent check",
+    "Current viewport scene only triangle/strokes/points; arc/arrowheads/grid/label reintegration remains",
+    "Unavailable author/import/render/Take services explicit capabilities, no second backend/history",
+    "IME/clipboard/platform services/full key vocabulary remain open",
+    "GPU memory/performance/PICK-P1/lifecycle/accessibility/visual acceptance remain open",
+    "User manual tab already loaded previous JS: never reloaded/reset by worker"
+  ]
+}

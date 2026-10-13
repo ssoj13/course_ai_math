@@ -1,0 +1,38 @@
+[workspace]
+resolver = "3"
+members = ["crates/sim-model", "crates/sim-math", "crates/sim-runtime", "crates/sim-render", "crates/sim-editor-ui"]
+exclude = ["vendor/egui-phosphor","vendor/oiio-rs/crates/ocio/vfx-icc","vendor/oiio-rs/crates/ocio/vfx-lut","vendor/oiio-rs/crates/base/vfx-core","vendor/oiio-rs/crates/base/vfx-math","vendor/oiio-rs/crates/base/vfx-transfer","vendor/oiio-rs/crates/ocio/vfx-ocio","vendor/lcms-rs","vendor/gpu-info-rs","vendor/curves-rs","vendor/box-rs","vendor/otio-rs/crates/otio-algo","vendor/otio-rs/crates/otio-time","vendor/otio-rs/crates/otio-schema","vendor/otio-rs/crates/otio-core","vendor/otio-rs/crates/otio-edit","vendor/otio-rs/crates/otio-timeline","vendor/nodes-rs/crates/cam-controls","vendor/nodes-rs/crates/cam-viewport","vendor/nodes-rs/crates/nodes-core","vendor/nodes-rs/crates/nodes-view","vendor/nodes-rs/crates/nodes-egui","vendor/wgpu-widgets-rs/crates/flex-geom","vendor/wgpu-widgets-rs/crates/ui-theme","vendor/wgpu-widgets-rs/crates/wgpu-node","vendor/wgpu-widgets-rs/crates/wgpu-pick","vendor/wgpu-widgets-rs/crates/wgpu-text","vendor/wgpu-widgets-rs/crates/wgpu-tube","vendor/graph-layout-rs","vendor/exr-rs/crates/deflate-rs","vendor/exr-rs/crates/exr-core","vendor/exr-rs/crates/imath-rs","vendor/murmur3","vendor/jph-rs","vendor/codec-simd-rs","vendor/render-rs/crates/render-engine-pt/standard-surface-bsdf","vendor/egui-file-dialog","vendor/egui-widgets-rs/crates/egui-puffin","vendor/egui-widgets-rs/crates/egui-widgets-config","vendor/egui-widgets-rs/crates/egui-tab-menu","vendor/egui-widgets-rs/crates/egui-command-palette","vendor/egui-widgets-rs/crates/egui-charts","vendor/egui-widgets-rs/crates/egui-titlebar","vendor/egui-widgets-rs/crates/egui-image-clip","vendor/egui-widgets-rs/crates/egui-toast","vendor/egui-widgets-rs/crates/egui-spinner","vendor/egui-widgets-rs/crates/egui-font-picker","vendor/egui-widgets-rs/crates/egui-file-field","vendor/egui-widgets-rs/crates/egui-slider","vendor/egui-widgets-rs/crates/egui-ramp","vendor/egui-widgets-rs/crates/egui-colorpicker","vendor/egui-widgets-rs/crates/egui-gizmo","vendor/egui-widgets-rs/crates/egui-encode-dialog","vendor/egui-widgets-rs/crates/egui-jobs-table","vendor/egui-widgets-rs/crates/egui-preset","vendor/egui-widgets-rs/crates/egui-dock-layout","vendor/egui-widgets-rs/crates/egui-layout-manager","vendor/egui-widgets-rs/crates/egui-arbor","vendor/egui-widgets-rs/crates/egui-outliner","vendor/egui-widgets-rs/crates/egui-asset-browser","vendor/egui-widgets-rs/crates/egui-otio-timeline","vendor/egui-widgets-rs/crates/egui-nodes-view","vendor/egui-widgets-rs/crates/egui-hotkeys","vendor/egui-widgets-rs/crates/egui-keyframes","vendor/egui-widgets-rs/crates/egui-pattern","vendor/egui-widgets-rs/crates/egui-track-timeline","vendor/egui-widgets-rs/crates/egui-viewport-toolbar","vendor/egui-widgets-rs/crates/egui-display","vendor/egui-widgets-rs/crates/egui-viewport-hud","vendor/egui-widgets-rs/crates/egui-viewport-overlays","vendor/egui-widgets-rs/crates/egui-viewport","vendor/egui-widgets-rs/crates/egui-camera-controls","vendor/egui-widgets-rs/crates/egui-scopes","vendor/egui-widgets-rs/crates/egui-hdr-view","vendor/egui-widgets-rs/crates/egui-gpu-view","vendor/egui-widgets-rs/crates/egui-drag-overlay","vendor/egui-widgets-rs/crates/egui-logbuffer","vendor/egui-widgets-rs/crates/egui-help-overlay","vendor/egui-widgets-rs/crates/egui-progressbar","vendor/egui-widgets-rs/crates/egui-prefs2","vendor/egui-widgets-rs/crates/egui-attr-grid","vendor/egui-widgets-rs/crates/egui-splitter-table","vendor/egui-widgets-rs/crates/egui-prefs","vendor/egui-widgets-rs/crates/egui-menubar","vendor/egui-widgets-rs/crates/egui-statusbar","vendor/egui-widgets-rs/crates/egui-timeline","vendor/egui-widgets-rs/crates/egui-value-editor","vendor/storytold/effectcraft","vendor/storytold/effectcraft/crates/time","vendor/storytold/effectcraft/crates/geom","vendor/storytold/effectcraft/crates/color","vendor/storytold/effectcraft/crates/keyframe"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+sim-model = { path = "crates/sim-model" }
+sim-math = { path = "crates/sim-math" }
+sim-runtime = { path = "crates/sim-runtime" }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[package]
+name = "sim-widget-rs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+sim-model.workspace = true
+sim-math.workspace = true
+sim-runtime.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -1,0 +1,70 @@
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 10 tests
+test rejected_range_stays_dirty_and_can_retry ... FAILED
+test foreign_gesture_cannot_terminate_current_owner_and_blur_is_nonwriting ... ok
+test same_field_refocus_and_multiple_enter_cycles ... ok
+test play_invalid_pending_then_current_time_valid_and_clean_noop ... FAILED
+test dirty_touched_aba_rejects_and_escape_releases ... FAILED
+test redo_specific_chord_and_text_focus_routing ... FAILED
+test clean_locale_reformats_but_dirty_keeps_edit_decimal ... FAILED
+test dirty_transfer_commits_old_before_new_begin_in_both_orders ... FAILED
+test clean_focus_transfer_both_widget_orders_and_noop_enter ... ok
+test published_repaint_has_no_commands_and_matches_same_snapshot ... ok
+
+failures:
+
+---- rejected_range_stays_dirty_and_can_retry stdout ----
+
+thread 'rejected_range_stays_dirty_and_can_retry' (116492) panicked at crates\sim-editor-ui\tests\editor_fix1.rs:36:289:
+assertion `left == right` failed
+  left: 3.0
+ right: 4.0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- play_invalid_pending_then_current_time_valid_and_clean_noop stdout ----
+
+thread 'play_invalid_pending_then_current_time_valid_and_clean_noop' (83356) panicked at crates\sim-editor-ui\tests\editor_fix1.rs:40:285:
+assertion `left == right` failed
+  left: 3.0
+ right: 4.0
+
+---- dirty_touched_aba_rejects_and_escape_releases stdout ----
+
+thread 'dirty_touched_aba_rejects_and_escape_releases' (133516) panicked at crates\sim-editor-ui\tests\editor_fix1.rs:37:399:
+assertion failed: !x.draft("a").dirty
+
+---- redo_specific_chord_and_text_focus_routing stdout ----
+
+thread 'redo_specific_chord_and_text_focus_routing' (22908) panicked at crates\sim-editor-ui\tests\editor_fix1.rs:42:292:
+assertion failed: out.intents.is_empty()
+
+---- clean_locale_reformats_but_dirty_keeps_edit_decimal stdout ----
+
+thread 'clean_locale_reformats_but_dirty_keeps_edit_decimal' (133892) panicked at crates\sim-editor-ui\tests\editor_fix1.rs:39:508:
+assertion `left == right` failed
+  left: "1.04719755"
+ right: "1,25"
+
+---- dirty_transfer_commits_old_before_new_begin_in_both_orders stdout ----
+
+thread 'dirty_transfer_commits_old_before_new_begin_in_both_orders' (9204) panicked at crates\sim-editor-ui\tests\editor_fix1.rs:35:193:
+assertion `left == right` failed
+  left: 4.0
+ right: 5.0
+
+
+failures:
+    clean_locale_reformats_but_dirty_keeps_edit_decimal
+    dirty_touched_aba_rejects_and_escape_releases
+    dirty_transfer_commits_old_before_new_begin_in_both_orders
+    play_invalid_pending_then_current_time_valid_and_clean_noop
+    redo_specific_chord_and_text_focus_routing
+    rejected_range_stays_dirty_and_can_retry
+
+test result: FAILED. 4 passed; 6 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
+

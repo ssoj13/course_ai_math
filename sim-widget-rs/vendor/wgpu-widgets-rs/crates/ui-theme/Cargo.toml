@@ -1,0 +1,19 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "ui-theme"
+version = "0.1.0"
+edition = "2024"
+description = "Single source of truth for UI + graph color/style tokens (pure: glam + serde, no GPU)."
+
+[lib]
+path = "src/ui_theme.rs"
+
+[dependencies.glam]
+version = "0.33.2"
+
+[dependencies.flex-geom]
+path = "../flex-geom"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]

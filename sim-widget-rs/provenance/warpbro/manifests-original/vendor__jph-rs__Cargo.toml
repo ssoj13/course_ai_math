@@ -1,0 +1,53 @@
+# Pure-Rust 1:1 port of OpenJPH (HTJ2K / JPH codestream). Zero library dependencies
+# (`image` is optional, CLI-only). Standalone canonical crate, reused via git-ref.
+[package]
+name = "jph-rs"
+version = "0.2.0"
+edition = "2024"
+# True MSRV: uses std x86 SIMD intrinsics stabilised in 1.89 (silences clippy
+# incompatible_msrv without a blanket allow).
+rust-version = "1.89"
+description = "Pure Rust one-to-one port of OpenJPH for HTJ2K/JPH codestream processing"
+license = "BSD-3-Clause"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+repository = "https://github.com/ssoj13/jph-rs"
+homepage = "https://github.com/ssoj13/jph-rs"
+keywords = ["htj2k", "jpeg2000", "openjph", "j2k", "codec"]
+categories = ["multimedia::images", "compression"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ojph"
+path = "src/bin/ojph.rs"
+required-features = ["cli"]
+
+[[bin]]
+name = "ojph_bench"
+path = "src/bin/ojph_bench.rs"
+required-features = ["cli"]
+
+[[test]]
+name = "planar_roundtrip"
+path = "tests/planar_roundtrip.rs"
+
+[features]
+default = []
+cli = ["dep:image"]
+# Debug-only: capture per-code-block (coded bytes -> decoded coefficients) pairs so the
+# GPU port (jph-wgpu-rs) can validate its entropy kernels bit-exactly. Purely additive;
+# absent from normal builds. See src/others/debug_extract.rs.
+debug-extract = []
+# Lets OJPH_CPU_FORCE_LEVEL select a SIMD tier the CPU does not have (benchmarks / crash tests).
+# Without it the forced level is clamped to the detected one.
+unsafe-force-simd = []
+
+[dependencies]
+# CLI raster I/O: image's default format set minus `exr` (crates.io `exr` is banned across cglibs;
+# EXR is exr-rs's job). Spelled out here instead of taken from exr-image because exr-core depends on
+# jph-rs — the CLI cannot depend back on exr-rs. Keep in sync with exr-image's `image-formats`.
+image = { version = "0.25", optional = true, default-features = false, features = [
+    "rayon", "avif", "bmp", "dds", "ff", "gif", "hdr", "ico", "jpeg", "png", "pnm", "qoi", "tga",
+    "tiff", "webp",
+] }

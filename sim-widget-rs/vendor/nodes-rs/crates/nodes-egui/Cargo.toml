@@ -1,0 +1,42 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "nodes-egui"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "egui bridge for nodes-view (native texture)"
+license = "MIT"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.egui-wgpu]
+version = "0.36"
+
+[dependencies.glam]
+version = "0.33.2"
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.nodes-core]
+path = "../nodes-core"
+
+[dependencies.nodes-view]
+path = "../nodes-view"
+
+[dependencies.wgpu]
+version = "30"
+default-features = false
+features = ["vulkan", "gles", "metal", "std", "wgsl"]
+
+[dev-dependencies.eframe]
+version = "0.36"
+default-features = false
+features = ["wgpu", "default_fonts"]
+
+[dev-dependencies.env_logger]
+version = "0.11"
+
+[dev-dependencies.winit]
+version = "0.30"

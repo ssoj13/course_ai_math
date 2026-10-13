@@ -1,0 +1,25 @@
+# egui-logbuffer — a thread-safe log ring buffer + egui log panel + tracing layer.
+#
+# A bounded `Arc<Mutex<VecDeque>>` of severity-tagged lines (cheap to clone, append
+# from any worker thread), a `tracing_subscriber::Layer` that feeds it, and an egui
+# `show()` that renders a colourised, tail-following ("stick to bottom") log panel
+# with a Clear button. Generic — no app types. (Gathered from colmap-rs, which
+# mirrors COLMAP's C++ LogWidget.)
+[package]
+name = "egui-logbuffer"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Thread-safe log ring buffer with a tracing layer and a colourised egui log panel"
+
+[lib]
+path = "src/egui_logbuffer.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+tracing = "0.1"
+tracing-subscriber = "0.3"

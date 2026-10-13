@@ -1,0 +1,94 @@
+    fn export_ui(&mut self, ui: &mut egui::Ui) {
+        ui.heading("Render / Encode");
+        let frame = f64::from(self.world_ui.playhead);
+        let quality = self.world.document.output_render_profile().and_then(|id| {
+            self.world
+                .document
+                .effective_render(id, f64::from(self.export.settings.job.first))
+        });
+        self.export.quality = quality
+            .as_ref()
+            .ok()
+            .map(|effective| (effective.samples, effective.resolution_scale));
+        let quality_id = match &quality {
+            Ok(effective) => Some(effective.quality),
+            Err(error) => {
+                self.status = error.clone();
+                None
+            }
+        };
+        // An unreadable recipe still shows the form (its check fails, a running export keeps
+        // its progress and Cancel); only the authoring step needs the recipe.
+        let recipe = self
+            .world
+            .document
+            .output_settings_id()
+            .and_then(|id| Ok((id, self.world.document.output_settings_of(id)?)));
+        match &recipe {
+            Ok((_, output)) => self.export.settings.output = output.clone(),
+            Err(error) => {
+                ui.colored_label(egui::Color32::LIGHT_RED, error);
+                self.status = error.clone();
+            }
+        }
+        let timeline = (
+            self.world.document.first,
+            self.world.document.last,
+            self.world.document.fps,
+            self.world_ui.playhead,
+        );
+        let scene = &self.scene;
+        let ocio = self.colour.config().ok();
+        let mut actions = crate::render_profiles_ui::Actions::default();
+        self.export.ui(
+            ui,
+            &mut self.world,
+            timeline,
+            &self.renderer,
+            ocio,
+            &self.scene.colour,
+            |ui, world| {
+                actions = crate::render_profiles_ui::output_binding_rows(ui, world, frame);
+                if let Some(id) = quality_id {
+                    ui.label("Quality");
+                    if ui
+                        .button(format!(
+                            "{} Edit Output quality",
+                            egui_phosphor::regular::GEAR
+                        ))
+                        .on_hover_text("Edit the Output quality profile in the Attribute Editor")
+                        .clicked()
+                    {
+                        actions.edit = Some(id);
+                    }
+                    ui.end_row();
+                }
+            },
+            |world| {
+                world.finish_edit();
+                freeze_world_scene(scene, &world.document)
+            },
+        );
+        self.profile_ui_actions(actions);
+        let Ok((id, before)) = recipe else {
+            return;
+        };
+        let authored =
+            crate::render_profiles::output_edits(id, &before, &self.export.settings.output)
+                .and_then(|commands| {
+                    if commands.is_empty() {
+                        return Ok(());
+                    }
+                    self.world.execute_edit(
+                        crate::world::WorldCommand::Batch(commands),
+                        egui_attr_grid::edit_gesture(ui.ctx()),
+                    )
+                });
+        if let Err(error) = authored {
+            self.status = error;
+        }
+    }
+    /// Unreal-style flight: hold RMB in the viewport, mouse looks, WASD moves, R/Space up, C down,
+    /// Q/E roll, Shift fast, Alt slow, Ctrl aligns to the nearest plane or axis, the wheel moves along the view. Integrated by cam-controls `SpaceFlight` (thrust,
+    /// inertia, damping); on release the orbit pivot is placed in front of the camera at the
+    /// current orbit distance, so orbiting continues from where you flew.

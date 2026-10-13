@@ -1,0 +1,26 @@
+# egui-value-editor — a generic modal deep-editor for ONE typed value.
+#
+# Gathered from vfx-view's USD attribute-value-editor dialog, decoupled from
+# USD/pxr: a staged modal `egui::Window` that edits a single complex value —
+# bool / int / float / vector(2..4) / quaternion / 4x4 matrix / string /
+# multiline / read-only array dump. The host owns its real value type; this
+# widget edits a generic [`EditValue`] carrier (ints as i64, reals as f64 — the
+# widest common types) and hands back the edited value on Apply, leaving the
+# narrowing to the host. Complements `egui-attr-grid` (the flat label|value
+# grid): a grid cell of a complex type can launch this modal.
+[package]
+name = "egui-value-editor"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic modal deep-editor for one typed value (bool/int/float/vec/quat/matrix4/string/array) for egui"
+
+[lib]
+path = "src/egui_value_editor.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

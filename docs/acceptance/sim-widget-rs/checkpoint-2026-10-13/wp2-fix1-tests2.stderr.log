@@ -1,0 +1,7 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling sim-editor-ui v0.1.0 (C:\projects\projects.rust.cg\cgprojs\math_en\sim-widget-rs\crates\sim-editor-ui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.53s
+     Running unittests src\lib.rs (target\debug\deps\sim_editor_ui-91e91eee97c0871d.exe)
+     Running tests\editor_fix1.rs (target\debug\deps\editor_fix1-1c0e8e7cb5f67ba1.exe)
+error: test failed, to rerun pass `-p sim-editor-ui --test editor_fix1`

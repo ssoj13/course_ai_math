@@ -1,0 +1,100 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "vfx-ocio"
+description = "OpenColorIO-compatible color management for VFX"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.96"
+
+[features]
+default = []
+gpu = ["gpu-mem/wgpu", "dep:bytemuck"]
+parallel = ["dep:rayon"]
+
+[dependencies]
+saphyr = "0.1.0"
+zip = "8.6.0"
+tracing = "0.1"
+
+[dependencies.vfx-core]
+path = "../../base/vfx-core"
+default-features = false
+
+[dependencies.vfx-math]
+path = "../../base/vfx-math"
+
+[dependencies.vfx-lut]
+path = "../vfx-lut"
+default-features = false
+
+[dependencies.vfx-transfer]
+path = "../../base/vfx-transfer"
+
+[dependencies.vfx-icc]
+path = "../vfx-icc"
+
+[dependencies.half]
+version = "2.7"
+
+[dependencies.gpu-mem]
+package = "gpu-info-rs"
+default-features = false
+path = "../../../../gpu-info-rs"
+
+[dependencies.bytemuck]
+version = "1.25"
+features = ["derive"]
+optional = true
+
+[dependencies.rayon]
+version = "1.12"
+optional = true
+
+[dependencies.thiserror]
+version = "2.0"
+
+[dependencies.glam]
+version = "0.33"
+
+[dependencies.glob]
+version = "0.3"
+
+[dependencies.regex]
+version = "1.13"
+
+[dependencies.xxhash-rust]
+version = "0.8.19"
+features = ["xxh3"]
+
+[dependencies.tempfile]
+version = "3.27"
+
+[dev-dependencies]
+pollster = "1.0"
+
+[dev-dependencies.bytemuck]
+version = "1.25"
+features = ["derive"]
+
+[dev-dependencies.tempfile]
+version = "3.27"
+
+[dev-dependencies.serde_json]
+version = "1"
+
+[dev-dependencies.naga]
+version = "30"
+features = ["wgsl-in"]
+
+[dev-dependencies.wgpu]
+version = "30"
+
+[dev-dependencies.gpu-mem]
+package = "gpu-info-rs"
+default-features = false
+features = ["wgpu"]
+path = "../../../../gpu-info-rs"
+
+[lints.rust]
+unsafe_code = "deny"

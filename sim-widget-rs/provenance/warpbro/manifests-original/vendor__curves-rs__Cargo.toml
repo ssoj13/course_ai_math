@@ -1,0 +1,40 @@
+# curves — a pure-Rust, dependency-free keyframe track library (Nuke / Fusion / Maya style).
+#
+# A `Track` is an animated scalar: keys with per-side tangent types, one cubic-Bezier
+# evaluator for every segment, pre/post extrapolation, key-reduction fitting. A colour or
+# position ramp is a Track on [0,1] with Smooth keys. See docs/KEYS.md.
+# NO NURBS, NO UI, NO FFI.
+#
+# This is a standalone single-crate workspace (its own `[workspace]` table) so it
+# resolves on its own regardless of any surrounding workspace.
+
+[package]
+name = "curves"
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+description = "Pure-Rust keyframe tracks (per-side tangents, Bezier segments, extrapolation, key reduction), f32 or f64"
+rust-version = "1.88"
+
+# Single-crate workspace: an empty `[workspace]` table makes Cargo treat this
+# crate as its own workspace root, so it builds standalone even when nested
+# inside another project tree.
+[workspace]
+
+[lib]
+# Project convention: name the library root after the crate, not `lib.rs`.
+path = "src/curves.rs"
+
+[dependencies]
+# Zero REQUIRED deps (std only). `serde` is OPTIONAL — pulled ONLY when the `serde`
+# feature is enabled, so the default build stays dependency-free.
+serde = { version = "1", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[features]
+default = []
+# Derive Serialize/Deserialize on the public curve types, for hosts that persist
+# curves / keyframes (e.g. playa's animation channels store Tracks).
+serde = ["dep:serde"]

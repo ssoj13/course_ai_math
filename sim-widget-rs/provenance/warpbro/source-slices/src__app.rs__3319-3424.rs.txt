@@ -1,0 +1,106 @@
+    fn browser(&mut self, ui: &mut egui::Ui) {
+        if self.tab == Tab::Materials {
+            self.materials_tab(ui);
+            return;
+        }
+        let mut load: Option<Scene> = None;
+        let mut delete: Option<usize> = None;
+        egui::ScrollArea::vertical()
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                let entries = if self.tab == Tab::Gallery {
+                    &self.gallery
+                } else {
+                    &self.bookmarks
+                };
+                if entries.is_empty() {
+                    ui.label("No bookmarks yet: Save bookmark stores the current scene.");
+                }
+                let gap = 6.0;
+                let padding = egui::Frame::group(ui.style()).inner_margin.sum();
+                let (columns, cell) =
+                    thumbnail_grid(ui.available_width(), Vec2::new(168.0 + padding.x, 1.0), gap);
+                let image_width = (cell.x - padding.x).max(1.0);
+                let size = Vec2::new(image_width, image_width * THUMB_H as f32 / THUMB_W as f32);
+                egui::Grid::new("scene-card-grid")
+                    .spacing([gap, gap])
+                    .show(ui, |ui| {
+                        for (i, e) in entries.iter().enumerate() {
+                            let selected = e.scene == self.origin;
+                            let frame = egui::Frame::group(ui.style()).stroke(if selected {
+                                egui::Stroke::new(2.0, ui.visuals().selection.stroke.color)
+                            } else {
+                                ui.visuals().widgets.noninteractive.bg_stroke
+                            });
+                            let resp = ui
+                                .push_id(i, |ui| {
+                                    ui.vertical(|ui| {
+                                        ui.set_width(cell.x);
+                                        frame
+                                            .show(ui, |ui| {
+                                                ui.set_width(image_width);
+                                                match &e.thumb {
+                                                    Some(t) => {
+                                                        ui.add(egui::Image::new((t.id(), size)));
+                                                    }
+                                                    None => {
+                                                        let (r, _) = ui.allocate_exact_size(
+                                                            size,
+                                                            Sense::hover(),
+                                                        );
+                                                        ui.painter().rect_filled(
+                                                            r,
+                                                            4.0,
+                                                            ui.visuals().extreme_bg_color,
+                                                        );
+                                                    }
+                                                }
+                                                ui.add(
+                                                    egui::Label::new(
+                                                        RichText::new(&e.scene.name).strong(),
+                                                    )
+                                                    .truncate(),
+                                                );
+                                                ui.add(
+                                                    egui::Label::new(
+                                                        RichText::new(e.scene.formula.name())
+                                                            .small()
+                                                            .weak(),
+                                                    )
+                                                    .truncate(),
+                                                );
+                                            })
+                                            .response
+                                            .interact(Sense::click())
+                                    })
+                                    .inner
+                                })
+                                .inner;
+                            if resp.clicked() {
+                                load = Some(e.scene.clone());
+                            }
+                            if e.path.is_some() {
+                                resp.context_menu(|ui| {
+                                    if ui.button("Delete bookmark").clicked() {
+                                        delete = Some(i);
+                                        ui.close();
+                                    }
+                                });
+                            }
+                            if (i + 1) % columns == 0 {
+                                ui.end_row();
+                            }
+                        }
+                    });
+            });
+        if let Some(s) = load {
+            self.load(s, Load::New);
+        }
+        if let Some(i) = delete {
+            let e = self.bookmarks.remove(i);
+            if let Some(p) = e.path {
+                let _ = self.io.send(crate::io_service::Command::Delete(p));
+            }
+        }
+    }
+

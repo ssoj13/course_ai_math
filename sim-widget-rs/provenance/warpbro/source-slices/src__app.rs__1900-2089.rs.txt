@@ -1,0 +1,190 @@
+    fn materials_tab(&mut self, ui: &mut egui::Ui) {
+        self.remember_material_targets();
+        use crate::materials::{CATEGORIES, PRESETS};
+        use crate::world::WorldCommand;
+        if let Err(error) = self
+            .material_gallery
+            .refresh(&self.world, f64::from(self.world_ui.playhead))
+        {
+            self.status = error;
+        }
+        let mut create = None;
+        let mut create_default = false;
+        ui.horizontal_wrapped(|ui| {
+            create_default = ui.button("+ New material").clicked();
+            if ui.button("Library…").clicked() {
+                self.panels_to_open.push(dock::Panel::MaterialLibrary);
+            }
+            ui.menu_button("Create from preset", |ui| {
+                for category in CATEGORIES {
+                    ui.menu_button(category, |ui| {
+                        for (index, preset) in PRESETS
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, preset)| preset.category == category)
+                        {
+                            if ui.button(preset.name()).clicked() {
+                                create = Some(index);
+                                ui.close();
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        ui.label(
+            RichText::new("Click to edit · right-click to assign to selected objects")
+                .small()
+                .weak(),
+        );
+        let mut select = None;
+        let selected_targets = {
+            self.remember_material_targets();
+            !self.material_assignment_targets().is_empty()
+        };
+        let any_fractal = !self.world.document.material_consumers().is_empty();
+        let mut assign = None;
+        let mut refresh = None;
+        let mut apply_preset = None;
+        let mut command = None;
+        egui::ScrollArea::vertical()
+            .id_salt("material_nodes")
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                let gap = 6.0;
+                let (columns, size) =
+                    thumbnail_grid(ui.available_width(), Vec2::splat(SWATCH as f32), gap);
+                egui::Grid::new("material-node-grid")
+                    .spacing([gap, gap])
+                    .show(ui, |ui| {
+                        for (index, entry) in self.material_gallery.entries.iter().enumerate() {
+                            let response = ui
+                                .push_id(entry.id, |ui| {
+                                    ui.vertical(|ui| {
+                                        ui.set_width(size.x);
+                                        if let Some(texture) = &entry.thumb {
+                                            ui.add(
+                                                egui::Image::new((texture.id(), size))
+                                                    .corner_radius(6.0),
+                                            );
+                                        } else {
+                                            let (rect, _) =
+                                                ui.allocate_exact_size(size, Sense::hover());
+                                            ui.painter().rect_filled(
+                                                rect,
+                                                6.0,
+                                                ui.visuals().extreme_bg_color,
+                                            );
+                                        }
+                                        let mut label = RichText::new(&entry.name).small();
+                                        if self.world.selection == Some(entry.id) {
+                                            label = label
+                                                .strong()
+                                                .color(ui.visuals().selection.stroke.color);
+                                        }
+                                        ui.add(egui::Label::new(label).truncate());
+                                    })
+                                    .response
+                                    .interact(Sense::click())
+                                })
+                                .inner;
+                            if response.clicked() {
+                                select = Some(entry.id);
+                            }
+                            if let Some(error) = &entry.error {
+                                response.clone().on_hover_text(error);
+                            }
+                            response.context_menu(|ui| {
+                                if let Some(to) =
+                                    Self::assign_menu(ui, selected_targets, any_fractal)
+                                {
+                                    assign = Some((entry.id, to));
+                                }
+                                if ui.button("Select / Edit").clicked() {
+                                    select = Some(entry.id);
+                                    ui.close();
+                                }
+                                if ui.button("Refresh preview").clicked() {
+                                    refresh = Some(entry.id);
+                                    ui.close();
+                                }
+                                ui.menu_button("Apply preset to this material", |ui| {
+                                    for category in CATEGORIES {
+                                        ui.menu_button(category, |ui| {
+                                            for preset in PRESETS
+                                                .iter()
+                                                .filter(|preset| preset.category == category)
+                                            {
+                                                if ui.button(preset.name()).clicked() {
+                                                    let mut material = entry.material.clone();
+                                                    preset.apply(&mut material);
+                                                    apply_preset =
+                                                        Some((entry.id, material, preset.name()));
+                                                    ui.close();
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                                if ui.button("Duplicate").clicked() {
+                                    command = Some(WorldCommand::Duplicate(vec![entry.id]));
+                                    ui.close();
+                                }
+                                if ui.button("Delete").clicked() {
+                                    command = Some(WorldCommand::Delete(entry.id));
+                                    ui.close();
+                                }
+                            });
+                            if (index + 1) % columns == 0 {
+                                ui.end_row();
+                            }
+                        }
+                    });
+            });
+        if let Some(id) = refresh {
+            self.material_gallery.invalidate_thumbnail(id);
+        }
+        if let Some((id, material, name)) = apply_preset {
+            command = Some(WorldCommand::ApplyMaterial {
+                id,
+                material,
+                name: name.into(),
+                frame: f64::from(self.world_ui.playhead),
+            });
+        }
+        if let Some(id) = select {
+            self.select_material_node(id);
+        }
+        if let Some((id, to)) = assign {
+            let result = self.assign_gallery_material(id, to);
+            self.status = Self::assign_status(result, to);
+        }
+        if let Some(command) = command
+            && let Err(error) = self.world.execute(command)
+        {
+            self.status = error;
+        }
+        if create_default || create.is_some() {
+            let mut material = Material::default();
+            let name = if let Some(index) = create {
+                PRESETS[index].apply(&mut material);
+                PRESETS[index].name()
+            } else {
+                "Material"
+            };
+            match self.world.execute(WorldCommand::CreateMaterial {
+                material,
+                name: name.into(),
+            }) {
+                Ok(()) => {
+                    if let Some(id) = self.world.selection {
+                        self.select_material_node(id);
+                    }
+                }
+                Err(error) => self.status = error,
+            }
+        }
+    }
+
+    /// Presets are reusable sources. Only this explicit action creates a
+    /// workspace Material node; creation never changes object assignments.

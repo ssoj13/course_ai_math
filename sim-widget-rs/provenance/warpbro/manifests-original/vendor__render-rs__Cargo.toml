@@ -1,0 +1,132 @@
+# render-rs — the USD-independent GPU renderer: the wgpu path tracer (render-engine-pt),
+# the hermetic scene/geometry renderers, OIDN denoise and the renderer's egui panels.
+# Sits BELOW usd-rs (which adds the Hydra/GL bridges). Reused via git-ref.
+[workspace]
+resolver = "3"
+members = [
+    "crates/pt-denoise-oidn",
+    "crates/render-camera",
+    "crates/render-color",
+    "crates/render-color-gpu",
+    "crates/render-curves",
+    "crates/render-egui",
+    "crates/render-engine-pbr",
+    "crates/render-env",
+    "crates/render-pick",
+    "crates/render-scene",
+    "crates/render-settings",
+    "crates/render-sky",
+    "crates/render-subd",
+    "crates/render-engine-pt/bvh-gpu",
+    "crates/render-engine-pt/pt-core",
+    "crates/render-engine-pt/pt-integrator",
+    "crates/render-engine-pt/pt-material",
+    "crates/render-engine-pt/pt-mats",
+    "crates/render-engine-pt/pt-megakernel",
+    "crates/render-engine-pt/pt-renderer",
+    "crates/render-engine-pt/pt-runtime",
+    "crates/render-engine-pt/standard-surface",
+    "crates/render-engine-pt/standard-surface-bsdf",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ssoj13/render-rs"
+rust-version = "1.96"
+
+[workspace.dependencies]
+# Internal render crates (path)
+pt-denoise-oidn = { path = "crates/pt-denoise-oidn" }
+render-camera = { path = "crates/render-camera" }
+render-color = { path = "crates/render-color" }
+render-color-gpu = { path = "crates/render-color-gpu" }
+render-curves = { path = "crates/render-curves" }
+render-egui = { path = "crates/render-egui" }
+render-engine-pbr = { path = "crates/render-engine-pbr" }
+render-env = { path = "crates/render-env" }
+render-pick = { path = "crates/render-pick" }
+render-scene = { path = "crates/render-scene" }
+render-settings = { path = "crates/render-settings" }
+render-sky = { path = "crates/render-sky" }
+render-subd = { path = "crates/render-subd" }
+bvh-gpu = { path = "crates/render-engine-pt/bvh-gpu" }
+pt-core = { path = "crates/render-engine-pt/pt-core" }
+pt-integrator = { path = "crates/render-engine-pt/pt-integrator" }
+pt-material = { path = "crates/render-engine-pt/pt-material" }
+pt-mats = { path = "crates/render-engine-pt/pt-mats" }
+pt-megakernel = { path = "crates/render-engine-pt/pt-megakernel" }
+pt-renderer = { path = "crates/render-engine-pt/pt-renderer" }
+pt-runtime = { path = "crates/render-engine-pt/pt-runtime" }
+standard-surface = { path = "crates/render-engine-pt/standard-surface" }
+standard-surface-bsdf = { path = "crates/render-engine-pt/standard-surface-bsdf" }
+
+# Imaging (color) from oiio-rs — GIT
+vfx-core = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+vfx-ocio = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+vfx-lut = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+vfx-color = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+vfx-primaries = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+vfx-transfer = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+vfx-compute = { git = "ssh://git@github.com/ssoj13/oiio-rs.git", branch = "main" }
+gpu-mem = { package = "gpu-info-rs", git = "ssh://git@github.com/ssoj13/gpu-info-rs.git", branch = "main", default-features = false }
+
+# GPU / image
+wgpu = "30"
+bytemuck = { version = "1.25", features = ["derive"] }
+log = "0.4"
+# EXR is decoded by exr-core through exr-image, never by crates.io `exr` (cglibs/EXR_EVERYWHERE.md).
+# Only render-env's TESTS use these (dev-dependencies): the library takes an EXR reader from the
+# host (`render_env::set_exr_reader`), because exr-rs depends on this repo transitively and a normal
+# dependency would put a second copy of exr-core into an exr-rs build.
+# exr-image without its default `image-formats` (the whole `image` set: avif/rav1e, tiff, webp, ...):
+# every crate names the `image` formats it decodes (render-env: hdr, and png/jpeg behind `ldr`); a
+# crate that wants the full set enables `exr-image/image-formats` itself.
+image = { version = "0.25", default-features = false }
+exr-image = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main", default-features = false }
+exr-core = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+imath-rs = { git = "ssh://git@github.com/ssoj13/exr-rs.git", branch = "main" }
+pollster = "0.4"
+naga = { version = "24", features = ["glsl-in", "wgsl-out"] }
+
+# Math
+glam = "0.33"
+# Pure-Rust libm: platform-independent f32 transcendentals for the CPU BSDF twin.
+libm = "0.2"
+half = "2.7"
+
+# egui ecosystem (renderer panels)
+eframe = { version = "0.36", default-features = false }
+egui = "0.36"
+egui-wgpu = "0.36"
+egui_extras = "0.36"
+egui_dock = { version = "0.21", features = ["serde"] }
+
+# OIDN / Burn — GIT deps (not crates.io). oidn-rs (git-ref, now on burn 0.22 / wgpu 30) runs its
+# denoiser on burn's wgpu backend, and pt-denoise-oidn shares the PT wgpu Device/Queue with burn via
+# cubecl_wgpu::init_device. For ONE burn + ONE cubecl + ONE wgpu 30 in the graph, these MUST be the
+# same revs oidn-rs/gsplat-rs pin: burn 93e63e8e (0.22.0-pre.1) + cubecl 31c5506c (0.11.0-pre.1).
+# `wgpu` feature registers the wgpu backend into burn's dynamic dispatch (Device::wgpu).
+burn = { git = "https://github.com/tracel-ai/burn", rev = "93e63e8e9cf215ffb870ed62132961588a774096", default-features = false, features = ["std", "wgpu"] }
+burn-wgpu = { git = "https://github.com/tracel-ai/burn", rev = "93e63e8e9cf215ffb870ed62132961588a774096", default-features = false }
+cubecl-wgpu = { git = "https://github.com/tracel-ai/cubecl", rev = "31c5506cfc1dd9d350124910fb51cee8b54a31e1" }
+cubecl-runtime = { git = "https://github.com/tracel-ai/cubecl", rev = "31c5506cfc1dd9d350124910fb51cee8b54a31e1" }
+
+# Serde / misc
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+uuid = { version = "1", features = ["v4"] }
+crossbeam-channel = "0.5"
+rayon = "1.11"
+thiserror = "2.0"
+
+# Testing
+approx = "0.5"
+tempfile = "3.25"
+criterion = "0.5"
+
+# NO egui `[patch.crates-io]`: egui 0.36 on crates.io is on wgpu 30, which the git-rev patch
+# (emilk/egui d28929ec, "0.35.0 on wgpu 30") existed to provide. Same versions as egui-widgets-rs /
+# nodes-rs mains. (burn/cubecl-wgpu stay git deps above — a [patch] can't cross their 0.21→0.22.)

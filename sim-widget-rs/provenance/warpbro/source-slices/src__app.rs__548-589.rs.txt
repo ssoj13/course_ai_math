@@ -1,0 +1,42 @@
+fn prefs_grid(
+    ui: &mut egui::Ui,
+    metrics: AttrMetrics,
+    state: &mut AttrGridState,
+    mut rows: Vec<AttrField>,
+    mut apply: impl FnMut(&str, AttrValue),
+) {
+    struct Plain;
+    impl AttrGridHooks for Plain {}
+    let metrics = metrics.normalized();
+    // Preferences are scalar rows with no animation controls: the editor needs one field, not the
+    // attribute grid's three, and the label column keeps the room (a label never collapses to "...").
+    let mut config = egui_attr_grid::AttrGridConfig {
+        prefix_width: 0.0,
+        action_width: 0.0,
+        min_editor_width: metrics.numeric_width + metrics.component_gap + metrics.field_height,
+        ..crate::world_ui::grid_config(metrics)
+    };
+    ui.scope(|ui| {
+        metrics.apply(ui);
+        config.value_box_width = Some(egui_attr_grid::value_box_width(
+            ui,
+            &rows,
+            metrics.numeric_width,
+        ));
+        // The label column starts at the old table's width, scaled with the body font.
+        if state.table.widths.is_empty() {
+            let body = ui
+                .style()
+                .text_styles
+                .get(&egui::TextStyle::Body)
+                .map_or(13.0, |f| f.size);
+            state.table.widths.push(130.0 * (body / 13.0).max(1.0));
+        }
+        for (label, value) in
+            render_grid_with_config(ui, &mut rows, state, &HashSet::new(), &config, &mut Plain)
+        {
+            apply(&label, value);
+        }
+    });
+}
+

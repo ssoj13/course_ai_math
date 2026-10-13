@@ -1,0 +1,20 @@
+# Standalone repo (graph-layout-rs). Own workspace so cargo does not walk up the
+# cglibs tree. Consumed via `graph-layout = { git = "…graph-layout-rs.git", package = "graph-layout" }`.
+[workspace]
+
+[package]
+name = "graph-layout"
+version = "0.1.0"
+edition = "2024"
+description = "Generic, dependency-free node-graph layout engine: an abstract graph (nodes with sizes + directed edges) in, node positions out."
+license = "MIT"
+repository = "https://github.com/ssoj13/graph-layout-rs"
+
+[lib]
+name = "graph_layout"
+path = "src/graph_layout.rs"
+
+# Intentionally dependency-free: the engine works on plain `[f32; 2]` coordinates and
+# opaque `u64` node ids so it can be reused by any host (node-editor, mermaid, future apps)
+# via a tiny adapter, without dragging in nodes-core / glam / wgpu.
+[dependencies]

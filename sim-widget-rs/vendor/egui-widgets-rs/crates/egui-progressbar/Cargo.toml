@@ -1,0 +1,19 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-progressbar"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "A tiny fixed-size, custom-painted egui progress bar with a count overlay"
+
+[lib]
+path = "src/egui_progressbar.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"

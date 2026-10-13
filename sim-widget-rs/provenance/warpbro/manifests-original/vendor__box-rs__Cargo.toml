@@ -1,0 +1,44 @@
+# box-rs — standalone nested data container (was `rust-box`).
+#
+# Python-box-style nested container: dot/bracket/attr path access, typed getters/
+# setters, smart merge, structural diff/subtract, JSON interop. Zero internal deps
+# (serde stack only), so any consumer can git-ref it directly.
+#
+# NOTE: the package is `box-rs` but the crate links as `box_rs` (bare `box` is a
+# reserved Rust keyword). Consumers: `box-rs = { git = "…", package = "box-rs" }`
+# and `use box_rs::{RustBox, BoxValue, …};`.
+[package]
+name = "box-rs"
+version = "0.3.0"
+edition = "2024"
+description = "Nested data container with path/bracket/attr access, smart merge, and structural diff"
+license = "MIT"
+repository = "https://github.com/ssoj13/box-rs"
+keywords = ["box", "nested", "merge", "diff", "path"]
+categories = ["data-structures", "config"]
+
+# Standalone repo: own workspace so cargo does not walk up looking for a parent.
+[workspace]
+
+[lib]
+name = "box_rs"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+smallvec = { version = "1", features = ["serde"] }
+# Optional binary scene/checkpoint backend. Kept OFF by default so the base crate
+# stays dependency-light for consumers (nodes-rs, mermaid-rs, otio-rs) that only
+# need the value model. Enable with `features = ["safetensors"]`.
+safetensors = { version = "0.7", optional = true }
+
+[features]
+# `.safetensors` container backend (src/container.rs): buffers as tensors + box
+# tree in __metadata__. The `Buffer` value variant itself is always available;
+# only the container I/O is gated.
+safetensors = ["dep:safetensors"]
+
+[dev-dependencies]
+serde_json = "1"

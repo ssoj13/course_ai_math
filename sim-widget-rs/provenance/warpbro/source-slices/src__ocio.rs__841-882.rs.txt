@@ -1,0 +1,42 @@
+    pub fn quick_view_ui(&mut self, ui: &mut egui::Ui) -> bool {
+        self.poll();
+        let (current, views) = self
+            .config()
+            .ok()
+            .and_then(|ocio| {
+                let names = ocio.resolve(&self.sel, self.hdr).ok()?;
+                let views = ocio
+                    .views(&names.display, self.hdr)
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>();
+                Some((names.view, views))
+            })
+            .unwrap_or_else(|| (self.sel.view.clone(), Vec::new()));
+        ui.label("View:");
+        let mut selected = current.clone();
+        egui::ComboBox::from_id_salt("viewport_ocio_view")
+            .width(150.0)
+            .selected_text(if current.is_empty() {
+                "Loading…"
+            } else {
+                &current
+            })
+            .show_ui(ui, |ui| {
+                for name in views {
+                    ui.selectable_value(&mut selected, name.clone(), name);
+                }
+            });
+        if selected != current {
+            self.sel.on = true;
+            self.sel.view = selected;
+            self.rebuild();
+            true
+        } else {
+            false
+        }
+    }
+
+    /// The Colour panel. Returns whether the choice changed; `browse` is set when the
+    /// user asks for a config file (the app runs the file dialog).
+    /// `swap` exchanges the preset buttons' store / recall clicks (`hotkeys::slot_click`).

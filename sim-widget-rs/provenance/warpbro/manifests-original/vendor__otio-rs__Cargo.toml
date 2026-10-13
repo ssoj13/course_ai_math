@@ -1,0 +1,29 @@
+# otio-rs — pure-Rust OpenTimelineIO port (workspace).
+#
+# Editorial timeline data model + interchange, wire-compatible with `.otio` JSON
+# and API-compatible with the OTIO Rust/Python surface, without the C++ dynamic
+# machinery. See PLAN.md for the full design and phased delivery.
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+# otio-py (PyO3 cdylib, built by maturin) is its own workspace root, excluded to
+# keep the core lib/CLI build lean. otio-timeline IS a member now: its egui/eframe
+# tree is optional behind its `widget`/`demo` features (off by default), so a
+# default workspace build stays pure-model and pulls no egui.
+exclude = ["crates/otio-py"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+
+[workspace.dependencies]
+thiserror = "2"
+
+# NO `[patch.crates-io]`, deliberately. The block that stood here existed only because wgpu 30
+# had no released egui: 0.35.0 still pinned wgpu 29 and only emilk/egui `main` had moved.
+# egui 0.36 is the first RELEASE on wgpu 30 — the exit condition named in
+# colmap-rs/docs/egui-wgpu-bump.md — so egui comes from crates.io now. Do not restore it: a git
+# egui is a different package from the registry one at the same version, and that is the split
+# the patch was fighting.

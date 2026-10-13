@@ -1,0 +1,23 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-otio-timeline"
+description = "Thin egui surface over otio-rs's OTIO timeline widget — re-exports otio-timeline + otio-edit"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+
+[lib]
+path = "src/egui_otio_timeline.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.otio-timeline]
+features = ["widget"]
+path = "../../../otio-rs/crates/otio-timeline"
+
+[dependencies.otio-edit]
+path = "../../../otio-rs/crates/otio-edit"

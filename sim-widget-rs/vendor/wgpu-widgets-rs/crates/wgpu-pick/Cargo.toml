@@ -1,0 +1,17 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "wgpu-pick"
+version = "0.1.0"
+edition = "2024"
+description = "GPU object-id picking for wgpu: render integer ids to an R32Uint target, async-read the pixel under the cursor (1-frame latency), map id -> handle. Geometry-agnostic — the consumer draws its own shapes, this owns the id texture, readback, and id<->handle map."
+
+[lib]
+path = "src/pick.rs"
+
+[dependencies.wgpu]
+version = "30"
+default-features = false
+features = ["vulkan", "gles", "metal", "std", "wgsl"]
+
+[dependencies.log]
+version = "0.4"

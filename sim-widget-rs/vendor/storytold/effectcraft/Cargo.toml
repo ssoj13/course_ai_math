@@ -1,0 +1,28 @@
+[workspace]
+resolver = "3"
+members = ["crates/time", "crates/geom", "crates/color", "crates/keyframe"]
+
+[workspace.package]
+version = "0.8.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.95"
+repository = "https://github.com/storytold/effectcraft"
+
+[workspace.dependencies]
+effectcraft-time = { path = "crates/time" }
+effectcraft-geom = { path = "crates/geom" }
+effectcraft-color = { path = "crates/color" }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+proptest = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+too_many_arguments = "allow"
+needless_range_loop = "allow"
+type_complexity = "allow"

@@ -1,0 +1,24 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "otio-algo"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "Range/transform/layout algorithms for the otio-core OTIO model"
+
+[lib]
+name = "otio_algo"
+path = "src/otio_algo.rs"
+
+[dependencies.otio-core]
+path = "../otio-core"
+
+[dependencies.otio-schema]
+path = "../otio-schema"
+
+[dependencies.otio-time]
+path = "../otio-time"
+
+[dependencies.thiserror]
+version = "2"

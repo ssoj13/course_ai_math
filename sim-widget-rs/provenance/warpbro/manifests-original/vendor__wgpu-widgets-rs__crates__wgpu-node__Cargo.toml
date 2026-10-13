@@ -1,0 +1,18 @@
+[package]
+name = "wgpu-node"
+version = "0.1.0"
+edition = "2024"
+description = "Procedural instanced 3D node-card renderer for wgpu (rounded/beveled box + title/footer bars), themed by ui-theme."
+license = "MIT"
+
+# THE single procedural node: edit the mesh generator here and every node in every graph changes.
+# `ui-theme` is built in so a node's materials come straight from the shared palette (SSOT).
+[lib]
+path = "src/node.rs"
+
+[dependencies]
+wgpu = { workspace = true }
+glam = { workspace = true }
+bytemuck = { workspace = true }
+log = { workspace = true }
+ui-theme = { workspace = true }

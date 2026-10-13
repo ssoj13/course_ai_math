@@ -1,0 +1,23 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "curves"
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+description = "Pure-Rust keyframe tracks (per-side tangents, Bezier segments, extrapolation, key reduction), f32 or f64"
+rust-version = "1.88"
+
+[lib]
+path = "src/curves.rs"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+optional = true
+
+[dev-dependencies]
+serde_json = "1"
+
+[features]
+default = []
+serde = ["dep:serde"]

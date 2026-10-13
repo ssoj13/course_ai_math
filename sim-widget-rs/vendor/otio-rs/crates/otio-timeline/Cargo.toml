@@ -1,0 +1,54 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "otio-timeline"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "egui NLE timeline widget over otio-edit (OpenTimelineIO in Rust)"
+
+[lib]
+name = "otio_timeline"
+path = "src/otio_timeline.rs"
+
+[dependencies.otio-edit]
+path = "../otio-edit"
+optional = true
+
+[dependencies.otio-core]
+path = "../otio-core"
+optional = true
+
+[dependencies.otio-time]
+path = "../otio-time"
+optional = true
+
+[dependencies.otio-schema]
+path = "../otio-schema"
+optional = true
+
+[dependencies.otio-algo]
+path = "../otio-algo"
+optional = true
+
+[dependencies.egui]
+version = "0.36"
+optional = true
+
+[dependencies.egui-widgets-config]
+optional = true
+path = "../../../egui-widgets-rs/crates/egui-widgets-config"
+
+[dependencies.eframe]
+version = "0.36"
+default-features = false
+features = ["default_fonts", "glow", "wayland", "x11"]
+optional = true
+
+[features]
+widget = ["dep:egui", "dep:egui-widgets-config", "dep:otio-edit", "dep:otio-core", "dep:otio-time", "dep:otio-schema", "dep:otio-algo"]
+demo = ["widget", "dep:eframe"]
+
+[[example]]
+name = "demo"
+required-features = ["demo"]

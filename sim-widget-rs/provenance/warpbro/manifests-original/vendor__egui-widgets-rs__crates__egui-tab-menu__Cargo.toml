@@ -1,0 +1,23 @@
+# egui-tab-menu — a Houdini-style Tab menu for egui, with nested submenus.
+#
+# The host passes a flat list of items (a key, a label, an icon and a group path such as
+# "Settings/Render"); the widget builds one tree from it and shows it two ways: the Tab menu
+# (a search field under the cursor over cascading columns, History / All groups, keyboard
+# navigation) and plain nested egui menus for buttons and context menus. The behaviour follows
+# nodes-rs `nodes-chrome::tab_menu_wgpu` (the wgpu editor's Houdini Tab menu).
+[package]
+name = "egui-tab-menu"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Houdini-style Tab menu for egui: search over cascading nested submenus, History / All groups, keyboard navigation; the same item tree as nested egui menus"
+
+[lib]
+path = "src/egui_tab_menu.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-phosphor = { workspace = true }

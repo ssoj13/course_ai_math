@@ -1,0 +1,1459 @@
+{
+  "status": "NORMALIZED_LOCAL_OWN_GRAPH_PENDING_CARGO_CHECK",
+  "changes": [
+    {
+      "path": "vendor/egui-phosphor/Cargo.toml",
+      "package": "egui-phosphor",
+      "source_sha256": "864b395cc81dfbb735704da058f0a84b8a9558a5746fa48eaf607a1fea42aa08",
+      "target_sha256": "1e7284907afa836ccd7f0ecbbf0ccfde23d0cd6cf744fae3240e6276b875b89a",
+      "reasons": []
+    },
+    {
+      "path": "vendor/oiio-rs/crates/ocio/vfx-icc/Cargo.toml",
+      "package": "vfx-icc",
+      "source_sha256": "596d5fbc9d3960c90d85ef5dfe9ed26a1434d6186d311de399dc1650fbfea183",
+      "target_sha256": "3d795800cbfca84deb5b7f043ebb45d136cbfe22b3ef8c7311ede85d0ebad52b",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.rust-version",
+        "concrete workspace lints",
+        "concrete dependencies.lcms-rs",
+        "local identity dependencies.lcms-rs -> vendor/lcms-rs",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.thiserror"
+      ]
+    },
+    {
+      "path": "vendor/oiio-rs/crates/ocio/vfx-lut/Cargo.toml",
+      "package": "vfx-lut",
+      "source_sha256": "f4681365afb57f6c8de821c62c875d810c552edcc93f4ce94d1da832cdf1def1",
+      "target_sha256": "097567de0ba9ab011c11cd4a43c11b907f1fea53ae4e8eef0d0d06e7c929f630",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.rust-version",
+        "concrete workspace lints",
+        "concrete dependencies.vfx-core",
+        "local identity dependencies.vfx-core -> vendor/oiio-rs/crates/base/vfx-core",
+        "concrete dependencies.thiserror",
+        "concrete dependencies.quick-xml",
+        "concrete dependencies.wide",
+        "concrete dev-dependencies.tempfile"
+      ]
+    },
+    {
+      "path": "vendor/oiio-rs/crates/base/vfx-core/Cargo.toml",
+      "package": "vfx-core",
+      "source_sha256": "99bb38899d6706e8aeb7509a2a5562a9e33fa018ec53bb71b2924cc1dece9058",
+      "target_sha256": "b50e09ae4311a9eebe9923835e151f4722cf221a0cd50667ea0e47baa051f76e",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete workspace lints",
+        "concrete dependencies.half",
+        "concrete dependencies.thiserror",
+        "concrete dependencies.rayon",
+        "concrete dependencies.clap",
+        "concrete dev-dependencies.approx"
+      ]
+    },
+    {
+      "path": "vendor/oiio-rs/crates/base/vfx-math/Cargo.toml",
+      "package": "vfx-math",
+      "source_sha256": "6d9da8e9de28a399173a4a878a93bb6f746bcc735827695faa0bc18b23a323ef",
+      "target_sha256": "d3ea0493a14f2bfac8bcce5788755ee16b0239c6df5ec149c8238960f7467d95",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.rust-version",
+        "concrete workspace lints",
+        "concrete dependencies.vfx-core",
+        "local identity dependencies.vfx-core -> vendor/oiio-rs/crates/base/vfx-core",
+        "concrete dependencies.glam",
+        "concrete dependencies.wide"
+      ]
+    },
+    {
+      "path": "vendor/oiio-rs/crates/base/vfx-transfer/Cargo.toml",
+      "package": "vfx-transfer",
+      "source_sha256": "72c7368b8cb7a7256e62cd2a81bfd5d875ba9b47b54ca19072bd16812a1454c8",
+      "target_sha256": "a32d752f5f88aa5db70e80e516e3f805cf7e3e66553e2bcbcf6d18e58baa96a3",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.rust-version",
+        "concrete workspace lints",
+        "concrete dependencies.vfx-core",
+        "local identity dependencies.vfx-core -> vendor/oiio-rs/crates/base/vfx-core",
+        "DEFERRED dev-dependencies.heif-transfer to declared later format/native/test-pack service; original declaration preserved"
+      ]
+    },
+    {
+      "path": "vendor/oiio-rs/crates/ocio/vfx-ocio/Cargo.toml",
+      "package": "vfx-ocio",
+      "source_sha256": "2ad732c556adaff721ff19b82f701d47af865348f023d6cfd549bfeeaad24bf0",
+      "target_sha256": "6405c47da94628c19fc4fa7005e7a136365bb93c7f49c57472eb76a6aae05886",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.rust-version",
+        "concrete workspace lints",
+        "concrete dependencies.vfx-core",
+        "local identity dependencies.vfx-core -> vendor/oiio-rs/crates/base/vfx-core",
+        "concrete dependencies.vfx-math",
+        "local identity dependencies.vfx-math -> vendor/oiio-rs/crates/base/vfx-math",
+        "concrete dependencies.vfx-lut",
+        "local identity dependencies.vfx-lut -> vendor/oiio-rs/crates/ocio/vfx-lut",
+        "concrete dependencies.vfx-transfer",
+        "local identity dependencies.vfx-transfer -> vendor/oiio-rs/crates/base/vfx-transfer",
+        "concrete dependencies.vfx-icc",
+        "local identity dependencies.vfx-icc -> vendor/oiio-rs/crates/ocio/vfx-icc",
+        "concrete dependencies.half",
+        "concrete dependencies.gpu-mem",
+        "local identity dependencies.gpu-mem -> vendor/gpu-info-rs",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.rayon",
+        "concrete dependencies.thiserror",
+        "concrete dependencies.glam",
+        "concrete dependencies.glob",
+        "concrete dependencies.regex",
+        "concrete dependencies.tempfile",
+        "concrete dev-dependencies.bytemuck",
+        "concrete dev-dependencies.tempfile",
+        "concrete dev-dependencies.serde_json",
+        "concrete dev-dependencies.wgpu",
+        "concrete dev-dependencies.gpu-mem",
+        "local identity dev-dependencies.gpu-mem -> vendor/gpu-info-rs"
+      ]
+    },
+    {
+      "path": "vendor/lcms-rs/Cargo.toml",
+      "package": "lcms-rs",
+      "source_sha256": "c289d28e7ef63237cea2cd9378042c409531507a9134125ba20c060099ae218d",
+      "target_sha256": "2c3bb81c92b5d77702a216dd447999ca4b78c4ccf3d4a7ec9c021890ef5bb0de",
+      "reasons": []
+    },
+    {
+      "path": "vendor/gpu-info-rs/Cargo.toml",
+      "package": "gpu-info-rs",
+      "source_sha256": "733483043dedd742eb9320f29ac34a04cb28ef427bb77b061c9de236a0b409ab",
+      "target_sha256": "8246daa0d8dffa434bc73f2e3cd2c8af45b4ea66bb23264a889933ee28af31bf",
+      "reasons": []
+    },
+    {
+      "path": "vendor/curves-rs/Cargo.toml",
+      "package": "curves",
+      "source_sha256": "84559ca661a038dd5417fbb6c85e1e4ce87a948af0a58de71d85f5d16adc0211",
+      "target_sha256": "5307a4afacc6b024a0abb028211ca426a2312a21748530e0805b348973e47946",
+      "reasons": []
+    },
+    {
+      "path": "vendor/box-rs/Cargo.toml",
+      "package": "box-rs",
+      "source_sha256": "55663f6b5886a66cf11999ace9748fc79663cc1b46d9c27c74b27039e407243d",
+      "target_sha256": "4a98fed72afd92ac7e971367f1c00e2a13a1ce88e093545c0897dde88c5d973d",
+      "reasons": []
+    },
+    {
+      "path": "vendor/otio-rs/crates/otio-algo/Cargo.toml",
+      "package": "otio-algo",
+      "source_sha256": "73b675009e3380d0bab77a9b531e9691fc9a746d68e2299f5ead6c2452c567af",
+      "target_sha256": "08ebf11ef6c6374c55b7536d4968a8ad9d13fab0ab6d6759e4b95a948a679ab0",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "local identity dependencies.otio-core -> vendor/otio-rs/crates/otio-core",
+        "local identity dependencies.otio-schema -> vendor/otio-rs/crates/otio-schema",
+        "local identity dependencies.otio-time -> vendor/otio-rs/crates/otio-time",
+        "concrete dependencies.thiserror"
+      ]
+    },
+    {
+      "path": "vendor/otio-rs/crates/otio-time/Cargo.toml",
+      "package": "otio-time",
+      "source_sha256": "16538d7b04b8692bb02e639e309175452000e4d395d19027e04888d0b55b7fe6",
+      "target_sha256": "be92d060494e01194fdb9c52885e7bb3059fbe3b135aa61a0d57e2845c566e6f",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete dependencies.thiserror"
+      ]
+    },
+    {
+      "path": "vendor/otio-rs/crates/otio-schema/Cargo.toml",
+      "package": "otio-schema",
+      "source_sha256": "a0875b2cb3526ff4528525f18e3adbf32c5c6f38624f0179eddb1240c5b06da3",
+      "target_sha256": "4e16fe0b7e55d3904873378ad0955d93982dc881e6e37e767e0c6e236334f732",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "local identity dependencies.otio-core -> vendor/otio-rs/crates/otio-core",
+        "local identity dependencies.otio-time -> vendor/otio-rs/crates/otio-time",
+        "local identity dependencies.box-rs -> vendor/box-rs"
+      ]
+    },
+    {
+      "path": "vendor/otio-rs/crates/otio-core/Cargo.toml",
+      "package": "otio-core",
+      "source_sha256": "7ffef60331c4a75e70c46c73bc276d2653a47b72c30fa53bc85d0c4461dc15c6",
+      "target_sha256": "1a0fd329b6bb414930c250623951f7e309b84f925317cec9b523b9d898d19245",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "local identity dependencies.otio-time -> vendor/otio-rs/crates/otio-time",
+        "local identity dependencies.box-rs -> vendor/box-rs",
+        "concrete dependencies.thiserror"
+      ]
+    },
+    {
+      "path": "vendor/otio-rs/crates/otio-edit/Cargo.toml",
+      "package": "otio-edit",
+      "source_sha256": "46a11c94c8fe80ed613f52c51c4461858f9c0fb4ca5480e2fbab59687d992acb",
+      "target_sha256": "5f77197f07309903a310ecfa823d3891f54d8e3fb6f3dd74a4979c86c5474fb6",
+      "reasons": [
+        "local identity dependencies.otio-core -> vendor/otio-rs/crates/otio-core",
+        "local identity dependencies.otio-time -> vendor/otio-rs/crates/otio-time",
+        "local identity dependencies.otio-schema -> vendor/otio-rs/crates/otio-schema",
+        "local identity dependencies.otio-algo -> vendor/otio-rs/crates/otio-algo",
+        "concrete dependencies.thiserror"
+      ]
+    },
+    {
+      "path": "vendor/otio-rs/crates/otio-timeline/Cargo.toml",
+      "package": "otio-timeline",
+      "source_sha256": "be0e472c6f82b4b3fb36d090f5e4ab3af1336d06f904891b0da7ac0b8b40a050",
+      "target_sha256": "d092e7a3c8d09b7345406f2c300426e905285862b660ee888786df50320175ed",
+      "reasons": [
+        "local identity dependencies.otio-edit -> vendor/otio-rs/crates/otio-edit",
+        "local identity dependencies.otio-core -> vendor/otio-rs/crates/otio-core",
+        "local identity dependencies.otio-time -> vendor/otio-rs/crates/otio-time",
+        "local identity dependencies.otio-schema -> vendor/otio-rs/crates/otio-schema",
+        "local identity dependencies.otio-algo -> vendor/otio-rs/crates/otio-algo",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/nodes-rs/crates/cam-controls/Cargo.toml",
+      "package": "cam-controls",
+      "source_sha256": "15199e7f3600e7dcb4980a69b6b078dd9f4243a2114ccd34df3db7eb1a07ce43",
+      "target_sha256": "0c4841d369484a99be92ba3d37c2dac1935124ea55a4b4389d1530d28319a716",
+      "reasons": [
+        "concrete package.rust-version",
+        "local identity dependencies.cam-viewport -> vendor/nodes-rs/crates/cam-viewport",
+        "concrete dependencies.glam",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/nodes-rs/crates/cam-viewport/Cargo.toml",
+      "package": "cam-viewport",
+      "source_sha256": "75da8b6a22290d74809b4b577519ec80461d0441208675762e027cd5f67645f6",
+      "target_sha256": "3ca7439a9522a9f85b4b70f18ef01397ff51c50a8ea5a03511e5b2a9b106a6b6",
+      "reasons": [
+        "concrete package.rust-version",
+        "concrete dependencies.glam"
+      ]
+    },
+    {
+      "path": "vendor/nodes-rs/crates/nodes-core/Cargo.toml",
+      "package": "nodes-core",
+      "source_sha256": "5b613f8bdef7c6f2777c9ce723185e9df170aec6b5dec676d6407d70076a560d",
+      "target_sha256": "5d2096867175808be323018bdae35b75f3e149f9eeb0e5630c2bc7a214479c9b",
+      "reasons": [
+        "concrete package.rust-version",
+        "concrete dependencies.log",
+        "concrete dependencies.box-rs",
+        "local identity dependencies.box-rs -> vendor/box-rs",
+        "concrete dependencies.rhai",
+        "concrete dependencies.serde",
+        "concrete dependencies.serde_json",
+        "concrete dependencies.thiserror",
+        "concrete dependencies.uuid",
+        "concrete dependencies.graph-layout",
+        "local identity dependencies.graph-layout -> vendor/graph-layout-rs",
+        "concrete dependencies.flex-geom",
+        "local identity dependencies.flex-geom -> vendor/wgpu-widgets-rs/crates/flex-geom",
+        "concrete dependencies.ui-theme",
+        "local identity dependencies.ui-theme -> vendor/wgpu-widgets-rs/crates/ui-theme",
+        "concrete dev-dependencies.serde_json"
+      ]
+    },
+    {
+      "path": "vendor/nodes-rs/crates/nodes-view/Cargo.toml",
+      "package": "nodes-view",
+      "source_sha256": "ab8738cac381219bd0b95bda34d3d78cd9f6983e6ec82a50ef7dbe5774920835",
+      "target_sha256": "61e5b4c9d974a22fa6c74c783f735c2f171248c9b197bfa6f6f53499510b4125",
+      "reasons": [
+        "concrete package.rust-version",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.glam",
+        "concrete dependencies.log",
+        "concrete dependencies.wgpu-text",
+        "local identity dependencies.wgpu-text -> vendor/wgpu-widgets-rs/crates/wgpu-text",
+        "local identity dependencies.nodes-core -> vendor/nodes-rs/crates/nodes-core",
+        "concrete dependencies.thiserror",
+        "concrete dependencies.wgpu",
+        "concrete dependencies.wgpu-pick",
+        "local identity dependencies.wgpu-pick -> vendor/wgpu-widgets-rs/crates/wgpu-pick",
+        "concrete dependencies.wgpu-tube",
+        "local identity dependencies.wgpu-tube -> vendor/wgpu-widgets-rs/crates/wgpu-tube",
+        "concrete dependencies.wgpu-node",
+        "local identity dependencies.wgpu-node -> vendor/wgpu-widgets-rs/crates/wgpu-node",
+        "concrete dependencies.ui-theme",
+        "local identity dependencies.ui-theme -> vendor/wgpu-widgets-rs/crates/ui-theme",
+        "local identity dependencies.cam-controls -> vendor/nodes-rs/crates/cam-controls",
+        "local identity dependencies.cam-viewport -> vendor/nodes-rs/crates/cam-viewport",
+        "concrete dev-dependencies.pollster",
+        "concrete dev-dependencies.uuid",
+        "concrete dev-dependencies.winit"
+      ]
+    },
+    {
+      "path": "vendor/nodes-rs/crates/nodes-egui/Cargo.toml",
+      "package": "nodes-egui",
+      "source_sha256": "a4bb5c95f53bb4dea88b4242f3fe3fb12f8b6f1dae32f1b7cc6e217553e910e9",
+      "target_sha256": "88e8b5beec9c933def685d0cabeb2551b9b326b403a07fd1fb788b878d7a6267",
+      "reasons": [
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui-wgpu",
+        "concrete dependencies.glam",
+        "concrete dependencies.log",
+        "local identity dependencies.nodes-core -> vendor/nodes-rs/crates/nodes-core",
+        "local identity dependencies.nodes-view -> vendor/nodes-rs/crates/nodes-view",
+        "concrete dependencies.wgpu",
+        "concrete dev-dependencies.eframe",
+        "DEFERRED dev-dependencies.nodes-chrome to declared later format/native/test-pack service; original declaration preserved",
+        "concrete dev-dependencies.wgpu-widgets",
+        "DEFERRED dev-dependencies.wgpu-widgets to declared later format/native/test-pack service; original declaration preserved",
+        "concrete dev-dependencies.env_logger",
+        "concrete dev-dependencies.winit"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/crates/flex-geom/Cargo.toml",
+      "package": "flex-geom",
+      "source_sha256": "979afb1380f6b0c24ef94ea7f132ef25d66ed5465406a00c3a720010b13e1516",
+      "target_sha256": "c3ed54f311f63d683828bdd10ffef4bddf3e2503a19e626907b56e9af8b1578f",
+      "reasons": [
+        "concrete dependencies.glam"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/crates/ui-theme/Cargo.toml",
+      "package": "ui-theme",
+      "source_sha256": "72a083c037d4b565b78cc0332c70395e8f28b507698727c64c1845e546420ad7",
+      "target_sha256": "e38171d545784f842cfa4448e3876bb0e6f3559a613c7331cbc6390042e9028c",
+      "reasons": [
+        "concrete dependencies.glam",
+        "concrete dependencies.flex-geom",
+        "local identity dependencies.flex-geom -> vendor/wgpu-widgets-rs/crates/flex-geom"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/crates/wgpu-node/Cargo.toml",
+      "package": "wgpu-node",
+      "source_sha256": "2ea122c3275a046ba33f7dad8739e2ad645e8c507adaaabf395d0dfadffb6b1f",
+      "target_sha256": "831f90ad8cdec4ef98a13f84cd1450dad3245680271a6a72ad6da80936c3c0a7",
+      "reasons": [
+        "concrete dependencies.wgpu",
+        "concrete dependencies.glam",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.log",
+        "concrete dependencies.ui-theme",
+        "local identity dependencies.ui-theme -> vendor/wgpu-widgets-rs/crates/ui-theme"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/crates/wgpu-pick/Cargo.toml",
+      "package": "wgpu-pick",
+      "source_sha256": "eb65a9de19432753f574fa3543378ff28753eb6bf1566a5e4bcd350545120cb5",
+      "target_sha256": "1c15806288310d171ecc36d718e2aacd65b14ded5f9cb4b61dec35da2d4a290a",
+      "reasons": [
+        "concrete dependencies.wgpu",
+        "concrete dependencies.log"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/crates/wgpu-text/Cargo.toml",
+      "package": "wgpu-text",
+      "source_sha256": "517746c567286dd27b3c85328818193dc53468588bb7e12757e326cb4fbc4a80",
+      "target_sha256": "00c4e9cd665123cd72afa89ce95f1dda839fb6f510d4ca68f1711152bfe990a1",
+      "reasons": [
+        "concrete dependencies.wgpu",
+        "concrete dependencies.glam",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.glyphon",
+        "DEFERRED dependencies.wgpu-text-3d to declared later format/native/test-pack service; original declaration preserved",
+        "concrete dev-dependencies.pollster",
+        "explicitly deferred unselected dependency edges in feature engine-mesh3d"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/crates/wgpu-tube/Cargo.toml",
+      "package": "wgpu-tube",
+      "source_sha256": "8e17dc26343f03b1fb9fb6f5c3d7fae6b6cdd526ad0d895049e9be80bb0ba0cf",
+      "target_sha256": "2066e0ad71a70f9045f180ee0f87312bd29fdf730a8bc9b07be1f7597986ebb8",
+      "reasons": [
+        "concrete dependencies.wgpu",
+        "concrete dependencies.glam",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.log",
+        "concrete dev-dependencies.pollster"
+      ]
+    },
+    {
+      "path": "vendor/graph-layout-rs/Cargo.toml",
+      "package": "graph-layout",
+      "source_sha256": "9eebe27148acc498de33af02f2a4a3d40d73c79161abdc673fce8c7bab064839",
+      "target_sha256": "35a3c40eb6cf98cda6ad665e4c0775021b5596584b19c3e4cefe2464f5f47b31",
+      "reasons": []
+    },
+    {
+      "path": "vendor/exr-rs/crates/deflate-rs/Cargo.toml",
+      "package": "deflate-rs",
+      "source_sha256": "2239b9e68f7d269aa94ceda70b4ef6a4570c672e908efa0ecb3ad331277cc09b",
+      "target_sha256": "e598f298c684df59d969fb2ef870662d2d12fc26d9bf3b0f3e8c4ad2bbee6944",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.repository",
+        "concrete package.rust-version"
+      ]
+    },
+    {
+      "path": "vendor/exr-rs/crates/exr-core/Cargo.toml",
+      "package": "exr-core",
+      "source_sha256": "cbbbaf94fb2f31b3a5d2cce13df76c085bfe61930ec65a82844483ad07876e9e",
+      "target_sha256": "7586f738114f63be3ea840548791614bfc763d98318d8169adb165b70a3bf2a5",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "local identity dependencies.imath-rs -> vendor/exr-rs/crates/imath-rs",
+        "local identity dependencies.deflate-rs -> vendor/exr-rs/crates/deflate-rs",
+        "local identity dependencies.jph-rs -> vendor/jph-rs",
+        "concrete dependencies.log",
+        "concrete dependencies.murmur3",
+        "local identity dependencies.murmur3 -> vendor/murmur3",
+        "concrete dependencies.rayon",
+        "concrete dependencies.smallvec",
+        "concrete dependencies.codec-simd",
+        "local identity dependencies.codec-simd -> vendor/codec-simd-rs",
+        "concrete dev-dependencies.exr-test-data",
+        "DEFERRED dev-dependencies.exr-test-data to declared later format/native/test-pack service; original declaration preserved"
+      ]
+    },
+    {
+      "path": "vendor/exr-rs/crates/imath-rs/Cargo.toml",
+      "package": "imath-rs",
+      "source_sha256": "85e427eb50e82241ce1940c9d609ade97748ee30c25d755468b510d1263a0395",
+      "target_sha256": "c41cf4df6d04f47ececa2857440d57a368b1a8c9366ec030f2592a95f75ab345",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version"
+      ]
+    },
+    {
+      "path": "vendor/murmur3/Cargo.toml",
+      "package": "murmur3",
+      "source_sha256": "99c159fcc2963be949b2464201692dbf9492be2b780b881c09f60b29e9b36f56",
+      "target_sha256": "9255ea82911392cf109a374a145efc562af485254cae612f9a1db4ccd8b37d0d",
+      "reasons": []
+    },
+    {
+      "path": "vendor/jph-rs/Cargo.toml",
+      "package": "jph-rs",
+      "source_sha256": "d1170f9a21134527fb0465d95cd1ebd2ba27771a5fd89511f5c48360c24a5084",
+      "target_sha256": "cccb4407b1c6b60bcee90f4ccfad3dfae291797a208b914942d56d875ee229da",
+      "reasons": []
+    },
+    {
+      "path": "vendor/codec-simd-rs/Cargo.toml",
+      "package": "codec-simd",
+      "source_sha256": "c79a2c57e7b2e87b21a2cdc77640664f6b764eeb3e6047de1cc48c0c43b5568a",
+      "target_sha256": "235d1e11b39955954d7447cc0938f1bf763d6ae5f0dd2af5130b9e6521ce5219",
+      "reasons": []
+    },
+    {
+      "path": "vendor/render-rs/crates/render-engine-pt/standard-surface-bsdf/Cargo.toml",
+      "package": "standard-surface-bsdf",
+      "source_sha256": "84dbc37da566025b3b17b017a9ff33320f592f9cff8c1c378afddb40ede9e1b5",
+      "target_sha256": "a1efc41b7c5803ee13e3389307f4f6d6b98b1bef8c1860ca861a2561d4379542",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.rust-version",
+        "concrete package.repository",
+        "concrete dependencies.libm",
+        "DEFERRED dependencies.cuda-device to declared later format/native/test-pack service; original declaration preserved",
+        "concrete dev-dependencies.wgpu",
+        "concrete dev-dependencies.pollster",
+        "concrete dev-dependencies.bytemuck",
+        "explicitly deferred unselected dependency edges in feature cuda-math"
+      ]
+    },
+    {
+      "path": "vendor/egui-file-dialog/Cargo.toml",
+      "package": "egui-file-dialog",
+      "source_sha256": "368a722c032bbb781b3e3e13521c286be1dab78c0d929bd9c0987b2e453178f0",
+      "target_sha256": "6ea790d3f59f825b3b2c272388b43f01d8f4a30546c468a6375c2cc827bcf254",
+      "reasons": [
+        "local identity dev-dependencies.egui-file-dialog -> vendor/egui-file-dialog"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-puffin/Cargo.toml",
+      "package": "egui-puffin",
+      "source_sha256": "133d4e7881196dd7921c3d4f250584bd44e9ff597517d32ee2c5076f73fc2f7d",
+      "target_sha256": "723e4c2550c042227bd2e1122de2b57749e69536822491c72131846ae0bb036d",
+      "reasons": [
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-widgets-config/Cargo.toml",
+      "package": "egui-widgets-config",
+      "source_sha256": "2d03cd2d3feb3c04a792112ab98d634821465e6589219a4bf4d4a1a908e55a5e",
+      "target_sha256": "6c30cdfea641bf6c2f78e2de9e717445d8c22c81d38c9385e55af48f6f0badaa",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui-phosphor",
+        "local identity dependencies.egui-phosphor -> vendor/egui-phosphor",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-tab-menu/Cargo.toml",
+      "package": "egui-tab-menu",
+      "source_sha256": "cf639d3839935dddc71f2494ef187122a09df422c2bf79a532ec38c335fc299a",
+      "target_sha256": "6012323db80d8f9b7214a3b25064fe0d66e3fa6e3f289dbc68daebb3df593308",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui-phosphor",
+        "local identity dependencies.egui-phosphor -> vendor/egui-phosphor"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-command-palette/Cargo.toml",
+      "package": "egui-command-palette",
+      "source_sha256": "f130adc8bbeceb4ab0253476daf9384b76aeb6a557d7f4647bd46cd93d77c330",
+      "target_sha256": "2d0cae943ef93c4f9b9c86609538a61f140e3f747475e8c5abbbf0603b30e256",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-charts/Cargo.toml",
+      "package": "egui-charts",
+      "source_sha256": "edc7de5b13d6943ee8391177897ddcb5e8583b5fac3e53a96248b39c55f3792c",
+      "target_sha256": "f789d813b52617182a29e72c14beda7a606e2e9647a97cd57092622765a174b7",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-titlebar/Cargo.toml",
+      "package": "egui-titlebar",
+      "source_sha256": "5baca3a3a44ec6dbae3ce41c2dd167e1d90e679e4f4eb96be1c4cfa2a4d13476",
+      "target_sha256": "b1ec64de950ab83de403c48a690a4dd35ee32b2f5ec490afd00ef0957749c5ac",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-image-clip/Cargo.toml",
+      "package": "egui-image-clip",
+      "source_sha256": "00b74d9e87a2fa24e0fcbc323d8a5294d5ab912b0d6eb2f36dbf5cc95511f605",
+      "target_sha256": "04fd05ee889d2329800bfb448c9723d356bcec9cdee2733457b941b925fd2264",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.serde",
+        "concrete dependencies.serde_json",
+        "concrete dependencies.thiserror",
+        "concrete dependencies.image",
+        "concrete dependencies.exr-core",
+        "local identity dependencies.exr-core -> vendor/exr-rs/crates/exr-core",
+        "concrete dependencies.imath-rs",
+        "local identity dependencies.imath-rs -> vendor/exr-rs/crates/imath-rs",
+        "concrete dependencies.half",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-toast/Cargo.toml",
+      "package": "egui-toast",
+      "source_sha256": "37ee1006f89cc5097c1ed31fbe0079bfc402409093724e2af08493e313058f98",
+      "target_sha256": "f142393f8b33fd34b3b1fa54d92b2c822f21e22f24cd73a6872ade0041856461",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-spinner/Cargo.toml",
+      "package": "egui-spinner",
+      "source_sha256": "d64000825a14252eae345d8124d801cb06f9bbaa9061cae573f167401a42ff79",
+      "target_sha256": "2ff008fc06629c84b7715b8f56d998c98be0af26d67e379e39ce9bdbea3e3040",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-font-picker/Cargo.toml",
+      "package": "egui-font-picker",
+      "source_sha256": "764d8006c50de74f35ed7942078a2d23cdd792945fc2756dc7ce031e07d4b56f",
+      "target_sha256": "1193afff55f02aa805f2657b14d3c913e635b298e98bdab664a8e60b894c2a51",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-file-field/Cargo.toml",
+      "package": "egui-file-field",
+      "source_sha256": "8c846133062952af816e0cd857fe8ebd15b2880d772b92c06ff504b2bbd878d7",
+      "target_sha256": "147a2fbff9ec1f88a13b315faae044468efd18878aed56a769143794b036a352",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde",
+        "concrete dev-dependencies.serde_json"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-slider/Cargo.toml",
+      "package": "egui-slider",
+      "source_sha256": "31aa4f6463cccd1f02240ecb210973dc703dbb23dd14189071419d47e2f1fee0",
+      "target_sha256": "dc94e8aaf0fe8e347bfc36c48ed3871b36b3ec2508d7cacea72b3fb631653315",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-ramp/Cargo.toml",
+      "package": "egui-ramp",
+      "source_sha256": "1da779ef0c45b7debbf8ebcfcd6ebcc512121a43d885989bc95a43a563e24671",
+      "target_sha256": "dd2e7678a2f8d6d95474117c6ab7a09c1b8e4122a2a6bdd59e55c4201d279f4a",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.curves -> vendor/curves-rs",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "local identity dependencies.egui-colorpicker -> vendor/egui-widgets-rs/crates/egui-colorpicker"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-colorpicker/Cargo.toml",
+      "package": "egui-colorpicker",
+      "source_sha256": "661cd175cc1d1e53850cc55dff70bf6c1ee776157ca28800ed58937b884c00e1",
+      "target_sha256": "017b99e9385bb1b5725a812baf5bba685465f2fb480b160d786aeef0741967aa",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-gizmo/Cargo.toml",
+      "package": "egui-gizmo",
+      "source_sha256": "e28390ce2d35cb4c281579f9d7cb7be4ebae04238f57bdee565183f97e5eec04",
+      "target_sha256": "d58c5ace596e2eaab06ab58d7176ff5fbb4a656e72aff83886f31b15feacde9d",
+      "reasons": [
+        "concrete dependencies.egui",
+        "concrete dependencies.glam",
+        "concrete dev-dependencies.eframe",
+        "local identity dev-dependencies.egui-colorpicker -> vendor/egui-widgets-rs/crates/egui-colorpicker"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-encode-dialog/Cargo.toml",
+      "package": "egui-encode-dialog",
+      "source_sha256": "1074f8b2ef91789b284213065c7394fd1e247edfbcc5d1671ebe2070f7af9dfa",
+      "target_sha256": "a0058376262e1b1bd818913f842a9959cace0b1f55a781c127593baeb1edccfe",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-file-field -> vendor/egui-widgets-rs/crates/egui-file-field",
+        "local identity dependencies.egui-slider -> vendor/egui-widgets-rs/crates/egui-slider",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-jobs-table/Cargo.toml",
+      "package": "egui-jobs-table",
+      "source_sha256": "f5be76c06108f6804dd5d2863505f5dfb78f5ab3aaec89e8743d408bf4361d97",
+      "target_sha256": "d75de1ec0c8b2e1f4c0bc65ebcf79d4092eeea1c890cc45b9b2f194cc3f63775",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.egui_extras",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-preset/Cargo.toml",
+      "package": "egui-preset",
+      "source_sha256": "49c761c216aaaf3ab7f2c69ba37fcd76ae2911268115f344be4a6b0398940b52",
+      "target_sha256": "496e435900c0fcb422be545778c330ff948b5d296c1dcb3e0016f85929892678",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-dock-layout/Cargo.toml",
+      "package": "egui-dock-layout",
+      "source_sha256": "bbc2790c4fe4ccd90bc22f5eeaf98caf55885764969edb099d9787622b503677",
+      "target_sha256": "832a5a40c23ffd049ea8be90818b6b79bffd7e222a12ac0ebe7b65dc681ece68",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui_dock",
+        "local identity dependencies.egui-layout-manager -> vendor/egui-widgets-rs/crates/egui-layout-manager",
+        "concrete dependencies.serde",
+        "concrete dependencies.serde_json",
+        "concrete dependencies.thiserror"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-layout-manager/Cargo.toml",
+      "package": "egui-layout-manager",
+      "source_sha256": "826f70089efc1114f7c5a4d32633ac3402f863f6df499b4c311f6a6bf04c1e02",
+      "target_sha256": "93d779f3cf36e92e3e2c015b4087a1829d813093d0279763ef84138523acd627",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-arbor/Cargo.toml",
+      "package": "egui-arbor",
+      "source_sha256": "003a20ea8feea2cb84dcf3d6dcfcd8245f9f6a6875a21dadf33a2e6d9f86ce9a",
+      "target_sha256": "a8602b227bd83bd8100ac50507fe5d221b0a50ee7ff285a0f566a53a8e6c18fd",
+      "reasons": [
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.egui",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-outliner/Cargo.toml",
+      "package": "egui-outliner",
+      "source_sha256": "2e32798d363ccce9d1ef922acf5bbdfed3cac091771ed3e68aa7673fbfdce988",
+      "target_sha256": "c690187d10db1d97abf00f9966f0c7d0a8b00f476bc671dda9601e904106f3f0",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-asset-browser/Cargo.toml",
+      "package": "egui-asset-browser",
+      "source_sha256": "b8571a02a77cc0dec658dca7ba2079f5d73ba4cc138d62235052e7293ac98047",
+      "target_sha256": "364c67def650ab1c4f9d82e5eda8da8e5d3bfc330ca0ea8ae28abad5ac0812b5",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-otio-timeline/Cargo.toml",
+      "package": "egui-otio-timeline",
+      "source_sha256": "04e63364782aa9a93fba3421ef93849810617b51f5a91e0747cfcf3370736ec1",
+      "target_sha256": "4ff8f6804d4e7edc9175f3ccc74dee83a10a497177efc0a0a82ef2c0a09b1078",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.otio-timeline -> vendor/otio-rs/crates/otio-timeline",
+        "local identity dependencies.otio-edit -> vendor/otio-rs/crates/otio-edit"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-nodes-view/Cargo.toml",
+      "package": "egui-nodes-view",
+      "source_sha256": "128e1f581f741c1ce0743294c6889c5376f185e0a20b37f046bfcf9ccf463bf6",
+      "target_sha256": "4bc3c3ce0dcd704f16f89a7edcef41a33df02d62d7a2892d3d5ce80cf366b096",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.nodes-egui -> vendor/nodes-rs/crates/nodes-egui",
+        "local identity dependencies.nodes-core -> vendor/nodes-rs/crates/nodes-core"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-hotkeys/Cargo.toml",
+      "package": "egui-hotkeys",
+      "source_sha256": "309071014ac9d44c2831114fb42434400e056fa40f66c055d9dd480716938ecf",
+      "target_sha256": "c30ef3dbd4d6e5906ac26a290e80e42eb4b878cf88dd1a4bd477ff09870d7c96",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-keyframes/Cargo.toml",
+      "package": "egui-keyframes",
+      "source_sha256": "9f29f191ff56646631fdef7bbcebd983d671859d5e565a687cd4fccda006e26c",
+      "target_sha256": "0c2ee844c3b3e8cf8eb0a2d824d92b02ac46f96d323c8084e12f00e7d9902ab7",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-slider -> vendor/egui-widgets-rs/crates/egui-slider",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-pattern/Cargo.toml",
+      "package": "egui-pattern",
+      "source_sha256": "dd5e53589ff961f59791b6935bfbbbd5b64e01958b90dd3001278c3efa9bf3f3",
+      "target_sha256": "dec347a4f903e47bb3647560b6c313a0cd859ce46bf70e9dc699a37535bd1b50",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-track-timeline/Cargo.toml",
+      "package": "egui-track-timeline",
+      "source_sha256": "21d61d743ddff5a50e01212131c09fcb35fcc72101a51474cbc7babbb9f2b2a9",
+      "target_sha256": "fd79d9e2ec657e2b79f13fcdc231501232316ace8332d025982a22cdf6311f93",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "local identity dependencies.egui-pattern -> vendor/egui-widgets-rs/crates/egui-pattern",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-viewport-toolbar/Cargo.toml",
+      "package": "egui-viewport-toolbar",
+      "source_sha256": "7ce58fca64dbecc75ed095d759ed0e92217f3499adfa0b244fca413422c414c6",
+      "target_sha256": "772b7251bc10011a311872a952037aa4729c23d34a26bc7a6e72cd822454b18f",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde",
+        "local identity dependencies.egui-display -> vendor/egui-widgets-rs/crates/egui-display",
+        "local identity dependencies.egui-colorpicker -> vendor/egui-widgets-rs/crates/egui-colorpicker"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-display/Cargo.toml",
+      "package": "egui-display",
+      "source_sha256": "789700ca8a20003e2a7688a39d0c3fe6174be20344699f4861e1777ca64a57cf",
+      "target_sha256": "131c37d5fe43ab444fe37f5ccae2f4eafa8a45d332400fee14f609e52c856d42",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.wgpu",
+        "concrete dependencies.egui-wgpu",
+        "concrete dependencies.bytemuck",
+        "concrete dependencies.serde",
+        "concrete dependencies.serde_json",
+        "local identity dependencies.gpu-mem -> vendor/gpu-info-rs",
+        "concrete dependencies.png",
+        "concrete dependencies.half",
+        "concrete dependencies.thiserror",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "local identity dev-dependencies.vfx-ocio -> vendor/oiio-rs/crates/ocio/vfx-ocio",
+        "concrete dev-dependencies.half"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-viewport-hud/Cargo.toml",
+      "package": "egui-viewport-hud",
+      "source_sha256": "08f2bc06eda4657ba56c421d32f3980d44ed3e5b704e203207daff58c015a1e6",
+      "target_sha256": "c9658aec09ca9d83ca1e97b6ef8ef476046fb4f13a3fbe799ea8cfb92851223e",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-viewport-overlays/Cargo.toml",
+      "package": "egui-viewport-overlays",
+      "source_sha256": "0a9790ea769b3e3fb2fcb4a786cb8a2d7a3aade93dc56a073462cd56e0df35c3",
+      "target_sha256": "9a1830b94a79b872df966210968cd3c649b9c02376e1749e503a5c0879b67e59",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "local identity dependencies.egui-gizmo -> vendor/egui-widgets-rs/crates/egui-gizmo",
+        "concrete dependencies.glam",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-viewport/Cargo.toml",
+      "package": "egui-viewport",
+      "source_sha256": "f41d16c2b67d45f924e2752405846c86a9414037c6eb6011d945c3059d5e55be",
+      "target_sha256": "5da51f2e073de618d610f72ebfe1b2bf9d4b36ec67402015f953732a7bf7d5f4",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-camera-controls/Cargo.toml",
+      "package": "egui-camera-controls",
+      "source_sha256": "68e7a63ec90b5abc4b52c0d492fc388bd2bc48dfea1562b4bf518eeb69de3184",
+      "target_sha256": "14790e7ca9c86d468ce6eb2c19958e0d822c6646b2a5df65e2041c94091f67ea",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-scopes/Cargo.toml",
+      "package": "egui-scopes",
+      "source_sha256": "bb0825b3f4c25ec228c9e6ef0fe488dd2960235e761fdefcafda65eaf4e91a06",
+      "target_sha256": "977af41a8d51c752881549a926754540e0645d9553c928971e9087f69aa6775c",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui-wgpu",
+        "concrete dependencies.wgpu",
+        "concrete dependencies.bytemuck"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-hdr-view/Cargo.toml",
+      "package": "egui-hdr-view",
+      "source_sha256": "0bc60f8197fc5e32241df81d806d1daaed5eff3ba1b109717f69cc21f93cde65",
+      "target_sha256": "59173d18ed0cc8020258736c169ca624070bb4205d15598210f0590d7156e940",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui-wgpu",
+        "concrete dependencies.wgpu",
+        "concrete dependencies.bytemuck",
+        "concrete dev-dependencies.half"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-gpu-view/Cargo.toml",
+      "package": "egui-gpu-view",
+      "source_sha256": "4261fffc31268a1810def4830911a3c50dda77a00b6c1290f90be7de11029fbc",
+      "target_sha256": "707d341fdb8f0cc76fe8c216fe20d092afcb33b7a72fa1e8d31c60146ddd86c5",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "concrete dependencies.egui-wgpu",
+        "concrete dependencies.wgpu"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-drag-overlay/Cargo.toml",
+      "package": "egui-drag-overlay",
+      "source_sha256": "0c253a2a4b7ee868716c9484721b5690a67279c361bc66708a4a155998722839",
+      "target_sha256": "93aad3a8fad6d1c602d8b94a3c71e13ea9ae7f33b863afc195e78a7d2bb2a429",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-logbuffer/Cargo.toml",
+      "package": "egui-logbuffer",
+      "source_sha256": "839aa13a6651b978c559dcf0dde6c828036f5c251b0d36cd8e693cdfed997dfa",
+      "target_sha256": "ca23ea61f3ef21c512a23aff5588161323bb9c25cfd6edc067b6320c21460f54",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-help-overlay/Cargo.toml",
+      "package": "egui-help-overlay",
+      "source_sha256": "8dbe87bcfc4138f2dafdc2189fa2ba7dbe4d1232a591913153fbc885bfd0ffe8",
+      "target_sha256": "003f55384e57238ed51566c09887088916445286d6a49ec61a21429fe6bd1954",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-progressbar/Cargo.toml",
+      "package": "egui-progressbar",
+      "source_sha256": "606b870c1e20239ed5b828e9d3785076e649e5ff533625367acde647a3453fbc",
+      "target_sha256": "79798e01de2e1c441d24997e8d5fcd4f1ff7556eb497fcd812f3ef50ee646769",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-prefs2/Cargo.toml",
+      "package": "egui-prefs2",
+      "source_sha256": "139a9b9f9442bbd576823285653f5fa40a0a0bface9c9f819d1a67746ecdb59b",
+      "target_sha256": "0cb9adde584febf0cc0b6ec97fa9077fddf538e904f7664020833eb8bf8cc1e4",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.box-rs -> vendor/box-rs",
+        "local identity dependencies.egui-attr-grid -> vendor/egui-widgets-rs/crates/egui-attr-grid",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-attr-grid/Cargo.toml",
+      "package": "egui-attr-grid",
+      "source_sha256": "aed2a5ffc0aa6db9380e0b709ecb13f193541128534d2867949b600da6690b69",
+      "target_sha256": "d1b90a2e2b21bc891123289fbade301ef0b1eb778c593eb019be84f4d41a727d",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "local identity dependencies.egui-slider -> vendor/egui-widgets-rs/crates/egui-slider",
+        "local identity dependencies.egui-colorpicker -> vendor/egui-widgets-rs/crates/egui-colorpicker",
+        "local identity dependencies.egui-splitter-table -> vendor/egui-widgets-rs/crates/egui-splitter-table",
+        "local identity dependencies.egui-preset -> vendor/egui-widgets-rs/crates/egui-preset",
+        "concrete dependencies.serde",
+        "local identity dependencies.egui-file-field -> vendor/egui-widgets-rs/crates/egui-file-field",
+        "local identity dependencies.egui-font-picker -> vendor/egui-widgets-rs/crates/egui-font-picker"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-splitter-table/Cargo.toml",
+      "package": "egui-splitter-table",
+      "source_sha256": "301d0b3bb5c38fa4f141ba62593c5916e11f27a224a6915513c763d94f4a8fd6",
+      "target_sha256": "2f2fdec66ff71fbcc3bef9d2daa1aff8cb7c6301e306eee2f6ba8e1c8088d78f",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-prefs/Cargo.toml",
+      "package": "egui-prefs",
+      "source_sha256": "3b1187b0bdb3acccf1a1f6e0f2db11898f991d6acc8b3785ebfd3d42868d01ae",
+      "target_sha256": "976fc761607229db98732b39bc9ca831cde90bdadab0ac7bf438d4d7e6432039",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-prefs2 -> vendor/egui-widgets-rs/crates/egui-prefs2",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-menubar/Cargo.toml",
+      "package": "egui-menubar",
+      "source_sha256": "81abff3cfa21d4b05f14ff9a91dad91c119ba0ee7c726d9ee7aa5fd1efa7564b",
+      "target_sha256": "cec55a1384b0fa9d13a5ab64506847a7ee94682d3a2d1d6052cfc6b0a633d71f",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-statusbar/Cargo.toml",
+      "package": "egui-statusbar",
+      "source_sha256": "5a3081b5cf5d5c5e19bacd69f62cc910e09d261a05c0058b1e4d7115b99b0353",
+      "target_sha256": "40d632b67487858ae5d92a6dcc5ef9d91c14d37742bff68010f9d6e660fd0940",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config",
+        "concrete dependencies.serde"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-timeline/Cargo.toml",
+      "package": "egui-timeline",
+      "source_sha256": "1847a6bacee45eb1af108f29ec9baa7d1d7d30be1599b695f6e5bcb98eb6daec",
+      "target_sha256": "48bfdee0f4522c4d5a475d87ada6923fa1b7be485abbfafaf4b8c4fc4708cbe2",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/crates/egui-value-editor/Cargo.toml",
+      "package": "egui-value-editor",
+      "source_sha256": "b48f74d67fd62b7ccd51612212598dd87ab36f2e91e5e91cbf428cc503a3489e",
+      "target_sha256": "0a8c470e85dfdaaad86bbc292a616fbe366dbcbf8c44242fd1e4de48c3a317d4",
+      "reasons": [
+        "concrete package.authors",
+        "concrete package.version",
+        "concrete package.edition",
+        "concrete package.license",
+        "concrete package.repository",
+        "concrete package.rust-version",
+        "concrete dependencies.egui",
+        "local identity dependencies.egui-widgets-config -> vendor/egui-widgets-rs/crates/egui-widgets-config"
+      ]
+    },
+    {
+      "path": "vendor/oiio-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "f0c75969af5dc2de163807661c2559ef76d603bda34c46f8634f8205612a750f",
+      "target_sha256": "11b2330f8cca434e38c283a91b6c9f186233472cae129828cb47dd142e6bdb74",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "path": "vendor/otio-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "cced18532f92629b493c01fd6e5120ccb7c2bd12aa33b26ce34dd697c910a28e",
+      "target_sha256": "4ba98887de3c98051b5894cadf9f1db190f84dbbddce2cc8270d080119518949",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "path": "vendor/nodes-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "879274c9e276adab56d21933e1101270e7c83f6417135ef83de478d2ccafaf8e",
+      "target_sha256": "a768a426064d9bc6016f54fb750c4c5ed8a0d6dcb7f490ed46e329cbf9698a32",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "path": "vendor/wgpu-widgets-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "0059c3b4b56a485ee471c241e7d4f2ec1f629c9234a2c76d68cf3e33f24106ba",
+      "target_sha256": "d865cc26ce367c3411e1859fa41ac07f36186b5cfe14bb21ce9a27b5e7867974",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "path": "vendor/exr-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "509efbdea71a5e4043116befe21470f7c63be5c9b6425440f1bda3b202982220",
+      "target_sha256": "6ff826f1ea67ecd884d5734fe612fa0142ee266cd874e893ec614a34e739cd8c",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "path": "vendor/render-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "4b1ca0d0a0acb7334d1bcf709b4f28ff4ea7fb67d580e768fd42aa54dee36575",
+      "target_sha256": "bffd00c7296ec4470e4de14ae7a3693dfdd1bd8d66e043d5db33779a1d95760a",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "path": "vendor/egui-widgets-rs/Cargo.toml",
+      "package": null,
+      "source_sha256": "bb2a6737d75bedf41e808e3064e2b075a1bfeb2e26b3dc4564ef9559ead56e2f",
+      "target_sha256": "c8b786a09235535363a2d1720d3fe0b45e79c241e1f040926b2fabb3d0c8ef77",
+      "reasons": [
+        "restrict to copied active package members",
+        "all member inheritance concrete"
+      ]
+    },
+    {
+      "summary": true,
+      "packages": 87,
+      "manifest_patches": 94,
+      "registry_sources": "ordinary registry; no vendoring",
+      "product_scope": "copied owned manifests only"
+    }
+  ]
+}

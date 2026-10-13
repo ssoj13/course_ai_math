@@ -1,0 +1,31 @@
+[package]
+name = "wgpu-text"
+version = "0.1.0"
+edition = "2024"
+description = "wgpu text engine: glyphon screen labels + plane-locked atlas quads"
+license = "MIT"
+
+[features]
+# Glyphon (2D atlas) engine is always built. The 3D extruded-mesh engine is opt-in so
+# downstream crates that only need 2D text do not pull in the tessellation stack.
+# `engine-mesh3d` brings in `wgpu-text-3d` with its render layer (and its default
+# `backend-lyon` tessellator) and enables `MeshBackend`.
+default = []
+engine-mesh3d = ["dep:wgpu-text-3d", "wgpu-text-3d/render"]
+
+[dependencies]
+wgpu = { workspace = true }
+glam = { workspace = true }
+bytemuck = { workspace = true }
+glyphon = { workspace = true }
+etagere = "0.3"
+# Held at glyphon 0.12's lru (latest glyphon) so the graph has one lru.
+lru = { version = "0.16", default-features = false }
+rustc-hash = "2.1"
+
+# Second text engine (extruded 3D mesh), enabled by the `engine-mesh3d` feature.
+wgpu-text-3d = { path = "../wgpu-text-3d", optional = true }
+
+[dev-dependencies]
+pollster = { workspace = true }
+png = "0.18"

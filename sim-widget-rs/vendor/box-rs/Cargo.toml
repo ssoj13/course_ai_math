@@ -1,0 +1,36 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "box-rs"
+version = "0.3.0"
+edition = "2024"
+description = "Nested data container with path/bracket/attr access, smart merge, and structural diff"
+license = "MIT"
+repository = "https://github.com/ssoj13/box-rs"
+keywords = ["box", "nested", "merge", "diff", "path"]
+categories = ["data-structures", "config"]
+
+[lib]
+name = "box_rs"
+path = "src/lib.rs"
+
+[dependencies]
+serde_json = "1"
+thiserror = "2"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.smallvec]
+version = "1"
+features = ["serde"]
+
+[dependencies.safetensors]
+version = "0.7"
+optional = true
+
+[features]
+safetensors = ["dep:safetensors"]
+
+[dev-dependencies]
+serde_json = "1"

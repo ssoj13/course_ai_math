@@ -1,0 +1,26 @@
+# egui-viewport-hud — generic viewport HUD: semi-transparent corner stat panels.
+#
+# Paints caller-supplied text blocks anchored to the four corners of a viewport
+# rect (usdview-style: gold monospace on a translucent black plate), stacking
+# multiple blocks away from each corner. The widget owns NO data — the host
+# formats its stats into lines and passes them in; it only lays out + paints.
+#
+# (Gathered from vfx-rs `vfx-view/src/panels/hud.rs`. The host coupling — USD
+# stage traversal for prim counts, FPS/GPU timing, complexity — stays in the
+# app; only the corner-panel layout + translucent-plate text painter are generic.)
+
+[package]
+name = "egui-viewport-hud"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic viewport HUD for egui: semi-transparent corner stat panels (usdview style)"
+
+[lib]
+path = "src/egui_viewport_hud.rs"
+
+[dependencies]
+egui = { workspace = true }

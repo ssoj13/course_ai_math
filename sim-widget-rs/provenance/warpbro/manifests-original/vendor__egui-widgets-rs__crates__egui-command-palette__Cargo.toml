@@ -1,0 +1,23 @@
+# egui-command-palette — a searchable command palette (Ctrl-P) + a fuzzy combo.
+#
+# A centered `egui::Modal` with an auto-focused search field and a fuzzy-ranked
+# command list (Up/Down/Enter/Esc keyboard nav, click-to-run). The host supplies
+# read-only `Command`s and gets back the chosen command id. Also ships the reusable
+# `fuzzy_score` subsequence matcher and a `fuzzy_combo` popup-search ComboBox.
+# Hermetic — egui ONLY (fuzzy matching implemented inline, no fuzzy-matcher crate).
+[package]
+name = "egui-command-palette"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A searchable, fuzzy-ranked egui command palette (Ctrl-P) modal plus a fuzzy-search combo box"
+
+[lib]
+path = "src/egui_command_palette.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

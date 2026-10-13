@@ -1,0 +1,33 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "standard-surface-bsdf"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+repository = "https://github.com/ssoj13/render-rs"
+license = "Apache-2.0"
+description = "Autodesk Standard Surface BSDF (MaterialX port): CPU f32 twin plus WGSL library, no GPU dependency"
+keywords = ["pbr", "bsdf", "materialx", "standard-surface", "wgsl"]
+categories = ["rendering", "graphics"]
+readme = "README.md"
+include = ["Cargo.toml", "README.md", "LICENSE", "NOTICE", "src/**", "tests/**"]
+
+[features]
+cuda-math = []
+
+[dependencies.libm]
+version = "0.2"
+
+[dev-dependencies.naga]
+version = "30"
+features = ["wgsl-in"]
+
+[dev-dependencies.wgpu]
+version = "30"
+
+[dev-dependencies.pollster]
+version = "0.4"
+
+[dev-dependencies.bytemuck]
+version = "1.25"
+features = ["derive"]

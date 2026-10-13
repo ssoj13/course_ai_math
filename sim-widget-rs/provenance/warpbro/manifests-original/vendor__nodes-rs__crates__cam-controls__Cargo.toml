@@ -1,0 +1,16 @@
+[package]
+name = "cam-controls"
+version = "0.1.0"
+edition = "2024"
+rust-version.workspace = true
+description = "Host-agnostic camera rigs: orbit, fit, inertia, transitions, fly/spaceflight (RH Y-up, glam). Copied from gitnexus-rs cam-controls."
+
+[dependencies]
+cam-viewport = { path = "../cam-viewport" }
+# `serde` so the pose types (`CameraPose` = glam `Vec3`/`Quat`) are persistable by a host that
+# saves its camera; glam's own impls keep the on-disk shape a plain array.
+glam = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+approx = "0.5"

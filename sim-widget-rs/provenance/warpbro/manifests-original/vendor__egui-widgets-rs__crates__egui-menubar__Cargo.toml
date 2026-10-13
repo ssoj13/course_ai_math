@@ -1,0 +1,23 @@
+# egui-menubar - a declarative, app-agnostic menu bar / context menu for egui.
+#
+# The menu is DATA: a tree of `MenuNode` naming actions by opaque `&'static str`
+# id. This crate knows nothing about what an action does - it draws the tree, asks
+# the host how each item should look (label, shortcut text, enabled, checked) and
+# returns the id that was clicked. That keeps ONE list of actions in the host,
+# shared by the menu, the hotkey table and any command palette, instead of a menu
+# that quietly drifts from the keyboard shortcuts.
+[package]
+authors.workspace = true
+name = "egui-menubar"
+description = "A declarative, id-driven egui menu bar and context menu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/egui_menubar.rs"
+
+[dependencies]
+egui = { workspace = true }

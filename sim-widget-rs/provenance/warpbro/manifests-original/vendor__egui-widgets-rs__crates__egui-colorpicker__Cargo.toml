@@ -1,0 +1,25 @@
+# egui-colorpicker — a Maya/Nuke-style HDR colour picker popup for egui.
+#
+# A swatch button that opens a popup: a 2D hue×saturation field + value slider,
+# per-channel RGBA / HSV / hex editors, an LDR|HDR mode toggle, a deduped colour
+# history strip, and an injectable display-transform + eyedropper hook. Colours
+# are stored linearly as `[f32; 4]` so HDR values (> 1.0) flow through unclamped.
+# Generic — no app types. (Gathered from gitnexus-rs; the richer of two variants.)
+[package]
+name = "egui-colorpicker"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Maya-style HDR colour picker popup widget for egui (RGB linear / HSV / hex, history, eyedropper hook)"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }
+
+[dev-dependencies]
+# Accessibility-tree UI tests of the popup's idle close.
+egui_kittest = "0.36"

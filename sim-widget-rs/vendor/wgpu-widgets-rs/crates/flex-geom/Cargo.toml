@@ -1,0 +1,9 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "flex-geom"
+version = "0.1.0"
+edition = "2024"
+description = "Pure 2D flex/grid layout arithmetic (Qt-style measure/arrange) — no GPU deps."
+
+[dependencies.glam]
+version = "0.33.2"

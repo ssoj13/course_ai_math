@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-12",
+  "sources": [
+    {
+      "name": "effectcraft",
+      "origin": "https://github.com/storytold/effectcraft",
+      "commit": "67434e90388b6dca4417555346fa6850b6f96033",
+      "verified_clean": true,
+      "selected_crates": [
+        "time",
+        "geom",
+        "color",
+        "keyframe"
+      ],
+      "reason": "Scalar keyframe adapter uses original keyframe evaluator; time/geom/color are its actual leaf dependency closure",
+      "license": "MIT OR Apache-2.0",
+      "files": [
+        {
+          "path": "vendor/storytold/effectcraft/Cargo.toml",
+          "donor_path": "Cargo.toml",
+          "sha256": "ff659fb19a275c4f61e23f3871cef491af18a24d287e2b6278017b305d2c6e21",
+          "source_sha256": "98ec8c61fe9067e2b7f5be880e60f16964de52742871b2f18b735984d2a855be",
+          "bytes": 751,
+          "adaptation": "Minimal donor workspace manifest inheriting original metadata/dependency versions; unused crates removed",
+          "source_equal": false
+        },
+        {
+          "path": "vendor/storytold/effectcraft/LICENSE-APACHE",
+          "donor_path": "LICENSE-APACHE",
+          "sha256": "eb3d7b5485466acbd81f2b496f595ab637d2792e268206b27d99e793bdb67549",
+          "source_sha256": "eb3d7b5485466acbd81f2b496f595ab637d2792e268206b27d99e793bdb67549",
+          "bytes": 10351,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/LICENSE-MIT",
+          "donor_path": "LICENSE-MIT",
+          "sha256": "2da01426cc958cdac55d837acf12ea2966c5b022897be58fca2f09bcc749a563",
+          "source_sha256": "2da01426cc958cdac55d837acf12ea2966c5b022897be58fca2f09bcc749a563",
+          "bytes": 1124,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/NOTICE",
+          "donor_path": "NOTICE",
+          "sha256": "a94e36238939b0b8176f207472dd8e8f68555ebcfc9947951d66971ef8c4fe1a",
+          "source_sha256": "a94e36238939b0b8176f207472dd8e8f68555ebcfc9947951d66971ef8c4fe1a",
+          "bytes": 924,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/rustfmt.toml",
+          "donor_path": "rustfmt.toml",
+          "sha256": "6d777b994e78fcdb76b2d5968807eff5c740eab00d4193b243c8836e32ef333f",
+          "source_sha256": "6d777b994e78fcdb76b2d5968807eff5c740eab00d4193b243c8836e32ef333f",
+          "bytes": 47,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/time/Cargo.toml",
+          "donor_path": "crates/time/Cargo.toml",
+          "sha256": "d72406acdf5564a34623e31281249a82bcea77fbef4520b5fbb97dbcd6617b14",
+          "source_sha256": "e37680a8ed8f7d74388880f2898490a3691d766ad87bacae0f461aa2ef92d1a8",
+          "bytes": 300,
+          "adaptation": "Added package.workspace=\"../..\" so Cargo resolves local copied closure",
+          "source_equal": false
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/time/tests/relative_min_cancellation.rs",
+          "donor_path": "crates/time/tests/relative_min_cancellation.rs",
+          "sha256": "b1c3d8ae46766ca1994c590f3299ce0969c35d9010ac81ee1d645039ba91333c",
+          "source_sha256": "b1c3d8ae46766ca1994c590f3299ce0969c35d9010ac81ee1d645039ba91333c",
+          "bytes": 1576,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/time/src/lib.rs",
+          "donor_path": "crates/time/src/lib.rs",
+          "sha256": "2969c02c6588e75783c55b9d768bf9535b7058212a75f817a8a92d8740e59fe6",
+          "source_sha256": "2969c02c6588e75783c55b9d768bf9535b7058212a75f817a8a92d8740e59fe6",
+          "bytes": 33035,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/keyframe/Cargo.toml",
+          "donor_path": "crates/keyframe/Cargo.toml",
+          "sha256": "234fb19d86f5ed2716d54aa84dc87ce1a3a8b9e7ffbeefa0edcb7bc2ba5a3586",
+          "source_sha256": "9b5099da1689f626e053d5ab3153272fb3303f250dd74932a808037abe4950f1",
+          "bytes": 601,
+          "adaptation": "Added package.workspace=\"../..\" so Cargo resolves local copied closure",
+          "source_equal": false
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/keyframe/src/lib.rs",
+          "donor_path": "crates/keyframe/src/lib.rs",
+          "sha256": "0959cb8496768381d1af4773ae6de4dde91712df7d3e5cea9b1a462d227c0dfc",
+          "source_sha256": "0959cb8496768381d1af4773ae6de4dde91712df7d3e5cea9b1a462d227c0dfc",
+          "bytes": 43093,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/keyframe/src/text_doc.rs",
+          "donor_path": "crates/keyframe/src/text_doc.rs",
+          "sha256": "cf3993eff203ebe185bb4df25d69d3819d84cbd925d21b972f433dcae6d03101",
+          "source_sha256": "cf3993eff203ebe185bb4df25d69d3819d84cbd925d21b972f433dcae6d03101",
+          "bytes": 55067,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/keyframe/src/value.rs",
+          "donor_path": "crates/keyframe/src/value.rs",
+          "sha256": "e3b372b4bc0984cf7871df9af9f58e0dfffccc7f422b619c6f53f30a366fc961",
+          "source_sha256": "e3b372b4bc0984cf7871df9af9f58e0dfffccc7f422b619c6f53f30a366fc961",
+          "bytes": 18281,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/keyframe/examples/ae_ease_samples.rs",
+          "donor_path": "crates/keyframe/examples/ae_ease_samples.rs",
+          "sha256": "5157b15041e1a48dab6dde39f06f4dc3372621a49aac29695e4d661f0927c34a",
+          "source_sha256": "5157b15041e1a48dab6dde39f06f4dc3372621a49aac29695e4d661f0927c34a",
+          "bytes": 1872,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/geom/Cargo.toml",
+          "donor_path": "crates/geom/Cargo.toml",
+          "sha256": "d07ca4104cb611c61183ece33effbb74ae2609fe668e52c0d829206db5327878",
+          "source_sha256": "271aca34119ce37c42b173ccac5d98ed4d89dc7a568317668b5f08a69b5d318d",
+          "bytes": 300,
+          "adaptation": "Added package.workspace=\"../..\" so Cargo resolves local copied closure",
+          "source_equal": false
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/geom/src/lib.rs",
+          "donor_path": "crates/geom/src/lib.rs",
+          "sha256": "8455b489e56684dbcc5c7bde5d49328250bc090ee3efdd9017e141b5a34a0b43",
+          "source_sha256": "8455b489e56684dbcc5c7bde5d49328250bc090ee3efdd9017e141b5a34a0b43",
+          "bytes": 19838,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/color/Cargo.toml",
+          "donor_path": "crates/color/Cargo.toml",
+          "sha256": "ed9e0ccb266b83a65dd053e7122cbc5be7cd8bc0af9e4f00e21a997f7ac3de96",
+          "source_sha256": "523e20a4a6aa543b034e0ab5754eebd29e7d19b28ebb5dd6afe7468e02e6eada",
+          "bytes": 301,
+          "adaptation": "Added package.workspace=\"../..\" so Cargo resolves local copied closure",
+          "source_equal": false
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/color/src/blend.rs",
+          "donor_path": "crates/color/src/blend.rs",
+          "sha256": "7f4117d14794bffc83f27c1ec6bbdab3cd9e97a6040e72d5611b5b45c32c24ac",
+          "source_sha256": "7f4117d14794bffc83f27c1ec6bbdab3cd9e97a6040e72d5611b5b45c32c24ac",
+          "bytes": 19801,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/color/src/icc.rs",
+          "donor_path": "crates/color/src/icc.rs",
+          "sha256": "01ee1fc5cee9211b1c1cd7e010a33a291ea56568c58466a686201f6f185c9db1",
+          "source_sha256": "01ee1fc5cee9211b1c1cd7e010a33a291ea56568c58466a686201f6f185c9db1",
+          "bytes": 44784,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/color/src/lib.rs",
+          "donor_path": "crates/color/src/lib.rs",
+          "sha256": "49c1375c0d3b2ca15bea84e782822eb7c375ef80fbe198dc9d164a127357d148",
+          "source_sha256": "49c1375c0d3b2ca15bea84e782822eb7c375ef80fbe198dc9d164a127357d148",
+          "bytes": 8987,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "vendor/storytold/effectcraft/crates/color/src/space.rs",
+          "donor_path": "crates/color/src/space.rs",
+          "sha256": "5885524a683e7cfd21f36633848e6b46ecd3d15b8444317dd933a524963e9662",
+          "source_sha256": "5885524a683e7cfd21f36633848e6b46ecd3d15b8444317dd933a524963e9662",
+          "bytes": 20160,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "provenance/NOTICE",
+          "donor_path": "NOTICE",
+          "sha256": "a94e36238939b0b8176f207472dd8e8f68555ebcfc9947951d66971ef8c4fe1a",
+          "source_sha256": "a94e36238939b0b8176f207472dd8e8f68555ebcfc9947951d66971ef8c4fe1a",
+          "bytes": 924,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "provenance/original-manifests/effectcraft-Cargo.toml",
+          "donor_path": "Cargo.toml",
+          "sha256": "98ec8c61fe9067e2b7f5be880e60f16964de52742871b2f18b735984d2a855be",
+          "source_sha256": "98ec8c61fe9067e2b7f5be880e60f16964de52742871b2f18b735984d2a855be",
+          "bytes": 8344,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "provenance/original-manifests/time-Cargo.toml",
+          "donor_path": "crates/time/Cargo.toml",
+          "sha256": "e37680a8ed8f7d74388880f2898490a3691d766ad87bacae0f461aa2ef92d1a8",
+          "source_sha256": "e37680a8ed8f7d74388880f2898490a3691d766ad87bacae0f461aa2ef92d1a8",
+          "bytes": 279,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "provenance/original-manifests/geom-Cargo.toml",
+          "donor_path": "crates/geom/Cargo.toml",
+          "sha256": "271aca34119ce37c42b173ccac5d98ed4d89dc7a568317668b5f08a69b5d318d",
+          "source_sha256": "271aca34119ce37c42b173ccac5d98ed4d89dc7a568317668b5f08a69b5d318d",
+          "bytes": 279,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "provenance/original-manifests/color-Cargo.toml",
+          "donor_path": "crates/color/Cargo.toml",
+          "sha256": "523e20a4a6aa543b034e0ab5754eebd29e7d19b28ebb5dd6afe7468e02e6eada",
+          "source_sha256": "523e20a4a6aa543b034e0ab5754eebd29e7d19b28ebb5dd6afe7468e02e6eada",
+          "bytes": 280,
+          "adaptation": null,
+          "source_equal": true
+        },
+        {
+          "path": "provenance/original-manifests/keyframe-Cargo.toml",
+          "donor_path": "crates/keyframe/Cargo.toml",
+          "sha256": "9b5099da1689f626e053d5ab3153272fb3303f250dd74932a808037abe4950f1",
+          "source_sha256": "9b5099da1689f626e053d5ab3153272fb3303f250dd74932a808037abe4950f1",
+          "bytes": 580,
+          "adaptation": null,
+          "source_equal": true
+        }
+      ]
+    }
+  ],
+  "deferred_sources": [
+    {
+      "name": "craft-ui",
+      "commit": "1aa81a773aa9198a0e4c0daeda954d622475af38",
+      "reason": "No author UI implementation in foundation, copy when actual UI consumer is implemented"
+    },
+    {
+      "name": "cglibs",
+      "reason": "GPU/curve/node consumers belong to later scoped tasks; SSH git pins only when used"
+    }
+  ],
+  "registry_dependencies": "Normal Cargo registry resolution with Cargo.lock; no registry vendor",
+  "manifest_patches": [
+    {
+      "path": "vendor/storytold/effectcraft/Cargo.toml",
+      "original": "provenance/original-manifests/effectcraft-Cargo.toml",
+      "reason": "Retain only four copied members and their original inherited metadata/lints/dependencies"
+    },
+    {
+      "paths": [
+        "vendor/storytold/effectcraft/crates/time/Cargo.toml",
+        "vendor/storytold/effectcraft/crates/geom/Cargo.toml",
+        "vendor/storytold/effectcraft/crates/color/Cargo.toml",
+        "vendor/storytold/effectcraft/crates/keyframe/Cargo.toml"
+      ],
+      "originals": [
+        "provenance/original-manifests/time-Cargo.toml",
+        "provenance/original-manifests/geom-Cargo.toml",
+        "provenance/original-manifests/color-Cargo.toml",
+        "provenance/original-manifests/keyframe-Cargo.toml"
+      ],
+      "patch": "Add package.workspace = \"../..\"",
+      "reason": "Nested local donor workspace resolution"
+    }
+  ]
+}

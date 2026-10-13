@@ -1,0 +1,26 @@
+# otio-core — OpenTimelineIO core object model + `.otio` JSON round-trip.
+#
+# Models a timeline as a flat generational arena of schema nodes. Each node keeps
+# its fields in order; a field is either a verbatim JSON value or a structural
+# link to child node(s). This makes serialization lossless by construction (no
+# per-schema serializer to drift) while giving a navigable, editable tree.
+#
+# Metadata is exposed through box-rs (general-purpose nested container).
+[package]
+name = "otio-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "OpenTimelineIO core object model (schema-node arena) with lossless .otio JSON round-trip"
+
+[lib]
+name = "otio_core"
+path = "src/otio_core.rs"
+
+[dependencies]
+otio-time = { path = "../otio-time" }
+box-rs = { git = "ssh://git@github.com/ssoj13/box-rs.git", branch = "main", package = "box-rs" }
+serde_json = { version = "1", features = ["preserve_order"] }
+slotmap = "1"
+thiserror.workspace = true

@@ -1,0 +1,46 @@
+# egui-viewport-toolbar — a generic collapsible toolbar strip for a viewport.
+#
+# A horizontal chrome strip along the bottom of a caller-supplied viewport `Rect`
+# that rolls up to the LEFT into a small square button and expands back, animated.
+# The widget owns NO app types and NO app state: the HOST draws the actual
+# controls into the strip through a closure, so the same crate carries rv-rs's
+# A/B-compare + RGBA-channel controls, exr-view's display adjustments, or anything
+# else. Collapsed/expanded lives in a small serde struct the host persists.
+#
+# Written for this repo (not gathered from a sibling project): the existing
+# viewport crates cover different ground — `egui-viewport-hud` paints corner stat
+# plates, `egui-viewport-overlays` paints 3-D axis/grid/reticle chrome, and
+# `egui-viewport` is a whole 2-D viewport with its own pan/zoom.
+
+[package]
+name = "egui-viewport-toolbar"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic collapsible viewport toolbar strip for egui: rolls up to the left into a button"
+
+[lib]
+path = "src/egui_viewport_toolbar.rs"
+
+[dependencies]
+egui = { workspace = true }
+# Shared animation timings (`Anim::med`), spacing/radius `Metrics`, and the
+# caret icon vocabulary, so the strip eases and spaces like every other widget
+# here instead of hardcoding its own constants.
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }
+# The viewer-backdrop model (`Backdrop`) the `backdrop_picker` control edits; the
+# model and its renderers live with the display-space code they composite in.
+egui-display = { path = "../egui-display" }
+# The Custom backdrop's swatch opens this picker (display-space colours).
+egui-colorpicker = { path = "../egui-colorpicker" }
+
+[dev-dependencies]
+# JSON is only used by the state's serde round-trip test; the widget itself is
+# format-agnostic (the host picks its own serializer for its config).
+serde_json = "1"
+# Accessibility-tree UI tests of the backdrop drop-up (open, select each item, flip).
+egui_kittest = "0.36"

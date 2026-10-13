@@ -1,0 +1,52 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "nodes-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+description = "Headless computational node graph (Subnet, cook, RustBox)"
+license = "MIT"
+
+[dependencies.log]
+version = "0.4"
+
+[dependencies.box-rs]
+package = "box-rs"
+path = "../../../box-rs"
+
+[dependencies.rhai]
+version = "1"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1"
+
+[dependencies.thiserror]
+version = "2"
+
+[dependencies.uuid]
+version = "1"
+features = ["v4", "v5", "serde"]
+
+[dependencies.graph-layout]
+package = "graph-layout"
+path = "../../../graph-layout-rs"
+
+[dependencies.flex-geom]
+package = "flex-geom"
+path = "../../../wgpu-widgets-rs/crates/flex-geom"
+
+[dependencies.ui-theme]
+package = "ui-theme"
+path = "../../../wgpu-widgets-rs/crates/ui-theme"
+
+[dependencies.image]
+version = "0.25"
+default-features = false
+features = ["png", "jpeg", "bmp", "gif", "tiff", "webp"]
+
+[dev-dependencies.serde_json]
+version = "1"

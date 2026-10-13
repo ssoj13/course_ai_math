@@ -1,0 +1,28 @@
+pub enum ViewTool {
+    Select,
+    Move,
+    Rotate,
+    Scale,
+}
+impl ViewTool {
+    pub const ALL: [Self; 4] = [Self::Select, Self::Move, Self::Rotate, Self::Scale];
+    pub fn label(self) -> (&'static str, &'static str) {
+        use egui_widgets_config::icons as ph;
+        match self {
+            Self::Select => (ph::SELECT, "Select · Q (no manipulator)"),
+            Self::Move => (ph::MOVE, "Move · W"),
+            Self::Rotate => (ph::ROTATE, "Rotate · E"),
+            Self::Scale => (ph::SCALE, "Scale · R"),
+        }
+    }
+}
+
+/// The navigation clock step: what the flight and orbit rigs integrate with, and what takes
+/// are timed by, so a played take moves at the speed it was flown.
+fn nav_dt(ctx: &egui::Context) -> f32 {
+    ctx.input(|i| i.stable_dt).clamp(1.0e-4, 0.1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;

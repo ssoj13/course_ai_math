@@ -1,0 +1,24 @@
+# egui-font-picker — a font-family dropdown with a filter.
+#
+# It does NOT enumerate fonts. Same reason egui-file-field does not open a
+# dialog: which font system is authoritative is the HOST's decision. playa
+# shapes text with cosmic-text, so cosmic-text's database is the only list that
+# can be trusted — a picker that enumerated fonts by some other route would
+# happily offer a family the renderer cannot use.
+#
+# So the host hands over the names it can actually render, and this draws them.
+[package]
+name = "egui-font-picker"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A font-family dropdown with a filter, driven by a host-supplied family list"
+
+[lib]
+path = "src/egui_font_picker.rs"
+
+[dependencies]
+egui = { workspace = true }

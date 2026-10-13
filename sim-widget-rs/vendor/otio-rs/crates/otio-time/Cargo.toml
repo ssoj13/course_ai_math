@@ -1,0 +1,23 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "otio-time"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/ssoj13/otio-rs"
+description = "OpenTimelineIO opentime value types (RationalTime, TimeRange, TimeTransform) in pure Rust"
+
+[lib]
+name = "otio_time"
+path = "src/otio_time.rs"
+
+[features]
+serde = ["dep:serde"]
+
+[dependencies.thiserror]
+version = "2"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+optional = true

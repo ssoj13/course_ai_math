@@ -1,0 +1,24 @@
+fn config_combo(ui: &mut egui::Ui, config: &mut String) {
+    let name = |c: &str| {
+        if c.is_empty() {
+            return format!("Auto ({})", source(""));
+        }
+        embedded::find_ocio_builtin(c).map_or_else(|| c.to_owned(), |e| e.ui_name.to_owned())
+    };
+    egui::ComboBox::from_id_salt("ocio.config")
+        .selected_text(name(config))
+        .width(260.0)
+        .show_ui(ui, |ui| {
+            ui.selectable_value(config, String::new(), name(""))
+                .on_hover_text(
+                    "$OCIO when set, else OCIO's default built-in config (ACES 2.0 CG).",
+                );
+            for e in embedded::ocio_builtins() {
+                ui.selectable_value(config, e.uri(), e.ui_name);
+            }
+        })
+        .response
+        .on_hover_text(source(config));
+}
+
+/// A combo over `items` with an empty choice labelled `empty` (the default).

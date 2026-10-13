@@ -1,0 +1,31 @@
+# egui-splitter-table — a generic multi-column table with draggable column
+# splitters and persisted widths.
+#
+# N columns (2, 3, …) separated by interactive vertical splitters: drag to
+# resize, double-click to reset to the column's default. Columns `0..N-1` carry
+# stored widths; the last column flexes to fill the remainder. Each cell is a
+# caller closure drawn into a clipped per-column child `Ui`, so overflow
+# truncates at the column edge. Widths persist via [`SplitterTableState`] (serde)
+# — store it in app config and pass it back each frame; `show` returns `true`
+# when the user resized so you know to re-save.
+#
+# Hermetic — egui only, no app types. (Generalised from the splitter pattern in
+# playa's attribute editor + status bar; sibling of `egui-statusbar`, which is
+# the single-row sectioned form.)
+[package]
+name = "egui-splitter-table"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic multi-column egui table with draggable column splitters and persisted widths"
+
+[lib]
+path = "src/egui_splitter_table.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }

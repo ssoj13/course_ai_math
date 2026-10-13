@@ -1,0 +1,29 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-encode-dialog"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "Generic, data-driven export/encode settings modal for egui (format → codec → options)"
+
+[lib]
+path = "src/egui_encode_dialog.rs"
+
+[dependencies.egui]
+version = "0.36"
+
+[dependencies.egui-file-field]
+path = "../egui-file-field"
+
+[dependencies.egui-slider]
+path = "../egui-slider"
+
+[dependencies.egui-widgets-config]
+path = "../egui-widgets-config"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]

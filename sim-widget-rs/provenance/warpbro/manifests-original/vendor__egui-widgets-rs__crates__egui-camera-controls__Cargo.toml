@@ -1,0 +1,25 @@
+# egui-camera-controls — map egui viewport input to host-agnostic camera intents.
+#
+# Translates an egui viewport `Response` (LMB orbit, MMB pan, RMB dolly, wheel
+# zoom) and fly-mode keyboard/mouse (WASD thrust, mouse-look / deflection steer,
+# Q/E roll, Shift boost) into a stream of [`CameraIntent`]s plus release-inertia
+# seeds. The widget owns NO camera: it only emits intents the host applies to its
+# own rig — so it is engine-agnostic. (Gathered from gitnexus-rs's
+# `cam-controls-egui`; its `cam_controls` intent/settings types were inlined here
+# and the `render_present` pointer helpers replaced with a local one — pure egui.)
+[package]
+name = "egui-camera-controls"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Map egui viewport input to host-agnostic camera intents (orbit / pan / dolly / fly)"
+
+[lib]
+path = "src/egui_camera_controls.rs"
+
+[dependencies]
+egui = { workspace = true }
+serde = { workspace = true }

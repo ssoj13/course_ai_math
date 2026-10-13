@@ -1,0 +1,188 @@
+pub(crate) enum SettingsPage {
+    Display,
+    Color,
+    Controls,
+    Fonts,
+    Animation,
+    Render,
+}
+impl SettingsPage {
+    const ALL: [Self; 6] = [
+        Self::Display,
+        Self::Color,
+        Self::Controls,
+        Self::Fonts,
+        Self::Animation,
+        Self::Render,
+    ];
+    fn category(self) -> egui_prefs2::Category<'static> {
+        use egui_widgets_config::icons as ph;
+        match self {
+            Self::Display => egui_prefs2::Category::new(ph::MONITOR, "Display"),
+            Self::Color => egui_prefs2::Category::new(ph::MONITOR, "Color"),
+            Self::Controls => egui_prefs2::Category::new(ph::MONITOR, "Controls"),
+            Self::Fonts => egui_prefs2::Category::new(ph::TEXT, "Fonts"),
+            Self::Animation => egui_prefs2::Category::new(ph::MEDIA, "Animation"),
+            Self::Render => egui_prefs2::Category::new(ph::GEAR, "Render & Viewport"),
+        }
+    }
+    /// The page named `name` (case-insensitive tab label).
+    fn named(name: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|page| page.category().label.eq_ignore_ascii_case(name))
+    }
+}
+
+/// The Settings > Controls page: viewport flight preferences (`inertia` turns them into the
+/// shared `cam_controls` flight settings, the one place WarpBro configures the flight rig) and
+/// the mouse mapping of the slot strips.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Controls {
+    look_sensitivity: f32,
+    fly_speed: f32,
+    /// Seconds for the translation speed to fall to 1/e once thrust stops.
+    translate_decay: f32,
+    /// Seconds for the rotation rate (roll, a released orbit drag) to fall to 1/e; also the
+    /// horizon-lock levelling speed.
+    rotate_decay: f32,
+    /// Flight mouse look eases onto the pointer's turn (time constant `look_smoothing`, s)
+    /// instead of turning at once; either way the turn is the pointer's, never more.
+    inertial_look: bool,
+    look_smoothing: f32,
+    /// Horizon lock: roll angle (degrees) past which the lock flips to the next plane.
+    flip_degrees: f32,
+    /// Thrust multipliers while Shift (fast) / Alt (slow) are held.
+    fast_multiplier: f32,
+    slow_multiplier: f32,
+    /// Slot strips (CamClip, colour presets): the left button stores and the right recalls,
+    /// instead of the default left = recall, right = store (`hotkeys::slot_click`).
+    swap_slot_buttons: bool,
+    /// The viewport manipulator's size in points and its line width.
+    gizmo_size: f32,
+    gizmo_stroke: f32,
+    /// Flight: holding Ctrl eases the view to the nearest world axis view (true) or plane
+    /// (false), with this time constant in seconds (`cam_controls::SpaceFlight::set_align`).
+    align_axis: bool,
+    align_seconds: f32,
+}
+impl Default for Controls {
+    fn default() -> Self {
+        Self {
+            look_sensitivity: 0.5,
+            fly_speed: 1.0,
+            translate_decay: 0.96,
+            rotate_decay: 1.0,
+            inertial_look: true,
+            look_smoothing: 0.23,
+            flip_degrees: 48.6,
+            fast_multiplier: 4.0,
+            slow_multiplier: 0.1,
+            swap_slot_buttons: false,
+            gizmo_size: 120.0,
+            gizmo_stroke: 3.0,
+            align_axis: false,
+            align_seconds: 0.5,
+        }
+    }
+}
+impl Controls {
+    /// The flight rig settings for a scene of framing radius `radius` (thrust scales with it).
+    fn inertia(&self, radius: f32) -> cam_controls::InertiaSettings {
+        let defaults = cam_controls::InertiaSettings::default();
+        cam_controls::InertiaSettings {
+            // Relative mouse look (pointer motion), not cursor-deflection steering.
+            mouse_steer: cam_controls::MouseSteer::Relative,
+            // Base rates: look 5 mrad per pixel (smoothed or not: the smoothing only eases the
+            // same turn in), roll 2 rad/s², thrust 2 radii/s² (cruise 2 radii x translate
+            // decay per second).
+            look_sensitivity: 0.005 * self.look_sensitivity,
+            roll_sensitivity: 2.0,
+            thrust_sensitivity: 2.0 * radius * self.fly_speed,
+            linear_damping: 1.0 / self.translate_decay.max(0.02),
+            angular_damping: 1.0 / self.rotate_decay.max(0.02),
+            inertial_look: self.inertial_look,
+            look_smoothing: self.look_smoothing,
+            // Keep the hold angle 15 degrees past the flip angle: a held key always flips.
+            lock_flip: self.flip_degrees.to_radians(),
+            lock_hold: (self.flip_degrees + 15.0).to_radians(),
+            fast_multiplier: self.fast_multiplier,
+            slow_multiplier: self.slow_multiplier,
+            ..defaults
+        }
+    }
+
+    /// The orbit navigation settings for a view of vertical FOV `fov_y` (radians) that is
+    /// `height` points tall: pan moves the target exactly with the cursor, the wheel zooms
+    /// exponentially, and a released drag coasts at its own speed, decaying like the flight
+    /// rotation (`rotate_decay`).
+    fn navigation(&self, fov_y: f32, height: f32) -> cam_controls::CameraNavigationSettings {
+        cam_controls::CameraNavigationSettings {
+            zoom_mode: cam_controls::ZoomMode::Exponential,
+            zoom_to_cursor: false,
+            orbit_sensitivity: 0.1_f32.to_radians() * self.look_sensitivity,
+            zoom_scroll_exponential: 0.0015,
+            pan_sensitivity: 2.0 * (fov_y * 0.5).tan() / height.max(1.0),
+            orbit_release_inertia_scale: 1.0,
+            inertia_friction: 1.0 / self.rotate_decay.max(0.02),
+            ..cam_controls::CameraNavigationSettings::default()
+        }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Settings {
+    display: egui_display::DisplayPrefs,
+    colour: crate::ocio::Sel,
+    colour_presets: crate::ocio::ColourPresets,
+    panel: egui_prefs2::PrefsPanelState,
+    controls: Controls,
+    recorder: crate::camera_recorder::Options,
+    /// Navigation gestures are recorded as takes (the Takes panel's record switch).
+    record_takes: bool,
+    /// The CamClip's last state, kept between scenes and runs (`App::camera_slots`).
+    camera_slots: crate::camera_slots::CameraSlots,
+    fonts: dock::Fonts,
+    layout: Option<String>,
+    toolbar: egui_viewport_toolbar::ToolbarState,
+    layouts: egui_layout_manager::LayoutStore,
+    export: crate::export::ExportJob,
+    gui_fps: u32,
+    status_layout: egui_statusbar::StatusBarLayout,
+    status_resizable: bool,
+    attribute_metrics: egui_widgets_config::AttrMetrics,
+    auto_key: bool,
+    new_key: curves::Tan,
+    timeline_outline_width: f32,
+    file_dialogs: crate::file_dialogs::History,
+}
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            display: Default::default(),
+            colour: crate::color::default_selection(),
+            colour_presets: Default::default(),
+            panel: Default::default(),
+            controls: Default::default(),
+            recorder: Default::default(),
+            record_takes: true,
+            camera_slots: Default::default(),
+            fonts: Default::default(),
+            layout: None,
+            toolbar: Default::default(),
+            layouts: Default::default(),
+            export: Default::default(),
+            gui_fps: 60,
+            status_layout: Default::default(),
+            status_resizable: true,
+            attribute_metrics: Default::default(),
+            auto_key: false,
+            new_key: curves::Tan::Smooth,
+            timeline_outline_width: 340.0,
+            file_dialogs: Default::default(),
+        }
+    }
+}
+/// A numeric Settings row: slider over `range`, Ctrl-click / row menu resets to `default`.

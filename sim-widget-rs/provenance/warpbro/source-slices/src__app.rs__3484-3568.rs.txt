@@ -1,0 +1,85 @@
+    fn resizable_status_bar(&mut self, ui: &mut egui::Ui) {
+        // Fixed section identity/count: transient frame and OIDN states never
+        // move widths onto another indicator. Rendering uses only mailbox data.
+        const WIDTHS: [f32; 10] = [
+            200.0, 95.0, 95.0, 220.0, 130.0, 100.0, 170.0, 80.0, 150.0, 0.0,
+        ];
+        let frame = self.frame.as_deref();
+        let preview = self.showing_preview;
+        let target_spp = self.target_spp;
+        egui_statusbar::StatusBar::new().show_with(
+            ui,
+            &mut self.status_layout,
+            &WIDTHS,
+            |index, ui| {
+                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Truncate);
+                match index {
+                    0 => {
+                        ui.label(RichText::new(&self.gpu_name).weak())
+                            .on_hover_text(&self.gpu_name);
+                    }
+                    1 => {
+                        ui.label(if self.scene.camera.free_flight {
+                            "Free flight · `"
+                        } else {
+                            "Horizon · `"
+                        });
+                    }
+                    2 => {
+                        if let Some(frame) = frame {
+                            ui.label(format!("{}×{}", frame.width, frame.height));
+                        }
+                    }
+                    3 => {
+                        if let Some(frame) = frame {
+                            if preview {
+                                ui.colored_label(WARNING, "preview");
+                            } else {
+                                ui.label(format!("{} / {} spp", frame.samples, target_spp));
+                                ui.add(
+                                    egui::ProgressBar::new(
+                                        frame.samples as f32 / target_spp.max(1) as f32,
+                                    )
+                                    .desired_width((ui.available_width() - 4.0).max(0.0)),
+                                );
+                            }
+                        }
+                    }
+                    4 => {
+                        if let Some(frame) = frame {
+                            ui.label(format!("{:.1} Msamples/s", frame.msamples_per_s()));
+                        }
+                    }
+                    5 => {
+                        ui.label(format!("{} spp/batch", self.spp_per_frame));
+                    }
+                    6 => {
+                        if let Some(frame) = frame {
+                            if let Some(error) = &frame.denoise_error {
+                                ui.colored_label(WARNING, "OIDN failed")
+                                    .on_hover_text(error);
+                            } else if frame.denoised_samples > 0 {
+                                ui.label(format!(
+                                    "OIDN {} spp · {:.1} ms",
+                                    frame.denoised_samples, frame.denoise_ms
+                                ));
+                            }
+                        }
+                    }
+                    7 => {
+                        ui.label(format!("UI {:.0} fps", 1000.0 / self.frame_ms.max(0.1)));
+                    }
+                    8 => {
+                        if let Some(frame) = frame {
+                            march_limit_label(ui, frame.unresolved);
+                        }
+                    }
+                    _ => {
+                        ui.label(RichText::new(&self.status).weak())
+                            .on_hover_text(&self.status);
+                    }
+                }
+            },
+        );
+    }
+

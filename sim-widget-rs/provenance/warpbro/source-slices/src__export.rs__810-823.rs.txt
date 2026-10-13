@@ -1,0 +1,14 @@
+    fn quality_row(&mut self, ui: &mut egui::Ui, unit: &str) {
+        ui.label("Quality");
+        ui.horizontal(|ui| {
+            ui.add(egui::Slider::new(&mut self.settings.output.qp, 0..=MAX_QP).text(unit))
+                .on_hover_text(format!(
+                    "Lower {unit} preserves more detail and produces larger files."
+                ));
+            if ui.button("High quality").clicked() {
+                self.settings.output.qp = HIGH_QUALITY_QP;
+            }
+        });
+        ui.end_row();
+    }
+    /// "Output transform": what this export renders through from ACEScg, automatic by default.

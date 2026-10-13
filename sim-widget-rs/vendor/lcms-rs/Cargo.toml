@@ -1,0 +1,24 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "lcms-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Pure-Rust port of Little-CMS (lcms2) — ICC color management engine"
+license = "MIT"
+repository = "https://github.com/ssoj13/lcms-rs"
+rust-version = "1.85"
+
+[lib]
+path = "src/lcms.rs"
+
+[features]
+default = ["std", "half-tables"]
+std = []
+half-tables = []
+cam02 = []
+cgats = []
+postscript = []
+
+[dependencies]
+
+[dev-dependencies]

@@ -1,0 +1,30 @@
+# egui-file-field — a path text field with a Browse icon on the end.
+#
+# The field, the icon and the REMEMBERED last directory. It does not open the
+# dialog: this widget set deliberately keeps `rfd` and every other picker out
+# (see egui-arbor / egui-asset-browser), because which picker a host uses is the
+# host's decision — playa, for one, lets the user choose in-app vs native in
+# Preferences, and a widget that opened its own would quietly override that.
+#
+# So it answers "Browse was clicked, start here" and takes back the chosen path.
+[package]
+name = "egui-file-field"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "A path text field with a Browse icon and a remembered starting directory"
+
+[lib]
+path = "src/egui_file_field.rs"
+
+[dependencies]
+egui = { workspace = true }
+# The one icon source (named `icons` over egui-phosphor), not a phosphor dependency per crate.
+egui-widgets-config = { path = "../egui-widgets-config" }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

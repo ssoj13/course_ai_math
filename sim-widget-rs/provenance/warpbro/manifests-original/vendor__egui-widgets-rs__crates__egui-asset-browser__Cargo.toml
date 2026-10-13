@@ -1,0 +1,31 @@
+# egui-asset-browser — a generic media / asset browser panel for egui.
+#
+# A scrollable, grouped list of asset items with selection (single / ctrl /
+# shift-range), hover, a right-click "Create" context menu, double-click to
+# open, and drag-out start reporting (pair it with the sibling
+# `egui-drag-overlay` crate to paint a cross-panel ghost — but this crate does
+# NOT depend on it). The widget owns NO state and runs NO file dialogs: the
+# caller passes a flat `AssetBrowserModel` and gets back a `Vec<AssetAction>`
+# to apply. (Gathered from playa's `project_ui.rs` media pool and decoupled
+# from `playa_engine::{Project, Player, Node}`, `ProjectActions`, `uuid` and
+# `rfd`: ids are plain `u64`, kinds are caller-supplied label strings, and any
+# file dialog is the caller's job — reported via the `AddMedia` / `Open`
+# actions. The active-comp green stripe, fps/frame badges and engine-driven
+# icon set were generalized into a caller-supplied per-kind style map.)
+
+[package]
+name = "egui-asset-browser"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Generic grouped media/asset browser panel for egui, with selection, create menu and drag-out — no app types"
+
+[lib]
+path = "src/egui_asset_browser.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

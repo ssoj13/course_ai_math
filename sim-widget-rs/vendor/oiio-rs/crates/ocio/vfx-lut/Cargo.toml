@@ -1,0 +1,31 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "vfx-lut"
+description = "LUT types and parsing for VFX color pipelines"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.96"
+
+[features]
+default = ["rayon"]
+rayon = ["vfx-core/rayon"]
+
+[dependencies.vfx-core]
+path = "../../base/vfx-core"
+default-features = false
+
+[dependencies.thiserror]
+version = "2.0"
+
+[dependencies.quick-xml]
+version = "0.42"
+
+[dependencies.wide]
+version = "1.7"
+
+[dev-dependencies.tempfile]
+version = "3.27"
+
+[lints.rust]
+unsafe_code = "deny"

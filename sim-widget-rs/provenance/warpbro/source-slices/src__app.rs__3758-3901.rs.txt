@@ -1,0 +1,144 @@
+    fn viewport(&mut self, ui: &mut egui::Ui) {
+        self.viewport_visible = true;
+        let avail = ui.available_size();
+        let (rect, resp) = ui.allocate_exact_size(avail, Sense::click_and_drag());
+        self.viewport_rect = Some(rect);
+        let toolbar = self.viewport_toolbar(ui, rect);
+        if !toolbar.contains_pointer || self.fly.is_some() {
+            self.fly_camera(ui, &resp);
+        }
+        // A hovered or dragged handle owns the left button (last frame's hover: the gizmo
+        // is drawn over the image, after the camera rigs run).
+        let gizmo_owns = self.gizmo.is_hovered() || self.gizmo_gesture.is_some();
+        if self.fly.is_none() && !gizmo_owns {
+            self.orbit_camera(ui, &resp, toolbar.contains_pointer);
+        }
+        if self.fly.is_none() {
+            use crate::hotkeys::{self, Command as Hotkey, Scope};
+            for tool in ViewTool::ALL {
+                if hotkeys::consume(ui.ctx(), Scope::Viewport, Hotkey::Tool(tool)) {
+                    self.tool = tool;
+                }
+            }
+        }
+        if resp.double_clicked() {
+            self.scene.camera.target = [0.0; 3];
+        }
+
+        let (w, h) = viewport_pixels(avail, ui.ctx().pixels_per_point());
+        let monitor = Monitor::read(ui.ctx());
+        let (output_hdr, white) = (monitor.hdr, monitor.white_nits);
+        // A pass egui discards may lay the viewport out at another size: only the shown pass
+        // decides that the cached preview no longer fits.
+        if !ui.ctx().will_discard()
+            && self
+                .preview_key
+                .is_some_and(|key| key.width != w || key.height != h)
+        {
+            self.preview.cancel();
+            self.preview_key = None;
+            self.world_ui.playing = false;
+            self.showing_preview = false;
+        }
+        if !self.preview.displaying_preview() && !(self.frame_from_cache && self.preview.presents())
+        {
+            self.step_viewport(w, h, output_hdr, white);
+        }
+        if let Some(t) = self.frame.clone() {
+            if (!output_hdr || !t.hdr_bytes.is_empty())
+                && (self.staged_output != Some((output_hdr, white))
+                    || self
+                        .staged_frame
+                        .as_ref()
+                        .is_none_or(|old| !Arc::ptr_eq(old, &t)))
+            {
+                let mvp = egui_hdr_view::Mvp {
+                    model: glam::Mat4::from_scale(glam::vec3(2.0, 2.0, 1.0)).to_cols_array_2d(),
+                    ..Default::default()
+                };
+                let mut view = self.hdr_view.lock().unwrap();
+                view.set_output_format(egui_display::CANVAS_FORMAT);
+                let (format, bytes) = if output_hdr {
+                    (egui_hdr_view::HdrFormat::Rgba32F, t.hdr_bytes.clone())
+                } else {
+                    (egui_hdr_view::HdrFormat::Rgba8, t.sdr_bytes.clone())
+                };
+                view.stage_frame(format, bytes, t.width, t.height, mvp);
+                self.staged_frame = Some(t);
+                self.staged_output = Some((output_hdr, white));
+            }
+            ui.painter().add(egui_wgpu::Callback::new_paint_callback(
+                rect,
+                egui_hdr_view::HdrPaintCallback {
+                    inner: self.hdr_view.clone(),
+                },
+            ));
+        }
+        self.draw_overlays(ui, rect);
+        self.manipulate(ui, rect);
+        // The second click of a double click recentres instead.
+        if resp.clicked()
+            && !resp.double_clicked()
+            && !gizmo_owns
+            && self.fly.is_none()
+            && !toolbar.contains_pointer
+        {
+            self.viewport_click(ui, &resp, rect);
+        }
+        if self.export.is_running() {
+            let text = format!("Rendering · {}", self.export.status);
+            ui.painter().text(
+                rect.left_top() + Vec2::new(12.0, 12.0),
+                egui::Align2::LEFT_TOP,
+                text,
+                egui::FontId::proportional(14.0),
+                Color32::WHITE,
+            );
+        }
+    }
+}
+
+/// A viewport click waiting for its GPU pick: what each object index of the picked scene
+/// selects, and what the click asked for (`App::viewport_click`).
+struct PendingPick {
+    id: u64,
+    nodes: Vec<Option<playa_graph::NodeId>>,
+    add: bool,
+    focus: bool,
+    /// The picked scene's `Scene::camera_radius`: a focus distance is in its units.
+    camera_radius: f32,
+}
+
+/// How far (points) from a wire of the viewport extras a click still picks its node.
+const PICK_REACH: f32 = 6.0;
+
+/// Whether a loaded scene is the same document again or a new one made from it (`App::load`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Load {
+    /// A scene file opened (again), or a reset: its identity stays.
+    Same,
+    /// A template, preset or bookmark instantiated: a document of its own.
+    New,
+}
+
+/// What a cached preview was rendered for: any difference makes the cache stale. Compared
+/// on repaint, so it holds identities and bits rather than the document itself.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct PreviewKey {
+    document: playa_graph::NodeId,
+    revision: u64,
+    output_hdr: bool,
+    /// `f32::to_bits` of the display's SDR reference white (nits).
+    white_nits_bits: u32,
+    seed: u32,
+    /// The viewport in physical pixels (`viewport_pixels`), as the viewport compares it.
+    width: usize,
+    height: usize,
+    /// `f32::to_bits` of the Still profile's resolution scale (the render size per viewport pixel).
+    scale_bits: u32,
+    /// The Still profile's sample target.
+    samples: u32,
+}
+
+impl PreviewKey {
+    /// The key without the viewport size: what the frames show, not the size they fit.

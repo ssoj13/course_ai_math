@@ -1,0 +1,201 @@
+struct Entry {
+    scene: Scene,
+    thumb: Option<TextureHandle>,
+    path: Option<PathBuf>,
+}
+
+#[derive(PartialEq)]
+enum Tab {
+    Gallery,
+    Bookmarks,
+    Materials,
+}
+
+const SWATCH: usize = 96;
+const SWATCH_SPP: u32 = 32;
+
+/// The scene a material-library swatch is rendered with: the preset on a unit sphere (a
+/// quaternion Julia set with c = 0 is exactly the unit ball), three-quarter light, sky behind.
+fn swatch_scene(preset: &crate::materials::MaterialPreset) -> Scene {
+    let mut material = Material::default();
+    preset.apply(&mut material);
+    material.model = MaterialModel::StandardSurface;
+    material_preview_scene(material)
+}
+
+/// Render the evaluated Material-node value; the card never owns authoring state.
+fn material_preview_scene(material: Material) -> Scene {
+    let mut s = Scene::preset(crate::params::FAMILY_QUAT);
+    if let Formula::QuaternionJulia(q) = &mut s.formula {
+        q.constant = [0.0; 4];
+    }
+    s.camera.distance = 2.3;
+    s.camera.fov_y_degrees = 30.0;
+    s.camera.yaw_degrees = 20.0;
+    s.camera.pitch_degrees = 15.0;
+    s.render.max_bounces = 4;
+    s.render.iterations = 8;
+    s.render.exposure_stops = -0.5;
+    // Neutral grey "studio" sky so metals show their own tint, not the blue sky's.
+    s.lighting.sun_azimuth = 45.0;
+    s.lighting.sun_elevation = 40.0;
+    s.lighting.sun_intensity = 3.0;
+    s.lighting.sky_horizon = [0.03, 0.03, 0.03];
+    s.lighting.sky_zenith = [0.14, 0.14, 0.14];
+    s.lighting.sky_intensity = 5.0;
+    s.material = material;
+    s
+}
+
+/// Which objects a material "Assign to …" action addresses.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AssignTo {
+    /// The remembered object selection (`remember_material_targets`).
+    Selected,
+    /// Every node with a material reference.
+    AllFractals,
+}
+
+pub(crate) struct App {
+    renderer: RenderService,
+    io: crate::io_service::IoService,
+    gpu_name: String,
+    frame: Option<Arc<Frame>>,
+    frame_from_cache: bool,
+    request: Option<ViewportRequest>,
+    /// Authoring identity captured when submitting a viewport render, not when it completes.
+    viewport_stamp: Option<(u64, playa_graph::NodeId, u64, u32)>,
+    generation: u64,
+    staged_frame: Option<Arc<Frame>>,
+    staged_output: Option<(bool, f32)>,
+    layouts: dock::Layouts,
+    export: crate::export::ExportController,
+    thumb_pending: Option<(u64, Scene)>,
+    /// The viewport click waiting for its GPU pick (`App::viewport_click`), and the last id.
+    pick_pending: Option<PendingPick>,
+    pick_sequence: u64,
+    gui_fps: u32,
+    scene: Scene,
+    world: crate::world::WorldEditor,
+    world_ui: crate::world_ui::WorldUi,
+    preview: crate::preview::PreviewController,
+    preview_key: Option<PreviewKey>,
+    preview_sequence: u64,
+    material_targets: Vec<crate::world::NodeId>,
+    material_selection_stamp: Option<(playa_graph::NodeId, u64, Option<crate::world::NodeId>, u64)>,
+    preview_progress: Option<(u32, u32, usize)>,
+    evaluated_world: Option<(playa_graph::NodeId, u64, u64)>,
+    load_revision: u64,
+    /// The preset / bookmark the scene came from, for "Reset".
+    origin: Scene,
+
+    showing_preview: bool,
+    hdr_view: std::sync::Arc<std::sync::Mutex<egui_hdr_view::HdrView>>,
+    pub display: egui_display::DisplayPrefs,
+    colour: crate::ocio::State,
+    prefs: egui_prefs2::PrefsPanelState,
+    /// Channels, tolerance and timing of "Bake to keys" (Takes panel; saved with the settings).
+    recorder_options: crate::camera_recorder::Options,
+    /// Navigation gestures become takes (`Settings::record_takes`).
+    record_takes: bool,
+    /// The viewport toolbar's CamClip: application state (a new scene keeps it), saved with a
+    /// scene (`WorldDocument::camera_slots`) and replaced by a scene that carries one.
+    camera_slots: crate::camera_slots::CameraSlots,
+    /// Cuts every viewport navigation gesture into a take (`crate::takes`).
+    takes_recorder: crate::takes::Recorder,
+    /// The flight or orbit rig moved the camera this frame: only navigation makes takes.
+    navigated: bool,
+    /// Takes panel state (not saved): see `takes_ui`.
+    takes_view: takes_ui::View,
+    /// The viewport tool (Q / W / E / R) and its manipulator, drawn on the selected objects.
+    tool: ViewTool,
+    gizmo: egui_gizmo::Gizmo,
+    /// The manipulator drag in progress: its edits share one undo step.
+    gizmo_gesture: Option<u64>,
+    /// Records each manipulator drag as transform takes of the dragged nodes.
+    drag_recorder: crate::takes::DragRecorder,
+    /// Splitter state of the three Settings > Controls grids.
+    prefs_grids: [AttrGridState; 5],
+    dock: egui_dock::DockState<dock::Panel>,
+    panels_to_open: Vec<dock::Panel>,
+    toolbar: egui_viewport_toolbar::ToolbarState,
+    fonts: dock::Fonts,
+    applied_fonts: Option<dock::Fonts>,
+    viewport_visible: bool,
+    viewport_rect: Option<egui::Rect>,
+    config_picker: egui_file_dialog::FileDialog,
+    scene_picker: Option<(crate::templates::FileAction, egui_file_dialog::FileDialog)>,
+    scene_file_path: Option<PathBuf>,
+    scene_file_sequence: u64,
+    scene_file_pending: Option<(u64, u64, crate::templates::FileAction)>,
+    templates: Vec<crate::templates::Entry>,
+    templates_requested: bool,
+    templates_pending: bool,
+    persisted_settings: Option<Settings>,
+    persisted_layout_revision: u64,
+    snapshot_before: Option<Scene>,
+    #[cfg(test)]
+    settings_serializations: usize,
+    #[cfg(test)]
+    snapshot_clones: usize,
+    status_layout: egui_statusbar::StatusBarLayout,
+    status_resizable: bool,
+    gallery: Vec<Entry>,
+    bookmarks: Vec<Entry>,
+
+    swatches: Vec<Option<TextureHandle>>,
+    material_gallery: crate::material_gallery::MaterialGallery,
+    tab: Tab,
+    target_spp: u32,
+    spp_per_frame: u32,
+    last_change: Instant,
+    last_scene: Scene,
+    /// Evaluated selected-profile scene; invalidated by graph revision, time or profile.
+    viewport_scene: Option<(playa_graph::NodeId, u64, u64, Scene)>,
+    /// The viewport extras and what they were built for (document, revision, playhead,
+    /// selection, aspect): `App::draw_overlays`.
+    #[allow(clippy::type_complexity)]
+    overlays: Option<(
+        (
+            playa_graph::NodeId,
+            u64,
+            u64,
+            Vec<crate::world::NodeId>,
+            u32,
+        ),
+        Vec<crate::overlay::Wire>,
+    )>,
+    /// The profile binding sent with the last viewport request; the toolbar shows and edits it.
+    viewport_render: Option<crate::render_profiles::ViewportRender>,
+    /// Viewport A/B: raw samples instead of the denoised image (view state, not the scene).
+    raw_view: bool,
+    /// Exposure parked by the toolbar's EV bypass (`exposure_control`).
+    exposure_hold: f32,
+    show_ui: bool,
+    status: String,
+    frame_ms: f32,
+    seed: u32,
+    /// `FRAC_SNAP=out.png [FRAC_SNAP_PRESET=i] [FRAC_SNAP_SPP=n]`: screenshot the window once the
+    /// thumbnails and n viewport samples are done, then quit (for docs).
+    snap: Option<(PathBuf, u32, bool)>,
+    /// The armed window screenshot (`window_shot`) and whether a frame was drawn since it was
+    /// requested: the window captures it only then, so a menu that asked for it is closed.
+    window_shot: Option<(crate::window_shot::WindowShot, bool)>,
+    /// An error the window exits with (non-zero): a failed `FRAC_SNAP` (`take_fatal`).
+    fatal: Option<String>,
+    /// Flight via cam-controls' inertial `SpaceFlight`, alive while RMB is held and
+    /// while its momentum coasts after release.
+    fly: Option<cam_controls::SpaceFlight>,
+    /// Last speed scale sent to the flight rig (Shift / Alt latch, 1.0 = normal).
+    fly_speed_scale: f32,
+    /// Houdini orbit rig (LMB tumble, MMB pan, wheel zoom). The scene camera stays the
+    /// source of truth: the rig is re-seeded from it every frame and only carries the coast.
+    orbit: cam_controls::HoudiniOrbit,
+    orbit_drag: cam_controls_egui::OrbitDragState,
+    /// The camera as the orbit coast last wrote it; any other edit stops the coast.
+    orbit_written: Option<crate::scene::Camera>,
+    /// Persistent mouse sensitivity and flight speed (Settings > Controls).
+    controls: Controls,
+}
+
+/// Shared fitted tile geometry for scene, workspace-material and library cards.

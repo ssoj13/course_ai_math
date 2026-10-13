@@ -1,0 +1,15 @@
+[package]
+name = "vfx-icc"
+description = "ICC color profile support for VFX pipelines"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+lcms-rs = { workspace = true }
+bytemuck = { workspace = true }
+thiserror = { workspace = true }
+
+[lints]
+workspace = true

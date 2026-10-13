@@ -1,0 +1,125 @@
+    fn fly_camera(&mut self, ui: &egui::Ui, resp: &egui::Response) {
+        use crate::hotkeys::{self, Command as Hotkey, Scope};
+        use cam_controls::CameraIntent;
+        use glam::Vec3;
+        hotkeys::register(ui, Scope::Viewport, resp.rect);
+        if hotkeys::consume(ui.ctx(), Scope::Viewport, Hotkey::Flight) {
+            self.toggle_flight_mode();
+        }
+        let held = resp.is_pointer_button_down_on()
+            && ui.input(|i| i.focused && i.pointer.secondary_down());
+        if hotkeys::consume(ui.ctx(), Scope::Viewport, Hotkey::Home) {
+            self.scene.camera = self.origin.camera;
+            self.fly = None;
+            ui.ctx()
+                .send_viewport_cmd(egui::ViewportCommand::CursorGrab(egui::CursorGrab::None));
+            self.status = "Camera restored".into();
+            return;
+        }
+        if !held && hotkeys::consume(ui.ctx(), Scope::Viewport, Hotkey::Fit) {
+            self.frame_camera(
+                resp.rect.width().max(1.0) as u32,
+                resp.rect.height().max(1.0) as u32,
+            );
+            return;
+        }
+        if !held && hotkeys::consume(ui.ctx(), Scope::Viewport, Hotkey::Play) {
+            self.world_ui.playing = !self.world_ui.playing;
+        }
+        let radius = self
+            .scene
+            .camera_reference
+            .unwrap_or(self.scene.formula.framing_radius());
+        if held && self.fly.is_none() {
+            self.start_flight();
+        }
+        let cam = &mut self.scene.camera;
+        let dist = cam.distance * radius;
+        let lock = (!cam.free_flight).then_some(Vec3::Y);
+        let Some(fly) = &mut self.fly else { return };
+        // Settings act live; the toolbar mode switch engages or releases the lock mid-flight.
+        fly.inertia = self.controls.inertia(radius);
+        if fly.horizon_lock().is_some() != lock.is_some() && !fly.set_horizon_lock(lock) {
+            self.status = "Horizon lock needs a view that is not straight up or down".into();
+        }
+        let viewport = cam_viewport::ViewportSize::new(
+            resp.rect.width().max(1.0) as u32,
+            resp.rect.height().max(1.0) as u32,
+        );
+        let dt = nav_dt(ui.ctx());
+        if held {
+            ui.ctx().set_cursor_icon(egui::CursorIcon::None);
+            ui.ctx()
+                .send_viewport_cmd(egui::ViewportCommand::CursorGrab(egui::CursorGrab::Locked));
+            // WASD / R-Space-C thrust, Q/E roll, Shift / Alt speed, mouse look: the shared bindings.
+            let intents = cam_controls_egui::gather_fly_intents(
+                ui,
+                &fly.inertia,
+                &mut self.fly_speed_scale,
+                true,
+                // Space is free in flight: Play only takes it while RMB is up.
+                true,
+                resp.rect,
+                resp.rect.center(),
+            );
+            for intent in intents {
+                fly.apply_intent(intent, viewport);
+            }
+            // The wheel moves the camera along its view axis: a step of 1/500 of the scene
+            // radius per scrolled point at flight speed x1, scaled like the thrust (Shift / Alt).
+            let scroll = ui.input(|i| i.smooth_scroll_delta.y);
+            if scroll != 0.0 {
+                let forward = fly.orientation * -Vec3::Z;
+                fly.eye += forward
+                    * (scroll * 0.002 * radius * self.controls.fly_speed * self.fly_speed_scale);
+            }
+            // Flight modifiers: Shift fast, Alt slow, Ctrl the constraint: held, it eases the
+            // view to the nearest world plane or axis view.
+            fly.set_align(ui.input(|i| i.modifiers.ctrl).then(|| {
+                let mode = if self.controls.align_axis {
+                    cam_controls::OrbitSnapMode::Axis
+                } else {
+                    cam_controls::OrbitSnapMode::Plane
+                };
+                (mode, self.controls.align_seconds)
+            }));
+        } else {
+            fly.set_align(None);
+            // Released: drop held axes and modifiers; the momentum coasts and damps out.
+            ui.ctx()
+                .send_viewport_cmd(egui::ViewportCommand::CursorGrab(egui::CursorGrab::None));
+            for intent in [
+                CameraIntent::Thrust {
+                    forward: 0.0,
+                    right: 0.0,
+                    up: 0.0,
+                },
+                CameraIntent::Roll { d: 0.0 },
+                CameraIntent::SpeedScale(1.0),
+            ] {
+                fly.apply_intent(intent, viewport);
+            }
+            self.fly_speed_scale = 1.0;
+        }
+        let moving = fly.update_dynamics(dt) || fly.has_motion();
+
+        // The authored camera follows the flight pose (Euler YXZ keeps any roll).
+        let pose = fly.pose();
+        let (yaw, pitch, roll) = pose.orientation.to_euler(glam::EulerRot::YXZ);
+        cam.yaw_degrees = yaw.to_degrees();
+        cam.pitch_degrees = -pitch.to_degrees();
+        cam.roll_degrees = roll.to_degrees();
+        let target = pose.eye + pose.forward() * dist;
+        cam.target = [target.x, target.y, target.z];
+        self.navigated = true;
+        if !held && !moving {
+            self.fly = None;
+        }
+        ui.ctx().request_repaint();
+    }
+
+    /// Houdini orbit through the shared rig: LMB tumbles about world up (Shift: snapped to the
+    /// views along the world axes), MMB pans, the wheel zooms toward the target, and released
+    /// drags coast. The camera roll is an overlay the
+    /// turntable leaves alone (as do pan and zoom); pan turns the cursor motion by it so the
+    /// view follows the cursor.

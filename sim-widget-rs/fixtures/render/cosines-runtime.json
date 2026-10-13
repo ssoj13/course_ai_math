@@ -1,0 +1,775 @@
+{
+  "schema_version": 1,
+  "id": "render-cosines-trial",
+  "revision": 0,
+  "required_capabilities": [
+    "math.scalar.v1",
+    "timeline.scalar.v1"
+  ],
+  "parameters": [
+    {
+      "id": "a",
+      "value_id": "a",
+      "default": {
+        "kind": "scalar",
+        "data": 3
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "range": {
+        "min": 0.1,
+        "max": 8
+      },
+      "readonly": false,
+      "source_refs": []
+    },
+    {
+      "id": "b",
+      "value_id": "b",
+      "default": {
+        "kind": "scalar",
+        "data": 4
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "range": {
+        "min": 0.1,
+        "max": 8
+      },
+      "readonly": false,
+      "source_refs": []
+    },
+    {
+      "id": "theta",
+      "value_id": "theta",
+      "default": {
+        "kind": "scalar",
+        "data": 1.0471975511965976
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 1
+        }
+      },
+      "range": {
+        "min": 0,
+        "max": 3.141592653589793
+      },
+      "readonly": false,
+      "source_refs": []
+    },
+    {
+      "id": "origin",
+      "value_id": "origin",
+      "default": {
+        "kind": "vector",
+        "data": [
+          0,
+          0,
+          0
+        ]
+      },
+      "port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "readonly": false,
+      "source_refs": []
+    },
+    {
+      "id": "u_raw",
+      "value_id": "u_raw",
+      "default": {
+        "kind": "vector",
+        "data": [
+          1,
+          0,
+          0
+        ]
+      },
+      "port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "readonly": false,
+      "source_refs": []
+    },
+    {
+      "id": "v_raw",
+      "value_id": "v_raw",
+      "default": {
+        "kind": "vector",
+        "data": [
+          0,
+          1,
+          0
+        ]
+      },
+      "port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "readonly": false,
+      "source_refs": []
+    }
+  ],
+  "constants": [
+    {
+      "id": "two",
+      "value": {
+        "kind": "scalar",
+        "data": 2
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "one",
+      "value": {
+        "kind": "scalar",
+        "data": 1
+      },
+      "port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    }
+  ],
+  "operations": [
+    {
+      "id": "u-length",
+      "operator": "vector.norm",
+      "inputs": [
+        "u_raw"
+      ],
+      "output": "u-length",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "u-inverse",
+      "operator": "scalar.div",
+      "inputs": [
+        "one",
+        "u-length"
+      ],
+      "output": "u-inverse",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "u-normalize",
+      "operator": "vector.scale",
+      "inputs": [
+        "u_raw",
+        "u-inverse"
+      ],
+      "output": "axis-x",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "uv-dot",
+      "operator": "vector.dot",
+      "inputs": [
+        "axis-x",
+        "v_raw"
+      ],
+      "output": "uv-dot",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "v-parallel",
+      "operator": "vector.scale",
+      "inputs": [
+        "axis-x",
+        "uv-dot"
+      ],
+      "output": "v-parallel",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "v-perpendicular",
+      "operator": "vector.sub",
+      "inputs": [
+        "v_raw",
+        "v-parallel"
+      ],
+      "output": "v-perpendicular",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "v-length",
+      "operator": "vector.norm",
+      "inputs": [
+        "v-perpendicular"
+      ],
+      "output": "v-length",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "v-inverse",
+      "operator": "scalar.div",
+      "inputs": [
+        "one",
+        "v-length"
+      ],
+      "output": "v-inverse",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "v-normalize",
+      "operator": "vector.scale",
+      "inputs": [
+        "v-perpendicular",
+        "v-inverse"
+      ],
+      "output": "axis-y",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "square-a",
+      "operator": "scalar.mul",
+      "inputs": [
+        "a",
+        "a"
+      ],
+      "output": "a2",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "square-b",
+      "operator": "scalar.mul",
+      "inputs": [
+        "b",
+        "b"
+      ],
+      "output": "b2",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "sum-squares",
+      "operator": "scalar.add",
+      "inputs": [
+        "a2",
+        "b2"
+      ],
+      "output": "sum",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "ab",
+      "operator": "scalar.mul",
+      "inputs": [
+        "a",
+        "b"
+      ],
+      "output": "ab",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "twice",
+      "operator": "scalar.mul",
+      "inputs": [
+        "two",
+        "ab"
+      ],
+      "output": "twice_ab",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "cos",
+      "operator": "scalar.cos",
+      "inputs": [
+        "theta"
+      ],
+      "output": "cos_theta",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "projection",
+      "operator": "scalar.mul",
+      "inputs": [
+        "twice_ab",
+        "cos_theta"
+      ],
+      "output": "cross",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "subtract",
+      "operator": "scalar.sub",
+      "inputs": [
+        "sum",
+        "cross"
+      ],
+      "output": "c2",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 2,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "root",
+      "operator": "scalar.sqrt",
+      "inputs": [
+        "c2"
+      ],
+      "output": "c",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "sin",
+      "operator": "scalar.sin",
+      "inputs": [
+        "theta"
+      ],
+      "output": "sin_theta",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 0,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "ax",
+      "operator": "scalar.mul",
+      "inputs": [
+        "a",
+        "cos_theta"
+      ],
+      "output": "ax",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "ay",
+      "operator": "scalar.mul",
+      "inputs": [
+        "a",
+        "sin_theta"
+      ],
+      "output": "ay",
+      "output_port": {
+        "shape": {
+          "kind": "scalar"
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "A-x",
+      "operator": "vector.scale",
+      "inputs": [
+        "axis-x",
+        "ax"
+      ],
+      "output": "A-x",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "A-y",
+      "operator": "vector.scale",
+      "inputs": [
+        "axis-y",
+        "ay"
+      ],
+      "output": "A-y",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "A-position",
+      "operator": "vector.add",
+      "inputs": [
+        "A-x",
+        "A-y"
+      ],
+      "output": "A-offset",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "B-position",
+      "operator": "vector.scale",
+      "inputs": [
+        "axis-x",
+        "b"
+      ],
+      "output": "B-offset",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "A-world",
+      "operator": "vector.add",
+      "inputs": [
+        "origin",
+        "A-offset"
+      ],
+      "output": "A",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    },
+    {
+      "id": "B-world",
+      "operator": "vector.add",
+      "inputs": [
+        "origin",
+        "B-offset"
+      ],
+      "output": "B",
+      "output_port": {
+        "shape": {
+          "kind": "vector",
+          "len": 3
+        },
+        "unit": {
+          "length": 1,
+          "time": 0,
+          "angle": 0
+        }
+      },
+      "source_refs": []
+    }
+  ],
+  "tracks": [
+    {
+      "parameter": "theta",
+      "keys": [
+        {
+          "time": "0",
+          "value": 1.0471975511965976,
+          "interpolation": "linear"
+        },
+        {
+          "time": "254016000000",
+          "value": 2.0943951023931953,
+          "interpolation": "linear"
+        }
+      ]
+    }
+  ],
+  "constraints": [],
+  "objects": [
+    {
+      "id": "triangle",
+      "label": "Triangle",
+      "bindings": {
+        "opposite_length": "c",
+        "A": "A",
+        "B": "B",
+        "O": "origin"
+      },
+      "assets": []
+    }
+  ],
+  "assets": []
+}

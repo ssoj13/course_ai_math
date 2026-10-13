@@ -1,0 +1,52 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "egui-image-clip"
+authors = ["Alex Khalyavin <joss13@gmail.com>"]
+version = "0.1.0"
+edition = "2024"
+license = "BSD-3-Clause"
+repository = "https://github.com/ssoj13/egui-widgets-rs"
+rust-version = "1.96"
+description = "Persistent multi-slot image clipboard (store + egui tile picker) for egui apps"
+
+[lib]
+path = "src/egui_image_clip.rs"
+
+[features]
+default = ["egui", "jpeg-png", "exr"]
+egui = ["dep:egui", "jpeg-png"]
+jpeg-png = ["dep:image"]
+exr = ["dep:exr-core", "dep:imath-rs", "dep:half"]
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1"
+
+[dependencies.thiserror]
+version = "2"
+
+[dependencies.image]
+version = "0.25"
+default-features = false
+features = ["png", "jpeg"]
+optional = true
+
+[dependencies.exr-core]
+optional = true
+path = "../../../exr-rs/crates/exr-core"
+
+[dependencies.imath-rs]
+optional = true
+path = "../../../exr-rs/crates/imath-rs"
+
+[dependencies.half]
+version = "2"
+features = ["bytemuck"]
+optional = true
+
+[dependencies.egui]
+version = "0.36"
+optional = true

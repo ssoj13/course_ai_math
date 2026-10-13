@@ -1,0 +1,36 @@
+    fn fps_row(&mut self, ui: &mut egui::Ui) {
+        ui.label("FPS");
+        ui.horizontal(|ui| {
+            let mut fps = self.settings.job.fps();
+            if ui
+                .add(
+                    egui::DragValue::new(&mut fps)
+                        .speed(0.1)
+                        .range(1.0..=240.0)
+                        .max_decimals(3),
+                )
+                .changed()
+            {
+                self.settings.job.set_fps(fps);
+            }
+            egui::ComboBox::from_id_salt("export_fps_presets")
+                .selected_text("Presets")
+                .show_ui(ui, |ui| {
+                    for rate in [23.976, 24.0, 25.0, 29.97, 30.0, 50.0, 59.94, 60.0, 120.0] {
+                        if ui
+                            .selectable_label(
+                                (self.settings.job.fps() - rate).abs() < 0.001,
+                                rate.to_string(),
+                            )
+                            .clicked()
+                        {
+                            self.settings.job.set_fps(rate);
+                            ui.close();
+                        }
+                    }
+                });
+        });
+        ui.end_row();
+    }
+    /// The "Quality" grid row of an HEVC: `qp` as the built-in encoder's QP or libx265's CRF
+    /// (`unit`), the same 0-51 scale.

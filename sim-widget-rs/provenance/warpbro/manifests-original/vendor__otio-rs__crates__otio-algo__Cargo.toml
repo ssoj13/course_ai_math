@@ -1,0 +1,22 @@
+# otio-algo — timeline range/transform algorithms over the otio-core model.
+#
+# Pure read-only computations (durations, child layout, available/trimmed ranges)
+# that turn an OTIO tree into the positional data a UI/timeline needs. Faithful
+# ports of the OTIO C++ algorithms (track.cpp / stack.cpp / item.cpp).
+[package]
+name = "otio-algo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Range/transform/layout algorithms for the otio-core OTIO model"
+
+[lib]
+name = "otio_algo"
+path = "src/otio_algo.rs"
+
+[dependencies]
+otio-core = { path = "../otio-core" }
+otio-schema = { path = "../otio-schema" }
+otio-time = { path = "../otio-time" }
+thiserror.workspace = true

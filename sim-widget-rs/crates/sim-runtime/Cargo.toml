@@ -1,0 +1,17 @@
+[package]
+name = "sim-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+sim-model.workspace = true
+sim-math.workspace = true
+effectcraft-keyframe = { path = "../../vendor/storytold/effectcraft/crates/keyframe" }
+effectcraft-time = { path = "../../vendor/storytold/effectcraft/crates/time" }

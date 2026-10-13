@@ -1,0 +1,30 @@
+[package]
+name = "lcms-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Pure-Rust port of Little-CMS (lcms2) — ICC color management engine"
+license = "MIT"
+repository = "https://github.com/ssoj13/lcms-rs"
+rust-version = "1.85"
+
+# Descriptive library root instead of the default `lib.rs`.
+[lib]
+path = "src/lcms.rs"
+
+[features]
+default = ["std", "half-tables"]
+# `std` is currently always on; kept as a seam for a future `no_std` core.
+std = []
+# Port the lcms2 half-float lookup tables verbatim (bit-exact). When off, a
+# future build may fall back to a rounding `f16` implementation.
+half-tables = []
+# CIECAM02 appearance model (cmscam02).
+cam02 = []
+# CGATS.17 / IT8.7 / .cube text parser (cmscgats).
+cgats = []
+# PostScript Level 2 CRD/CSA generation (cmsps2).
+postscript = []
+
+[dependencies]
+
+[dev-dependencies]

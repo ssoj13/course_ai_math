@@ -1,0 +1,39 @@
+# egui-widgets-config — shared design tokens + runtime config for egui-widgets-rs.
+#
+# One small, hermetic (egui-only) base crate every widget depends on, so font
+# sizes, spacing/radii/stroke metrics and semantic colours live in ONE place
+# instead of being re-hardcoded per widget. Theme-aware: semantic colours resolve
+# from the live `egui::Visuals` (so widgets follow the host's light/dark/custom
+# theme), with a small `Palette` of extras (accent / ok / warn / err / source-dim
+# / playhead) that egui's Visuals doesn't carry.
+#
+# The host may override the defaults once at startup via `WidgetsConfig::install`
+# (stored in egui memory); widgets read `WidgetsConfig::get(ui)` with a sane
+# `Default` fallback when nothing was installed. Everything is `Copy` — serde only for the
+# persisted `AttrMetrics`, no allocation; the app derives tokens from its own (separately-persisted) theme.
+[package]
+name = "egui-widgets-config"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Shared design tokens (fonts, metrics, semantic colours) + runtime config for the egui-widgets-rs widget set"
+
+[lib]
+path = "src/egui_widgets_config.rs"
+
+[dependencies]
+egui = { workspace = true }
+# Shared iconography: named glyph constants re-exported from egui-phosphor so the
+# whole widget set references the SAME icons. Host registers the font
+# (egui_phosphor::add_to_fonts) as before.
+egui-phosphor = { workspace = true }
+# `AttrMetrics` is persisted by the host.
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = "1"
+# AccessKit-tree tests for the segmented strip and its dropdown form.
+egui_kittest = "0.36"

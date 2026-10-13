@@ -1,0 +1,23 @@
+# otio-schema — typed, schema-aware accessors over the otio-core node model.
+#
+# Thin read/write views (Timeline, Stack, Track, Clip, ...) plus the value-type
+# codec (RationalTime/TimeRange/TimeTransform/Color <-> JSON). Holds no parallel
+# copy of the data: every accessor reads/decodes the verbatim fields stored by
+# otio-core, so it can never drift from what round-trips.
+[package]
+name = "otio-schema"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Typed schema accessors and value-type codec over the otio-core OTIO model"
+
+[lib]
+name = "otio_schema"
+path = "src/otio_schema.rs"
+
+[dependencies]
+otio-core = { path = "../otio-core" }
+otio-time = { path = "../otio-time" }
+box-rs = { git = "ssh://git@github.com/ssoj13/box-rs.git", branch = "main", package = "box-rs" }
+serde_json = { version = "1", features = ["preserve_order"] }

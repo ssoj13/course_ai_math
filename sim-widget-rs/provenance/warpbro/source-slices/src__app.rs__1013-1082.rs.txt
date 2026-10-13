@@ -1,0 +1,70 @@
+    fn draw_overlays(&mut self, ui: &egui::Ui, rect: egui::Rect) {
+        let frame = f64::from(self.world_ui.playhead);
+        let aspect = rect.width() / rect.height().max(1.0);
+        let selected: Vec<_> = if self.world.selected.is_empty() {
+            self.world.selection.into_iter().collect()
+        } else {
+            self.world.selected.clone()
+        };
+        let key = (
+            playa_graph::NodeId(self.world.document.graph.id),
+            self.world.revision(),
+            frame.to_bits(),
+            selected,
+            aspect.to_bits(),
+        );
+        if self
+            .overlays
+            .as_ref()
+            .is_none_or(|(cached, _)| *cached != key)
+        {
+            let document = &self.world.document;
+            let wires = document.viewport_policy(frame).and_then(|policy| {
+                crate::overlay::extras(document, frame, &policy, &key.3, aspect)
+            });
+            match wires {
+                Ok(wires) => self.overlays = Some((key, wires)),
+                Err(error) => {
+                    self.overlays = None;
+                    self.status = error;
+                    return;
+                }
+            }
+        }
+        let (view, projection) = self.scene.camera_matrices(aspect);
+        let clip = projection * view;
+        let painter = ui.painter_at(rect);
+        let visuals = ui.visuals();
+        let plain = egui::Stroke::new(1.0, visuals.widgets.noninteractive.fg_stroke.color);
+        let selected = egui::Stroke::new(1.5, visuals.selection.stroke.color);
+        let bounds = self
+            .viewport_scene
+            .as_ref()
+            .map(|cached| cached.3.bounds.as_slice())
+            .unwrap_or_default();
+        let wires = self
+            .overlays
+            .iter()
+            .flat_map(|(_, wires)| wires.iter().cloned());
+        let selection = self
+            .overlays
+            .as_ref()
+            .map(|(key, _)| key.3.clone())
+            .unwrap_or_default();
+        for wire in wires.chain(crate::overlay::bounds(bounds, &selection)) {
+            for [a, b] in crate::overlay::project(&wire, clip, rect) {
+                match wire.style {
+                    crate::overlay::Style::Plain => {
+                        painter.line_segment([a, b], plain);
+                    }
+                    crate::overlay::Style::Selected => {
+                        painter.line_segment([a, b], selected);
+                    }
+                    crate::overlay::Style::Cut => {
+                        painter.extend(egui::Shape::dashed_line(&[a, b], plain, 6.0, 4.0));
+                    }
+                }
+            }
+        }
+    }
+

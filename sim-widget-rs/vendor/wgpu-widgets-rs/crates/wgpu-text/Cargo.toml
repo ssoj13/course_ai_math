@@ -1,0 +1,40 @@
+# Normalized immutable owned copy. Original bytes and dispositions: provenance/warpbro/manifests-original and patches.
+[package]
+name = "wgpu-text"
+version = "0.1.0"
+edition = "2024"
+description = "wgpu text engine: glyphon screen labels + plane-locked atlas quads"
+license = "MIT"
+
+[features]
+default = []
+engine-mesh3d = []
+
+[dependencies]
+etagere = "0.3"
+rustc-hash = "2.1"
+
+[dependencies.wgpu]
+version = "30"
+default-features = false
+features = ["vulkan", "gles", "metal", "std", "wgsl"]
+
+[dependencies.glam]
+version = "0.33.2"
+
+[dependencies.bytemuck]
+version = "1"
+features = ["derive"]
+
+[dependencies.glyphon]
+version = "0.12"
+
+[dependencies.lru]
+version = "0.16"
+default-features = false
+
+[dev-dependencies]
+png = "0.18"
+
+[dev-dependencies.pollster]
+version = "1.0"

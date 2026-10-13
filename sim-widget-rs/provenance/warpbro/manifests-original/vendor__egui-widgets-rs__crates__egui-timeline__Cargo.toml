@@ -1,0 +1,22 @@
+# egui-timeline — a reusable egui time-track / scrubber widget.
+#
+# A custom-painted horizontal timeline over an indexed slot set (positions
+# `0..count`): adaptive ticks with caller-formatted labels, a per-slot TINT layer
+# (e.g. a frame-cache fill bar), a draggable playhead, and click/drag scrubbing.
+# Generic — no app types — so it is reused by exr-view and any other egui app.
+[package]
+authors.workspace = true
+name = "egui-timeline"
+description = "A reusable egui timeline / time-track widget with per-slot tinting and scrubbing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+path = "src/egui_timeline.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }

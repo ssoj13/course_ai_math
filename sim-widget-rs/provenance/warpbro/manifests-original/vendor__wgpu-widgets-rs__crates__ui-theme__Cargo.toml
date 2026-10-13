@@ -1,0 +1,18 @@
+[package]
+name = "ui-theme"
+version = "0.1.0"
+edition = "2024"
+description = "Single source of truth for UI + graph color/style tokens (pure: glam + serde, no GPU)."
+
+# Leaf crate like `flex-geom`: only pure deps, so EVERY layer can consume the one
+# palette without pulling wgpu. wgpu-widgets-core re-exports `Theme`; nodes-core
+# (which must stay wgpu-free) git-refs this directly for category colors; nodes-view
+# / nodes-editor read graph + HUD tokens from it. serde so the editor can persist a
+# theme in its settings.
+[lib]
+path = "src/ui_theme.rs"
+
+[dependencies]
+glam = { workspace = true }
+flex-geom = { workspace = true }
+serde = { version = "1", features = ["derive"] }

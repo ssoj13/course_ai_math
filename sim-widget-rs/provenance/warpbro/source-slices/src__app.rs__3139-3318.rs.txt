@@ -1,0 +1,180 @@
+    fn top_bar(&mut self, ui: &mut egui::Ui) {
+        egui::MenuBar::new().ui(ui, |ui| {
+            ui.menu_button("File", |ui| {
+                if !self.templates_requested {
+                    self.refresh_templates();
+                }
+                use crate::hotkeys::{Command as Hotkey, Scope, menu_item};
+                if menu_item(ui, "New scene", Scope::Global, Hotkey::NewScene)
+                    .on_hover_text("Start over: the scene WarpBro opens with, nothing kept")
+                    .clicked()
+                {
+                    self.new_scene();
+                    ui.close();
+                }
+                if menu_item(ui, "Open scene…", Scope::Global, Hotkey::OpenScene).clicked() {
+                    self.scene_file_dialog(false);
+                    ui.close();
+                }
+                if menu_item(ui, "Save scene", Scope::Global, Hotkey::SaveScene).clicked() {
+                    self.save_scene();
+                    ui.close();
+                }
+                if menu_item(ui, "Save scene as…", Scope::Global, Hotkey::SaveSceneAs).clicked() {
+                    self.scene_file_dialog(true);
+                    ui.close();
+                }
+                ui.menu_button("Templates", |ui| {
+                    if ui.button("Save current scene as template…").clicked() {
+                        self.scene_action_dialog(crate::templates::FileAction::SaveTemplate);
+                        ui.close();
+                    }
+                    if ui.button("Open template file…").clicked() {
+                        self.scene_action_dialog(crate::templates::FileAction::OpenTemplate);
+                        ui.close();
+                    }
+                    if ui
+                        .add_enabled(
+                            !self.templates_pending,
+                            egui::Button::new("Refresh templates"),
+                        )
+                        .clicked()
+                    {
+                        self.refresh_templates();
+                    }
+                    ui.separator();
+                    if self.templates_pending {
+                        ui.weak("Loading templates…");
+                        ui.ctx().request_repaint();
+                    }
+                    let mut picked = None;
+                    for entry in &self.templates {
+                        let origin = match &entry.source {
+                            crate::templates::Source::Builtin(_) => "Built-in".to_owned(),
+                            crate::templates::Source::File(path) if entry.overrides => {
+                                format!("{} (overrides the built-in)", path.display())
+                            }
+                            crate::templates::Source::File(path) => path.display().to_string(),
+                        };
+                        let hint = match entry.description {
+                            Some(description) => format!(
+                                "{description}
+
+{origin}"
+                            ),
+                            None => origin,
+                        };
+                        if ui.button(&entry.name).on_hover_text(hint).clicked() {
+                            picked = Some(entry.source.clone());
+                            ui.close();
+                        }
+                    }
+                    match picked {
+                        Some(crate::templates::Source::Builtin(index)) => {
+                            match crate::presets::scene(index) {
+                                Ok(scene) => {
+                                    self.status = format!("Opened template {}", scene.name);
+                                    self.load(scene, Load::New);
+                                }
+                                Err(error) => self.status = error,
+                            }
+                        }
+                        Some(crate::templates::Source::File(path)) => {
+                            self.submit_scene_action(
+                                path,
+                                crate::templates::FileAction::OpenTemplate,
+                            );
+                        }
+                        None => {}
+                    }
+                });
+                ui.separator();
+                if ui.button("Save bookmark").clicked() {
+                    self.save_bookmark();
+                    ui.close();
+                }
+                self.snapshot_menu(ui);
+                ui.separator();
+                self.window_shot_menu(ui);
+            });
+            ui.menu_button("Edit", |ui| {
+                use crate::hotkeys::{Command as Hotkey, Scope, menu_item};
+                if menu_item(ui, "Undo", Scope::Global, Hotkey::Undo).clicked() {
+                    self.world.undo();
+                    ui.close();
+                }
+                if menu_item(ui, "Redo", Scope::Global, Hotkey::Redo).clicked() {
+                    self.world.redo();
+                    ui.close();
+                }
+                ui.separator();
+                if ui.button("Reset scene").clicked() {
+                    self.load(self.origin.clone(), Load::Same);
+                    self.colour.sel = self.scene.colour.clone();
+                    self.colour.rebuild();
+                    ui.close();
+                }
+                if ui.button("Copy scene JSON").clicked()
+                    && let Ok(json) = serde_json::to_string_pretty(&self.world.document)
+                {
+                    ui.ctx().copy_text(json);
+                    ui.close();
+                }
+                ui.separator();
+                if ui.button("Settings…").clicked() {
+                    self.panels_to_open.push(dock::Panel::Settings);
+                    ui.close();
+                }
+            });
+            ui.menu_button("View", |ui| {
+                if let Ok(policy) = self
+                    .world
+                    .document
+                    .viewport_policy(f64::from(self.world_ui.playhead))
+                {
+                    let mut paused = policy.paused;
+                    if ui.checkbox(&mut paused, "Pause rendering").changed() {
+                        self.set_viewport_flag("/viewport/paused", paused);
+                    }
+                }
+                if ui.button("Render & Viewport settings…").clicked() {
+                    self.open_settings(SettingsPage::Render);
+                    ui.close();
+                }
+                if ui
+                    .selectable_label(self.scene.camera.free_flight, "Free flight")
+                    .clicked()
+                {
+                    self.toggle_flight_mode();
+                    ui.close();
+                }
+                if ui.button("Restore camera    H").clicked() {
+                    self.scene.camera = self.origin.camera;
+                    self.fly = None;
+                    ui.close();
+                }
+                if crate::hotkeys::menu_item(
+                    ui,
+                    "Hide UI",
+                    crate::hotkeys::Scope::Global,
+                    crate::hotkeys::Command::ToggleUi,
+                )
+                .clicked()
+                {
+                    self.show_ui = false;
+                    ui.close();
+                }
+            });
+            ui.menu_button("Render", |ui| {
+                if ui.button("Render / Encode…").clicked() {
+                    self.panels_to_open.push(dock::Panel::Export);
+                    ui.close();
+                }
+            });
+            self.window_menu(ui);
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                self.layout_manager_ui(ui)
+            });
+        });
+    }
+

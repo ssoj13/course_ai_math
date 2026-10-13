@@ -1,0 +1,4 @@
+# Copy-only workspace; unrelated donor members and native app are not installed.
+[workspace]
+resolver = "3"
+members = ["crates/otio-algo", "crates/otio-time", "crates/otio-schema", "crates/otio-core", "crates/otio-edit", "crates/otio-timeline"]

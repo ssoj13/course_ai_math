@@ -1,0 +1,25 @@
+# egui-drag-overlay — cross-panel drag with a foreground "ghost" overlay.
+#
+# Carry an arbitrary payload `T` in egui's ephemeral data while the user drags it
+# from one panel toward another, and paint a foreground ghost (a snapped preview
+# rect published by the drop target, or a box following the cursor) that stays
+# visible ACROSS panel boundaries — egui's per-panel clipping otherwise hides a
+# drag once it leaves the source panel. Generic over the payload; no app types.
+# (Gathered from playa's project→timeline DnD; the timeline-specific gesture enum
+# was left behind — it belongs to the timeline widget, not here.)
+[package]
+name = "egui-drag-overlay"
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Cross-panel egui drag-and-drop with a foreground ghost overlay, generic over the payload"
+
+[lib]
+path = "src/egui_drag_overlay.rs"
+
+[dependencies]
+egui = { workspace = true }
+egui-widgets-config = { path = "../egui-widgets-config" }
