@@ -8,9 +8,9 @@ notebook: contracts, traps, TODO), [task.md](task.md) (the user's own words, Rus
 
 ## 0. Status in one screen
 
-- Repo `C:\projects\projects.rust.cg\cgprojs\math_en`, GitHub `ssoj13/math-course` (public). Branch `feat/engine`
+- Repo `C:\projects\projects.rust.cg\courses\course_ai_math`, GitHub `ssoj13/course_ai_math` (public). Branch `feat/engine`
   HEAD `8aef269`; `main` = `8aef269` (pushed). Pages deploys verified green up to 5dc9fef; 8aef269 pushed after.
-  Live: https://ssoj13.github.io/math-course/ (RU: /math-course/ru/).
+  Live: https://ssoj13.github.io/course_ai_math/ (RU: /course_ai_math/ru/).
 - Gates on `8aef269`: `bun test tests/js` 844 pass / 0 fail; `bun run check` 0/0/0; `bun run build` 55 pages, 0 warnings; renderer chunk ~268 kB gzip (limit 300,000); largest other 87 kB (limit 100,000);
   lazy elk 432 kB (limit 600,000).
 - Publish: worktree `scratchpad/mainwt` (= main): `git merge --ff-only feat/engine && git push origin main`, then
