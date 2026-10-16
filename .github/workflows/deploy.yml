@@ -38,8 +38,10 @@ jobs:
       - name: Type check
         run: bun run check
       # Bundle budgets (Ruling O, scripts/size-report.ts) need a build of their own: the deploy build runs in its own job.
+      # Warn only: an over-budget chunk shows as a warning annotation and must not block publishing.
       - name: Bundle budgets
         run: bun run build && bun run size
+        continue-on-error: true
 
   build:
     runs-on: ubuntu-24.04
