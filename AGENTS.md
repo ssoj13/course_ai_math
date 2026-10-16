@@ -11,7 +11,7 @@ Interactive, visualization-first textbook "Math for AI": law of cosines and dot 
 derivatives, integrals → probability/statistics → learning machines → attention, plus an advanced track and branch Q
 (quantization). Format: roadmap.sh-style knowledge map, mind maps everywhere, live linked scenes (inspiration:
 poloclub/transformer-explainer, 3Blue1Brown, PyTorch "Inside the Matrix", Bret Victor). Infrastructure is modeled on
-`C:\projects\projects.rust.cg\cgprojs\vllm_en` (course.json single source, progress, lesson links): read its AGENTS.md
+`C:\projects\projects.rust.cg\courses\course_vllm` (course.json single source, progress, lesson links): read its AGENTS.md
 before building infrastructure.
 
 Reader: CG/VFX developer (Maya, Houdini, shaders) who asks for very gentle, step-by-step explanations: every symbol in
