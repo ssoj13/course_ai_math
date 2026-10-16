@@ -46,7 +46,8 @@ Scope and acceptance: [course completion map](docs/superpowers/plans/2026-10-11-
   or readability conflicts with the reference: stop and ask the user, never tone down or reinterpret silently.
   Spec: `docs/design/visual-language.md` (v3 holo + clay).
 - **Budgets** (Ruling O, plan Task 11): physical renderer-containing chunk ≤ 300,000 B gzip; every other chunk
-  ≤ 100,000; lazy elk/xyflow ≤ 600,000; ≤ 18,000 B increment per task. `chunkSizeWarningLimit: 1015` is a warning
+  ≤ 100,000; lazy elk/xyflow ≤ 600,000; ≤ 18,000 B increment per task. Checked by `bun run size`
+  (`scripts/size-report.ts`, classifies chunks by content; CI runs it after a build). `chunkSizeWarningLimit: 1015` is a warning
   threshold, not a budget. The byte-ownership aggregate is diagnostic only (it was a controller-invented gate, see
   [6g](docs/acceptance/6g.md)). Task 11 must reconcile the per-lesson ≤ 100 kB payload gate with physical chunks.
 - Reuse from vllm_en: course.json → sidebar/numbering/links (`course.ts`, `remark-lesson-links.mjs`,

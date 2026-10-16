@@ -37,6 +37,9 @@ jobs:
         run: bun test tests/js
       - name: Type check
         run: bun run check
+      # Bundle budgets (Ruling O, scripts/size-report.ts) need a build of their own: the deploy build runs in its own job.
+      - name: Bundle budgets
+        run: bun run build && bun run size
 
   build:
     runs-on: ubuntu-24.04
