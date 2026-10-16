@@ -103,7 +103,7 @@ export function moduleOf(slug: string): Module {
 
 /**
  * Finds a lesson by content id (`vectors/dot-product`, `ru/vectors/dot-product`) or URL path
- * (`/math-course/ru/vectors/dot-product/`). The base path, a leading locale segment, slashes and an `.mdx` suffix are
+ * (`/course_ai_math/ru/vectors/dot-product/`). The base path, a leading locale segment, slashes and an `.mdx` suffix are
  * ignored; returns undefined for non-lesson pages.
  */
 export function lessonByPath(path: string): Lesson | undefined {

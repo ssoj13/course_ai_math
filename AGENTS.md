@@ -1,4 +1,4 @@
-# math-course — working notes for agents
+# course_ai_math — working notes for agents
 
 Keep this file current. It is the working notebook: what the repo is, the contracts an implementer must know, authoring
 rules, gates, traps and the CURRENT TODO (`[ ]` / `[x]`). Compress outdated notes into the changelog or delete them.
@@ -29,7 +29,7 @@ Scope and acceptance: [course completion map](docs/superpowers/plans/2026-10-11-
   @react-three/fiber 9.8.1, @react-three/drei 10.7.9, three 0.186.1, @xyflow/react 12.12.0, elkjs 0.12.0,
   zustand 5.0.15, katex 0.19.0, pyodide 314.0.7, @astrojs/markdown-satteri 0.4.3.
 - CI: `.github/workflows/deploy.yml` on `ubuntu-24.04` (pinned; `ubuntu-latest` moves to 26 on 2026-10-19).
-  Repo `ssoj13/math-course` (public), Pages https://ssoj13.github.io/math-course/. Working branch `feat/engine`.
+  Repo `ssoj13/course_ai_math` (public), Pages https://ssoj13.github.io/course_ai_math/. Working branch `feat/engine`.
 
 ## Decisions
 

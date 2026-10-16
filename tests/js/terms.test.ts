@@ -211,12 +211,12 @@ describe('layout helpers', () => {
 
 describe('map payload', () => {
 	test('resolves localized texts, lesson and glossary links; forward terms have no lesson', () => {
-		process.env.BASE_URL = '/math-course/';
+		process.env.BASE_URL = '/course_ai_math/';
 		const d = mapData(['law-of-cosines', 'determinant', 'matrix'], [], 'ru');
-		expect(d.nodes[0]).toMatchObject({ label: 'Теорема косинусов', href: '/math-course/ru/ground/law-of-cosines/', gloss: '/math-course/ru/glossary/#term-law-of-cosines' });
+		expect(d.nodes[0]).toMatchObject({ label: 'Теорема косинусов', href: '/course_ai_math/ru/ground/law-of-cosines/', gloss: '/course_ai_math/ru/glossary/#term-law-of-cosines' });
 		expect(d.nodes[1]).toMatchObject({ id: 'determinant', href: null, lesson: null });
-		expect(d.nodes[2]).toMatchObject({ id: 'matrix', href: '/math-course/ru/matrices/linear-transformations/' });
-		expect(mapData(['square'], [], 'en').nodes[0]).toMatchObject({ label: 'Square', href: '/math-course/ground/squares-and-plane/' });
+		expect(d.nodes[2]).toMatchObject({ id: 'matrix', href: '/course_ai_math/ru/matrices/linear-transformations/' });
+		expect(mapData(['square'], [], 'en').nodes[0]).toMatchObject({ label: 'Square', href: '/course_ai_math/ground/squares-and-plane/' });
 	});
 });
 

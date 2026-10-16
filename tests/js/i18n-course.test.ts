@@ -7,21 +7,21 @@ import { ROWS2, ROWS3, ROWSLC, ROWSPOLAR, ROWSSIGN, ROWSLAMP } from '../../src/v
 import { chipLines } from '../../src/viz/scene/chips';
 
 let oldBase: string | undefined;
-beforeEach(()=>{oldBase=process.env.BASE_URL;process.env.BASE_URL='/math-course/';});
+beforeEach(()=>{oldBase=process.env.BASE_URL;process.env.BASE_URL='/course_ai_math/';});
 afterEach(()=>{if(oldBase===undefined)delete process.env.BASE_URL;else process.env.BASE_URL=oldBase;});
 
 test('locale URLs preserve deployment base and semantic course identity', () => {
  for (const l of lessons) {
-  expect(localizedUrl('/math-course/', l.path, 'ru')).toBe('/math-course/ru/' + l.path + '/');
+  expect(localizedUrl('/course_ai_math/', l.path, 'ru')).toBe('/course_ai_math/ru/' + l.path + '/');
   expect(lessonByPath('ru/' + l.path)?.slug).toBe(l.slug);
   expect(loc(l, 'ru').title).not.toBe(loc(l, 'en').title);
  }
  expect(fileLocale('C:\\course\\src\\content\\docs\\ru\\vectors\\dot-product.mdx')).toBe('ru');
  expect(fileLocale('/course/src/content/docs/vectors/dot-product.mdx')).toBe('en');
- expect(lessonByPath('/math-course/ru/vectors/dot-product/')?.slug).toBe('dot-product');
- expect(localizedUrl('/math-course/', '', 'ru')).toBe('/math-course/ru/');
+ expect(lessonByPath('/course_ai_math/ru/vectors/dot-product/')?.slug).toBe('dot-product');
+ expect(localizedUrl('/course_ai_math/', '', 'ru')).toBe('/course_ai_math/ru/');
  expect(() => asLocale('fr')).toThrow();
- expect(resolveCourseLink('lesson:dot-product#formula', '/math-course/', 'ru', 'test')).toBe('/math-course/ru/vectors/dot-product/#formula');
+ expect(resolveCourseLink('lesson:dot-product#formula', '/course_ai_math/', 'ru', 'test')).toBe('/course_ai_math/ru/vectors/dot-product/#formula');
 });
 
 test('localized row factories preserve semantic IDs, store keys, ranges and mathematical markup', () => {

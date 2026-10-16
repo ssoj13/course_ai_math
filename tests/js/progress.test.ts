@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test';
 import course from '../../src/data/course.json';
 
 // progress.ts resolves lesson URLs at import time, which needs Astro's BASE_URL (bun aliases import.meta.env to process.env).
-process.env.BASE_URL = '/math-course/';
+process.env.BASE_URL = '/course_ai_math/';
 const { describe: describeProgress } = await import('../../src/lib/progress');
 
 // Derived from course.json so inserting a lesson does not break this gate.

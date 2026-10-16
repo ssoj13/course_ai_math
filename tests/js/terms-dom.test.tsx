@@ -9,7 +9,7 @@ import { EDGES, ORDER, introducedIn, mapData } from '../../src/viz/terms/data';
 import { foundationsIn, neighborhoodIn } from '../../src/viz/terms/graph';
 import { TermMap } from '../../src/viz/terms/TermMap';
 
-process.env.BASE_URL = '/math-course/';
+process.env.BASE_URL = '/course_ai_math/';
 
 const render = (html: string) => {
 	const box = document.createElement('div');
@@ -32,7 +32,7 @@ for (const locale of ['en', 'ru'] as const) {
 		expect(box.querySelector('.lab-tm-msg')?.textContent).toBe(DICT[locale]['terms.noscript']);
 		const loc = items.find((li) => li.querySelector('a')?.getAttribute('href')?.endsWith('#term-law-of-cosines'));
 		expect(loc?.textContent).toContain(DICT[locale]['terms.builtOn']);
-		expect(loc?.querySelector(`a[href="/math-course/${locale === 'ru' ? 'ru/' : ''}ground/law-of-cosines/"]`)).not.toBeNull();
+		expect(loc?.querySelector(`a[href="/course_ai_math/${locale === 'ru' ? 'ru/' : ''}ground/law-of-cosines/"]`)).not.toBeNull();
 	});
 }
 

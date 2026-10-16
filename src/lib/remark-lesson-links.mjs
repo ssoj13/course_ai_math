@@ -28,7 +28,7 @@ const PAGE_PATHS = new Map([
 /**
  * Resolves `lesson:`/`page:` URLs; returns null for any other URL.
  * @param {string} url
- * @param {string} base site base path, e.g. `/math-course`
+ * @param {string} base site base path, e.g. `/course_ai_math`
  * @param {Locale} locale locale of the page the link is on
  * @param {string} [where] file name for error messages
  * @returns {string | null}
