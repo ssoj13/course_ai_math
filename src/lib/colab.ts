@@ -1,6 +1,6 @@
 /** Links to the course notebooks (`notebooks/<name>.ipynb` of the course repo), shared by ColabBadge and PyCell. */
 
-const REPO = 'ssoj13/math-course';
+const REPO = 'ssoj13/course_ai_math';
 
 /** `owner/repo/blob/main/notebooks/<name>.ipynb`; throws unless `notebook` is a bare file name without extension. */
 export function notebookPath(notebook: string): string {

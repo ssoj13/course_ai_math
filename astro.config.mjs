@@ -9,7 +9,7 @@ import katexMath from './src/lib/satteri-math.mjs';
 import { STARLIGHT_LOCALES, courseText, numberCourse, numbered } from './src/lib/course-rules.mjs';
 import { fontsource } from './src/lib/fonts.mjs';
 
-const BASE = '/math-course';
+const BASE = '/course_ai_math';
 
 // Course structure comes from one manifest (see src/lib/course.ts); numbering rules must match it.
 /** @type {{ modules: import('./src/lib/course').ModuleJson[] }} */
@@ -32,7 +32,7 @@ const moduleGroups = course.modules.map((m, i) => ({
 	})),
 }));
 
-// Published as a GitHub Pages project site: https://ssoj13.github.io/math-course/
+// Published as a GitHub Pages project site: https://ssoj13.github.io/course_ai_math/
 export default defineConfig({
 	site: 'https://ssoj13.github.io',
 	base: BASE,
@@ -84,8 +84,8 @@ export default defineConfig({
 			defaultLocale: 'root',
 			description:
 				'An interactive, visualization-first course: from the law of cosines and the dot product to tensors, calculus, statistics and attention.',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/ssoj13/math-course' }],
-			editLink: { baseUrl: 'https://github.com/ssoj13/math-course/edit/main/' },
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/ssoj13/course_ai_math' }],
+			editLink: { baseUrl: 'https://github.com/ssoj13/course_ai_math/edit/main/' },
 			customCss: ['katex/dist/katex.min.css', './src/styles/lab.css'],
 			disable404Route: true, // replaced by src/pages/404.astro
 			components: {

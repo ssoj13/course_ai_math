@@ -64,8 +64,8 @@ export function splitLocale(path) {
 }
 
 /**
- * Absolute, base-prefixed URL of a page path in a locale: (`/math-course`, 'vectors/dot-product', 'ru') ->
- * `/math-course/ru/vectors/dot-product/`; an empty path is the locale's home.
+ * Absolute, base-prefixed URL of a page path in a locale: (`/course_ai_math`, 'vectors/dot-product', 'ru') ->
+ * `/course_ai_math/ru/vectors/dot-product/`; an empty path is the locale's home.
  * @param {string} base site base, with or without a trailing slash
  * @param {string} path page path without base and locale, no leading slash ('' = home)
  * @param {Locale} locale
